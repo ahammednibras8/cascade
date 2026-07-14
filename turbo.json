@@ -10,7 +10,14 @@
       "dependsOn": ["^check-types"]
     },
     "test": {
-      "dependsOn": ["build"],
+      "dependsOn": ["build"]
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"],
       "outputs": ["coverage/**"]
     },
     "dev": {
