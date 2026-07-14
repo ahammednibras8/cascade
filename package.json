@@ -7,11 +7,13 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "check-type": "turbo run check-type",
+    "check-types": "turbo run check-types",
     "test": "turbo run test"
   },
   "devDependencies": {
-    "turbo": "2.10.5"
+    "@types/node": "24.13.3",
+    "turbo": "2.10.5",
+    "typescript": "7.0.2"
   },
   "engines": {
     "node": ">=24.18.0 <25"
