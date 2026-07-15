@@ -23,6 +23,24 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "e2e": {
+      "dependsOn": ["^build"],
+      "outputs": ["playwright-report/**", "test-results/**"],
+      "passThroughEnv": ["PLAYWRIGHT_*", "CI"]
+    },
+    "e2e:ui": {
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": ["PLAYWRIGHT_*", "CI"]
+    },
+    "e2e:headed": {
+      "cache": false,
+      "passThroughEnv": ["PLAYWRIGHT_*", "CI"]
+    },
+    "e2e:report": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

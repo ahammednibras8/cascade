@@ -10,7 +10,11 @@
     "check-types": "turbo run check-types",
     "test": "turbo run test",
     "test:watch": "turbo run test:watch",
-    "test:coverage": "turbo run test:coverage"
+    "test:coverage": "turbo run test:coverage",
+    "e2e": "turbo run e2e",
+    "e2e:ui": "turbo run e2e:ui",
+    "e2e:headed": "turbo run e2e:headed",
+    "e2e:report": "turbo run e2e:report"
   },
   "devDependencies": {
     "@types/node": "24.13.3",
