@@ -29,7 +29,9 @@
     "changeset": "changeset",
     "changeset:status": "changeset status --verbose",
     "version-packages": "changeset version",
-    "release": "changeset publish"
+    "release": "changeset publish",
+    "docs:dev": "pnpm --filter @cascade/docs run dev",
+    "docs:check": "pnpm --filter @cascade/docs run check"
   },
   "devDependencies": {
     "@changesets/cli": "2.31.0",

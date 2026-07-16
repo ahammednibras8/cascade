@@ -2,10 +2,24 @@ packages:
   - "apps/*"
   - "packages/*"
   - "tests/*"
+  - "docs"
 
 minimumReleaseAgeExclude:
   - knip@6.27.0
   - vite@8.1.5
+  - "@mintlify/cli@4.0.1303"
+  - "@mintlify/common@1.0.1014"
+  - "@mintlify/link-rot@3.0.1206"
+  - "@mintlify/models@0.0.338"
+  - "@mintlify/prebuild@1.0.1162"
+  - "@mintlify/previewing@4.0.1231"
+  - "@mintlify/scraping@4.0.879"
+  - "@mintlify/validation@0.1.786"
+  - mint@4.2.700
 
 allowBuilds:
+  "@scarf/scarf": false
+  keytar: false
   lefthook: true
+  puppeteer: false
+  sharp: true

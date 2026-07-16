@@ -1,0 +1,15 @@
+{
+  "name": "@cascade/docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "mint dev --port 3001",
+    "build": "mint validate",
+    "check": "mint validate && mint broken-links",
+    "validate": "mint validate",
+    "links": "mint broken-links"
+  },
+  "devDependencies": {
+    "mint": "4.2.700"
+  }
+}
