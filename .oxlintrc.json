@@ -21,6 +21,7 @@
     "pnpm-lock.yaml"
   ],
   "rules": {
-    "no-console": "warn"
+    "no-console": "warn",
+    "import/no-unassigned-import": "off"
   }
 }

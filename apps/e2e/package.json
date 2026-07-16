@@ -12,6 +12,7 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
+    "@cascade/web": "workspace:*",
     "@playwright/test": "1.61.1"
   }
 }
