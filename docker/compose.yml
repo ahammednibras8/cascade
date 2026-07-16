@@ -1,0 +1,39 @@
+name: cascade
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: cascade-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cascade}
+      POSTGRES_USER: ${POSTGRES_USER:-cascade}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cascade}
+    ports:
+      - "${POSTGRES_PORT:-15432}:5432"
+    volumes:
+      - cascade_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cascade} -d ${POSTGRES_DB:-cascade}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: cascade-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-16379}:6379"
+    volumes:
+      - cascade_redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  cascade_postgres_data:
+  cascade_redis_data:

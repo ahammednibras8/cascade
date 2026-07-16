@@ -13,3 +13,4 @@ build/
 .react-router/
 .tshy/
 .tshy-build/
+docker/.env

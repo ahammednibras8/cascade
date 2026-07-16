@@ -31,7 +31,12 @@
     "version-packages": "changeset version",
     "release": "changeset publish",
     "docs:dev": "pnpm --filter @cascade/docs run dev",
-    "docs:check": "pnpm --filter @cascade/docs run check"
+    "docs:check": "pnpm --filter @cascade/docs run check",
+    "services:up": "docker compose --env-file docker/.env -f docker/compose.yml up -d",
+    "services:down": "docker compose --env-file docker/.env -f docker/compose.yml down",
+    "services:logs": "docker compose --env-file docker/.env -f docker/compose.yml logs -f",
+    "services:ps": "docker compose --env-file docker/.env -f docker/compose.yml ps",
+    "services:reset": "docker compose --env-file docker/.env -f docker/compose.yml down -v"
   },
   "devDependencies": {
     "@changesets/cli": "2.31.0",
