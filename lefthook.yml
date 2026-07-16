@@ -12,4 +12,4 @@ pre-push:
   parallel: true
   commands:
     check-types:
-      run: pnpm-run check-types
+      run: pnpm run check-types
