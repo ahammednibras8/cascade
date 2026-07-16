@@ -18,7 +18,8 @@
     "playwright-report/**",
     "test-results/**",
     "blob-report/**",
-    "pnpm-lock.yaml"
+    "pnpm-lock.yaml",
+    ".tshy-build/"
   ],
   "rules": {
     "no-console": "warn",
