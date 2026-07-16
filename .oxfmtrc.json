@@ -14,6 +14,7 @@
     "test-results/**",
     "blob-report/**",
     "pnpm-lock.yaml",
-    ".tshy-build/"
+    ".tshy-build/",
+    "hosting/k8s/helm/templates/**"
   ]
 }

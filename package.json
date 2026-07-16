@@ -36,7 +36,12 @@
     "services:down": "docker compose --env-file docker/.env -f docker/compose.yml down",
     "services:logs": "docker compose --env-file docker/.env -f docker/compose.yml logs -f",
     "services:ps": "docker compose --env-file docker/.env -f docker/compose.yml ps",
-    "services:reset": "docker compose --env-file docker/.env -f docker/compose.yml down -v"
+    "services:reset": "docker compose --env-file docker/.env -f docker/compose.yml down -v",
+    "hosting:lint": "helm lint hosting/k8s/helm",
+    "hosting:template": "helm template cascade hosting/k8s/helm",
+    "hosting:template:local": "helm template cascade hosting/k8s/helm -f hosting/k8s/helm/values.local.yaml",
+    "hosting:install:local": "helm upgrade --install cascade hosting/k8s/helm --namespace cascade --create-namespace -f hosting/k8s/helm/values.local.yaml",
+    "hosting:uninstall:local": "helm uninstall cascade --namespace cascade"
   },
   "devDependencies": {
     "@changesets/cli": "2.31.0",

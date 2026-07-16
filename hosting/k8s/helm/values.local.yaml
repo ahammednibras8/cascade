@@ -1,0 +1,7 @@
+image:
+  repository: cascade-web
+  tag: local
+  pullPolicy: Never
+
+ingress:
+  enabled: false

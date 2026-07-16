@@ -9,6 +9,8 @@ pre-commit:
       stage_fixed: true
     format:
       glob: "*.{js,jsx,ts,tsx,json,jsonc,css,md,yml,yaml}"
+      exclude:
+        - "hosting/k8s/helm/templates/**"
       run: pnpm exec oxfmt {staged_files}
       stage_fixed: true
 

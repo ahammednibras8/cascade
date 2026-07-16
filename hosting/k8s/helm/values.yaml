@@ -1,0 +1,47 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/ahammednibras8/cascade-web
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+containerPort: 3000
+
+env:
+  - name: NODE_ENV
+    value: production
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: cascade.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+probes:
+  readiness:
+    enabled: true
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  liveness:
+    enabled: true
+    path: /
+    initialDelaySeconds: 15
+    periodSeconds: 20
