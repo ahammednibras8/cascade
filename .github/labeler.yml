@@ -34,7 +34,7 @@ area:tooling:
 area:release:
   - changed-files:
       - any-glob-to-any-file:
-          - "changeset/**"
+          - ".changeset/**"
 
 dependencies:
   - changed-files:
