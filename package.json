@@ -25,9 +25,14 @@
     "hooks:install": "lefthook install",
     "hooks:validate": "lefthook validate",
     "hooks:pre-commit": "lefthook run pre-commit",
-    "hooks:pre-push": "lefthook run pre-push"
+    "hooks:pre-push": "lefthook run pre-push",
+    "changeset": "changeset",
+    "changeset:status": "changeset status --verbose",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "2.31.0",
     "@types/node": "24.13.3",
     "@vitest/coverage-v8": "4.1.10",
     "knip": "6.27.0",
