@@ -1,0 +1,15 @@
+min_version: 2.1.10
+
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      run: pnpm run fmt:check
+    lint:
+      run: pnpm run lint
+
+pre-push:
+  parallel: true
+  commands:
+    check-types:
+      run: pnpm-run check-types

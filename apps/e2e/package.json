@@ -8,7 +8,8 @@
     "e2e:headed": "playwright test --headed",
     "e2e:debug": "playwright test --debug",
     "e2e:report": "playwright show-report",
-    "install:browsers": "playwright install chromium"
+    "install:browsers": "playwright install chromium",
+    "check-types": "tsc --noEmit"
   },
   "devDependencies": {
     "@playwright/test": "1.61.1"

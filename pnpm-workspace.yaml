@@ -3,3 +3,5 @@ packages:
   - "packages/*"
 minimumReleaseAgeExclude:
   - knip@6.27.0
+allowBuilds:
+  lefthook: true
