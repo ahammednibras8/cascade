@@ -1,8 +1,11 @@
 packages:
   - "apps/*"
   - "packages/*"
+  - "tests/*"
+
 minimumReleaseAgeExclude:
   - knip@6.27.0
   - vite@8.1.5
+
 allowBuilds:
   lefthook: true
