@@ -1,37 +1,48 @@
-FROM node:24-alpine AS base
+# syntax=docker/dockerfile:1.7
+
+FROM node:24-alpine AS pnpm-base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV CI=true
-RUN corepack enable && corepack prepare pnpm@11.13.1 --activate
 WORKDIR /app
 
-FROM base AS dependencies
+RUN corepack enable \
+  && corepack prepare pnpm@11.13.1 --activate \
+  && pnpm config set store-dir /pnpm/store
+
+FROM pnpm-base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/package.json
-RUN pnpm install --frozen-lockfile --ignore-scripts --filter @cascade/web...
 
-FROM base AS build
+RUN --mount=type=cache,id=cascade-pnpm-store,target=/pnpm/store \
+  pnpm install --frozen-lockfile --ignore-scripts --filter @cascade/web...
+
+FROM pnpm-base AS build
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY .configs .configs
 COPY apps/web apps/web
-COPY --from=dependencies /app/node_modules ./node_modules
-COPY --from=dependencies /app/apps/web/node_modules ./apps/web/node_modules
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+
 RUN pnpm --filter @cascade/web run build
 
-FROM base AS production-dependencies
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/web/package.json apps/web/package.json
-RUN pnpm install --prod --frozen-lockfile --ignore-scripts --filter @cascade/web...
+RUN --mount=type=cache,id=cascade-pnpm-store,target=/pnpm/store \
+  pnpm --config.ignore-scripts=true --filter @cascade/web deploy --legacy --prod /prod/web
 
-FROM base AS runner
+FROM node:24-alpine AS runner
 ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=3000
 
-COPY --from=production-dependencies /app/node_modules ./node_modules
-COPY --from=production-dependencies /app/apps/web/node_modules ./apps/web/node_modules
-COPY --from=production-dependencies /app/apps/web/package.json ./apps/web/package.json
-COPY --from=build /app/apps/web/build ./apps/web/build
+WORKDIR /app
 
-WORKDIR /app/apps/web
+COPY --from=build --chown=node:node /prod/web/node_modules ./node_modules
+COPY --from=build --chown=node:node /prod/web/package.json ./package.json
+COPY --from=build --chown=node:node /app/apps/web/build ./build
+
+USER node
 
 EXPOSE 3000
-CMD ["pnpm", "run", "start"]
+
+CMD ["node", "./node_modules/@react-router/serve/bin.cjs", "./build/server/index.js"]

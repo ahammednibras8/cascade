@@ -1,14 +1,29 @@
 .git
+.gitignore
+
 node_modules
 **/node_modules
 
 .turbo
+**/.turbo
+
 dist
+**/dist
+
 build
+**/build
+
 coverage
+**/coverage
+
 playwright-report
+**/playwright-report
+
 test-results
+**/test-results
+
 blob-report
+**/blob-report
 
 .DS_Store
 
@@ -17,5 +32,5 @@ blob-report
 !.env.example
 
 packages/*/.tshy
-packages/*/dist
-apps/*/build
+.react-router
+**/.react-router
