@@ -41,7 +41,10 @@
     "hosting:template": "helm template cascade hosting/k8s/helm",
     "hosting:template:local": "helm template cascade hosting/k8s/helm -f hosting/k8s/helm/values.local.yaml",
     "hosting:install:local": "helm upgrade --install cascade hosting/k8s/helm --namespace cascade --create-namespace -f hosting/k8s/helm/values.local.yaml",
-    "hosting:uninstall:local": "helm uninstall cascade --namespace cascade"
+    "hosting:uninstall:local": "helm uninstall cascade --namespace cascade",
+    "secrets:scan": "infisical scan",
+    "secrets:web:dev": "infisical run --env=dev --path=/apps/web -- pnpm --filter @cascade/web run dev",
+    "secrets:dev": "infisical run --env=dev --path=/ --pnpm run dev"
   },
   "devDependencies": {
     "@changesets/cli": "2.31.0",
