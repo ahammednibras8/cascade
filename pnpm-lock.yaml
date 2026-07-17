@@ -459,6 +459,8 @@ importers:
         specifier: 4.2.700
         version: 4.2.700(@radix-ui/react-popover@1.1.19(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/node@24.13.3)(@types/react@19.2.17)(react-dom@18.3.1(react@19.2.3))(typescript@7.0.2)
 
+  packages/clickhouse: {}
+
   packages/core:
     devDependencies:
       '@types/node':
