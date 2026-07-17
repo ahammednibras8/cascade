@@ -6,7 +6,8 @@
       "outputs": ["dist/**", "build/**", ".react-router/**"]
     },
     "check-types": {
-      "dependsOn": ["^check-types"]
+      "dependsOn": ["^check-types"],
+      "passThroughEnv": ["DATABASE_URL"]
     },
     "test": {
       "dependsOn": ["build"]
