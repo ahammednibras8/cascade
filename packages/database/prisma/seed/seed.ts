@@ -1,9 +1,14 @@
-import { prisma } from "../../src";
+import { prisma } from "../../src/index.js";
 
 async function main() {
   console.log("No seed data yet.");
 }
 
-await main();
-
-await prisma.$disconnect();
+main()
+  .catch((error: unknown) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
