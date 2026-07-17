@@ -13,6 +13,31 @@ area:tests:
       - any-glob-to-any-file:
           - "tests/**"
 
+area:docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+
+area:docker:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docker/**"
+
+area:hosting:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "hosting/**"
+
+area:database:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/database/**"
+
+area:analytics:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/clickhouse/**"
+
 area:ci:
   - changed-files:
       - any-glob-to-any-file:
