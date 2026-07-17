@@ -1,0 +1,11 @@
+{
+  "name": "@cascade/clickhouse",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migrate": "goose -dir migrations clickhouse \"$CLICKHOUSE_URL\" up",
+    "rollback": "goose -dir migrations clickhouse \"$CLICKHOUSE_URL\" down",
+    "status": "goose -dir migrations clickhouse \"$CLICKHOUSE_URL\" status",
+    "create": "goose -dir migrations create"
+  }
+}

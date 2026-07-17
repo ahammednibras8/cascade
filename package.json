@@ -51,7 +51,10 @@
     "db:deploy": "pnpm --filter @cascade/database run db:deploy",
     "db:studio": "pnpm --filter @cascade/database run db:studio",
     "db:reset": "pnpm --filter @cascade/database run db:reset",
-    "db:seed": "pnpm --filter @cascade/database run db:seed"
+    "db:seed": "pnpm --filter @cascade/database run db:seed",
+    "clickhouse:migrate": "pnpm --filter @cascade/clickhouse run migrate",
+    "clickhouse:rollback": "pnpm --filter @cascade/clickhouse run rollback",
+    "clickhouse:status": "pnpm --filter @cascade/clickhouse run status"
   },
   "devDependencies": {
     "@changesets/cli": "2.31.0",
