@@ -16,6 +16,7 @@ concurrency:
 
 env:
   CI: true
+  DATABASE_URL: postgresql://cascade:cascade@localhost:5432/cascade
 
 jobs:
   quality:
