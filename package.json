@@ -44,7 +44,13 @@
     "hosting:uninstall:local": "helm uninstall cascade --namespace cascade",
     "secrets:scan": "infisical scan",
     "secrets:web:dev": "infisical run --env=dev --path=/apps/web -- pnpm --filter @cascade/web run dev",
-    "secrets:dev": "infisical run --env=dev --path=/ --pnpm run dev"
+    "secrets:dev": "infisical run --env=dev --path=/ --pnpm run dev",
+    "db:generate": "pnpm --filter @cascade/database run db:generate",
+    "db:validate": "pnpm --filter @cascade/database run db:validate",
+    "db:migrate": "pnpm --filter @cascade/database run db:migrate",
+    "db:deploy": "pnpm --filter @cascade/database run db:deploy",
+    "db:studio": "pnpm --filter @cascade/database run db:studio",
+    "db:reset": "pnpm --filter @cascade/database run db:reset"
   },
   "devDependencies": {
     "@changesets/cli": "2.31.0",

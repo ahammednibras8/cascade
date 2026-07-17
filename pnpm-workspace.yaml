@@ -18,8 +18,11 @@ minimumReleaseAgeExclude:
   - mint@4.2.700
 
 allowBuilds:
+  "@prisma/engines": true
   "@scarf/scarf": false
+  esbuild: false
   keytar: false
   lefthook: true
+  prisma: true
   puppeteer: false
   sharp: true
