@@ -50,7 +50,8 @@
     "db:migrate": "pnpm --filter @cascade/database run db:migrate",
     "db:deploy": "pnpm --filter @cascade/database run db:deploy",
     "db:studio": "pnpm --filter @cascade/database run db:studio",
-    "db:reset": "pnpm --filter @cascade/database run db:reset"
+    "db:reset": "pnpm --filter @cascade/database run db:reset",
+    "db:seed": "pnpm --filter @cascade/database run db:seed"
   },
   "devDependencies": {
     "@changesets/cli": "2.31.0",
