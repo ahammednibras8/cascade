@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { prisma } from "../../src/index.js";
 
 async function main() {
