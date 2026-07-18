@@ -73,8 +73,8 @@ model ApiKey {
   environmentId String @db.Uuid
   name String
   keyPrefix String
-  keyHash String
-  lasUsedAt DateTime?
+  keyHash String @unique
+  lastUsedAt DateTime?
   revokedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
