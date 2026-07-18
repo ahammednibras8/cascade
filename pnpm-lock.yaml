@@ -559,6 +559,12 @@ importers:
       '@cascade/core':
         specifier: workspace:*
         version: link:../core
+      '@cascade/database':
+        specifier: workspace:*
+        version: link:../database
+      ioredis:
+        specifier: 5.11.1
+        version: 5.11.1
     devDependencies:
       '@types/node':
         specifier: 24.13.3

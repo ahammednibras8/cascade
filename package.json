@@ -51,7 +51,7 @@
     "secrets:dev": "infisical run --env=dev --path=/ -- pnpm run dev",
     "secrets:dashboard:dev": "infisical run --env=dev --path=/apps/dashboard -- pnpm --filter @cascade/dashboard run dev",
     "secrets:api:dev": "infisical run --env=dev --path=/ --path=/apps/api -- pnpm --filter @cascade/api run dev",
-    "secrets:worker:dev": "infisical run --env=dev --path/packages/worker -- pnpm --filter @cascade/worker run dev",
+    "secrets:worker:dev": "infisical run --env=dev --path=/ -- pnpm --filter @cascade/worker run dev",
     "db:generate": "pnpm --filter @cascade/database run db:generate",
     "db:validate": "pnpm --filter @cascade/database run db:validate",
     "db:migrate": "pnpm --filter @cascade/database run db:migrate",

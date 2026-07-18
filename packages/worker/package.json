@@ -10,7 +10,9 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@cascade/core": "workspace:*"
+    "@cascade/core": "workspace:*",
+    "@cascade/database": "workspace:*",
+    "ioredis": "5.11.1"
   },
   "devDependencies": {
     "@types/node": "24.13.3",
