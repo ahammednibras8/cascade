@@ -30,8 +30,8 @@ export * from "./enums.js";
  * const prisma = new PrismaClient({
  *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
  * })
- * // Fetch zero or more Users
- * const users = await prisma.user.findMany()
+ * // Fetch zero or more Projects
+ * const projects = await prisma.project.findMany()
  * ```
  *
  * Read more in our [docs](https://pris.ly/d/client).
@@ -43,3 +43,39 @@ export type PrismaClient<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = $Class.PrismaClient<LogOpts, OmitOpts, ExtArgs>;
 export { Prisma };
+
+/**
+ * Model Project
+ *
+ */
+export type Project = Prisma.ProjectModel;
+/**
+ * Model Environment
+ *
+ */
+export type Environment = Prisma.EnvironmentModel;
+/**
+ * Model ApiKey
+ *
+ */
+export type ApiKey = Prisma.ApiKeyModel;
+/**
+ * Model Task
+ *
+ */
+export type Task = Prisma.TaskModel;
+/**
+ * Model TaskRun
+ *
+ */
+export type TaskRun = Prisma.TaskRunModel;
+/**
+ * Model TaskAttempt
+ *
+ */
+export type TaskAttempt = Prisma.TaskAttemptModel;
+/**
+ * Model TaskEvent
+ *
+ */
+export type TaskEvent = Prisma.TaskEventModel;

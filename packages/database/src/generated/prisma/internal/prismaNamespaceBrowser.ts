@@ -47,7 +47,15 @@ export const JsonNull = runtime.JsonNull;
  */
 export const AnyNull = runtime.AnyNull;
 
-export const ModelName = {} as const;
+export const ModelName = {
+  Project: "Project",
+  Environment: "Environment",
+  ApiKey: "ApiKey",
+  Task: "Task",
+  TaskRun: "TaskRun",
+  TaskAttempt: "TaskAttempt",
+  TaskEvent: "TaskEvent",
+} as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
 
@@ -64,3 +72,136 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 
 export type TransactionIsolationLevel =
   (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel];
+
+export const ProjectScalarFieldEnum = {
+  id: "id",
+  slug: "slug",
+  name: "name",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+} as const;
+
+export type ProjectScalarFieldEnum =
+  (typeof ProjectScalarFieldEnum)[keyof typeof ProjectScalarFieldEnum];
+
+export const EnvironmentScalarFieldEnum = {
+  id: "id",
+  projectId: "projectId",
+  slug: "slug",
+  name: "name",
+  type: "type",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+} as const;
+
+export type EnvironmentScalarFieldEnum =
+  (typeof EnvironmentScalarFieldEnum)[keyof typeof EnvironmentScalarFieldEnum];
+
+export const ApiKeyScalarFieldEnum = {
+  id: "id",
+  environmentId: "environmentId",
+  name: "name",
+  keyPrefix: "keyPrefix",
+  keyHash: "keyHash",
+  lasUsedAt: "lasUsedAt",
+  revokedAt: "revokedAt",
+  createAt: "createAt",
+  updatedAt: "updatedAt",
+} as const;
+
+export type ApiKeyScalarFieldEnum =
+  (typeof ApiKeyScalarFieldEnum)[keyof typeof ApiKeyScalarFieldEnum];
+
+export const TaskScalarFieldEnum = {
+  id: "id",
+  environmentId: "environmentId",
+  slug: "slug",
+  name: "name",
+  description: "description",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+} as const;
+
+export type TaskScalarFieldEnum = (typeof TaskScalarFieldEnum)[keyof typeof TaskScalarFieldEnum];
+
+export const TaskRunScalarFieldEnum = {
+  id: "id",
+  taskId: "taskId",
+  status: "status",
+  payload: "payload",
+  output: "output",
+  error: "error",
+  startedAt: "startedAt",
+  completedAt: "completedAt",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+} as const;
+
+export type TaskRunScalarFieldEnum =
+  (typeof TaskRunScalarFieldEnum)[keyof typeof TaskRunScalarFieldEnum];
+
+export const TaskAttemptScalarFieldEnum = {
+  id: "id",
+  taskRunId: "taskRunId",
+  attemptNumber: "attemptNumber",
+  status: "status",
+  error: "error",
+  startedAt: "startedAt",
+  completedAt: "completedAt",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+} as const;
+
+export type TaskAttemptScalarFieldEnum =
+  (typeof TaskAttemptScalarFieldEnum)[keyof typeof TaskAttemptScalarFieldEnum];
+
+export const TaskEventScalarFieldEnum = {
+  id: "id",
+  taskRunId: "taskRunId",
+  taskAttemptId: "taskAttemptId",
+  type: "type",
+  level: "level",
+  message: "message",
+  data: "data",
+  createdAt: "createdAt",
+} as const;
+
+export type TaskEventScalarFieldEnum =
+  (typeof TaskEventScalarFieldEnum)[keyof typeof TaskEventScalarFieldEnum];
+
+export const SortOrder = {
+  asc: "asc",
+  desc: "desc",
+} as const;
+
+export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder];
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+} as const;
+
+export type NullableJsonNullValueInput =
+  (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput];
+
+export const QueryMode = {
+  default: "default",
+  insensitive: "insensitive",
+} as const;
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode];
+
+export const NullsOrder = {
+  first: "first",
+  last: "last",
+} as const;
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder];
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull,
+} as const;
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter];

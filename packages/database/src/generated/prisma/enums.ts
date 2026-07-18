@@ -8,5 +8,39 @@
  * 🟢 You can import this file directly.
  */
 
-// This file is empty because there are no enums in the schema.
-export {};
+export const EnvironmentType = {
+  DEVELOPMENT: "DEVELOPMENT",
+  STAGING: "STAGING",
+  PRODUCTION: "PRODUCTION",
+} as const;
+
+export type EnvironmentType = (typeof EnvironmentType)[keyof typeof EnvironmentType];
+
+export const TaskRunStatus = {
+  QUEUED: "QUEUED",
+  RUNNING: "RUNNING",
+  SUCCEEDED: "SUCCEEDED",
+  FAILED: "FAILED",
+  CANCELED: "CANCELED",
+} as const;
+
+export type TaskRunStatus = (typeof TaskRunStatus)[keyof typeof TaskRunStatus];
+
+export const TaskAttemptStatus = {
+  PENDING: "PENDING",
+  RUNNING: "RUNNING",
+  SUCCEEDED: "SUCCEEDED",
+  FAILED: "FAILED",
+  CANCELED: "CANCELED",
+} as const;
+
+export type TaskAttemptStatus = (typeof TaskAttemptStatus)[keyof typeof TaskAttemptStatus];
+
+export const TaskEventLevel = {
+  DEBUG: "DEBUG",
+  INFO: "INFO",
+  WARN: "WARN",
+  ERROR: "ERROR",
+} as const;
+
+export type TaskEventLevel = (typeof TaskEventLevel)[keyof typeof TaskEventLevel];

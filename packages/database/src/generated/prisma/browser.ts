@@ -16,3 +16,38 @@ import * as Prisma from "./internal/prismaNamespaceBrowser.js";
 export { Prisma };
 export * as $Enums from "./enums.js";
 export * from "./enums.js";
+/**
+ * Model Project
+ *
+ */
+export type Project = Prisma.ProjectModel;
+/**
+ * Model Environment
+ *
+ */
+export type Environment = Prisma.EnvironmentModel;
+/**
+ * Model ApiKey
+ *
+ */
+export type ApiKey = Prisma.ApiKeyModel;
+/**
+ * Model Task
+ *
+ */
+export type Task = Prisma.TaskModel;
+/**
+ * Model TaskRun
+ *
+ */
+export type TaskRun = Prisma.TaskRunModel;
+/**
+ * Model TaskAttempt
+ *
+ */
+export type TaskAttempt = Prisma.TaskAttemptModel;
+/**
+ * Model TaskEvent
+ *
+ */
+export type TaskEvent = Prisma.TaskEventModel;
