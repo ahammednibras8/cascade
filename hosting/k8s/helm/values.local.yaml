@@ -1,5 +1,5 @@
 image:
-  repository: cascade-web
+  repository: cascade-dashboard
   tag: local
   pullPolicy: Never
 

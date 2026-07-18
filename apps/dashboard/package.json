@@ -1,5 +1,5 @@
 {
-  "name": "@cascade/web",
+  "name": "@cascade/dashboard",
   "private": true,
   "type": "module",
   "scripts": {

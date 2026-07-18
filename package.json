@@ -43,7 +43,7 @@
     "hosting:install:local": "helm upgrade --install cascade hosting/k8s/helm --namespace cascade --create-namespace -f hosting/k8s/helm/values.local.yaml",
     "hosting:uninstall:local": "helm uninstall cascade --namespace cascade",
     "secrets:scan": "infisical scan",
-    "secrets:web:dev": "infisical run --env=dev --path=/apps/web -- pnpm --filter @cascade/web run dev",
+    "secrets:dashboard:dev": "infisical run --env=dev --path=/apps/dashboard -- pnpm --filter @cascade/dashboard run dev",
     "secrets:dev": "infisical run --env=dev --path=/ -- pnpm run dev",
     "db:generate": "pnpm --filter @cascade/database run db:generate",
     "db:validate": "pnpm --filter @cascade/database run db:validate",

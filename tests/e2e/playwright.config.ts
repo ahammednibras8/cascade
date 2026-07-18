@@ -22,7 +22,7 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   webServer: {
-    command: "pnpm --filter @cascade/web run dev",
+    command: "pnpm --filter @cascade/dashboard run dev",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

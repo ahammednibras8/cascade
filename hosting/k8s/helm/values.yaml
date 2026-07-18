@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/ahammednibras8/cascade-web
+  repository: ghcr.io/ahammednibras8/cascade-dashboard
   tag: ""
   pullPolicy: IfNotPresent
 

@@ -4,9 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/publish-web-image.yml"
+      - ".github/workflows/publish-dashboard-image.yml"
       - ".dockerignore"
-      - "apps/web/**"
+      - "apps/dashboard/**"
       - ".configs/**"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -18,12 +18,12 @@ permissions:
   packages: write
 
 concurrency:
-  group: publish-web-image-${{ github.ref }}
+  group: publish-dashboard-image-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   publish:
-    name: Build and push web image
+    name: Build and push dashboard image
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
@@ -47,10 +47,10 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/web/Dockerfile
+          file: apps/dashboard/Dockerfile
           push: true
           tags: |
-            ghcr.io/ahammednibras8/cascade-web:${{ github.sha }}
-            ghcr.io/ahammednibras8/cascade-web:latest
-          cache-from: type=gha,scope=cascade-web
-          cache-to: type=gha,scope=cascade-web,mode=max
+            ghcr.io/ahammednibras8/cascade-dashboard:${{ github.sha }}
+            ghcr.io/ahammednibras8/cascade-dashboard:latest
+          cache-from: type=gha,scope=cascade-dashboard
+          cache-to: type=gha,scope=cascade-dashboard,mode=max
