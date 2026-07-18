@@ -100,7 +100,7 @@ tasksRouter.post(
     const taskRun = await prisma.$transaction(async (tx) => {
       const data: Prisma.TaskRunUncheckedCreateInput = {
         taskId: taskId,
-        status: "QUEUED",
+        status: "PENDING",
       };
 
       if (payload !== undefined) {
@@ -123,7 +123,7 @@ tasksRouter.post(
           taskRunId: run.id,
           type: "task.triggered",
           level: "INFO",
-          message: "Task triggered through API",
+          message: "Task trigger accepted and run is pending",
           data: {
             apiKeyId: auth.apiKeyId,
           },

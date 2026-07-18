@@ -16,6 +16,7 @@ enum EnvironmentType {
 }
 
 enum TaskRunStatus {
+  PENDING
   QUEUED
   RUNNING
   SUCCEEDED

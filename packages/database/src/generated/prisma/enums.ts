@@ -17,6 +17,7 @@ export const EnvironmentType = {
 export type EnvironmentType = (typeof EnvironmentType)[keyof typeof EnvironmentType];
 
 export const TaskRunStatus = {
+  PENDING: "PENDING",
   QUEUED: "QUEUED",
   RUNNING: "RUNNING",
   SUCCEEDED: "SUCCEEDED",
