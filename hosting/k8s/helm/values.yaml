@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/ahammednibras8/cascade-web
-  tag: "latest"
+  tag: ""
   pullPolicy: IfNotPresent
 
 containerPort: 3000
