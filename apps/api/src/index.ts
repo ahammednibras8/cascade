@@ -1,6 +1,7 @@
 import express, { type ErrorRequestHandler } from "express";
 import { packageName } from "@cascade/core";
 import { requireApiKey } from "./auth/api-key.js";
+import { tasksRouter } from "./routes/tasks.js";
 
 const app = express();
 const port = Number(process.env.API_PORT ?? 3001);
@@ -15,13 +16,13 @@ app.get("/healthz", (_request, response) => {
   });
 });
 
-app.use("/v1", requireApiKey());
-
-app.get("/v1/me", (request, response) => {
+app.get("/me", (request, response) => {
   response.json({
     auth: request.auth,
   });
 });
+
+app.use("/api", requireApiKey(), tasksRouter);
 
 const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
   process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`);
