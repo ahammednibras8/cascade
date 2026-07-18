@@ -1001,7 +1001,7 @@ export const ApiKeyScalarFieldEnum = {
   keyHash: "keyHash",
   lasUsedAt: "lasUsedAt",
   revokedAt: "revokedAt",
-  createAt: "createAt",
+  createdAt: "createdAt",
   updatedAt: "updatedAt",
 } as const;
 

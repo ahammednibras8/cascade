@@ -31,7 +31,7 @@ export type ApiKeyMinAggregateOutputType = {
   keyHash: string | null;
   lasUsedAt: Date | null;
   revokedAt: Date | null;
-  createAt: Date | null;
+  createdAt: Date | null;
   updatedAt: Date | null;
 };
 
@@ -43,7 +43,7 @@ export type ApiKeyMaxAggregateOutputType = {
   keyHash: string | null;
   lasUsedAt: Date | null;
   revokedAt: Date | null;
-  createAt: Date | null;
+  createdAt: Date | null;
   updatedAt: Date | null;
 };
 
@@ -55,7 +55,7 @@ export type ApiKeyCountAggregateOutputType = {
   keyHash: number;
   lasUsedAt: number;
   revokedAt: number;
-  createAt: number;
+  createdAt: number;
   updatedAt: number;
   _all: number;
 };
@@ -68,7 +68,7 @@ export type ApiKeyMinAggregateInputType = {
   keyHash?: true;
   lasUsedAt?: true;
   revokedAt?: true;
-  createAt?: true;
+  createdAt?: true;
   updatedAt?: true;
 };
 
@@ -80,7 +80,7 @@ export type ApiKeyMaxAggregateInputType = {
   keyHash?: true;
   lasUsedAt?: true;
   revokedAt?: true;
-  createAt?: true;
+  createdAt?: true;
   updatedAt?: true;
 };
 
@@ -92,7 +92,7 @@ export type ApiKeyCountAggregateInputType = {
   keyHash?: true;
   lasUsedAt?: true;
   revokedAt?: true;
-  createAt?: true;
+  createdAt?: true;
   updatedAt?: true;
   _all?: true;
 };
@@ -178,7 +178,7 @@ export type ApiKeyGroupByOutputType = {
   keyHash: string;
   lasUsedAt: Date | null;
   revokedAt: Date | null;
-  createAt: Date;
+  createdAt: Date;
   updatedAt: Date;
   _count: ApiKeyCountAggregateOutputType | null;
   _min: ApiKeyMinAggregateOutputType | null;
@@ -208,7 +208,7 @@ export type ApiKeyWhereInput = {
   keyHash?: Prisma.StringFilter<"ApiKey"> | string;
   lasUsedAt?: Prisma.DateTimeNullableFilter<"ApiKey"> | Date | string | null;
   revokedAt?: Prisma.DateTimeNullableFilter<"ApiKey"> | Date | string | null;
-  createAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string;
+  createdAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string;
   updatedAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string;
   environment?: Prisma.XOR<Prisma.EnvironmentScalarRelationFilter, Prisma.EnvironmentWhereInput>;
 };
@@ -221,7 +221,7 @@ export type ApiKeyOrderByWithRelationInput = {
   keyHash?: Prisma.SortOrder;
   lasUsedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
   revokedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
-  createAt?: Prisma.SortOrder;
+  createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
   environment?: Prisma.EnvironmentOrderByWithRelationInput;
 };
@@ -238,7 +238,7 @@ export type ApiKeyWhereUniqueInput = Prisma.AtLeast<
     keyHash?: Prisma.StringFilter<"ApiKey"> | string;
     lasUsedAt?: Prisma.DateTimeNullableFilter<"ApiKey"> | Date | string | null;
     revokedAt?: Prisma.DateTimeNullableFilter<"ApiKey"> | Date | string | null;
-    createAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string;
+    createdAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string;
     updatedAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string;
     environment?: Prisma.XOR<Prisma.EnvironmentScalarRelationFilter, Prisma.EnvironmentWhereInput>;
   },
@@ -253,7 +253,7 @@ export type ApiKeyOrderByWithAggregationInput = {
   keyHash?: Prisma.SortOrder;
   lasUsedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
   revokedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
-  createAt?: Prisma.SortOrder;
+  createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
   _count?: Prisma.ApiKeyCountOrderByAggregateInput;
   _max?: Prisma.ApiKeyMaxOrderByAggregateInput;
@@ -271,7 +271,7 @@ export type ApiKeyScalarWhereWithAggregatesInput = {
   keyHash?: Prisma.StringWithAggregatesFilter<"ApiKey"> | string;
   lasUsedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ApiKey"> | Date | string | null;
   revokedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ApiKey"> | Date | string | null;
-  createAt?: Prisma.DateTimeWithAggregatesFilter<"ApiKey"> | Date | string;
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"ApiKey"> | Date | string;
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"ApiKey"> | Date | string;
 };
 
@@ -282,7 +282,7 @@ export type ApiKeyCreateInput = {
   keyHash: string;
   lasUsedAt?: Date | string | null;
   revokedAt?: Date | string | null;
-  createAt?: Date | string;
+  createdAt?: Date | string;
   updatedAt?: Date | string;
   environment: Prisma.EnvironmentCreateNestedOneWithoutApiKeysInput;
 };
@@ -295,7 +295,7 @@ export type ApiKeyUncheckedCreateInput = {
   keyHash: string;
   lasUsedAt?: Date | string | null;
   revokedAt?: Date | string | null;
-  createAt?: Date | string;
+  createdAt?: Date | string;
   updatedAt?: Date | string;
 };
 
@@ -306,7 +306,7 @@ export type ApiKeyUpdateInput = {
   keyHash?: Prisma.StringFieldUpdateOperationsInput | string;
   lasUsedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  createAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   environment?: Prisma.EnvironmentUpdateOneRequiredWithoutApiKeysNestedInput;
 };
@@ -319,7 +319,7 @@ export type ApiKeyUncheckedUpdateInput = {
   keyHash?: Prisma.StringFieldUpdateOperationsInput | string;
   lasUsedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  createAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
 
@@ -331,7 +331,7 @@ export type ApiKeyCreateManyInput = {
   keyHash: string;
   lasUsedAt?: Date | string | null;
   revokedAt?: Date | string | null;
-  createAt?: Date | string;
+  createdAt?: Date | string;
   updatedAt?: Date | string;
 };
 
@@ -342,7 +342,7 @@ export type ApiKeyUpdateManyMutationInput = {
   keyHash?: Prisma.StringFieldUpdateOperationsInput | string;
   lasUsedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  createAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
 
@@ -354,7 +354,7 @@ export type ApiKeyUncheckedUpdateManyInput = {
   keyHash?: Prisma.StringFieldUpdateOperationsInput | string;
   lasUsedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  createAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
 
@@ -376,7 +376,7 @@ export type ApiKeyCountOrderByAggregateInput = {
   keyHash?: Prisma.SortOrder;
   lasUsedAt?: Prisma.SortOrder;
   revokedAt?: Prisma.SortOrder;
-  createAt?: Prisma.SortOrder;
+  createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
 };
 
@@ -388,7 +388,7 @@ export type ApiKeyMaxOrderByAggregateInput = {
   keyHash?: Prisma.SortOrder;
   lasUsedAt?: Prisma.SortOrder;
   revokedAt?: Prisma.SortOrder;
-  createAt?: Prisma.SortOrder;
+  createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
 };
 
@@ -400,7 +400,7 @@ export type ApiKeyMinOrderByAggregateInput = {
   keyHash?: Prisma.SortOrder;
   lasUsedAt?: Prisma.SortOrder;
   revokedAt?: Prisma.SortOrder;
-  createAt?: Prisma.SortOrder;
+  createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
 };
 
@@ -501,7 +501,7 @@ export type ApiKeyCreateWithoutEnvironmentInput = {
   keyHash: string;
   lasUsedAt?: Date | string | null;
   revokedAt?: Date | string | null;
-  createAt?: Date | string;
+  createdAt?: Date | string;
   updatedAt?: Date | string;
 };
 
@@ -512,7 +512,7 @@ export type ApiKeyUncheckedCreateWithoutEnvironmentInput = {
   keyHash: string;
   lasUsedAt?: Date | string | null;
   revokedAt?: Date | string | null;
-  createAt?: Date | string;
+  createdAt?: Date | string;
   updatedAt?: Date | string;
 };
 
@@ -568,7 +568,7 @@ export type ApiKeyScalarWhereInput = {
   keyHash?: Prisma.StringFilter<"ApiKey"> | string;
   lasUsedAt?: Prisma.DateTimeNullableFilter<"ApiKey"> | Date | string | null;
   revokedAt?: Prisma.DateTimeNullableFilter<"ApiKey"> | Date | string | null;
-  createAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string;
+  createdAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string;
   updatedAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string;
 };
 
@@ -579,7 +579,7 @@ export type ApiKeyCreateManyEnvironmentInput = {
   keyHash: string;
   lasUsedAt?: Date | string | null;
   revokedAt?: Date | string | null;
-  createAt?: Date | string;
+  createdAt?: Date | string;
   updatedAt?: Date | string;
 };
 
@@ -590,7 +590,7 @@ export type ApiKeyUpdateWithoutEnvironmentInput = {
   keyHash?: Prisma.StringFieldUpdateOperationsInput | string;
   lasUsedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  createAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
 
@@ -601,7 +601,7 @@ export type ApiKeyUncheckedUpdateWithoutEnvironmentInput = {
   keyHash?: Prisma.StringFieldUpdateOperationsInput | string;
   lasUsedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  createAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
 
@@ -612,7 +612,7 @@ export type ApiKeyUncheckedUpdateManyWithoutEnvironmentInput = {
   keyHash?: Prisma.StringFieldUpdateOperationsInput | string;
   lasUsedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  createAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
 
@@ -627,7 +627,7 @@ export type ApiKeySelect<
     keyHash?: boolean;
     lasUsedAt?: boolean;
     revokedAt?: boolean;
-    createAt?: boolean;
+    createdAt?: boolean;
     updatedAt?: boolean;
     environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>;
   },
@@ -645,7 +645,7 @@ export type ApiKeySelectCreateManyAndReturn<
     keyHash?: boolean;
     lasUsedAt?: boolean;
     revokedAt?: boolean;
-    createAt?: boolean;
+    createdAt?: boolean;
     updatedAt?: boolean;
     environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>;
   },
@@ -663,7 +663,7 @@ export type ApiKeySelectUpdateManyAndReturn<
     keyHash?: boolean;
     lasUsedAt?: boolean;
     revokedAt?: boolean;
-    createAt?: boolean;
+    createdAt?: boolean;
     updatedAt?: boolean;
     environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>;
   },
@@ -678,7 +678,7 @@ export type ApiKeySelectScalar = {
   keyHash?: boolean;
   lasUsedAt?: boolean;
   revokedAt?: boolean;
-  createAt?: boolean;
+  createdAt?: boolean;
   updatedAt?: boolean;
 };
 
@@ -692,7 +692,7 @@ export type ApiKeyOmit<
   | "keyHash"
   | "lasUsedAt"
   | "revokedAt"
-  | "createAt"
+  | "createdAt"
   | "updatedAt",
   ExtArgs["result"]["apiKey"]
 >;
@@ -728,7 +728,7 @@ export type $ApiKeyPayload<
       keyHash: string;
       lasUsedAt: Date | null;
       revokedAt: Date | null;
-      createAt: Date;
+      createdAt: Date;
       updatedAt: Date;
     },
     ExtArgs["result"]["apiKey"]
@@ -1292,7 +1292,7 @@ export interface ApiKeyFieldRefs {
   readonly keyHash: Prisma.FieldRef<"ApiKey", "String">;
   readonly lasUsedAt: Prisma.FieldRef<"ApiKey", "DateTime">;
   readonly revokedAt: Prisma.FieldRef<"ApiKey", "DateTime">;
-  readonly createAt: Prisma.FieldRef<"ApiKey", "DateTime">;
+  readonly createdAt: Prisma.FieldRef<"ApiKey", "DateTime">;
   readonly updatedAt: Prisma.FieldRef<"ApiKey", "DateTime">;
 }
 
