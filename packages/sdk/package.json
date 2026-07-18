@@ -1,10 +1,7 @@
 {
-  "name": "@cascade/core",
+  "name": "@cascade/sdk",
   "version": "0.0.0",
   "private": false,
-  "files": [
-    "dist"
-  ],
   "type": "module",
   "sideEffects": false,
   "module": "./dist/esm/index.js",
@@ -27,6 +24,9 @@
     "test:watch": "vitest --watch",
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@cascade/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.13.3",
