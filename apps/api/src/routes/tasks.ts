@@ -7,6 +7,7 @@ import {
   type Router as ExpressRouter,
 } from "express";
 import { prisma, Prisma } from "@cascade/database";
+import { enqueueTaskRun } from "../queue/task-runs.js";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -131,6 +132,12 @@ tasksRouter.post(
       });
 
       return run;
+    });
+
+    await enqueueTaskRun({
+      runId: taskRun.id,
+      taskId: taskRun.taskId,
+      environmentId: auth.environmentId,
     });
 
     response.status(202).json({
