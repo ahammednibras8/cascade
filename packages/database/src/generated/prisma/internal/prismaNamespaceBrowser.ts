@@ -132,6 +132,7 @@ export const TaskRunScalarFieldEnum = {
   output: "output",
   error: "error",
   startedAt: "startedAt",
+  lastHeartbeatAt: "lastHeartbeatAt",
   completedAt: "completedAt",
   createdAt: "createdAt",
   updatedAt: "updatedAt",

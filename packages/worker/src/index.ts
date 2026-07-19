@@ -9,6 +9,9 @@ import {
 } from "./queue/task-runs.js";
 import { prisma, Prisma } from "@cascade/database";
 import { taskRegistry } from "./tasks/registry.js";
+import { clearInterval } from "node:timers";
+
+const HEARTBEAT_INTERVAL_MS = 5_000;
 
 let isShuttingDown = false;
 
@@ -83,6 +86,30 @@ function getRetryDelayMs(
   return retry.delayMs * 2 ** (attemptNumber - 1);
 }
 
+function startTaskRunHeartbeat(taskRunId: string) {
+  const interval = setInterval(() => {
+    void prisma.taskRun
+      .updateMany({
+        where: {
+          id: taskRunId,
+          status: "EXECUTING",
+        },
+        data: {
+          lastHeartbeatAt: new Date(),
+        },
+      })
+      .catch((error: unknown) => {
+        console.error(error);
+      });
+  }, HEARTBEAT_INTERVAL_MS);
+
+  interval.unref();
+
+  return () => {
+    clearInterval(interval);
+  };
+}
+
 async function processTaskRun(message: TaskRunQueueMessage) {
   const taskRun = await prisma.taskRun.findFirst({
     where: {
@@ -116,6 +143,8 @@ async function processTaskRun(message: TaskRunQueueMessage) {
   }
 
   const attempt = await prisma.$transaction(async (tx) => {
+    const startedAt = new Date();
+
     const claim = await tx.taskRun.updateMany({
       where: {
         id: taskRun.id,
@@ -123,7 +152,8 @@ async function processTaskRun(message: TaskRunQueueMessage) {
       },
       data: {
         status: "EXECUTING",
-        startedAt: new Date(),
+        startedAt,
+        lastHeartbeatAt: startedAt,
         completedAt: null,
         output: Prisma.DbNull,
         error: Prisma.DbNull,
@@ -208,6 +238,8 @@ async function processTaskRun(message: TaskRunQueueMessage) {
 
   console.log(`Running task ${taskRun.task.slug} (${taskRun.id})`);
 
+  const stopHeartbeat = startTaskRunHeartbeat(taskRun.id);
+
   try {
     const logger = createTaskLogger({
       taskRunId: taskRun.id,
@@ -236,6 +268,8 @@ async function processTaskRun(message: TaskRunQueueMessage) {
         },
       });
 
+      const completedAt = new Date();
+
       await tx.taskRun.update({
         where: {
           id: taskRun.id,
@@ -244,7 +278,8 @@ async function processTaskRun(message: TaskRunQueueMessage) {
           status: "COMPLETED",
           output: normalizedOutput,
           error: Prisma.DbNull,
-          completedAt: new Date(),
+          lastHeartbeatAt: completedAt,
+          completedAt,
         },
       });
 
@@ -288,6 +323,7 @@ async function processTaskRun(message: TaskRunQueueMessage) {
             status: "PENDING",
             output: Prisma.DbNull,
             error: serializedError,
+            lastHeartbeatAt: new Date(),
             completedAt: null,
           },
         });
@@ -329,6 +365,8 @@ async function processTaskRun(message: TaskRunQueueMessage) {
         },
       });
 
+      const completedAt = new Date();
+
       await tx.taskRun.update({
         where: {
           id: taskRun.id,
@@ -337,7 +375,8 @@ async function processTaskRun(message: TaskRunQueueMessage) {
           status: "FAILED",
           output: Prisma.DbNull,
           error: serializedError,
-          completedAt: new Date(),
+          lastHeartbeatAt: completedAt,
+          completedAt,
         },
       });
 
@@ -352,6 +391,8 @@ async function processTaskRun(message: TaskRunQueueMessage) {
         },
       });
     });
+  } finally {
+    stopHeartbeat();
   }
 }
 
