@@ -6,11 +6,21 @@ export type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
+export type TaskLogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR";
+
+export type TaskLogger = {
+  debug: (message: string, data?: JsonValue) => Promise<void>;
+  info: (message: string, data?: JsonValue) => Promise<void>;
+  warn: (message: string, data?: JsonValue) => Promise<void>;
+  error: (message: string, data?: JsonValue) => Promise<void>;
+};
+
 export type TaskRunContext<TPayload extends JsonValue = JsonValue> = {
   runId: string;
   taskId: string;
   environmentId: string;
   payload: TPayload | null;
+  logger: TaskLogger;
 };
 
 export type TaskRunOutput = JsonValue | void;

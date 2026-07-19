@@ -7,13 +7,26 @@ const helloTask = task({
     delayMs: 1000,
     exponentialBackoff: true,
   },
-  async run({ runId, payload }) {
-    return {
+  async run({ runId, payload, logger }) {
+    await logger.info("Hello task started", {
+      runId,
+      payload,
+    });
+
+    await logger.debug("Hello task preparing output");
+
+    const output = {
       ok: true,
       message: "Hello from local task registry",
       runId,
       payload,
     };
+
+    await logger.info("Hello task completed", {
+      output,
+    });
+
+    return output;
   },
 });
 
