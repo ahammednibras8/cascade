@@ -47,7 +47,7 @@ function getRetryDelayMs(
     return retry.delayMs;
   }
 
-  return retry.delayMs * 1 ** (attemptNumber - 1);
+  return retry.delayMs * 2 ** (attemptNumber - 1);
 }
 
 async function processTaskRun(message: TaskRunQueueMessage) {
@@ -79,41 +79,6 @@ async function processTaskRun(message: TaskRunQueueMessage) {
   }
 
   if (taskRun.status !== "PENDING") {
-    return;
-  }
-
-  const localTask = taskRegistry.get(taskRun.task.slug);
-
-  if (!localTask) {
-    await prisma.$transaction(async (tx) => {
-      await tx.taskRun.update({
-        where: {
-          id: taskRun.id,
-        },
-        data: {
-          status: "FAILED",
-          output: Prisma.DbNull,
-          error: {
-            code: "TASK_NOT_REGISTERED",
-            message: `No local task required for slug: ${taskRun.task.slug}`,
-          },
-          completedAt: new Date(),
-        },
-      });
-
-      await tx.taskEvent.create({
-        data: {
-          taskRunId: taskRun.id,
-          type: "task.run.failed",
-          level: "ERROR",
-          message: "No local task registered for task slug",
-          data: {
-            taskSlug: taskRun.task.slug,
-          },
-        },
-      });
-    });
-
     return;
   }
 
@@ -170,6 +135,41 @@ async function processTaskRun(message: TaskRunQueueMessage) {
 
   if (!attempt) {
     console.warn(`TaskRun ${taskRun.id} was already claimed; skipping`);
+    return;
+  }
+
+  const localTask = taskRegistry.get(taskRun.task.slug);
+
+  if (!localTask) {
+    await prisma.$transaction(async (tx) => {
+      await tx.taskRun.update({
+        where: {
+          id: taskRun.id,
+        },
+        data: {
+          status: "FAILED",
+          output: Prisma.DbNull,
+          error: {
+            code: "TASK_NOT_REGISTERED",
+            message: `No local task required for slug: ${taskRun.task.slug}`,
+          },
+          completedAt: new Date(),
+        },
+      });
+
+      await tx.taskEvent.create({
+        data: {
+          taskRunId: taskRun.id,
+          type: "task.run.failed",
+          level: "ERROR",
+          message: "No local task registered for task slug",
+          data: {
+            taskSlug: taskRun.task.slug,
+          },
+        },
+      });
+    });
+
     return;
   }
 
