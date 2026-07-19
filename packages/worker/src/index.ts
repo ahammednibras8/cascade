@@ -106,23 +106,31 @@ async function processTaskRun(message: TaskRunQueueMessage) {
   }
 
   const attempt = await prisma.$transaction(async (tx) => {
-    const updateRun = await tx.taskRun.update({
+    const claim = await tx.taskRun.updateMany({
       where: {
         id: taskRun.id,
+        status: "PENDING",
       },
       data: {
         status: "RUNNING",
         startedAt: new Date(),
       },
-      select: {
-        id: true,
+    });
+
+    if (claim.count !== 1) {
+      return null;
+    }
+
+    const previousAttempts = await tx.taskAttempt.count({
+      where: {
+        taskRunId: taskRun.id,
       },
     });
 
     const createdAttempt = await tx.taskAttempt.create({
       data: {
-        taskRunId: updateRun.id,
-        attemptNumber: 1,
+        taskRunId: taskRun.id,
+        attemptNumber: previousAttempts + 1,
         status: "RUNNING",
         startedAt: new Date(),
       },
@@ -133,7 +141,7 @@ async function processTaskRun(message: TaskRunQueueMessage) {
 
     await tx.taskEvent.create({
       data: {
-        taskRunId: updateRun.id,
+        taskRunId: taskRun.id,
         taskAttemptId: createdAttempt.id,
         type: "task.run.started",
         level: "INFO",
@@ -144,12 +152,17 @@ async function processTaskRun(message: TaskRunQueueMessage) {
     return createdAttempt;
   });
 
-  console.log(`Running task ${taskRun.task.slug} (${taskRun.id}`);
+  if (!attempt) {
+    console.warn(`TaskRun ${taskRun.id} was already claimed; skipping`);
+    return;
+  }
+
+  console.log(`Running task ${taskRun.task.slug} (${taskRun.id})`);
 
   try {
     const output = await localTask.run({
       runId: taskRun.id,
-      taskId: taskRun.id,
+      taskId: taskRun.taskId,
       environmentId: message.environmentId,
       payload: taskRun.payload as JsonValue | null,
     });
