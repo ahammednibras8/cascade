@@ -2,6 +2,7 @@
 
 import { packageName, type JsonValue } from "@cascade/core";
 import {
+  enqueueTaskRun,
   popTaskRunMessage,
   type TaskRunQueueMessage,
   taskRunQueueRedis,
@@ -36,6 +37,17 @@ function serializeError(error: unknown): Prisma.InputJsonValue {
   return {
     message: String(error),
   };
+}
+
+function getRetryDelayMs(
+  attemptNumber: number,
+  retry: { delayMs: number; exponentialBackoff: boolean },
+) {
+  if (!retry.exponentialBackoff) {
+    return retry.delayMs;
+  }
+
+  return retry.delayMs * 1 ** (attemptNumber - 1);
 }
 
 async function processTaskRun(message: TaskRunQueueMessage) {
@@ -139,6 +151,7 @@ async function processTaskRun(message: TaskRunQueueMessage) {
       },
       select: {
         id: true,
+        attemptNumber: true,
       },
     });
 
@@ -212,6 +225,58 @@ async function processTaskRun(message: TaskRunQueueMessage) {
     });
   } catch (error) {
     const serializedError = serializeError(error);
+    const shouldRetry = attempt.attemptNumber < localTask.retry.maxAttempts;
+    const retryDelayMs = shouldRetry ? getRetryDelayMs(attempt.attemptNumber, localTask.retry) : 0;
+
+    if (shouldRetry) {
+      await prisma.$transaction(async (tx) => {
+        await tx.taskAttempt.update({
+          where: {
+            id: attempt.id,
+          },
+          data: {
+            status: "FAILED",
+            error: serializedError,
+            completedAt: new Date(),
+          },
+        });
+
+        await tx.taskRun.update({
+          where: {
+            id: taskRun.id,
+          },
+          data: {
+            status: "PENDING",
+            output: Prisma.DbNull,
+            error: serializedError,
+            completedAt: null,
+          },
+        });
+
+        await tx.taskEvent.create({
+          data: {
+            taskRunId: taskRun.id,
+            taskAttemptId: attempt.id,
+            type: "task.run.retry.scheduled",
+            level: "WARN",
+            message: "Task run failed and retry was scheduled",
+            data: {
+              attemptNumber: attempt.attemptNumber,
+              nextAttemptNumber: attempt.attemptNumber + 1,
+              maxAttempts: localTask.retry.maxAttempts,
+              delayMs: retryDelayMs,
+              error: serializedError,
+            },
+          },
+        });
+      });
+
+      await enqueueTaskRun(message, {
+        delayMs: retryDelayMs,
+      });
+
+      return;
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.taskAttempt.update({
