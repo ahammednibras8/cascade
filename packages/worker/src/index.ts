@@ -80,6 +80,7 @@ async function processTaskRun(message: TaskRunQueueMessage) {
         },
         data: {
           status: "FAILED",
+          output: Prisma.DbNull,
           error: {
             code: "TASK_NOT_REGISTERED",
             message: `No local task required for slug: ${taskRun.task.slug}`,
@@ -113,6 +114,9 @@ async function processTaskRun(message: TaskRunQueueMessage) {
       data: {
         status: "EXECUTING",
         startedAt: new Date(),
+        completedAt: null,
+        output: Prisma.DbNull,
+        error: Prisma.DbNull,
       },
     });
 
@@ -166,7 +170,8 @@ async function processTaskRun(message: TaskRunQueueMessage) {
       payload: taskRun.payload as JsonValue | null,
     });
 
-    const normalizedOutput = output === undefined ? { ok: true } : output;
+    const normalizedOutput =
+      output === undefined ? Prisma.DbNull : (output as Prisma.InputJsonValue);
 
     await prisma.$transaction(async (tx) => {
       await tx.taskAttempt.update({
@@ -185,7 +190,8 @@ async function processTaskRun(message: TaskRunQueueMessage) {
         },
         data: {
           status: "COMPLETED",
-          output: normalizedOutput as Prisma.InputJsonValue,
+          output: normalizedOutput,
+          error: Prisma.DbNull,
           completedAt: new Date(),
         },
       });
@@ -225,6 +231,7 @@ async function processTaskRun(message: TaskRunQueueMessage) {
         },
         data: {
           status: "FAILED",
+          output: Prisma.DbNull,
           error: serializedError,
           completedAt: new Date(),
         },
