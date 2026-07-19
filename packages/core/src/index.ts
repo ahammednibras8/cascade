@@ -1,3 +1,5 @@
+export * from "./task.js";
+
 export type PackageInfo = {
   name: string;
   version: string;
