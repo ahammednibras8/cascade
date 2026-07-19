@@ -10,8 +10,11 @@ import {
 import { prisma, Prisma } from "@cascade/database";
 import { taskRegistry } from "./tasks/registry.js";
 import { clearInterval } from "node:timers";
+import { getRetryDelayMs } from "./retry.js";
+import { sweepStuckTaskRuns } from "./sweeper/stuck-runs.js";
 
 const HEARTBEAT_INTERVAL_MS = 5_000;
+const STUCK_RUN_SWEEP_INTERVAL_MS = 10_000;
 
 let isShuttingDown = false;
 
@@ -75,17 +78,6 @@ function createTaskLogger(input: { taskRunId: string; taskAttemptId: string }) {
   };
 }
 
-function getRetryDelayMs(
-  attemptNumber: number,
-  retry: { delayMs: number; exponentialBackoff: boolean },
-) {
-  if (!retry.exponentialBackoff) {
-    return retry.delayMs;
-  }
-
-  return retry.delayMs * 2 ** (attemptNumber - 1);
-}
-
 function startTaskRunHeartbeat(taskRunId: string) {
   const interval = setInterval(() => {
     void prisma.taskRun
@@ -102,6 +94,20 @@ function startTaskRunHeartbeat(taskRunId: string) {
         console.error(error);
       });
   }, HEARTBEAT_INTERVAL_MS);
+
+  interval.unref();
+
+  return () => {
+    clearInterval(interval);
+  };
+}
+
+function startStuckRunSweeper() {
+  const interval = setInterval(() => {
+    void sweepStuckTaskRuns().catch((error: unknown) => {
+      console.error(error);
+    });
+  }, STUCK_RUN_SWEEP_INTERVAL_MS);
 
   interval.unref();
 
@@ -205,6 +211,20 @@ async function processTaskRun(message: TaskRunQueueMessage) {
 
   if (!localTask) {
     await prisma.$transaction(async (tx) => {
+      await tx.taskAttempt.update({
+        where: {
+          id: attempt.id,
+        },
+        data: {
+          status: "FAILED",
+          error: {
+            code: "TASK_NOT_REGISTERED",
+            message: `No local task registered for slug: ${taskRun.task.slug}`,
+          },
+          completedAt: new Date(),
+        },
+      });
+
       await tx.taskRun.update({
         where: {
           id: taskRun.id,
@@ -223,6 +243,7 @@ async function processTaskRun(message: TaskRunQueueMessage) {
       await tx.taskEvent.create({
         data: {
           taskRunId: taskRun.id,
+          taskAttemptId: attempt.id,
           type: "task.run.failed",
           level: "ERROR",
           message: "No local task registered for task slug",
@@ -399,31 +420,33 @@ async function processTaskRun(message: TaskRunQueueMessage) {
 async function main() {
   console.log(`Starting worker with ${packageName}`);
 
-  while (!isShuttingDown) {
-    const message = await popTaskRunMessage();
+  const stopStuckRunSweeper = startStuckRunSweeper();
 
-    if (!message) {
-      continue;
-    }
+  try {
+    while (!isShuttingDown) {
+      const message = await popTaskRunMessage();
 
-    try {
-      await processTaskRun(message);
-    } catch (error) {
-      console.error(error);
+      if (!message) {
+        continue;
+      }
+
+      try {
+        await processTaskRun(message);
+      } catch (error) {
+        console.error(error);
+      }
     }
+  } finally {
+    stopStuckRunSweeper();
+
+    await taskRunQueueRedis.quit();
+    await prisma.$disconnect();
+
+    console.log("Worker stopped");
   }
-
-  await taskRunQueueRedis.quit();
-  await prisma.$disconnect();
-
-  console.log("Worker stopped");
 }
 
 main().catch(async (error: unknown) => {
   console.error(error);
-
-  await taskRunQueueRedis.quit();
-  await prisma.$disconnect();
-
   process.exitCode = 1;
 });
