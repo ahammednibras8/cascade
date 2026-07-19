@@ -67,7 +67,6 @@ async function processTaskRun(message: TaskRunQueueMessage) {
   }
 
   if (taskRun.status !== "PENDING") {
-    console.warn(`TaskRun ${taskRun.id} is ${taskRun.status}; skipping`);
     return;
   }
 
@@ -112,7 +111,7 @@ async function processTaskRun(message: TaskRunQueueMessage) {
         status: "PENDING",
       },
       data: {
-        status: "RUNNING",
+        status: "EXECUTING",
         startedAt: new Date(),
       },
     });
@@ -131,7 +130,7 @@ async function processTaskRun(message: TaskRunQueueMessage) {
       data: {
         taskRunId: taskRun.id,
         attemptNumber: previousAttempts + 1,
-        status: "RUNNING",
+        status: "EXECUTING",
         startedAt: new Date(),
       },
       select: {
@@ -175,7 +174,7 @@ async function processTaskRun(message: TaskRunQueueMessage) {
           id: attempt.id,
         },
         data: {
-          status: "SUCCEEDED",
+          status: "COMPLETED",
           completedAt: new Date(),
         },
       });
@@ -185,7 +184,7 @@ async function processTaskRun(message: TaskRunQueueMessage) {
           id: taskRun.id,
         },
         data: {
-          status: "SUCCEEDED",
+          status: "COMPLETED",
           output: normalizedOutput as Prisma.InputJsonValue,
           completedAt: new Date(),
         },
@@ -195,7 +194,7 @@ async function processTaskRun(message: TaskRunQueueMessage) {
         data: {
           taskRunId: taskRun.id,
           taskAttemptId: attempt.id,
-          type: "task.run.succeeded",
+          type: "task.run.completed",
           level: "INFO",
           message: "Task run completed successfully",
           data: {

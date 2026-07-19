@@ -17,19 +17,15 @@ enum EnvironmentType {
 
 enum TaskRunStatus {
   PENDING
-  QUEUED
-  RUNNING
-  SUCCEEDED
+  EXECUTING
+  COMPLETED
   FAILED
-  CANCELED
 }
 
 enum TaskAttemptStatus {
-  PENDING
-  RUNNING
-  SUCCEEDED
+  EXECUTING
+  COMPLETED
   FAILED
-  CANCELED
 }
 
 enum TaskEventLevel {
@@ -106,7 +102,7 @@ model Task {
 model TaskRun {
   id String @id @default(uuid()) @db.Uuid
   taskId String @db.Uuid
-  status TaskRunStatus @default(QUEUED)
+  status TaskRunStatus @default(PENDING)
   payload Json?
   output Json?
   error Json?
@@ -128,7 +124,7 @@ model TaskAttempt {
   id String @id @default(uuid()) @db.Uuid
   taskRunId String @db.Uuid
   attemptNumber Int
-  status TaskAttemptStatus @default(PENDING)
+  status TaskAttemptStatus @default(EXECUTING)
   error Json?
   startedAt DateTime?
   completedAt DateTime?

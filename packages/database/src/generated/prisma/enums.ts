@@ -18,21 +18,17 @@ export type EnvironmentType = (typeof EnvironmentType)[keyof typeof EnvironmentT
 
 export const TaskRunStatus = {
   PENDING: "PENDING",
-  QUEUED: "QUEUED",
-  RUNNING: "RUNNING",
-  SUCCEEDED: "SUCCEEDED",
+  EXECUTING: "EXECUTING",
+  COMPLETED: "COMPLETED",
   FAILED: "FAILED",
-  CANCELED: "CANCELED",
 } as const;
 
 export type TaskRunStatus = (typeof TaskRunStatus)[keyof typeof TaskRunStatus];
 
 export const TaskAttemptStatus = {
-  PENDING: "PENDING",
-  RUNNING: "RUNNING",
-  SUCCEEDED: "SUCCEEDED",
+  EXECUTING: "EXECUTING",
+  COMPLETED: "COMPLETED",
   FAILED: "FAILED",
-  CANCELED: "CANCELED",
 } as const;
 
 export type TaskAttemptStatus = (typeof TaskAttemptStatus)[keyof typeof TaskAttemptStatus];
