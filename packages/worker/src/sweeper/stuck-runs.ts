@@ -96,7 +96,7 @@ export async function sweepStuckTaskRuns(now = new Date()) {
               status: "PENDING",
               output: Prisma.DbNull,
               error,
-              latestAttempt: now,
+              lastHeartbeatAt: null,
               completedAt: null,
             }
           : {

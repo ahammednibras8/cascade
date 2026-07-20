@@ -1024,6 +1024,8 @@ export const TaskRunScalarFieldEnum = {
   id: "id",
   taskId: "taskId",
   status: "status",
+  idempotencyKeyHash: "idempotencyKeyHash",
+  idempotencyRequestHash: "idempotencyRequestHash",
   payload: "payload",
   output: "output",
   error: "error",

@@ -103,6 +103,8 @@ model TaskRun {
   id String @id @default(uuid()) @db.Uuid
   taskId String @db.Uuid
   status TaskRunStatus @default(PENDING)
+  idempotencyKeyHash String?
+  idempotencyRequestHash String?
   payload Json?
   output Json?
   error Json?
@@ -117,6 +119,7 @@ model TaskRun {
   attempts TaskAttempt[]
   events TaskEvent[]
 
+  @@unique([taskId, idempotencyKeyHash])
   @@index([taskId, createdAt])
   @@index([status, createdAt])
   @@index([status, lastHeartbeatAt])
