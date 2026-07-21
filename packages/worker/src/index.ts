@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+/* eslint-disable no-await-in-loop, no-console, no-unmodified-loop-condition */
 
 import { packageName, type JsonValue, type TaskLogLevel } from "@cascade/core";
 import {

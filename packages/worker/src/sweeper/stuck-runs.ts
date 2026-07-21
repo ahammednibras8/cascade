@@ -1,3 +1,5 @@
+/* eslint-disable no-await-in-loop */
+
 import { prisma, Prisma } from "@cascade/database";
 import { taskRegistry } from "../tasks/registry.js";
 import { getRetryDelayMs } from "../retry.js";

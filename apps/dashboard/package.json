@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage --passWithNoTests"
   },
   "dependencies": {
+    "@cascade/database": "workspace:*",
     "@react-router/node": "8.2.0",
     "@react-router/serve": "8.2.0",
     "isbot": "^5.2.1",

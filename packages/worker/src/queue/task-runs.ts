@@ -59,13 +59,15 @@ async function promoteDueTaskRunMessages() {
     100,
   );
 
-  for (const rawMessage of rawMessages) {
-    const removed = await taskRunQueueRedis.zrem(TASK_RUN_DELAYED_QUEUE_KEY, rawMessage);
+  await Promise.all(
+    rawMessages.map(async (rawMessage) => {
+      const removed = await taskRunQueueRedis.zrem(TASK_RUN_DELAYED_QUEUE_KEY, rawMessage);
 
-    if (removed === 1) {
-      await taskRunQueueRedis.rpush(TASK_RUN_QUEUE_KEY, rawMessage);
-    }
-  }
+      if (removed === 1) {
+        await taskRunQueueRedis.rpush(TASK_RUN_QUEUE_KEY, rawMessage);
+      }
+    }),
+  );
 }
 
 export const taskRunQueueRedis = globalForRedis.taskRunQueueRedis ?? createRedisClient();

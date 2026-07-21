@@ -437,6 +437,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@cascade/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@react-router/node':
         specifier: 8.2.0
         version: 8.2.0(react-router@8.2.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(typescript@6.0.3)
