@@ -1,4 +1,5 @@
 import type { Route } from "./+types/runs";
+import { Link } from "react-router";
 
 export function meta() {
   return [{ title: "Runs | Cascade" }];
@@ -117,7 +118,11 @@ export default function Runs({ loaderData }: Route.ComponentProps) {
           <tbody className="divide-y divide-gray-100">
             {loaderData.runs.map((run) => (
               <tr key={run.id}>
-                <td className="px-4 py-3 font-mono text-xs text-gray-700">{run.id}</td>
+                <td className="px-4 py-3 font-mono text-xs">
+                  <Link to={`/runs/${run.id}`} className="text-blue-700 hover:underline">
+                    {run.id}
+                  </Link>
+                </td>
                 <td className="px-4 py-3">
                   <span
                     className={`rounded-full px-2 py-1 text-xs font-medium ${getStatusClassName(
