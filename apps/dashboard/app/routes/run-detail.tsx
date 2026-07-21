@@ -152,7 +152,7 @@ export default function RunDetail({ loaderData }: Route.ComponentProps) {
   return (
     <main className="mx-auto max-w-7xl p-6">
       <div className="mb-6">
-        <Link to="/runs" className="text-sm text-gray-500 hover:text-gray-900">
+        <Link to="/runs" className="text-sm text-blue-700 hover:text-blue-900 hover:underline">
           Back to runs
         </Link>
 
