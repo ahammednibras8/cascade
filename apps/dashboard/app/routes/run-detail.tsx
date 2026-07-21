@@ -1,5 +1,6 @@
 import type { Route } from "./+types/run-detail";
-import { Link } from "react-router";
+import { Link, useRevalidator } from "react-router";
+import { useEffect } from "react";
 
 export function meta() {
   return [{ title: "Run detail | Cascade" }];
@@ -148,6 +149,22 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function RunDetail({ loaderData }: Route.ComponentProps) {
   const { run } = loaderData;
+  const revalidator = useRevalidator();
+
+  useEffect(() => {
+    const events = new EventSource(`/runs/${run.id}/events`);
+
+    const refreshRun = () => {
+      void revalidator.revalidate();
+    };
+
+    events.addEventListener("run.updated", refreshRun);
+    events.addEventListener("run.deleted", refreshRun);
+
+    return () => {
+      events.close();
+    };
+  }, [run.id, revalidator]);
 
   return (
     <main className="mx-auto max-w-7xl p-6">
@@ -162,6 +179,9 @@ export default function RunDetail({ loaderData }: Route.ComponentProps) {
         </div>
 
         <p className="mt-2 font-mono text-sm text-gray-500">{run.id}</p>
+        <p className="mt-1 text-xs text-gray-500">
+          {revalidator.state === "loading" ? "Refreshing..." : "Live updates enabled"}
+        </p>
       </div>
 
       <section className="grid gap-4 md:grid-cols-3">
