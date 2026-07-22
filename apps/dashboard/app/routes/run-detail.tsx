@@ -1,6 +1,7 @@
 import type { Route } from "./+types/run-detail";
 import { Link, useRevalidator } from "react-router";
 import { useEffect } from "react";
+import { StatusBadge } from "~/components/status-badge";
 
 export function meta() {
   return [{ title: "Run detail | Cascade" }];
@@ -130,21 +131,6 @@ function JsonBlock({ value }: { value: unknown }) {
     <pre className="overflow-auto rounded-md bg-gray-950 p-4 text-xs text-gray-100">
       {JSON.stringify(value, null, 2)}
     </pre>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const className =
-    {
-      COMPLETED: "bg-green-100 text-green-800",
-      FAILED: "bg-red-100 text-red-800",
-      EXECUTING: "bg-yellow-100 text-yellow-800",
-      PENDING: "bg-blue-100 text-blue-800",
-      CANCELED: "bg-gray-200 text-gray-800",
-    }[status] ?? "bg-gray-100 text-gray-800";
-
-  return (
-    <span className={`rounded-full px-2 py-1 text-xs font-medium ${className}`}>{status}</span>
   );
 }
 

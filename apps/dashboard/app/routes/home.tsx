@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { ArrowRight } from "~/components/icons";
 
 export function meta() {
   return [
@@ -17,9 +18,10 @@ export default function Home() {
       <div className="mt-6">
         <Link
           to="/runs"
-          className="inline-flex rounded-md bg-black px-4 py-2 text-sm font-medium text-white"
+          className="inline-flex items-center gap-2 rounded-md bg-black px-4 py-2 text-sm font-medium text-white"
         >
           View task runs
+          <ArrowRight size={15} />
         </Link>
       </div>
     </main>

@@ -1,5 +1,6 @@
 import type { Route } from "./+types/runs";
 import { Link } from "react-router";
+import { StatusBadge } from "~/components/status-badge";
 
 export function meta() {
   return [{ title: "Runs | Cascade" }];
@@ -76,23 +77,6 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
-function getStatusClassName(status: string) {
-  switch (status) {
-    case "COMPLETED":
-      return "bg-green-100 text-green-800";
-    case "FAILED":
-      return "bg-red-100 text-red-800";
-    case "EXECUTING":
-      return "bg-yellow-100 text-yellow-800";
-    case "PENDING":
-      return "bg-blue-100 text-blue-800";
-    case "CANCELED":
-      return "bg-gray-200 text-gray-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-}
-
 export default function Runs({ loaderData }: Route.ComponentProps) {
   return (
     <main className="mx-auto max-w-7xl p-6">
@@ -126,13 +110,7 @@ export default function Runs({ loaderData }: Route.ComponentProps) {
                   </Link>
                 </td>
                 <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full px-2 py-1 text-xs font-medium ${getStatusClassName(
-                      run.status,
-                    )}`}
-                  >
-                    {run.status}
-                  </span>
+                  <StatusBadge status={run.status} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="font-medium text-gray-900">{run.taskName}</div>
