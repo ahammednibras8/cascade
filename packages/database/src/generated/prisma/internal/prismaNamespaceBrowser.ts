@@ -133,6 +133,7 @@ export const TaskRunScalarFieldEnum = {
   payload: "payload",
   output: "output",
   error: "error",
+  delayUntil: "delayUntil",
   startedAt: "startedAt",
   lastHeartbeatAt: "lastHeartbeatAt",
   completedAt: "completedAt",

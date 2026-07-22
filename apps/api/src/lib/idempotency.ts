@@ -39,11 +39,13 @@ function stableJsonStringify(value: unknown): string {
 export function hashTriggerRequest(input: {
   taskId: string;
   payload: Prisma.InputJsonValue | undefined;
+  delayUntil: Date | undefined;
 }) {
   return hashValue(
     stableJsonStringify({
       taskId: input.taskId,
       payload: input.payload ?? null,
+      delayUntil: input.delayUntil?.toISOString() ?? null,
     }),
   );
 }

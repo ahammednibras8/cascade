@@ -17,6 +17,7 @@ const taskRunSelect = {
   payload: true,
   createdAt: true,
   idempotencyRequestHash: true,
+  delayUntil: true,
 } satisfies Prisma.TaskRunSelect;
 
 type TriggerTaskRunInput = {
@@ -74,6 +75,54 @@ function createIdempotencyConflict(): TriggerTaskRunFailure {
   };
 }
 
+function getDelayUntil(
+  body: unknown,
+): { ok: true; delayUntil: Date | undefined } | { ok: false; message: string } {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return {
+      ok: true,
+      delayUntil: undefined,
+    };
+  }
+
+  if (!("delayUntil" in body)) {
+    return {
+      ok: true,
+      delayUntil: undefined,
+    };
+  }
+
+  const rawDelayUntil = (body as { delayUntil?: unknown }).delayUntil;
+
+  if (rawDelayUntil === undefined || rawDelayUntil === null) {
+    return {
+      ok: true,
+      delayUntil: undefined,
+    };
+  }
+
+  if (typeof rawDelayUntil !== "string") {
+    return {
+      ok: false,
+      message: "delayUntil must be an ISO date string",
+    };
+  }
+
+  const delayUntil = new Date(rawDelayUntil);
+
+  if (Number.isNaN(delayUntil.getTime())) {
+    return {
+      ok: false,
+      message: "delayUntil must be a valid ISO date string",
+    };
+  }
+
+  return {
+    ok: true,
+    delayUntil,
+  };
+}
+
 export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<TriggerTaskRunResult> {
   const { auth, taskId, body, idempotencyKey } = input;
 
@@ -113,6 +162,21 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
 
   const payload = getPayload(body);
 
+  const delayUntilResult = getDelayUntil(body);
+
+  if (!delayUntilResult.ok) {
+    return {
+      ok: false,
+      status: 400,
+      error: {
+        code: "INVALID_DELAY_UNTIL",
+        message: delayUntilResult.message,
+      },
+    };
+  }
+
+  const delayUntil = delayUntilResult.delayUntil;
+
   if (idempotencyKey && idempotencyKey.length > IDEMPOTENCY_KEY_MAX_LENGTH) {
     return {
       ok: false,
@@ -129,6 +193,7 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
     ? hashTriggerRequest({
         taskId,
         payload,
+        delayUntil,
       })
     : undefined;
 
@@ -161,6 +226,10 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
           data.idempotencyRequestHash = idempotencyRequestHash;
         }
 
+        if (delayUntil) {
+          data.delayUntil = delayUntil;
+        }
+
         const run = await tx.taskRun.create({
           data,
           select: taskRunSelect,
@@ -172,6 +241,10 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
 
         if (idempotencyKeyHash) {
           eventData.idempotencyKeyHash = idempotencyKeyHash;
+        }
+
+        if (delayUntil) {
+          eventData.delayUntil = delayUntil.toISOString();
         }
 
         await tx.taskEvent.create({
@@ -211,11 +284,18 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
   }
 
   if (created) {
-    await enqueueTaskRun({
-      runId: taskRun.id,
-      taskId: taskRun.taskId,
-      environmentId: auth.environmentId,
-    });
+    const delayMs = taskRun.delayUntil ? Math.max(taskRun.delayUntil.getTime() - Date.now(), 0) : 0;
+
+    await enqueueTaskRun(
+      {
+        runId: taskRun.id,
+        taskId: taskRun.taskId,
+        environmentId: auth.environmentId,
+      },
+      {
+        delayMs,
+      },
+    );
   }
 
   return {

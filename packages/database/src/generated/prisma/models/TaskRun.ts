@@ -29,6 +29,7 @@ export type TaskRunMinAggregateOutputType = {
   status: $Enums.TaskRunStatus | null;
   idempotencyKeyHash: string | null;
   idempotencyRequestHash: string | null;
+  delayUntil: Date | null;
   startedAt: Date | null;
   lastHeartbeatAt: Date | null;
   completedAt: Date | null;
@@ -42,6 +43,7 @@ export type TaskRunMaxAggregateOutputType = {
   status: $Enums.TaskRunStatus | null;
   idempotencyKeyHash: string | null;
   idempotencyRequestHash: string | null;
+  delayUntil: Date | null;
   startedAt: Date | null;
   lastHeartbeatAt: Date | null;
   completedAt: Date | null;
@@ -58,6 +60,7 @@ export type TaskRunCountAggregateOutputType = {
   payload: number;
   output: number;
   error: number;
+  delayUntil: number;
   startedAt: number;
   lastHeartbeatAt: number;
   completedAt: number;
@@ -72,6 +75,7 @@ export type TaskRunMinAggregateInputType = {
   status?: true;
   idempotencyKeyHash?: true;
   idempotencyRequestHash?: true;
+  delayUntil?: true;
   startedAt?: true;
   lastHeartbeatAt?: true;
   completedAt?: true;
@@ -85,6 +89,7 @@ export type TaskRunMaxAggregateInputType = {
   status?: true;
   idempotencyKeyHash?: true;
   idempotencyRequestHash?: true;
+  delayUntil?: true;
   startedAt?: true;
   lastHeartbeatAt?: true;
   completedAt?: true;
@@ -101,6 +106,7 @@ export type TaskRunCountAggregateInputType = {
   payload?: true;
   output?: true;
   error?: true;
+  delayUntil?: true;
   startedAt?: true;
   lastHeartbeatAt?: true;
   completedAt?: true;
@@ -191,6 +197,7 @@ export type TaskRunGroupByOutputType = {
   payload: runtime.JsonValue | null;
   output: runtime.JsonValue | null;
   error: runtime.JsonValue | null;
+  delayUntil: Date | null;
   startedAt: Date | null;
   lastHeartbeatAt: Date | null;
   completedAt: Date | null;
@@ -225,6 +232,7 @@ export type TaskRunWhereInput = {
   payload?: Prisma.JsonNullableFilter<"TaskRun">;
   output?: Prisma.JsonNullableFilter<"TaskRun">;
   error?: Prisma.JsonNullableFilter<"TaskRun">;
+  delayUntil?: Prisma.DateTimeNullableFilter<"TaskRun"> | Date | string | null;
   startedAt?: Prisma.DateTimeNullableFilter<"TaskRun"> | Date | string | null;
   lastHeartbeatAt?: Prisma.DateTimeNullableFilter<"TaskRun"> | Date | string | null;
   completedAt?: Prisma.DateTimeNullableFilter<"TaskRun"> | Date | string | null;
@@ -244,6 +252,7 @@ export type TaskRunOrderByWithRelationInput = {
   payload?: Prisma.SortOrderInput | Prisma.SortOrder;
   output?: Prisma.SortOrderInput | Prisma.SortOrder;
   error?: Prisma.SortOrderInput | Prisma.SortOrder;
+  delayUntil?: Prisma.SortOrderInput | Prisma.SortOrder;
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
   lastHeartbeatAt?: Prisma.SortOrderInput | Prisma.SortOrder;
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
@@ -268,6 +277,7 @@ export type TaskRunWhereUniqueInput = Prisma.AtLeast<
     payload?: Prisma.JsonNullableFilter<"TaskRun">;
     output?: Prisma.JsonNullableFilter<"TaskRun">;
     error?: Prisma.JsonNullableFilter<"TaskRun">;
+    delayUntil?: Prisma.DateTimeNullableFilter<"TaskRun"> | Date | string | null;
     startedAt?: Prisma.DateTimeNullableFilter<"TaskRun"> | Date | string | null;
     lastHeartbeatAt?: Prisma.DateTimeNullableFilter<"TaskRun"> | Date | string | null;
     completedAt?: Prisma.DateTimeNullableFilter<"TaskRun"> | Date | string | null;
@@ -289,6 +299,7 @@ export type TaskRunOrderByWithAggregationInput = {
   payload?: Prisma.SortOrderInput | Prisma.SortOrder;
   output?: Prisma.SortOrderInput | Prisma.SortOrder;
   error?: Prisma.SortOrderInput | Prisma.SortOrder;
+  delayUntil?: Prisma.SortOrderInput | Prisma.SortOrder;
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
   lastHeartbeatAt?: Prisma.SortOrderInput | Prisma.SortOrder;
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder;
@@ -315,6 +326,7 @@ export type TaskRunScalarWhereWithAggregatesInput = {
   payload?: Prisma.JsonNullableWithAggregatesFilter<"TaskRun">;
   output?: Prisma.JsonNullableWithAggregatesFilter<"TaskRun">;
   error?: Prisma.JsonNullableWithAggregatesFilter<"TaskRun">;
+  delayUntil?: Prisma.DateTimeNullableWithAggregatesFilter<"TaskRun"> | Date | string | null;
   startedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"TaskRun"> | Date | string | null;
   lastHeartbeatAt?: Prisma.DateTimeNullableWithAggregatesFilter<"TaskRun"> | Date | string | null;
   completedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"TaskRun"> | Date | string | null;
@@ -330,6 +342,7 @@ export type TaskRunCreateInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
   startedAt?: Date | string | null;
   lastHeartbeatAt?: Date | string | null;
   completedAt?: Date | string | null;
@@ -349,6 +362,7 @@ export type TaskRunUncheckedCreateInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
   startedAt?: Date | string | null;
   lastHeartbeatAt?: Date | string | null;
   completedAt?: Date | string | null;
@@ -366,6 +380,7 @@ export type TaskRunUpdateInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -385,6 +400,7 @@ export type TaskRunUncheckedUpdateInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -403,6 +419,7 @@ export type TaskRunCreateManyInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
   startedAt?: Date | string | null;
   lastHeartbeatAt?: Date | string | null;
   completedAt?: Date | string | null;
@@ -418,6 +435,7 @@ export type TaskRunUpdateManyMutationInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -434,6 +452,7 @@ export type TaskRunUncheckedUpdateManyInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -465,6 +484,7 @@ export type TaskRunCountOrderByAggregateInput = {
   payload?: Prisma.SortOrder;
   output?: Prisma.SortOrder;
   error?: Prisma.SortOrder;
+  delayUntil?: Prisma.SortOrder;
   startedAt?: Prisma.SortOrder;
   lastHeartbeatAt?: Prisma.SortOrder;
   completedAt?: Prisma.SortOrder;
@@ -478,6 +498,7 @@ export type TaskRunMaxOrderByAggregateInput = {
   status?: Prisma.SortOrder;
   idempotencyKeyHash?: Prisma.SortOrder;
   idempotencyRequestHash?: Prisma.SortOrder;
+  delayUntil?: Prisma.SortOrder;
   startedAt?: Prisma.SortOrder;
   lastHeartbeatAt?: Prisma.SortOrder;
   completedAt?: Prisma.SortOrder;
@@ -491,6 +512,7 @@ export type TaskRunMinOrderByAggregateInput = {
   status?: Prisma.SortOrder;
   idempotencyKeyHash?: Prisma.SortOrder;
   idempotencyRequestHash?: Prisma.SortOrder;
+  delayUntil?: Prisma.SortOrder;
   startedAt?: Prisma.SortOrder;
   lastHeartbeatAt?: Prisma.SortOrder;
   completedAt?: Prisma.SortOrder;
@@ -653,6 +675,7 @@ export type TaskRunCreateWithoutTaskInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
   startedAt?: Date | string | null;
   lastHeartbeatAt?: Date | string | null;
   completedAt?: Date | string | null;
@@ -670,6 +693,7 @@ export type TaskRunUncheckedCreateWithoutTaskInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
   startedAt?: Date | string | null;
   lastHeartbeatAt?: Date | string | null;
   completedAt?: Date | string | null;
@@ -732,6 +756,7 @@ export type TaskRunScalarWhereInput = {
   payload?: Prisma.JsonNullableFilter<"TaskRun">;
   output?: Prisma.JsonNullableFilter<"TaskRun">;
   error?: Prisma.JsonNullableFilter<"TaskRun">;
+  delayUntil?: Prisma.DateTimeNullableFilter<"TaskRun"> | Date | string | null;
   startedAt?: Prisma.DateTimeNullableFilter<"TaskRun"> | Date | string | null;
   lastHeartbeatAt?: Prisma.DateTimeNullableFilter<"TaskRun"> | Date | string | null;
   completedAt?: Prisma.DateTimeNullableFilter<"TaskRun"> | Date | string | null;
@@ -747,6 +772,7 @@ export type TaskRunCreateWithoutAttemptsInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
   startedAt?: Date | string | null;
   lastHeartbeatAt?: Date | string | null;
   completedAt?: Date | string | null;
@@ -765,6 +791,7 @@ export type TaskRunUncheckedCreateWithoutAttemptsInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
   startedAt?: Date | string | null;
   lastHeartbeatAt?: Date | string | null;
   completedAt?: Date | string | null;
@@ -809,6 +836,7 @@ export type TaskRunUpdateWithoutAttemptsInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -827,6 +855,7 @@ export type TaskRunUncheckedUpdateWithoutAttemptsInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -843,6 +872,7 @@ export type TaskRunCreateWithoutEventsInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
   startedAt?: Date | string | null;
   lastHeartbeatAt?: Date | string | null;
   completedAt?: Date | string | null;
@@ -861,6 +891,7 @@ export type TaskRunUncheckedCreateWithoutEventsInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
   startedAt?: Date | string | null;
   lastHeartbeatAt?: Date | string | null;
   completedAt?: Date | string | null;
@@ -905,6 +936,7 @@ export type TaskRunUpdateWithoutEventsInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -923,6 +955,7 @@ export type TaskRunUncheckedUpdateWithoutEventsInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -939,6 +972,7 @@ export type TaskRunCreateManyTaskInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
   startedAt?: Date | string | null;
   lastHeartbeatAt?: Date | string | null;
   completedAt?: Date | string | null;
@@ -954,6 +988,7 @@ export type TaskRunUpdateWithoutTaskInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -971,6 +1006,7 @@ export type TaskRunUncheckedUpdateWithoutTaskInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -988,6 +1024,7 @@ export type TaskRunUncheckedUpdateManyWithoutTaskInput = {
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
@@ -1053,6 +1090,7 @@ export type TaskRunSelect<
     payload?: boolean;
     output?: boolean;
     error?: boolean;
+    delayUntil?: boolean;
     startedAt?: boolean;
     lastHeartbeatAt?: boolean;
     completedAt?: boolean;
@@ -1078,6 +1116,7 @@ export type TaskRunSelectCreateManyAndReturn<
     payload?: boolean;
     output?: boolean;
     error?: boolean;
+    delayUntil?: boolean;
     startedAt?: boolean;
     lastHeartbeatAt?: boolean;
     completedAt?: boolean;
@@ -1100,6 +1139,7 @@ export type TaskRunSelectUpdateManyAndReturn<
     payload?: boolean;
     output?: boolean;
     error?: boolean;
+    delayUntil?: boolean;
     startedAt?: boolean;
     lastHeartbeatAt?: boolean;
     completedAt?: boolean;
@@ -1119,6 +1159,7 @@ export type TaskRunSelectScalar = {
   payload?: boolean;
   output?: boolean;
   error?: boolean;
+  delayUntil?: boolean;
   startedAt?: boolean;
   lastHeartbeatAt?: boolean;
   completedAt?: boolean;
@@ -1137,6 +1178,7 @@ export type TaskRunOmit<
   | "payload"
   | "output"
   | "error"
+  | "delayUntil"
   | "startedAt"
   | "lastHeartbeatAt"
   | "completedAt"
@@ -1182,6 +1224,7 @@ export type $TaskRunPayload<
       payload: runtime.JsonValue | null;
       output: runtime.JsonValue | null;
       error: runtime.JsonValue | null;
+      delayUntil: Date | null;
       startedAt: Date | null;
       lastHeartbeatAt: Date | null;
       completedAt: Date | null;
@@ -1777,6 +1820,7 @@ export interface TaskRunFieldRefs {
   readonly payload: Prisma.FieldRef<"TaskRun", "Json">;
   readonly output: Prisma.FieldRef<"TaskRun", "Json">;
   readonly error: Prisma.FieldRef<"TaskRun", "Json">;
+  readonly delayUntil: Prisma.FieldRef<"TaskRun", "DateTime">;
   readonly startedAt: Prisma.FieldRef<"TaskRun", "DateTime">;
   readonly lastHeartbeatAt: Prisma.FieldRef<"TaskRun", "DateTime">;
   readonly completedAt: Prisma.FieldRef<"TaskRun", "DateTime">;

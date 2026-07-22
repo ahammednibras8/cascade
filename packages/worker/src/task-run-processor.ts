@@ -39,6 +39,7 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
       taskId: true,
       status: true,
       payload: true,
+      delayUntil: true,
       task: {
         select: {
           slug: true,
@@ -57,6 +58,14 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
     return;
   }
 
+  if (taskRun.delayUntil && taskRun.delayUntil > new Date()) {
+    await enqueueTaskRun(message, {
+      delayMs: taskRun.delayUntil.getTime() - Date.now(),
+    });
+
+    return;
+  }
+
   const attempt = await prisma.$transaction(async (tx) => {
     const startedAt = new Date();
 
@@ -64,6 +73,16 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
       where: {
         id: taskRun.id,
         status: "PENDING",
+        OR: [
+          {
+            delayUntil: null,
+          },
+          {
+            delayUntil: {
+              lte: startedAt,
+            },
+          },
+        ],
       },
       data: {
         status: "EXECUTING",

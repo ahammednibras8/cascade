@@ -110,6 +110,7 @@ model TaskRun {
   payload Json?
   output Json?
   error Json?
+  delayUntil DateTime?
   startedAt DateTime?
   lastHeartbeatAt DateTime?
   completedAt DateTime?
@@ -125,6 +126,7 @@ model TaskRun {
   @@index([taskId, createdAt])
   @@index([status, createdAt])
   @@index([status, lastHeartbeatAt])
+  @@index([status, delayUntil])
 }
 
 model TaskAttempt {
