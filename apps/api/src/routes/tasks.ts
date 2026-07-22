@@ -4,6 +4,7 @@ import { getIdempotencyKey } from "../lib/idempotency.js";
 import { getSingleParam } from "../lib/route-params.js";
 import { cancelTaskRun } from "../services/cancel-task-run.js";
 import { triggerTaskRun } from "../services/trigger-task-run.js";
+import { replayTaskRun } from "../services/replay-task-run.js";
 
 export const tasksRouter: ExpressRouter = Router();
 
@@ -61,6 +62,39 @@ tasksRouter.post(
     }
 
     const result = await cancelTaskRun({
+      auth,
+      runId: getSingleParam(request.params.runId),
+    });
+
+    if (!result.ok) {
+      response.status(result.status).json({
+        error: result.error,
+      });
+      return;
+    }
+
+    response.status(result.status).json({
+      taskRun: result.taskRun,
+    });
+  }),
+);
+
+tasksRouter.post(
+  "/runs/:runId/replay",
+  asyncHandler(async (request, response) => {
+    const auth = request.auth;
+
+    if (!auth) {
+      response.status(401).json({
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Missing API authentication context",
+        },
+      });
+      return;
+    }
+
+    const result = await replayTaskRun({
       auth,
       runId: getSingleParam(request.params.runId),
     });
