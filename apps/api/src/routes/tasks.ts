@@ -118,6 +118,18 @@ function getPayload(body: unknown): Prisma.InputJsonValue | undefined {
   return payload as Prisma.InputJsonValue;
 }
 
+function createCancelError(input: {
+  apiKeyId: string;
+  previousStatus: string;
+}): Prisma.InputJsonValue {
+  return {
+    code: "RUN_CANCELED",
+    message: "Task run was canceled",
+    apiKeyId: input.apiKeyId,
+    previousStatus: input.previousStatus,
+  };
+}
+
 tasksRouter.post(
   "/tasks/:taskId/trigger",
   asyncHandler(async (request, response) => {
@@ -302,5 +314,171 @@ tasksRouter.post(
           idempotentReplay: !created,
         },
       });
+  }),
+);
+
+tasksRouter.post(
+  "/runs/:runId/cancel",
+  asyncHandler(async (request, response) => {
+    const auth = request.auth;
+    const runIdParam = request.params.runId;
+    const runId = Array.isArray(runIdParam) ? runIdParam[0] : runIdParam;
+
+    if (!auth) {
+      response.status(401).json({
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Missing API authentication context",
+        },
+      });
+      return;
+    }
+
+    if (!runId || !UUID_PATTERN.test(runId)) {
+      response.status(400).json({
+        error: {
+          code: "INVALID_RUN_ID",
+          message: "runId must be a valid UUID",
+        },
+      });
+      return;
+    }
+
+    const run = await prisma.taskRun.findFirst({
+      where: {
+        id: runId,
+        task: {
+          environmentId: auth.environmentId,
+        },
+      },
+      select: {
+        id: true,
+        taskId: true,
+        status: true,
+        attempts: {
+          orderBy: {
+            attemptNumber: "desc",
+          },
+          take: 1,
+          select: {
+            id: true,
+            status: true,
+            attemptNumber: true,
+          },
+        },
+      },
+    });
+
+    if (!run) {
+      response.status(404).json({
+        error: {
+          code: "RUN_NOT_FOUND",
+          message: "Task run was not found in this environment",
+        },
+      });
+      return;
+    }
+
+    if (run.status === "CANCELED") {
+      response.status(200).json({
+        taskRun: {
+          id: run.id,
+          taskId: run.taskId,
+          status: run.status,
+          canceled: true,
+          alreadyCanceled: true,
+        },
+      });
+      return;
+    }
+
+    if (run.status === "COMPLETED" || run.status === "FAILED") {
+      response.status(409).json({
+        error: {
+          code: "RUN_NOT_CANCELABLE",
+          message: `Cannot cancel a run with status ${run.status}`,
+        },
+      });
+      return;
+    }
+
+    const now = new Date();
+    const latestAttempt = run.attempts[0];
+    const error = createCancelError({
+      apiKeyId: auth.apiKeyId,
+      previousStatus: run.status,
+    });
+
+    const canceled = await prisma.$transaction(async (tx) => {
+      const updateRun = await tx.taskRun.updateMany({
+        where: {
+          id: run.id,
+          status: {
+            in: ["PENDING", "EXECUTING"],
+          },
+        },
+        data: {
+          status: "CANCELED",
+          output: Prisma.DbNull,
+          error,
+          lastHeartbeatAt: now,
+          completedAt: now,
+        },
+      });
+
+      if (updateRun.count !== 1) {
+        return false;
+      }
+
+      if (latestAttempt && latestAttempt.status === "EXECUTING") {
+        await tx.taskAttempt.update({
+          where: {
+            id: latestAttempt.id,
+          },
+          data: {
+            status: "CANCELED",
+            error,
+            completedAt: now,
+          },
+        });
+      }
+
+      await tx.taskEvent.create({
+        data: {
+          taskRunId: run.id,
+          ...(latestAttempt ? { taskAttemptId: latestAttempt.id } : {}),
+          type: "task.run.canceled",
+          level: "WARN",
+          message: "Task run canceled by API request",
+          data: {
+            apiKeyId: auth.apiKeyId,
+            previousStatus: run.status,
+            attemptNumber: latestAttempt?.attemptNumber ?? null,
+          },
+        },
+      });
+
+      return true;
+    });
+
+    if (!canceled) {
+      response.status(409).json({
+        error: {
+          code: "RUN_NOT_CANCELABLE",
+          message: "Task run status changed before it could be canceled",
+        },
+      });
+      return;
+    }
+
+    response.status(200).json({
+      taskRun: {
+        id: run.id,
+        taskId: run.taskId,
+        status: "CANCELED",
+        canceled: true,
+        alreadyCanceled: false,
+      },
+    });
   }),
 );

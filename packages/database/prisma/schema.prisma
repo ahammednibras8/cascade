@@ -20,12 +20,14 @@ enum TaskRunStatus {
   EXECUTING
   COMPLETED
   FAILED
+  CANCELED
 }
 
 enum TaskAttemptStatus {
   EXECUTING
   COMPLETED
   FAILED
+  CANCELED
 }
 
 enum TaskEventLevel {

@@ -21,6 +21,7 @@ export const TaskRunStatus = {
   EXECUTING: "EXECUTING",
   COMPLETED: "COMPLETED",
   FAILED: "FAILED",
+  CANCELED: "CANCELED",
 } as const;
 
 export type TaskRunStatus = (typeof TaskRunStatus)[keyof typeof TaskRunStatus];
@@ -29,6 +30,7 @@ export const TaskAttemptStatus = {
   EXECUTING: "EXECUTING",
   COMPLETED: "COMPLETED",
   FAILED: "FAILED",
+  CANCELED: "CANCELED",
 } as const;
 
 export type TaskAttemptStatus = (typeof TaskAttemptStatus)[keyof typeof TaskAttemptStatus];

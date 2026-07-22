@@ -140,6 +140,7 @@ function StatusBadge({ status }: { status: string }) {
       FAILED: "bg-red-100 text-red-800",
       EXECUTING: "bg-yellow-100 text-yellow-800",
       PENDING: "bg-blue-100 text-blue-800",
+      CANCELED: "bg-gray-200 text-gray-800",
     }[status] ?? "bg-gray-100 text-gray-800";
 
   return (

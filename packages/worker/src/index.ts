@@ -211,32 +211,39 @@ async function processTaskRun(message: TaskRunQueueMessage) {
 
   if (!localTask) {
     await prisma.$transaction(async (tx) => {
+      const completedAt = new Date();
+
+      const error = {
+        code: "TASK_NOT_REGISTERED",
+        message: `No local task registered for slug: ${taskRun.task.slug}`,
+      };
+
+      const updateRun = await tx.taskRun.updateMany({
+        where: {
+          id: taskRun.id,
+          status: "EXECUTING",
+        },
+        data: {
+          status: "FAILED",
+          output: Prisma.DbNull,
+          error,
+          lastHeartbeatAt: completedAt,
+          completedAt,
+        },
+      });
+
+      if (updateRun.count !== 1) {
+        return;
+      }
+
       await tx.taskAttempt.update({
         where: {
           id: attempt.id,
         },
         data: {
           status: "FAILED",
-          error: {
-            code: "TASK_NOT_REGISTERED",
-            message: `No local task registered for slug: ${taskRun.task.slug}`,
-          },
-          completedAt: new Date(),
-        },
-      });
-
-      await tx.taskRun.update({
-        where: {
-          id: taskRun.id,
-        },
-        data: {
-          status: "FAILED",
-          output: Prisma.DbNull,
-          error: {
-            code: "TASK_NOT_REGISTERED",
-            message: `No local task required for slug: ${taskRun.task.slug}`,
-          },
-          completedAt: new Date(),
+          error,
+          completedAt,
         },
       });
 
@@ -278,28 +285,33 @@ async function processTaskRun(message: TaskRunQueueMessage) {
     const normalizedOutput =
       output === undefined ? Prisma.DbNull : (output as Prisma.InputJsonValue);
 
-    await prisma.$transaction(async (tx) => {
-      await tx.taskAttempt.update({
-        where: {
-          id: attempt.id,
-        },
-        data: {
-          status: "COMPLETED",
-          completedAt: new Date(),
-        },
-      });
-
+    const completed = await prisma.$transaction(async (tx) => {
       const completedAt = new Date();
 
-      await tx.taskRun.update({
+      const updateRun = await tx.taskRun.updateMany({
         where: {
           id: taskRun.id,
+          status: "EXECUTING",
         },
         data: {
           status: "COMPLETED",
           output: normalizedOutput,
           error: Prisma.DbNull,
           lastHeartbeatAt: completedAt,
+          completedAt,
+        },
+      });
+
+      if (updateRun.count !== 1) {
+        return false;
+      }
+
+      await tx.taskAttempt.update({
+        where: {
+          id: attempt.id,
+        },
+        data: {
+          status: "COMPLETED",
           completedAt,
         },
       });
@@ -317,14 +329,40 @@ async function processTaskRun(message: TaskRunQueueMessage) {
           },
         },
       });
+
+      return true;
     });
+
+    if (!completed) {
+      return;
+    }
   } catch (error) {
     const serializedError = serializeError(error);
     const shouldRetry = attempt.attemptNumber < localTask.retry.maxAttempts;
     const retryDelayMs = shouldRetry ? getRetryDelayMs(attempt.attemptNumber, localTask.retry) : 0;
 
     if (shouldRetry) {
-      await prisma.$transaction(async (tx) => {
+      const retried = await prisma.$transaction(async (tx) => {
+        const failedAt = new Date();
+
+        const updateRun = await tx.taskRun.updateMany({
+          where: {
+            id: taskRun.id,
+            status: "EXECUTING",
+          },
+          data: {
+            status: "PENDING",
+            output: Prisma.DbNull,
+            error: serializedError,
+            lastHeartbeatAt: null,
+            completedAt: null,
+          },
+        });
+
+        if (updateRun.count !== 1) {
+          return false;
+        }
+
         await tx.taskAttempt.update({
           where: {
             id: attempt.id,
@@ -332,20 +370,7 @@ async function processTaskRun(message: TaskRunQueueMessage) {
           data: {
             status: "FAILED",
             error: serializedError,
-            completedAt: new Date(),
-          },
-        });
-
-        await tx.taskRun.update({
-          where: {
-            id: taskRun.id,
-          },
-          data: {
-            status: "PENDING",
-            output: Prisma.DbNull,
-            error: serializedError,
-            lastHeartbeatAt: new Date(),
-            completedAt: null,
+            completedAt: failedAt,
           },
         });
 
@@ -365,7 +390,13 @@ async function processTaskRun(message: TaskRunQueueMessage) {
             },
           },
         });
+
+        return true;
       });
+
+      if (!retried) {
+        return;
+      }
 
       await enqueueTaskRun(message, {
         delayMs: retryDelayMs,
@@ -374,7 +405,27 @@ async function processTaskRun(message: TaskRunQueueMessage) {
       return;
     }
 
-    await prisma.$transaction(async (tx) => {
+    const failed = await prisma.$transaction(async (tx) => {
+      const completedAt = new Date();
+
+      const updateRun = await tx.taskRun.updateMany({
+        where: {
+          id: taskRun.id,
+          status: "EXECUTING",
+        },
+        data: {
+          status: "FAILED",
+          output: Prisma.DbNull,
+          error: serializedError,
+          lastHeartbeatAt: completedAt,
+          completedAt,
+        },
+      });
+
+      if (updateRun.count !== 1) {
+        return false;
+      }
+
       await tx.taskAttempt.update({
         where: {
           id: attempt.id,
@@ -382,21 +433,6 @@ async function processTaskRun(message: TaskRunQueueMessage) {
         data: {
           status: "FAILED",
           error: serializedError,
-          completedAt: new Date(),
-        },
-      });
-
-      const completedAt = new Date();
-
-      await tx.taskRun.update({
-        where: {
-          id: taskRun.id,
-        },
-        data: {
-          status: "FAILED",
-          output: Prisma.DbNull,
-          error: serializedError,
-          lastHeartbeatAt: completedAt,
           completedAt,
         },
       });
@@ -411,7 +447,13 @@ async function processTaskRun(message: TaskRunQueueMessage) {
           data: serializedError,
         },
       });
+
+      return true;
     });
+
+    if (!failed) {
+      return;
+    }
   } finally {
     stopHeartbeat();
   }
