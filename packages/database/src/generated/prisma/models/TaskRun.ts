@@ -26,6 +26,7 @@ export type AggregateTaskRun = {
 export type TaskRunMinAggregateOutputType = {
   id: string | null;
   taskId: string | null;
+  scheduleId: string | null;
   status: $Enums.TaskRunStatus | null;
   idempotencyKeyHash: string | null;
   idempotencyRequestHash: string | null;
@@ -40,6 +41,7 @@ export type TaskRunMinAggregateOutputType = {
 export type TaskRunMaxAggregateOutputType = {
   id: string | null;
   taskId: string | null;
+  scheduleId: string | null;
   status: $Enums.TaskRunStatus | null;
   idempotencyKeyHash: string | null;
   idempotencyRequestHash: string | null;
@@ -54,6 +56,7 @@ export type TaskRunMaxAggregateOutputType = {
 export type TaskRunCountAggregateOutputType = {
   id: number;
   taskId: number;
+  scheduleId: number;
   status: number;
   idempotencyKeyHash: number;
   idempotencyRequestHash: number;
@@ -72,6 +75,7 @@ export type TaskRunCountAggregateOutputType = {
 export type TaskRunMinAggregateInputType = {
   id?: true;
   taskId?: true;
+  scheduleId?: true;
   status?: true;
   idempotencyKeyHash?: true;
   idempotencyRequestHash?: true;
@@ -86,6 +90,7 @@ export type TaskRunMinAggregateInputType = {
 export type TaskRunMaxAggregateInputType = {
   id?: true;
   taskId?: true;
+  scheduleId?: true;
   status?: true;
   idempotencyKeyHash?: true;
   idempotencyRequestHash?: true;
@@ -100,6 +105,7 @@ export type TaskRunMaxAggregateInputType = {
 export type TaskRunCountAggregateInputType = {
   id?: true;
   taskId?: true;
+  scheduleId?: true;
   status?: true;
   idempotencyKeyHash?: true;
   idempotencyRequestHash?: true;
@@ -191,6 +197,7 @@ export type TaskRunGroupByArgs<
 export type TaskRunGroupByOutputType = {
   id: string;
   taskId: string;
+  scheduleId: string | null;
   status: $Enums.TaskRunStatus;
   idempotencyKeyHash: string | null;
   idempotencyRequestHash: string | null;
@@ -226,6 +233,7 @@ export type TaskRunWhereInput = {
   NOT?: Prisma.TaskRunWhereInput | Prisma.TaskRunWhereInput[];
   id?: Prisma.UuidFilter<"TaskRun"> | string;
   taskId?: Prisma.UuidFilter<"TaskRun"> | string;
+  scheduleId?: Prisma.UuidNullableFilter<"TaskRun"> | string | null;
   status?: Prisma.EnumTaskRunStatusFilter<"TaskRun"> | $Enums.TaskRunStatus;
   idempotencyKeyHash?: Prisma.StringNullableFilter<"TaskRun"> | string | null;
   idempotencyRequestHash?: Prisma.StringNullableFilter<"TaskRun"> | string | null;
@@ -239,6 +247,10 @@ export type TaskRunWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"TaskRun"> | Date | string;
   updatedAt?: Prisma.DateTimeFilter<"TaskRun"> | Date | string;
   task?: Prisma.XOR<Prisma.TaskScalarRelationFilter, Prisma.TaskWhereInput>;
+  schedule?: Prisma.XOR<
+    Prisma.TaskScheduleNullableScalarRelationFilter,
+    Prisma.TaskScheduleWhereInput
+  > | null;
   attempts?: Prisma.TaskAttemptListRelationFilter;
   events?: Prisma.TaskEventListRelationFilter;
 };
@@ -246,6 +258,7 @@ export type TaskRunWhereInput = {
 export type TaskRunOrderByWithRelationInput = {
   id?: Prisma.SortOrder;
   taskId?: Prisma.SortOrder;
+  scheduleId?: Prisma.SortOrderInput | Prisma.SortOrder;
   status?: Prisma.SortOrder;
   idempotencyKeyHash?: Prisma.SortOrderInput | Prisma.SortOrder;
   idempotencyRequestHash?: Prisma.SortOrderInput | Prisma.SortOrder;
@@ -259,6 +272,7 @@ export type TaskRunOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder;
   updatedAt?: Prisma.SortOrder;
   task?: Prisma.TaskOrderByWithRelationInput;
+  schedule?: Prisma.TaskScheduleOrderByWithRelationInput;
   attempts?: Prisma.TaskAttemptOrderByRelationAggregateInput;
   events?: Prisma.TaskEventOrderByRelationAggregateInput;
 };
@@ -271,6 +285,7 @@ export type TaskRunWhereUniqueInput = Prisma.AtLeast<
     OR?: Prisma.TaskRunWhereInput[];
     NOT?: Prisma.TaskRunWhereInput | Prisma.TaskRunWhereInput[];
     taskId?: Prisma.UuidFilter<"TaskRun"> | string;
+    scheduleId?: Prisma.UuidNullableFilter<"TaskRun"> | string | null;
     status?: Prisma.EnumTaskRunStatusFilter<"TaskRun"> | $Enums.TaskRunStatus;
     idempotencyKeyHash?: Prisma.StringNullableFilter<"TaskRun"> | string | null;
     idempotencyRequestHash?: Prisma.StringNullableFilter<"TaskRun"> | string | null;
@@ -284,6 +299,10 @@ export type TaskRunWhereUniqueInput = Prisma.AtLeast<
     createdAt?: Prisma.DateTimeFilter<"TaskRun"> | Date | string;
     updatedAt?: Prisma.DateTimeFilter<"TaskRun"> | Date | string;
     task?: Prisma.XOR<Prisma.TaskScalarRelationFilter, Prisma.TaskWhereInput>;
+    schedule?: Prisma.XOR<
+      Prisma.TaskScheduleNullableScalarRelationFilter,
+      Prisma.TaskScheduleWhereInput
+    > | null;
     attempts?: Prisma.TaskAttemptListRelationFilter;
     events?: Prisma.TaskEventListRelationFilter;
   },
@@ -293,6 +312,7 @@ export type TaskRunWhereUniqueInput = Prisma.AtLeast<
 export type TaskRunOrderByWithAggregationInput = {
   id?: Prisma.SortOrder;
   taskId?: Prisma.SortOrder;
+  scheduleId?: Prisma.SortOrderInput | Prisma.SortOrder;
   status?: Prisma.SortOrder;
   idempotencyKeyHash?: Prisma.SortOrderInput | Prisma.SortOrder;
   idempotencyRequestHash?: Prisma.SortOrderInput | Prisma.SortOrder;
@@ -320,6 +340,7 @@ export type TaskRunScalarWhereWithAggregatesInput = {
     | Prisma.TaskRunScalarWhereWithAggregatesInput[];
   id?: Prisma.UuidWithAggregatesFilter<"TaskRun"> | string;
   taskId?: Prisma.UuidWithAggregatesFilter<"TaskRun"> | string;
+  scheduleId?: Prisma.UuidNullableWithAggregatesFilter<"TaskRun"> | string | null;
   status?: Prisma.EnumTaskRunStatusWithAggregatesFilter<"TaskRun"> | $Enums.TaskRunStatus;
   idempotencyKeyHash?: Prisma.StringNullableWithAggregatesFilter<"TaskRun"> | string | null;
   idempotencyRequestHash?: Prisma.StringNullableWithAggregatesFilter<"TaskRun"> | string | null;
@@ -349,6 +370,7 @@ export type TaskRunCreateInput = {
   createdAt?: Date | string;
   updatedAt?: Date | string;
   task: Prisma.TaskCreateNestedOneWithoutRunsInput;
+  schedule?: Prisma.TaskScheduleCreateNestedOneWithoutRunsInput;
   attempts?: Prisma.TaskAttemptCreateNestedManyWithoutTaskRunInput;
   events?: Prisma.TaskEventCreateNestedManyWithoutTaskRunInput;
 };
@@ -356,6 +378,7 @@ export type TaskRunCreateInput = {
 export type TaskRunUncheckedCreateInput = {
   id?: string;
   taskId: string;
+  scheduleId?: string | null;
   status?: $Enums.TaskRunStatus;
   idempotencyKeyHash?: string | null;
   idempotencyRequestHash?: string | null;
@@ -387,6 +410,7 @@ export type TaskRunUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   task?: Prisma.TaskUpdateOneRequiredWithoutRunsNestedInput;
+  schedule?: Prisma.TaskScheduleUpdateOneWithoutRunsNestedInput;
   attempts?: Prisma.TaskAttemptUpdateManyWithoutTaskRunNestedInput;
   events?: Prisma.TaskEventUpdateManyWithoutTaskRunNestedInput;
 };
@@ -394,6 +418,7 @@ export type TaskRunUpdateInput = {
 export type TaskRunUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   taskId?: Prisma.StringFieldUpdateOperationsInput | string;
+  scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus;
   idempotencyKeyHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   idempotencyRequestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -413,6 +438,7 @@ export type TaskRunUncheckedUpdateInput = {
 export type TaskRunCreateManyInput = {
   id?: string;
   taskId: string;
+  scheduleId?: string | null;
   status?: $Enums.TaskRunStatus;
   idempotencyKeyHash?: string | null;
   idempotencyRequestHash?: string | null;
@@ -446,6 +472,7 @@ export type TaskRunUpdateManyMutationInput = {
 export type TaskRunUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   taskId?: Prisma.StringFieldUpdateOperationsInput | string;
+  scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus;
   idempotencyKeyHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   idempotencyRequestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -478,6 +505,7 @@ export type TaskRunTaskIdIdempotencyKeyHashCompoundUniqueInput = {
 export type TaskRunCountOrderByAggregateInput = {
   id?: Prisma.SortOrder;
   taskId?: Prisma.SortOrder;
+  scheduleId?: Prisma.SortOrder;
   status?: Prisma.SortOrder;
   idempotencyKeyHash?: Prisma.SortOrder;
   idempotencyRequestHash?: Prisma.SortOrder;
@@ -495,6 +523,7 @@ export type TaskRunCountOrderByAggregateInput = {
 export type TaskRunMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder;
   taskId?: Prisma.SortOrder;
+  scheduleId?: Prisma.SortOrder;
   status?: Prisma.SortOrder;
   idempotencyKeyHash?: Prisma.SortOrder;
   idempotencyRequestHash?: Prisma.SortOrder;
@@ -509,6 +538,7 @@ export type TaskRunMaxOrderByAggregateInput = {
 export type TaskRunMinOrderByAggregateInput = {
   id?: Prisma.SortOrder;
   taskId?: Prisma.SortOrder;
+  scheduleId?: Prisma.SortOrder;
   status?: Prisma.SortOrder;
   idempotencyKeyHash?: Prisma.SortOrder;
   idempotencyRequestHash?: Prisma.SortOrder;
@@ -667,6 +697,92 @@ export type TaskRunUpdateOneRequiredWithoutEventsNestedInput = {
   >;
 };
 
+export type TaskRunCreateNestedManyWithoutScheduleInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.TaskRunCreateWithoutScheduleInput,
+        Prisma.TaskRunUncheckedCreateWithoutScheduleInput
+      >
+    | Prisma.TaskRunCreateWithoutScheduleInput[]
+    | Prisma.TaskRunUncheckedCreateWithoutScheduleInput[];
+  connectOrCreate?:
+    | Prisma.TaskRunCreateOrConnectWithoutScheduleInput
+    | Prisma.TaskRunCreateOrConnectWithoutScheduleInput[];
+  createMany?: Prisma.TaskRunCreateManyScheduleInputEnvelope;
+  connect?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[];
+};
+
+export type TaskRunUncheckedCreateNestedManyWithoutScheduleInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.TaskRunCreateWithoutScheduleInput,
+        Prisma.TaskRunUncheckedCreateWithoutScheduleInput
+      >
+    | Prisma.TaskRunCreateWithoutScheduleInput[]
+    | Prisma.TaskRunUncheckedCreateWithoutScheduleInput[];
+  connectOrCreate?:
+    | Prisma.TaskRunCreateOrConnectWithoutScheduleInput
+    | Prisma.TaskRunCreateOrConnectWithoutScheduleInput[];
+  createMany?: Prisma.TaskRunCreateManyScheduleInputEnvelope;
+  connect?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[];
+};
+
+export type TaskRunUpdateManyWithoutScheduleNestedInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.TaskRunCreateWithoutScheduleInput,
+        Prisma.TaskRunUncheckedCreateWithoutScheduleInput
+      >
+    | Prisma.TaskRunCreateWithoutScheduleInput[]
+    | Prisma.TaskRunUncheckedCreateWithoutScheduleInput[];
+  connectOrCreate?:
+    | Prisma.TaskRunCreateOrConnectWithoutScheduleInput
+    | Prisma.TaskRunCreateOrConnectWithoutScheduleInput[];
+  upsert?:
+    | Prisma.TaskRunUpsertWithWhereUniqueWithoutScheduleInput
+    | Prisma.TaskRunUpsertWithWhereUniqueWithoutScheduleInput[];
+  createMany?: Prisma.TaskRunCreateManyScheduleInputEnvelope;
+  set?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[];
+  disconnect?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[];
+  delete?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[];
+  connect?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[];
+  update?:
+    | Prisma.TaskRunUpdateWithWhereUniqueWithoutScheduleInput
+    | Prisma.TaskRunUpdateWithWhereUniqueWithoutScheduleInput[];
+  updateMany?:
+    | Prisma.TaskRunUpdateManyWithWhereWithoutScheduleInput
+    | Prisma.TaskRunUpdateManyWithWhereWithoutScheduleInput[];
+  deleteMany?: Prisma.TaskRunScalarWhereInput | Prisma.TaskRunScalarWhereInput[];
+};
+
+export type TaskRunUncheckedUpdateManyWithoutScheduleNestedInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.TaskRunCreateWithoutScheduleInput,
+        Prisma.TaskRunUncheckedCreateWithoutScheduleInput
+      >
+    | Prisma.TaskRunCreateWithoutScheduleInput[]
+    | Prisma.TaskRunUncheckedCreateWithoutScheduleInput[];
+  connectOrCreate?:
+    | Prisma.TaskRunCreateOrConnectWithoutScheduleInput
+    | Prisma.TaskRunCreateOrConnectWithoutScheduleInput[];
+  upsert?:
+    | Prisma.TaskRunUpsertWithWhereUniqueWithoutScheduleInput
+    | Prisma.TaskRunUpsertWithWhereUniqueWithoutScheduleInput[];
+  createMany?: Prisma.TaskRunCreateManyScheduleInputEnvelope;
+  set?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[];
+  disconnect?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[];
+  delete?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[];
+  connect?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[];
+  update?:
+    | Prisma.TaskRunUpdateWithWhereUniqueWithoutScheduleInput
+    | Prisma.TaskRunUpdateWithWhereUniqueWithoutScheduleInput[];
+  updateMany?:
+    | Prisma.TaskRunUpdateManyWithWhereWithoutScheduleInput
+    | Prisma.TaskRunUpdateManyWithWhereWithoutScheduleInput[];
+  deleteMany?: Prisma.TaskRunScalarWhereInput | Prisma.TaskRunScalarWhereInput[];
+};
+
 export type TaskRunCreateWithoutTaskInput = {
   id?: string;
   status?: $Enums.TaskRunStatus;
@@ -681,12 +797,14 @@ export type TaskRunCreateWithoutTaskInput = {
   completedAt?: Date | string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
+  schedule?: Prisma.TaskScheduleCreateNestedOneWithoutRunsInput;
   attempts?: Prisma.TaskAttemptCreateNestedManyWithoutTaskRunInput;
   events?: Prisma.TaskEventCreateNestedManyWithoutTaskRunInput;
 };
 
 export type TaskRunUncheckedCreateWithoutTaskInput = {
   id?: string;
+  scheduleId?: string | null;
   status?: $Enums.TaskRunStatus;
   idempotencyKeyHash?: string | null;
   idempotencyRequestHash?: string | null;
@@ -750,6 +868,7 @@ export type TaskRunScalarWhereInput = {
   NOT?: Prisma.TaskRunScalarWhereInput | Prisma.TaskRunScalarWhereInput[];
   id?: Prisma.UuidFilter<"TaskRun"> | string;
   taskId?: Prisma.UuidFilter<"TaskRun"> | string;
+  scheduleId?: Prisma.UuidNullableFilter<"TaskRun"> | string | null;
   status?: Prisma.EnumTaskRunStatusFilter<"TaskRun"> | $Enums.TaskRunStatus;
   idempotencyKeyHash?: Prisma.StringNullableFilter<"TaskRun"> | string | null;
   idempotencyRequestHash?: Prisma.StringNullableFilter<"TaskRun"> | string | null;
@@ -779,12 +898,14 @@ export type TaskRunCreateWithoutAttemptsInput = {
   createdAt?: Date | string;
   updatedAt?: Date | string;
   task: Prisma.TaskCreateNestedOneWithoutRunsInput;
+  schedule?: Prisma.TaskScheduleCreateNestedOneWithoutRunsInput;
   events?: Prisma.TaskEventCreateNestedManyWithoutTaskRunInput;
 };
 
 export type TaskRunUncheckedCreateWithoutAttemptsInput = {
   id?: string;
   taskId: string;
+  scheduleId?: string | null;
   status?: $Enums.TaskRunStatus;
   idempotencyKeyHash?: string | null;
   idempotencyRequestHash?: string | null;
@@ -843,12 +964,14 @@ export type TaskRunUpdateWithoutAttemptsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   task?: Prisma.TaskUpdateOneRequiredWithoutRunsNestedInput;
+  schedule?: Prisma.TaskScheduleUpdateOneWithoutRunsNestedInput;
   events?: Prisma.TaskEventUpdateManyWithoutTaskRunNestedInput;
 };
 
 export type TaskRunUncheckedUpdateWithoutAttemptsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   taskId?: Prisma.StringFieldUpdateOperationsInput | string;
+  scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus;
   idempotencyKeyHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   idempotencyRequestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -879,12 +1002,14 @@ export type TaskRunCreateWithoutEventsInput = {
   createdAt?: Date | string;
   updatedAt?: Date | string;
   task: Prisma.TaskCreateNestedOneWithoutRunsInput;
+  schedule?: Prisma.TaskScheduleCreateNestedOneWithoutRunsInput;
   attempts?: Prisma.TaskAttemptCreateNestedManyWithoutTaskRunInput;
 };
 
 export type TaskRunUncheckedCreateWithoutEventsInput = {
   id?: string;
   taskId: string;
+  scheduleId?: string | null;
   status?: $Enums.TaskRunStatus;
   idempotencyKeyHash?: string | null;
   idempotencyRequestHash?: string | null;
@@ -943,12 +1068,14 @@ export type TaskRunUpdateWithoutEventsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   task?: Prisma.TaskUpdateOneRequiredWithoutRunsNestedInput;
+  schedule?: Prisma.TaskScheduleUpdateOneWithoutRunsNestedInput;
   attempts?: Prisma.TaskAttemptUpdateManyWithoutTaskRunNestedInput;
 };
 
 export type TaskRunUncheckedUpdateWithoutEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   taskId?: Prisma.StringFieldUpdateOperationsInput | string;
+  scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus;
   idempotencyKeyHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   idempotencyRequestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -964,8 +1091,88 @@ export type TaskRunUncheckedUpdateWithoutEventsInput = {
   attempts?: Prisma.TaskAttemptUncheckedUpdateManyWithoutTaskRunNestedInput;
 };
 
+export type TaskRunCreateWithoutScheduleInput = {
+  id?: string;
+  status?: $Enums.TaskRunStatus;
+  idempotencyKeyHash?: string | null;
+  idempotencyRequestHash?: string | null;
+  payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
+  startedAt?: Date | string | null;
+  lastHeartbeatAt?: Date | string | null;
+  completedAt?: Date | string | null;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  task: Prisma.TaskCreateNestedOneWithoutRunsInput;
+  attempts?: Prisma.TaskAttemptCreateNestedManyWithoutTaskRunInput;
+  events?: Prisma.TaskEventCreateNestedManyWithoutTaskRunInput;
+};
+
+export type TaskRunUncheckedCreateWithoutScheduleInput = {
+  id?: string;
+  taskId: string;
+  status?: $Enums.TaskRunStatus;
+  idempotencyKeyHash?: string | null;
+  idempotencyRequestHash?: string | null;
+  payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
+  startedAt?: Date | string | null;
+  lastHeartbeatAt?: Date | string | null;
+  completedAt?: Date | string | null;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  attempts?: Prisma.TaskAttemptUncheckedCreateNestedManyWithoutTaskRunInput;
+  events?: Prisma.TaskEventUncheckedCreateNestedManyWithoutTaskRunInput;
+};
+
+export type TaskRunCreateOrConnectWithoutScheduleInput = {
+  where: Prisma.TaskRunWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.TaskRunCreateWithoutScheduleInput,
+    Prisma.TaskRunUncheckedCreateWithoutScheduleInput
+  >;
+};
+
+export type TaskRunCreateManyScheduleInputEnvelope = {
+  data: Prisma.TaskRunCreateManyScheduleInput | Prisma.TaskRunCreateManyScheduleInput[];
+  skipDuplicates?: boolean;
+};
+
+export type TaskRunUpsertWithWhereUniqueWithoutScheduleInput = {
+  where: Prisma.TaskRunWhereUniqueInput;
+  update: Prisma.XOR<
+    Prisma.TaskRunUpdateWithoutScheduleInput,
+    Prisma.TaskRunUncheckedUpdateWithoutScheduleInput
+  >;
+  create: Prisma.XOR<
+    Prisma.TaskRunCreateWithoutScheduleInput,
+    Prisma.TaskRunUncheckedCreateWithoutScheduleInput
+  >;
+};
+
+export type TaskRunUpdateWithWhereUniqueWithoutScheduleInput = {
+  where: Prisma.TaskRunWhereUniqueInput;
+  data: Prisma.XOR<
+    Prisma.TaskRunUpdateWithoutScheduleInput,
+    Prisma.TaskRunUncheckedUpdateWithoutScheduleInput
+  >;
+};
+
+export type TaskRunUpdateManyWithWhereWithoutScheduleInput = {
+  where: Prisma.TaskRunScalarWhereInput;
+  data: Prisma.XOR<
+    Prisma.TaskRunUpdateManyMutationInput,
+    Prisma.TaskRunUncheckedUpdateManyWithoutScheduleInput
+  >;
+};
+
 export type TaskRunCreateManyTaskInput = {
   id?: string;
+  scheduleId?: string | null;
   status?: $Enums.TaskRunStatus;
   idempotencyKeyHash?: string | null;
   idempotencyRequestHash?: string | null;
@@ -994,12 +1201,14 @@ export type TaskRunUpdateWithoutTaskInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  schedule?: Prisma.TaskScheduleUpdateOneWithoutRunsNestedInput;
   attempts?: Prisma.TaskAttemptUpdateManyWithoutTaskRunNestedInput;
   events?: Prisma.TaskEventUpdateManyWithoutTaskRunNestedInput;
 };
 
 export type TaskRunUncheckedUpdateWithoutTaskInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
+  scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus;
   idempotencyKeyHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   idempotencyRequestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -1018,6 +1227,79 @@ export type TaskRunUncheckedUpdateWithoutTaskInput = {
 
 export type TaskRunUncheckedUpdateManyWithoutTaskInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
+  scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus;
+  idempotencyKeyHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  idempotencyRequestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+
+export type TaskRunCreateManyScheduleInput = {
+  id?: string;
+  taskId: string;
+  status?: $Enums.TaskRunStatus;
+  idempotencyKeyHash?: string | null;
+  idempotencyRequestHash?: string | null;
+  payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Date | string | null;
+  startedAt?: Date | string | null;
+  lastHeartbeatAt?: Date | string | null;
+  completedAt?: Date | string | null;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+};
+
+export type TaskRunUpdateWithoutScheduleInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus;
+  idempotencyKeyHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  idempotencyRequestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  task?: Prisma.TaskUpdateOneRequiredWithoutRunsNestedInput;
+  attempts?: Prisma.TaskAttemptUpdateManyWithoutTaskRunNestedInput;
+  events?: Prisma.TaskEventUpdateManyWithoutTaskRunNestedInput;
+};
+
+export type TaskRunUncheckedUpdateWithoutScheduleInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  taskId?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus;
+  idempotencyKeyHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  idempotencyRequestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  attempts?: Prisma.TaskAttemptUncheckedUpdateManyWithoutTaskRunNestedInput;
+  events?: Prisma.TaskEventUncheckedUpdateManyWithoutTaskRunNestedInput;
+};
+
+export type TaskRunUncheckedUpdateManyWithoutScheduleInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  taskId?: Prisma.StringFieldUpdateOperationsInput | string;
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus;
   idempotencyKeyHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   idempotencyRequestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -1084,6 +1366,7 @@ export type TaskRunSelect<
   {
     id?: boolean;
     taskId?: boolean;
+    scheduleId?: boolean;
     status?: boolean;
     idempotencyKeyHash?: boolean;
     idempotencyRequestHash?: boolean;
@@ -1097,6 +1380,7 @@ export type TaskRunSelect<
     createdAt?: boolean;
     updatedAt?: boolean;
     task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>;
+    schedule?: boolean | Prisma.TaskRun$scheduleArgs<ExtArgs>;
     attempts?: boolean | Prisma.TaskRun$attemptsArgs<ExtArgs>;
     events?: boolean | Prisma.TaskRun$eventsArgs<ExtArgs>;
     _count?: boolean | Prisma.TaskRunCountOutputTypeDefaultArgs<ExtArgs>;
@@ -1110,6 +1394,7 @@ export type TaskRunSelectCreateManyAndReturn<
   {
     id?: boolean;
     taskId?: boolean;
+    scheduleId?: boolean;
     status?: boolean;
     idempotencyKeyHash?: boolean;
     idempotencyRequestHash?: boolean;
@@ -1123,6 +1408,7 @@ export type TaskRunSelectCreateManyAndReturn<
     createdAt?: boolean;
     updatedAt?: boolean;
     task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>;
+    schedule?: boolean | Prisma.TaskRun$scheduleArgs<ExtArgs>;
   },
   ExtArgs["result"]["taskRun"]
 >;
@@ -1133,6 +1419,7 @@ export type TaskRunSelectUpdateManyAndReturn<
   {
     id?: boolean;
     taskId?: boolean;
+    scheduleId?: boolean;
     status?: boolean;
     idempotencyKeyHash?: boolean;
     idempotencyRequestHash?: boolean;
@@ -1146,6 +1433,7 @@ export type TaskRunSelectUpdateManyAndReturn<
     createdAt?: boolean;
     updatedAt?: boolean;
     task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>;
+    schedule?: boolean | Prisma.TaskRun$scheduleArgs<ExtArgs>;
   },
   ExtArgs["result"]["taskRun"]
 >;
@@ -1153,6 +1441,7 @@ export type TaskRunSelectUpdateManyAndReturn<
 export type TaskRunSelectScalar = {
   id?: boolean;
   taskId?: boolean;
+  scheduleId?: boolean;
   status?: boolean;
   idempotencyKeyHash?: boolean;
   idempotencyRequestHash?: boolean;
@@ -1172,6 +1461,7 @@ export type TaskRunOmit<
 > = runtime.Types.Extensions.GetOmit<
   | "id"
   | "taskId"
+  | "scheduleId"
   | "status"
   | "idempotencyKeyHash"
   | "idempotencyRequestHash"
@@ -1190,6 +1480,7 @@ export type TaskRunInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>;
+  schedule?: boolean | Prisma.TaskRun$scheduleArgs<ExtArgs>;
   attempts?: boolean | Prisma.TaskRun$attemptsArgs<ExtArgs>;
   events?: boolean | Prisma.TaskRun$eventsArgs<ExtArgs>;
   _count?: boolean | Prisma.TaskRunCountOutputTypeDefaultArgs<ExtArgs>;
@@ -1198,11 +1489,13 @@ export type TaskRunIncludeCreateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>;
+  schedule?: boolean | Prisma.TaskRun$scheduleArgs<ExtArgs>;
 };
 export type TaskRunIncludeUpdateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>;
+  schedule?: boolean | Prisma.TaskRun$scheduleArgs<ExtArgs>;
 };
 
 export type $TaskRunPayload<
@@ -1211,6 +1504,7 @@ export type $TaskRunPayload<
   name: "TaskRun";
   objects: {
     task: Prisma.$TaskPayload<ExtArgs>;
+    schedule: Prisma.$TaskSchedulePayload<ExtArgs> | null;
     attempts: Prisma.$TaskAttemptPayload<ExtArgs>[];
     events: Prisma.$TaskEventPayload<ExtArgs>[];
   };
@@ -1218,6 +1512,7 @@ export type $TaskRunPayload<
     {
       id: string;
       taskId: string;
+      scheduleId: string | null;
       status: $Enums.TaskRunStatus;
       idempotencyKeyHash: string | null;
       idempotencyRequestHash: string | null;
@@ -1759,6 +2054,19 @@ export interface Prisma__TaskRunClient<
     ExtArgs,
     GlobalOmitOptions
   >;
+  schedule<T extends Prisma.TaskRun$scheduleArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.TaskRun$scheduleArgs<ExtArgs>>,
+  ): Prisma.Prisma__TaskScheduleClient<
+    runtime.Types.Result.GetResult<
+      Prisma.$TaskSchedulePayload<ExtArgs>,
+      T,
+      "findUniqueOrThrow",
+      GlobalOmitOptions
+    > | null,
+    null,
+    ExtArgs,
+    GlobalOmitOptions
+  >;
   attempts<T extends Prisma.TaskRun$attemptsArgs<ExtArgs> = {}>(
     args?: Prisma.Subset<T, Prisma.TaskRun$attemptsArgs<ExtArgs>>,
   ): Prisma.PrismaPromise<
@@ -1814,6 +2122,7 @@ export interface Prisma__TaskRunClient<
 export interface TaskRunFieldRefs {
   readonly id: Prisma.FieldRef<"TaskRun", "String">;
   readonly taskId: Prisma.FieldRef<"TaskRun", "String">;
+  readonly scheduleId: Prisma.FieldRef<"TaskRun", "String">;
   readonly status: Prisma.FieldRef<"TaskRun", "TaskRunStatus">;
   readonly idempotencyKeyHash: Prisma.FieldRef<"TaskRun", "String">;
   readonly idempotencyRequestHash: Prisma.FieldRef<"TaskRun", "String">;
@@ -2251,6 +2560,27 @@ export type TaskRunDeleteManyArgs<
    * Limit how many TaskRuns to delete.
    */
   limit?: number;
+};
+
+/**
+ * TaskRun.schedule
+ */
+export type TaskRun$scheduleArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the TaskSchedule
+   */
+  select?: Prisma.TaskScheduleSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the TaskSchedule
+   */
+  omit?: Prisma.TaskScheduleOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TaskScheduleInclude<ExtArgs> | null;
+  where?: Prisma.TaskScheduleWhereInput;
 };
 
 /**

@@ -51,3 +51,8 @@ export type TaskAttempt = Prisma.TaskAttemptModel;
  *
  */
 export type TaskEvent = Prisma.TaskEventModel;
+/**
+ * Model TaskSchedule
+ *
+ */
+export type TaskSchedule = Prisma.TaskScheduleModel;

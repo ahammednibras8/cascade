@@ -6,11 +6,13 @@ import { popTaskRunMessage, taskRunQueueRedis } from "./queue/task-runs.js";
 import { processTaskRun } from "./task-run-processor.js";
 import { startStuckRunSweeper } from "./timers/stuck-run-sweeper.js";
 import type { ShutdownSignal } from "./lifecycle/shutdown.js";
+import { startTaskScheduleScheduler } from "./timers/task-schedule-scheduler.js";
 
 export async function runWorker(shutdownSignal: ShutdownSignal) {
   process.stdout.write(`Starting worker with ${packageName}\n`);
 
   const stopStuckRunSweeper = startStuckRunSweeper();
+  const stopTaskScheduleScheduler = startTaskScheduleScheduler();
 
   try {
     while (true) {
@@ -32,6 +34,7 @@ export async function runWorker(shutdownSignal: ShutdownSignal) {
     }
   } finally {
     stopStuckRunSweeper();
+    stopTaskScheduleScheduler();
 
     await taskRunQueueRedis.quit();
     await prisma.$disconnect();

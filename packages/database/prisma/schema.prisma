@@ -96,6 +96,7 @@ model Task {
   environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
 
   runs TaskRun[]
+  schedules TaskSchedule[]
 
   @@unique([environmentId, slug])
   @@index([environmentId])
@@ -104,6 +105,7 @@ model Task {
 model TaskRun {
   id String @id @default(uuid()) @db.Uuid
   taskId String @db.Uuid
+  scheduleId String? @db.Uuid
   status TaskRunStatus @default(PENDING)
   idempotencyKeyHash String?
   idempotencyRequestHash String?
@@ -118,12 +120,14 @@ model TaskRun {
   updatedAt DateTime @updatedAt
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  schedule TaskSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
 
   attempts TaskAttempt[]
   events TaskEvent[]
 
   @@unique([taskId, idempotencyKeyHash])
   @@index([taskId, createdAt])
+  @@index([scheduleId, createdAt])
   @@index([status, createdAt])
   @@index([status, lastHeartbeatAt])
   @@index([status, delayUntil])
@@ -164,4 +168,26 @@ model TaskEvent {
   @@index([taskRunId, createdAt])
   @@index([taskAttemptId, createdAt])
   @@index([type, createdAt])
+}
+
+model TaskSchedule {
+  id String @id @default(uuid()) @db.Uuid
+  taskId String @db.Uuid
+  name String
+  payload Json?
+  intervalSeconds Int
+  nextRunAt DateTime
+  lastRunAt DateTime?
+  enabled Boolean @default(true)
+  lockedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  runs TaskRun[]
+
+  @@index([taskId])
+  @@index([enabled, nextRunAt])
+  @@index([lockedAt])
 }

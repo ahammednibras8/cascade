@@ -196,6 +196,7 @@ export type TaskWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Task"> | Date | string;
   environment?: Prisma.XOR<Prisma.EnvironmentScalarRelationFilter, Prisma.EnvironmentWhereInput>;
   runs?: Prisma.TaskRunListRelationFilter;
+  schedules?: Prisma.TaskScheduleListRelationFilter;
 };
 
 export type TaskOrderByWithRelationInput = {
@@ -208,6 +209,7 @@ export type TaskOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder;
   environment?: Prisma.EnvironmentOrderByWithRelationInput;
   runs?: Prisma.TaskRunOrderByRelationAggregateInput;
+  schedules?: Prisma.TaskScheduleOrderByRelationAggregateInput;
 };
 
 export type TaskWhereUniqueInput = Prisma.AtLeast<
@@ -225,6 +227,7 @@ export type TaskWhereUniqueInput = Prisma.AtLeast<
     updatedAt?: Prisma.DateTimeFilter<"Task"> | Date | string;
     environment?: Prisma.XOR<Prisma.EnvironmentScalarRelationFilter, Prisma.EnvironmentWhereInput>;
     runs?: Prisma.TaskRunListRelationFilter;
+    schedules?: Prisma.TaskScheduleListRelationFilter;
   },
   "id" | "environmentId_slug"
 >;
@@ -264,6 +267,7 @@ export type TaskCreateInput = {
   updatedAt?: Date | string;
   environment: Prisma.EnvironmentCreateNestedOneWithoutTasksInput;
   runs?: Prisma.TaskRunCreateNestedManyWithoutTaskInput;
+  schedules?: Prisma.TaskScheduleCreateNestedManyWithoutTaskInput;
 };
 
 export type TaskUncheckedCreateInput = {
@@ -275,6 +279,7 @@ export type TaskUncheckedCreateInput = {
   createdAt?: Date | string;
   updatedAt?: Date | string;
   runs?: Prisma.TaskRunUncheckedCreateNestedManyWithoutTaskInput;
+  schedules?: Prisma.TaskScheduleUncheckedCreateNestedManyWithoutTaskInput;
 };
 
 export type TaskUpdateInput = {
@@ -286,6 +291,7 @@ export type TaskUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   environment?: Prisma.EnvironmentUpdateOneRequiredWithoutTasksNestedInput;
   runs?: Prisma.TaskRunUpdateManyWithoutTaskNestedInput;
+  schedules?: Prisma.TaskScheduleUpdateManyWithoutTaskNestedInput;
 };
 
 export type TaskUncheckedUpdateInput = {
@@ -297,6 +303,7 @@ export type TaskUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   runs?: Prisma.TaskRunUncheckedUpdateManyWithoutTaskNestedInput;
+  schedules?: Prisma.TaskScheduleUncheckedUpdateManyWithoutTaskNestedInput;
 };
 
 export type TaskCreateManyInput = {
@@ -491,6 +498,32 @@ export type TaskUpdateOneRequiredWithoutRunsNestedInput = {
   >;
 };
 
+export type TaskCreateNestedOneWithoutSchedulesInput = {
+  create?: Prisma.XOR<
+    Prisma.TaskCreateWithoutSchedulesInput,
+    Prisma.TaskUncheckedCreateWithoutSchedulesInput
+  >;
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutSchedulesInput;
+  connect?: Prisma.TaskWhereUniqueInput;
+};
+
+export type TaskUpdateOneRequiredWithoutSchedulesNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.TaskCreateWithoutSchedulesInput,
+    Prisma.TaskUncheckedCreateWithoutSchedulesInput
+  >;
+  connectOrCreate?: Prisma.TaskCreateOrConnectWithoutSchedulesInput;
+  upsert?: Prisma.TaskUpsertWithoutSchedulesInput;
+  connect?: Prisma.TaskWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.TaskUpdateToOneWithWhereWithoutSchedulesInput,
+      Prisma.TaskUpdateWithoutSchedulesInput
+    >,
+    Prisma.TaskUncheckedUpdateWithoutSchedulesInput
+  >;
+};
+
 export type TaskCreateWithoutEnvironmentInput = {
   id?: string;
   slug: string;
@@ -499,6 +532,7 @@ export type TaskCreateWithoutEnvironmentInput = {
   createdAt?: Date | string;
   updatedAt?: Date | string;
   runs?: Prisma.TaskRunCreateNestedManyWithoutTaskInput;
+  schedules?: Prisma.TaskScheduleCreateNestedManyWithoutTaskInput;
 };
 
 export type TaskUncheckedCreateWithoutEnvironmentInput = {
@@ -509,6 +543,7 @@ export type TaskUncheckedCreateWithoutEnvironmentInput = {
   createdAt?: Date | string;
   updatedAt?: Date | string;
   runs?: Prisma.TaskRunUncheckedCreateNestedManyWithoutTaskInput;
+  schedules?: Prisma.TaskScheduleUncheckedCreateNestedManyWithoutTaskInput;
 };
 
 export type TaskCreateOrConnectWithoutEnvironmentInput = {
@@ -573,6 +608,7 @@ export type TaskCreateWithoutRunsInput = {
   createdAt?: Date | string;
   updatedAt?: Date | string;
   environment: Prisma.EnvironmentCreateNestedOneWithoutTasksInput;
+  schedules?: Prisma.TaskScheduleCreateNestedManyWithoutTaskInput;
 };
 
 export type TaskUncheckedCreateWithoutRunsInput = {
@@ -583,6 +619,7 @@ export type TaskUncheckedCreateWithoutRunsInput = {
   description?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
+  schedules?: Prisma.TaskScheduleUncheckedCreateNestedManyWithoutTaskInput;
 };
 
 export type TaskCreateOrConnectWithoutRunsInput = {
@@ -609,6 +646,7 @@ export type TaskUpdateWithoutRunsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   environment?: Prisma.EnvironmentUpdateOneRequiredWithoutTasksNestedInput;
+  schedules?: Prisma.TaskScheduleUpdateManyWithoutTaskNestedInput;
 };
 
 export type TaskUncheckedUpdateWithoutRunsInput = {
@@ -619,6 +657,79 @@ export type TaskUncheckedUpdateWithoutRunsInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  schedules?: Prisma.TaskScheduleUncheckedUpdateManyWithoutTaskNestedInput;
+};
+
+export type TaskCreateWithoutSchedulesInput = {
+  id?: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  environment: Prisma.EnvironmentCreateNestedOneWithoutTasksInput;
+  runs?: Prisma.TaskRunCreateNestedManyWithoutTaskInput;
+};
+
+export type TaskUncheckedCreateWithoutSchedulesInput = {
+  id?: string;
+  environmentId: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  runs?: Prisma.TaskRunUncheckedCreateNestedManyWithoutTaskInput;
+};
+
+export type TaskCreateOrConnectWithoutSchedulesInput = {
+  where: Prisma.TaskWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.TaskCreateWithoutSchedulesInput,
+    Prisma.TaskUncheckedCreateWithoutSchedulesInput
+  >;
+};
+
+export type TaskUpsertWithoutSchedulesInput = {
+  update: Prisma.XOR<
+    Prisma.TaskUpdateWithoutSchedulesInput,
+    Prisma.TaskUncheckedUpdateWithoutSchedulesInput
+  >;
+  create: Prisma.XOR<
+    Prisma.TaskCreateWithoutSchedulesInput,
+    Prisma.TaskUncheckedCreateWithoutSchedulesInput
+  >;
+  where?: Prisma.TaskWhereInput;
+};
+
+export type TaskUpdateToOneWithWhereWithoutSchedulesInput = {
+  where?: Prisma.TaskWhereInput;
+  data: Prisma.XOR<
+    Prisma.TaskUpdateWithoutSchedulesInput,
+    Prisma.TaskUncheckedUpdateWithoutSchedulesInput
+  >;
+};
+
+export type TaskUpdateWithoutSchedulesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  slug?: Prisma.StringFieldUpdateOperationsInput | string;
+  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  environment?: Prisma.EnvironmentUpdateOneRequiredWithoutTasksNestedInput;
+  runs?: Prisma.TaskRunUpdateManyWithoutTaskNestedInput;
+};
+
+export type TaskUncheckedUpdateWithoutSchedulesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  environmentId?: Prisma.StringFieldUpdateOperationsInput | string;
+  slug?: Prisma.StringFieldUpdateOperationsInput | string;
+  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  runs?: Prisma.TaskRunUncheckedUpdateManyWithoutTaskNestedInput;
 };
 
 export type TaskCreateManyEnvironmentInput = {
@@ -638,6 +749,7 @@ export type TaskUpdateWithoutEnvironmentInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   runs?: Prisma.TaskRunUpdateManyWithoutTaskNestedInput;
+  schedules?: Prisma.TaskScheduleUpdateManyWithoutTaskNestedInput;
 };
 
 export type TaskUncheckedUpdateWithoutEnvironmentInput = {
@@ -648,6 +760,7 @@ export type TaskUncheckedUpdateWithoutEnvironmentInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   runs?: Prisma.TaskRunUncheckedUpdateManyWithoutTaskNestedInput;
+  schedules?: Prisma.TaskScheduleUncheckedUpdateManyWithoutTaskNestedInput;
 };
 
 export type TaskUncheckedUpdateManyWithoutEnvironmentInput = {
@@ -665,12 +778,14 @@ export type TaskUncheckedUpdateManyWithoutEnvironmentInput = {
 
 export type TaskCountOutputType = {
   runs: number;
+  schedules: number;
 };
 
 export type TaskCountOutputTypeSelect<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   runs?: boolean | TaskCountOutputTypeCountRunsArgs;
+  schedules?: boolean | TaskCountOutputTypeCountSchedulesArgs;
 };
 
 /**
@@ -694,6 +809,15 @@ export type TaskCountOutputTypeCountRunsArgs<
   where?: Prisma.TaskRunWhereInput;
 };
 
+/**
+ * TaskCountOutputType without action
+ */
+export type TaskCountOutputTypeCountSchedulesArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.TaskScheduleWhereInput;
+};
+
 export type TaskSelect<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = runtime.Types.Extensions.GetSelect<
@@ -707,6 +831,7 @@ export type TaskSelect<
     updatedAt?: boolean;
     environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>;
     runs?: boolean | Prisma.Task$runsArgs<ExtArgs>;
+    schedules?: boolean | Prisma.Task$schedulesArgs<ExtArgs>;
     _count?: boolean | Prisma.TaskCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs["result"]["task"]
@@ -765,6 +890,7 @@ export type TaskInclude<
 > = {
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>;
   runs?: boolean | Prisma.Task$runsArgs<ExtArgs>;
+  schedules?: boolean | Prisma.Task$schedulesArgs<ExtArgs>;
   _count?: boolean | Prisma.TaskCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type TaskIncludeCreateManyAndReturn<
@@ -785,6 +911,7 @@ export type $TaskPayload<
   objects: {
     environment: Prisma.$EnvironmentPayload<ExtArgs>;
     runs: Prisma.$TaskRunPayload<ExtArgs>[];
+    schedules: Prisma.$TaskSchedulePayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -1330,6 +1457,17 @@ export interface Prisma__TaskClient<
       >
     | Null
   >;
+  schedules<T extends Prisma.Task$schedulesArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.Task$schedulesArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$TaskSchedulePayload<ExtArgs>,
+        T,
+        "findMany",
+        GlobalOmitOptions
+      >
+    | Null
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1819,6 +1957,34 @@ export type Task$runsArgs<
   take?: number;
   skip?: number;
   distinct?: Prisma.TaskRunScalarFieldEnum | Prisma.TaskRunScalarFieldEnum[];
+};
+
+/**
+ * Task.schedules
+ */
+export type Task$schedulesArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the TaskSchedule
+   */
+  select?: Prisma.TaskScheduleSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the TaskSchedule
+   */
+  omit?: Prisma.TaskScheduleOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TaskScheduleInclude<ExtArgs> | null;
+  where?: Prisma.TaskScheduleWhereInput;
+  orderBy?:
+    | Prisma.TaskScheduleOrderByWithRelationInput
+    | Prisma.TaskScheduleOrderByWithRelationInput[];
+  cursor?: Prisma.TaskScheduleWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.TaskScheduleScalarFieldEnum | Prisma.TaskScheduleScalarFieldEnum[];
 };
 
 /**

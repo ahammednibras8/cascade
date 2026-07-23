@@ -14,4 +14,5 @@ export type * from "./models/Task.js";
 export type * from "./models/TaskRun.js";
 export type * from "./models/TaskAttempt.js";
 export type * from "./models/TaskEvent.js";
+export type * from "./models/TaskSchedule.js";
 export type * from "./commonInputTypes.js";

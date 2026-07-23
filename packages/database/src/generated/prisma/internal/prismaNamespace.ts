@@ -398,6 +398,7 @@ export const ModelName = {
   TaskRun: "TaskRun",
   TaskAttempt: "TaskAttempt",
   TaskEvent: "TaskEvent",
+  TaskSchedule: "TaskSchedule",
 } as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -424,7 +425,8 @@ export type TypeMap<
       | "task"
       | "taskRun"
       | "taskAttempt"
-      | "taskEvent";
+      | "taskEvent"
+      | "taskSchedule";
     txIsolationLevel: TransactionIsolationLevel;
   };
   model: {
@@ -946,6 +948,82 @@ export type TypeMap<
         };
       };
     };
+    TaskSchedule: {
+      payload: Prisma.$TaskSchedulePayload<ExtArgs>;
+      fields: Prisma.TaskScheduleFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.TaskScheduleFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaskSchedulePayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.TaskScheduleFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaskSchedulePayload>;
+        };
+        findFirst: {
+          args: Prisma.TaskScheduleFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaskSchedulePayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.TaskScheduleFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaskSchedulePayload>;
+        };
+        findMany: {
+          args: Prisma.TaskScheduleFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaskSchedulePayload>[];
+        };
+        create: {
+          args: Prisma.TaskScheduleCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaskSchedulePayload>;
+        };
+        createMany: {
+          args: Prisma.TaskScheduleCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.TaskScheduleCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaskSchedulePayload>[];
+        };
+        delete: {
+          args: Prisma.TaskScheduleDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaskSchedulePayload>;
+        };
+        update: {
+          args: Prisma.TaskScheduleUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaskSchedulePayload>;
+        };
+        deleteMany: {
+          args: Prisma.TaskScheduleDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.TaskScheduleUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.TaskScheduleUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaskSchedulePayload>[];
+        };
+        upsert: {
+          args: Prisma.TaskScheduleUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TaskSchedulePayload>;
+        };
+        aggregate: {
+          args: Prisma.TaskScheduleAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTaskSchedule>;
+        };
+        groupBy: {
+          args: Prisma.TaskScheduleGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.TaskScheduleGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.TaskScheduleCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.TaskScheduleCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
   };
 } & {
   other: {
@@ -1039,6 +1117,7 @@ export type TaskScalarFieldEnum = (typeof TaskScalarFieldEnum)[keyof typeof Task
 export const TaskRunScalarFieldEnum = {
   id: "id",
   taskId: "taskId",
+  scheduleId: "scheduleId",
   status: "status",
   idempotencyKeyHash: "idempotencyKeyHash",
   idempotencyRequestHash: "idempotencyRequestHash",
@@ -1084,6 +1163,23 @@ export const TaskEventScalarFieldEnum = {
 
 export type TaskEventScalarFieldEnum =
   (typeof TaskEventScalarFieldEnum)[keyof typeof TaskEventScalarFieldEnum];
+
+export const TaskScheduleScalarFieldEnum = {
+  id: "id",
+  taskId: "taskId",
+  name: "name",
+  payload: "payload",
+  intervalSeconds: "intervalSeconds",
+  nextRunAt: "nextRunAt",
+  lastRunAt: "lastRunAt",
+  enabled: "enabled",
+  lockedAt: "lockedAt",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+} as const;
+
+export type TaskScheduleScalarFieldEnum =
+  (typeof TaskScheduleScalarFieldEnum)[keyof typeof TaskScheduleScalarFieldEnum];
 
 export const SortOrder = {
   asc: "asc",
@@ -1229,6 +1325,11 @@ export type ListEnumTaskEventLevelFieldRefInput<$PrismaModel> = FieldRefInputTyp
   $PrismaModel,
   "TaskEventLevel[]"
 >;
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, "Boolean">;
 
 /**
  * Reference to a field of type 'Float'
@@ -1405,6 +1506,7 @@ export type GlobalOmitConfig = {
   taskRun?: Prisma.TaskRunOmit;
   taskAttempt?: Prisma.TaskAttemptOmit;
   taskEvent?: Prisma.TaskEventOmit;
+  taskSchedule?: Prisma.TaskScheduleOmit;
 };
 
 /* Types for Logging */

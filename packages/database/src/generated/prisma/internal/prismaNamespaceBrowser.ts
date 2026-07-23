@@ -55,6 +55,7 @@ export const ModelName = {
   TaskRun: "TaskRun",
   TaskAttempt: "TaskAttempt",
   TaskEvent: "TaskEvent",
+  TaskSchedule: "TaskSchedule",
 } as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -127,6 +128,7 @@ export type TaskScalarFieldEnum = (typeof TaskScalarFieldEnum)[keyof typeof Task
 export const TaskRunScalarFieldEnum = {
   id: "id",
   taskId: "taskId",
+  scheduleId: "scheduleId",
   status: "status",
   idempotencyKeyHash: "idempotencyKeyHash",
   idempotencyRequestHash: "idempotencyRequestHash",
@@ -172,6 +174,23 @@ export const TaskEventScalarFieldEnum = {
 
 export type TaskEventScalarFieldEnum =
   (typeof TaskEventScalarFieldEnum)[keyof typeof TaskEventScalarFieldEnum];
+
+export const TaskScheduleScalarFieldEnum = {
+  id: "id",
+  taskId: "taskId",
+  name: "name",
+  payload: "payload",
+  intervalSeconds: "intervalSeconds",
+  nextRunAt: "nextRunAt",
+  lastRunAt: "lastRunAt",
+  enabled: "enabled",
+  lockedAt: "lockedAt",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+} as const;
+
+export type TaskScheduleScalarFieldEnum =
+  (typeof TaskScheduleScalarFieldEnum)[keyof typeof TaskScheduleScalarFieldEnum];
 
 export const SortOrder = {
   asc: "asc",
