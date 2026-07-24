@@ -13,7 +13,7 @@ const globalForRedis = globalThis as unknown as {
   taskRunQueueRedis?: Redis;
 };
 
-type EngueueTaskRunOptions = {
+type EnqueueTaskRunOptions = {
   delayMs?: number;
 };
 
@@ -36,7 +36,7 @@ function createRedisClient() {
 
 export async function enqueueTaskRun(
   message: TaskRunQueueMessage,
-  options: EngueueTaskRunOptions = {},
+  options: EnqueueTaskRunOptions = {},
 ) {
   const delayMs = options.delayMs ?? 0;
   const rawMessage = JSON.stringify(message);

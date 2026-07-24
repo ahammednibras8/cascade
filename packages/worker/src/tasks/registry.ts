@@ -2,6 +2,10 @@ import { createTaskRegistry, task } from "@cascade/core";
 
 const helloTask = task({
   id: "hello",
+  queue: {
+    name: "hello",
+    concurrencyLimit: 2,
+  },
   retry: {
     maxAttempts: 3,
     delayMs: 1000,

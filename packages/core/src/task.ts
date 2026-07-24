@@ -31,12 +31,18 @@ export type TaskRetryConfig = {
   exponentialBackoff: boolean;
 };
 
+export type TaskQueueConfig = {
+  name: string;
+  concurrencyLimit: number | null;
+};
+
 export type TaskDefinitionInput<
   TPayload extends JsonValue = JsonValue,
   TOutput extends TaskRunOutput = TaskRunOutput,
 > = {
   id: string;
   retry?: Partial<TaskRetryConfig>;
+  queue?: Partial<TaskQueueConfig>;
   run: (context: TaskRunContext<TPayload>) => TOutput | Promise<TOutput>;
 };
 
@@ -46,16 +52,18 @@ export type TaskDefinition<
 > = {
   id: string;
   retry: TaskRetryConfig;
+  queue: TaskQueueConfig;
   run: (context: TaskRunContext<TPayload>) => TOutput | Promise<TOutput>;
 };
 
 export function task<
   TPayload extends JsonValue = JsonValue,
   TOutput extends TaskRunOutput = TaskRunOutput,
->(definition: TaskDefinition<TPayload, TOutput>): TaskDefinition<TPayload, TOutput> {
+>(definition: TaskDefinitionInput<TPayload, TOutput>): TaskDefinition<TPayload, TOutput> {
   return {
     ...definition,
     retry: normalizeRetryConfig(definition.retry),
+    queue: normalizeQueueConfig(definition.id, definition.queue),
   };
 }
 
@@ -102,5 +110,23 @@ function normalizeRetryConfig(retry?: Partial<TaskRetryConfig>): TaskRetryConfig
     maxAttempts,
     delayMs,
     exponentialBackoff,
+  };
+}
+
+function normalizeQueueConfig(taskId: string, queue?: Partial<TaskQueueConfig>): TaskQueueConfig {
+  const name = queue?.name ?? taskId;
+  const concurrencyLimit = queue?.concurrencyLimit ?? null;
+
+  if (!name.trim()) {
+    throw new Error("queue.name must not be empty");
+  }
+
+  if (concurrencyLimit !== null && (!Number.isInteger(concurrencyLimit) || concurrencyLimit < 1)) {
+    throw new Error("queue.concurrencyLimit must be an integer greater than or equal to 1");
+  }
+
+  return {
+    name,
+    concurrencyLimit,
   };
 }

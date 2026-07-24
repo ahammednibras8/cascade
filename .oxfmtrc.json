@@ -15,6 +15,7 @@
     "blob-report/**",
     "pnpm-lock.yaml",
     ".tshy-build/",
+    "packages/database/src/generated/**",
     "hosting/k8s/helm/templates/**"
   ]
 }
