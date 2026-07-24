@@ -21,7 +21,10 @@ export type TaskRunContext<TPayload extends JsonValue = JsonValue> = {
   environmentId: string;
   payload: TPayload | null;
   logger: TaskLogger;
+  signal: AbortSignal;
 };
+
+const DEFAULT_TASK_TIMEOUT_MS = 300_000;
 
 export type TaskRunOutput = JsonValue | void;
 
@@ -43,6 +46,7 @@ export type TaskDefinitionInput<
   id: string;
   retry?: Partial<TaskRetryConfig>;
   queue?: Partial<TaskQueueConfig>;
+  timeoutMs?: number | null;
   run: (context: TaskRunContext<TPayload>) => TOutput | Promise<TOutput>;
 };
 
@@ -53,6 +57,7 @@ export type TaskDefinition<
   id: string;
   retry: TaskRetryConfig;
   queue: TaskQueueConfig;
+  timeoutMs: number | null;
   run: (context: TaskRunContext<TPayload>) => TOutput | Promise<TOutput>;
 };
 
@@ -64,6 +69,7 @@ export function task<
     ...definition,
     retry: normalizeRetryConfig(definition.retry),
     queue: normalizeQueueConfig(definition.id, definition.queue),
+    timeoutMs: normalizeTimeoutMs(definition.timeoutMs),
   };
 }
 
@@ -129,4 +135,17 @@ function normalizeQueueConfig(taskId: string, queue?: Partial<TaskQueueConfig>):
     name,
     concurrencyLimit,
   };
+}
+
+function normalizeTimeoutMs(timeoutMs?: number | null) {
+  const normalizedTimeoutMs = timeoutMs === undefined ? DEFAULT_TASK_TIMEOUT_MS : timeoutMs;
+
+  if (
+    normalizedTimeoutMs !== null &&
+    (!Number.isInteger(normalizedTimeoutMs) || normalizedTimeoutMs < 1)
+  ) {
+    throw new Error("timeoutMs must be null or an integer greater than or equal to 1");
+  }
+
+  return normalizedTimeoutMs;
 }

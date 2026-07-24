@@ -12,16 +12,27 @@ import { createTaskLogger } from "./task-run-logger.js";
 import { taskRegistry } from "./tasks/registry.js";
 import { startQueueConcurrencyLeaseHeartbeat } from "./timers/queue-concurrency-lease.js";
 import { startTaskRunHeartbeat } from "./timers/task-run-heartbeat.js";
+import { runWithTaskTimeout } from "./task-timeout.js";
 
 function serializeError(error: unknown): Prisma.InputJsonValue {
   if (error instanceof Error) {
-    const data: Record<string, string> = {
+    const data: Record<string, Prisma.InputJsonValue> = {
       name: error.name,
       message: error.message,
     };
 
     if (error.stack) {
       data.stack = error.stack;
+    }
+
+    const errorWithCode = error as { code?: unknown; timeoutMs?: unknown };
+
+    if (typeof errorWithCode.code === "string") {
+      data.code = errorWithCode.code;
+    }
+
+    if (typeof errorWithCode.timeoutMs === "number") {
+      data.timeoutMs = errorWithCode.timeoutMs;
     }
 
     return data;
@@ -235,12 +246,17 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
         taskAttemptId: attempt.id,
       });
 
-      const output = await localTask.run({
-        runId: taskRun.id,
-        taskId: taskRun.taskId,
-        environmentId: message.environmentId,
-        payload: taskRun.payload as JsonValue | null,
-        logger,
+      const output = await runWithTaskTimeout({
+        timeoutMs: localTask.timeoutMs,
+        run: (signal) =>
+          localTask.run({
+            runId: taskRun.id,
+            taskId: taskRun.taskId,
+            environmentId: message.environmentId,
+            payload: taskRun.payload as JsonValue | null,
+            logger,
+            signal,
+          }),
       });
 
       const normalizedOutput =
