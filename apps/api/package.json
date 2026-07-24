@@ -13,6 +13,7 @@
   "dependencies": {
     "@cascade/core": "workspace:*",
     "@cascade/database": "workspace:*",
+    "@cascade/storage": "workspace:*",
     "express": "5.2.1",
     "ioredis": "5.11.1"
   },

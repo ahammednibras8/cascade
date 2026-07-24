@@ -12,6 +12,7 @@
   "dependencies": {
     "@cascade/core": "workspace:*",
     "@cascade/database": "workspace:*",
+    "@cascade/storage": "workspace:*",
     "ioredis": "5.11.1"
   },
   "devDependencies": {

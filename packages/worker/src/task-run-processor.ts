@@ -13,6 +13,7 @@ import { taskRegistry } from "./tasks/registry.js";
 import { startQueueConcurrencyLeaseHeartbeat } from "./timers/queue-concurrency-lease.js";
 import { startTaskRunHeartbeat } from "./timers/task-run-heartbeat.js";
 import { runWithTaskTimeout } from "./task-timeout.js";
+import { maybeStoreJsonValue, resolveJsonValue } from "@cascade/storage";
 
 function serializeError(error: unknown): Prisma.InputJsonValue {
   if (error instanceof Error) {
@@ -246,6 +247,8 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
         taskAttemptId: attempt.id,
       });
 
+      const resolvedPayload = await resolveJsonValue(taskRun.payload);
+
       const output = await runWithTaskTimeout({
         timeoutMs: localTask.timeoutMs,
         run: (signal) =>
@@ -253,14 +256,22 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
             runId: taskRun.id,
             taskId: taskRun.taskId,
             environmentId: message.environmentId,
-            payload: taskRun.payload as JsonValue | null,
+            payload: resolvedPayload as JsonValue | null,
             logger,
             signal,
           }),
       });
 
       const normalizedOutput =
-        output === undefined ? Prisma.DbNull : (output as Prisma.InputJsonValue);
+        output === undefined
+          ? Prisma.DbNull
+          : ((await maybeStoreJsonValue({
+              kind: "OUTPUT",
+              environmentId: message.environmentId,
+              taskId: taskRun.id,
+              runId: taskRun.id,
+              value: output as JsonValue,
+            })) as Prisma.InputJsonValue);
 
       const completed = await prisma.$transaction(async (tx) => {
         const completedAt = new Date();

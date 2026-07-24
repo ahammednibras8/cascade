@@ -9,6 +9,8 @@ import {
 } from "../lib/idempotency.js";
 import { isUuid } from "../lib/route-params.js";
 import { enqueueTaskRun } from "../queue/task-runs.js";
+import { randomUUID } from "node:crypto";
+import { maybeStoreJsonValue } from "@cascade/storage";
 
 const taskRunSelect = {
   id: true,
@@ -211,14 +213,28 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
     created = true;
 
     try {
+      const runId = randomUUID();
+
+      const storedPayload =
+        payload === undefined
+          ? undefined
+          : await maybeStoreJsonValue({
+              kind: "PAYLOAD",
+              environmentId: auth.environmentId,
+              taskId,
+              runId,
+              value: payload,
+            });
+
       taskRun = await prisma.$transaction(async (tx) => {
         const data: Prisma.TaskRunUncheckedCreateInput = {
+          id: runId,
           taskId,
           status: "PENDING",
         };
 
-        if (payload !== undefined) {
-          data.payload = payload;
+        if (storedPayload !== undefined) {
+          data.payload = storedPayload as Prisma.InputJsonValue;
         }
 
         if (idempotencyKeyHash && idempotencyRequestHash) {
