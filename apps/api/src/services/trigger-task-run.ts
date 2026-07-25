@@ -11,6 +11,12 @@ import { isUuid } from "../lib/route-params.js";
 import { enqueueTaskRun } from "../queue/task-runs.js";
 import { randomUUID } from "node:crypto";
 import { maybeStoreJsonValue } from "@cascade/storage";
+import {
+  createChildTraceContext,
+  createRootTraceContext,
+  parseTraceparent,
+  toTraceparent,
+} from "@cascade/core";
 
 const taskRunSelect = {
   id: true,
@@ -20,6 +26,8 @@ const taskRunSelect = {
   createdAt: true,
   idempotencyRequestHash: true,
   delayUntil: true,
+  traceId: true,
+  triggerSpanId: true,
 } satisfies Prisma.TaskRunSelect;
 
 type TriggerTaskRunInput = {
@@ -27,6 +35,7 @@ type TriggerTaskRunInput = {
   taskId: string | undefined;
   body: unknown;
   idempotencyKey: string | undefined;
+  traceparent: string | undefined;
 };
 
 type TriggerTaskRunSuccess = {
@@ -42,6 +51,7 @@ type TriggerTaskRunSuccess = {
     payload: unknown;
     createdAt: string;
     idempotentReplay: boolean;
+    traceparent: string;
   };
 };
 
@@ -190,6 +200,14 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
     };
   }
 
+  const parentTrace = parseTraceparent(input.traceparent);
+  const triggerTrace = parentTrace
+    ? createChildTraceContext({
+        traceId: parentTrace.traceId,
+        parentSpanId: parentTrace.spanId,
+      })
+    : createRootTraceContext();
+
   const idempotencyKeyHash = idempotencyKey ? hashValue(idempotencyKey) : undefined;
   const idempotencyRequestHash = idempotencyKeyHash
     ? hashTriggerRequest({
@@ -231,6 +249,8 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
           id: runId,
           taskId,
           status: "PENDING",
+          traceId: triggerTrace.traceId,
+          triggerSpanId: triggerTrace.spanId,
         };
 
         if (storedPayload !== undefined) {
@@ -253,7 +273,13 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
 
         const eventData: Record<string, Prisma.InputJsonValue> = {
           apiKeyId: auth.apiKeyId,
+          traceId: triggerTrace.traceId,
+          spanId: triggerTrace.spanId,
         };
+
+        if (triggerTrace.parentSpanId) {
+          eventData.parentSpanId = triggerTrace.parentSpanId;
+        }
 
         if (idempotencyKeyHash) {
           eventData.idempotencyKeyHash = idempotencyKeyHash;
@@ -327,6 +353,10 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
       payload: taskRun.payload,
       createdAt: taskRun.createdAt.toISOString(),
       idempotentReplay: !created,
+      traceparent: toTraceparent({
+        traceId: taskRun.traceId ?? triggerTrace.traceId,
+        spanId: taskRun.triggerSpanId ?? triggerTrace.spanId,
+      }),
     },
   };
 }

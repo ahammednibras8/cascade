@@ -29,6 +29,7 @@ tasksRouter.post(
       taskId: getSingleParam(request.params.taskId),
       body: request.body,
       idempotencyKey: getIdempotencyKey(request),
+      traceparent: request.get("traceparent")?.trim(),
     });
 
     if (!result.ok) {
@@ -41,6 +42,7 @@ tasksRouter.post(
     response
       .status(result.status)
       .set("Idempotent-Replayed", result.idempotentReplayed ? "true" : "false")
+      .set("traceparent", result.taskRun.traceparent)
       .json({
         taskRun: result.taskRun,
       });

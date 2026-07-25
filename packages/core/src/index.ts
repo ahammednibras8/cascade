@@ -1,4 +1,5 @@
 export * from "./task.js";
+export * from "./trace.js";
 
 export type PackageInfo = {
   name: string;

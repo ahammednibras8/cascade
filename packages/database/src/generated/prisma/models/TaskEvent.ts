@@ -28,6 +28,9 @@ export type TaskEventMinAggregateOutputType = {
   id: string | null
   taskRunId: string | null
   taskAttemptId: string | null
+  traceId: string | null
+  spanId: string | null
+  parentSpanId: string | null
   type: string | null
   level: $Enums.TaskEventLevel | null
   message: string | null
@@ -38,6 +41,9 @@ export type TaskEventMaxAggregateOutputType = {
   id: string | null
   taskRunId: string | null
   taskAttemptId: string | null
+  traceId: string | null
+  spanId: string | null
+  parentSpanId: string | null
   type: string | null
   level: $Enums.TaskEventLevel | null
   message: string | null
@@ -48,6 +54,9 @@ export type TaskEventCountAggregateOutputType = {
   id: number
   taskRunId: number
   taskAttemptId: number
+  traceId: number
+  spanId: number
+  parentSpanId: number
   type: number
   level: number
   message: number
@@ -61,6 +70,9 @@ export type TaskEventMinAggregateInputType = {
   id?: true
   taskRunId?: true
   taskAttemptId?: true
+  traceId?: true
+  spanId?: true
+  parentSpanId?: true
   type?: true
   level?: true
   message?: true
@@ -71,6 +83,9 @@ export type TaskEventMaxAggregateInputType = {
   id?: true
   taskRunId?: true
   taskAttemptId?: true
+  traceId?: true
+  spanId?: true
+  parentSpanId?: true
   type?: true
   level?: true
   message?: true
@@ -81,6 +96,9 @@ export type TaskEventCountAggregateInputType = {
   id?: true
   taskRunId?: true
   taskAttemptId?: true
+  traceId?: true
+  spanId?: true
+  parentSpanId?: true
   type?: true
   level?: true
   message?: true
@@ -165,6 +183,9 @@ export type TaskEventGroupByOutputType = {
   id: string
   taskRunId: string
   taskAttemptId: string | null
+  traceId: string | null
+  spanId: string | null
+  parentSpanId: string | null
   type: string
   level: $Enums.TaskEventLevel
   message: string | null
@@ -197,6 +218,9 @@ export type TaskEventWhereInput = {
   id?: Prisma.UuidFilter<"TaskEvent"> | string
   taskRunId?: Prisma.UuidFilter<"TaskEvent"> | string
   taskAttemptId?: Prisma.UuidNullableFilter<"TaskEvent"> | string | null
+  traceId?: Prisma.StringNullableFilter<"TaskEvent"> | string | null
+  spanId?: Prisma.StringNullableFilter<"TaskEvent"> | string | null
+  parentSpanId?: Prisma.StringNullableFilter<"TaskEvent"> | string | null
   type?: Prisma.StringFilter<"TaskEvent"> | string
   level?: Prisma.EnumTaskEventLevelFilter<"TaskEvent"> | $Enums.TaskEventLevel
   message?: Prisma.StringNullableFilter<"TaskEvent"> | string | null
@@ -210,6 +234,9 @@ export type TaskEventOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   taskRunId?: Prisma.SortOrder
   taskAttemptId?: Prisma.SortOrderInput | Prisma.SortOrder
+  traceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  spanId?: Prisma.SortOrderInput | Prisma.SortOrder
+  parentSpanId?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   level?: Prisma.SortOrder
   message?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -226,6 +253,9 @@ export type TaskEventWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.TaskEventWhereInput | Prisma.TaskEventWhereInput[]
   taskRunId?: Prisma.UuidFilter<"TaskEvent"> | string
   taskAttemptId?: Prisma.UuidNullableFilter<"TaskEvent"> | string | null
+  traceId?: Prisma.StringNullableFilter<"TaskEvent"> | string | null
+  spanId?: Prisma.StringNullableFilter<"TaskEvent"> | string | null
+  parentSpanId?: Prisma.StringNullableFilter<"TaskEvent"> | string | null
   type?: Prisma.StringFilter<"TaskEvent"> | string
   level?: Prisma.EnumTaskEventLevelFilter<"TaskEvent"> | $Enums.TaskEventLevel
   message?: Prisma.StringNullableFilter<"TaskEvent"> | string | null
@@ -239,6 +269,9 @@ export type TaskEventOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   taskRunId?: Prisma.SortOrder
   taskAttemptId?: Prisma.SortOrderInput | Prisma.SortOrder
+  traceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  spanId?: Prisma.SortOrderInput | Prisma.SortOrder
+  parentSpanId?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   level?: Prisma.SortOrder
   message?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -256,6 +289,9 @@ export type TaskEventScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"TaskEvent"> | string
   taskRunId?: Prisma.UuidWithAggregatesFilter<"TaskEvent"> | string
   taskAttemptId?: Prisma.UuidNullableWithAggregatesFilter<"TaskEvent"> | string | null
+  traceId?: Prisma.StringNullableWithAggregatesFilter<"TaskEvent"> | string | null
+  spanId?: Prisma.StringNullableWithAggregatesFilter<"TaskEvent"> | string | null
+  parentSpanId?: Prisma.StringNullableWithAggregatesFilter<"TaskEvent"> | string | null
   type?: Prisma.StringWithAggregatesFilter<"TaskEvent"> | string
   level?: Prisma.EnumTaskEventLevelWithAggregatesFilter<"TaskEvent"> | $Enums.TaskEventLevel
   message?: Prisma.StringNullableWithAggregatesFilter<"TaskEvent"> | string | null
@@ -265,6 +301,9 @@ export type TaskEventScalarWhereWithAggregatesInput = {
 
 export type TaskEventCreateInput = {
   id?: string
+  traceId?: string | null
+  spanId?: string | null
+  parentSpanId?: string | null
   type: string
   level?: $Enums.TaskEventLevel
   message?: string | null
@@ -278,6 +317,9 @@ export type TaskEventUncheckedCreateInput = {
   id?: string
   taskRunId: string
   taskAttemptId?: string | null
+  traceId?: string | null
+  spanId?: string | null
+  parentSpanId?: string | null
   type: string
   level?: $Enums.TaskEventLevel
   message?: string | null
@@ -287,6 +329,9 @@ export type TaskEventUncheckedCreateInput = {
 
 export type TaskEventUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  spanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   level?: Prisma.EnumTaskEventLevelFieldUpdateOperationsInput | $Enums.TaskEventLevel
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -300,6 +345,9 @@ export type TaskEventUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   taskRunId?: Prisma.StringFieldUpdateOperationsInput | string
   taskAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  spanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   level?: Prisma.EnumTaskEventLevelFieldUpdateOperationsInput | $Enums.TaskEventLevel
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -311,6 +359,9 @@ export type TaskEventCreateManyInput = {
   id?: string
   taskRunId: string
   taskAttemptId?: string | null
+  traceId?: string | null
+  spanId?: string | null
+  parentSpanId?: string | null
   type: string
   level?: $Enums.TaskEventLevel
   message?: string | null
@@ -320,6 +371,9 @@ export type TaskEventCreateManyInput = {
 
 export type TaskEventUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  spanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   level?: Prisma.EnumTaskEventLevelFieldUpdateOperationsInput | $Enums.TaskEventLevel
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -331,6 +385,9 @@ export type TaskEventUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   taskRunId?: Prisma.StringFieldUpdateOperationsInput | string
   taskAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  spanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   level?: Prisma.EnumTaskEventLevelFieldUpdateOperationsInput | $Enums.TaskEventLevel
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -352,6 +409,9 @@ export type TaskEventCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   taskRunId?: Prisma.SortOrder
   taskAttemptId?: Prisma.SortOrder
+  traceId?: Prisma.SortOrder
+  spanId?: Prisma.SortOrder
+  parentSpanId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   level?: Prisma.SortOrder
   message?: Prisma.SortOrder
@@ -363,6 +423,9 @@ export type TaskEventMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   taskRunId?: Prisma.SortOrder
   taskAttemptId?: Prisma.SortOrder
+  traceId?: Prisma.SortOrder
+  spanId?: Prisma.SortOrder
+  parentSpanId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   level?: Prisma.SortOrder
   message?: Prisma.SortOrder
@@ -373,6 +436,9 @@ export type TaskEventMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   taskRunId?: Prisma.SortOrder
   taskAttemptId?: Prisma.SortOrder
+  traceId?: Prisma.SortOrder
+  spanId?: Prisma.SortOrder
+  parentSpanId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   level?: Prisma.SortOrder
   message?: Prisma.SortOrder
@@ -469,6 +535,9 @@ export type EnumTaskEventLevelFieldUpdateOperationsInput = {
 
 export type TaskEventCreateWithoutTaskRunInput = {
   id?: string
+  traceId?: string | null
+  spanId?: string | null
+  parentSpanId?: string | null
   type: string
   level?: $Enums.TaskEventLevel
   message?: string | null
@@ -480,6 +549,9 @@ export type TaskEventCreateWithoutTaskRunInput = {
 export type TaskEventUncheckedCreateWithoutTaskRunInput = {
   id?: string
   taskAttemptId?: string | null
+  traceId?: string | null
+  spanId?: string | null
+  parentSpanId?: string | null
   type: string
   level?: $Enums.TaskEventLevel
   message?: string | null
@@ -520,6 +592,9 @@ export type TaskEventScalarWhereInput = {
   id?: Prisma.UuidFilter<"TaskEvent"> | string
   taskRunId?: Prisma.UuidFilter<"TaskEvent"> | string
   taskAttemptId?: Prisma.UuidNullableFilter<"TaskEvent"> | string | null
+  traceId?: Prisma.StringNullableFilter<"TaskEvent"> | string | null
+  spanId?: Prisma.StringNullableFilter<"TaskEvent"> | string | null
+  parentSpanId?: Prisma.StringNullableFilter<"TaskEvent"> | string | null
   type?: Prisma.StringFilter<"TaskEvent"> | string
   level?: Prisma.EnumTaskEventLevelFilter<"TaskEvent"> | $Enums.TaskEventLevel
   message?: Prisma.StringNullableFilter<"TaskEvent"> | string | null
@@ -529,6 +604,9 @@ export type TaskEventScalarWhereInput = {
 
 export type TaskEventCreateWithoutTaskAttemptInput = {
   id?: string
+  traceId?: string | null
+  spanId?: string | null
+  parentSpanId?: string | null
   type: string
   level?: $Enums.TaskEventLevel
   message?: string | null
@@ -540,6 +618,9 @@ export type TaskEventCreateWithoutTaskAttemptInput = {
 export type TaskEventUncheckedCreateWithoutTaskAttemptInput = {
   id?: string
   taskRunId: string
+  traceId?: string | null
+  spanId?: string | null
+  parentSpanId?: string | null
   type: string
   level?: $Enums.TaskEventLevel
   message?: string | null
@@ -576,6 +657,9 @@ export type TaskEventUpdateManyWithWhereWithoutTaskAttemptInput = {
 export type TaskEventCreateManyTaskRunInput = {
   id?: string
   taskAttemptId?: string | null
+  traceId?: string | null
+  spanId?: string | null
+  parentSpanId?: string | null
   type: string
   level?: $Enums.TaskEventLevel
   message?: string | null
@@ -585,6 +669,9 @@ export type TaskEventCreateManyTaskRunInput = {
 
 export type TaskEventUpdateWithoutTaskRunInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  spanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   level?: Prisma.EnumTaskEventLevelFieldUpdateOperationsInput | $Enums.TaskEventLevel
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -596,6 +683,9 @@ export type TaskEventUpdateWithoutTaskRunInput = {
 export type TaskEventUncheckedUpdateWithoutTaskRunInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   taskAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  spanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   level?: Prisma.EnumTaskEventLevelFieldUpdateOperationsInput | $Enums.TaskEventLevel
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -606,6 +696,9 @@ export type TaskEventUncheckedUpdateWithoutTaskRunInput = {
 export type TaskEventUncheckedUpdateManyWithoutTaskRunInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   taskAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  spanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   level?: Prisma.EnumTaskEventLevelFieldUpdateOperationsInput | $Enums.TaskEventLevel
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -616,6 +709,9 @@ export type TaskEventUncheckedUpdateManyWithoutTaskRunInput = {
 export type TaskEventCreateManyTaskAttemptInput = {
   id?: string
   taskRunId: string
+  traceId?: string | null
+  spanId?: string | null
+  parentSpanId?: string | null
   type: string
   level?: $Enums.TaskEventLevel
   message?: string | null
@@ -625,6 +721,9 @@ export type TaskEventCreateManyTaskAttemptInput = {
 
 export type TaskEventUpdateWithoutTaskAttemptInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  spanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   level?: Prisma.EnumTaskEventLevelFieldUpdateOperationsInput | $Enums.TaskEventLevel
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -636,6 +735,9 @@ export type TaskEventUpdateWithoutTaskAttemptInput = {
 export type TaskEventUncheckedUpdateWithoutTaskAttemptInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   taskRunId?: Prisma.StringFieldUpdateOperationsInput | string
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  spanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   level?: Prisma.EnumTaskEventLevelFieldUpdateOperationsInput | $Enums.TaskEventLevel
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -646,6 +748,9 @@ export type TaskEventUncheckedUpdateWithoutTaskAttemptInput = {
 export type TaskEventUncheckedUpdateManyWithoutTaskAttemptInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   taskRunId?: Prisma.StringFieldUpdateOperationsInput | string
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  spanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   level?: Prisma.EnumTaskEventLevelFieldUpdateOperationsInput | $Enums.TaskEventLevel
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -659,6 +764,9 @@ export type TaskEventSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   id?: boolean
   taskRunId?: boolean
   taskAttemptId?: boolean
+  traceId?: boolean
+  spanId?: boolean
+  parentSpanId?: boolean
   type?: boolean
   level?: boolean
   message?: boolean
@@ -672,6 +780,9 @@ export type TaskEventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   id?: boolean
   taskRunId?: boolean
   taskAttemptId?: boolean
+  traceId?: boolean
+  spanId?: boolean
+  parentSpanId?: boolean
   type?: boolean
   level?: boolean
   message?: boolean
@@ -685,6 +796,9 @@ export type TaskEventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   id?: boolean
   taskRunId?: boolean
   taskAttemptId?: boolean
+  traceId?: boolean
+  spanId?: boolean
+  parentSpanId?: boolean
   type?: boolean
   level?: boolean
   message?: boolean
@@ -698,6 +812,9 @@ export type TaskEventSelectScalar = {
   id?: boolean
   taskRunId?: boolean
   taskAttemptId?: boolean
+  traceId?: boolean
+  spanId?: boolean
+  parentSpanId?: boolean
   type?: boolean
   level?: boolean
   message?: boolean
@@ -705,7 +822,7 @@ export type TaskEventSelectScalar = {
   createdAt?: boolean
 }
 
-export type TaskEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taskRunId" | "taskAttemptId" | "type" | "level" | "message" | "data" | "createdAt", ExtArgs["result"]["taskEvent"]>
+export type TaskEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taskRunId" | "taskAttemptId" | "traceId" | "spanId" | "parentSpanId" | "type" | "level" | "message" | "data" | "createdAt", ExtArgs["result"]["taskEvent"]>
 export type TaskEventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taskRun?: boolean | Prisma.TaskRunDefaultArgs<ExtArgs>
   taskAttempt?: boolean | Prisma.TaskEvent$taskAttemptArgs<ExtArgs>
@@ -729,6 +846,9 @@ export type $TaskEventPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     id: string
     taskRunId: string
     taskAttemptId: string | null
+    traceId: string | null
+    spanId: string | null
+    parentSpanId: string | null
     type: string
     level: $Enums.TaskEventLevel
     message: string | null
@@ -1162,6 +1282,9 @@ export interface TaskEventFieldRefs {
   readonly id: Prisma.FieldRef<"TaskEvent", 'String'>
   readonly taskRunId: Prisma.FieldRef<"TaskEvent", 'String'>
   readonly taskAttemptId: Prisma.FieldRef<"TaskEvent", 'String'>
+  readonly traceId: Prisma.FieldRef<"TaskEvent", 'String'>
+  readonly spanId: Prisma.FieldRef<"TaskEvent", 'String'>
+  readonly parentSpanId: Prisma.FieldRef<"TaskEvent", 'String'>
   readonly type: Prisma.FieldRef<"TaskEvent", 'String'>
   readonly level: Prisma.FieldRef<"TaskEvent", 'TaskEventLevel'>
   readonly message: Prisma.FieldRef<"TaskEvent", 'String'>

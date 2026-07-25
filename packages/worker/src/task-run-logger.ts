@@ -1,12 +1,21 @@
 import { type JsonValue, type TaskLogLevel } from "@cascade/core";
 import { Prisma, prisma } from "@cascade/database";
 
-export function createTaskLogger(input: { taskRunId: string; taskAttemptId: string }) {
+export function createTaskLogger(input: {
+  taskRunId: string;
+  taskAttemptId: string;
+  traceId: string;
+  spanId: string;
+  parentSpanId: string | null;
+}) {
   async function log(level: TaskLogLevel, message: string, data?: JsonValue) {
     await prisma.taskEvent.create({
       data: {
         taskRunId: input.taskRunId,
         taskAttemptId: input.taskAttemptId,
+        traceId: input.traceId,
+        spanId: input.spanId,
+        parentSpanId: input.parentSpanId,
         type: "task.log",
         level,
         message,

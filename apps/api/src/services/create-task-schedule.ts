@@ -2,6 +2,7 @@ import type { ApiAuthContext } from "../auth/api-key.js";
 import { isUuid } from "../lib/route-params.js";
 import { prisma, Prisma } from "@cascade/database";
 import { getPayload } from "../lib/trigger-payload.js";
+import { maybeStoreJsonValue } from "@cascade/storage";
 
 type CreateTaskScheduleInput = {
   auth: ApiAuthContext;
@@ -166,7 +167,13 @@ export async function createTaskSchedule(
   };
 
   if (payload !== undefined) {
-    data.payload = payload;
+    data.payload = (await maybeStoreJsonValue({
+      kind: "PAYLOAD",
+      environmentId: auth.environmentId,
+      taskId,
+      runId: taskId,
+      value: payload,
+    })) as Prisma.InputJsonValue;
   }
 
   const schedule = await prisma.taskSchedule.create({

@@ -107,6 +107,8 @@ model TaskRun {
   taskId String @db.Uuid
   scheduleId String? @db.Uuid
   status TaskRunStatus @default(PENDING)
+  traceId String?
+  triggerSpanId String?
   idempotencyKeyHash String?
   idempotencyRequestHash String?
   payload Json?
@@ -126,6 +128,7 @@ model TaskRun {
   events TaskEvent[]
 
   @@unique([taskId, idempotencyKeyHash])
+  @@index([traceId])
   @@index([taskId, createdAt])
   @@index([scheduleId, createdAt])
   @@index([status, createdAt])
@@ -156,6 +159,9 @@ model TaskEvent {
   id String @id @default(uuid()) @db.Uuid
   taskRunId String @db.Uuid
   taskAttemptId String? @db.Uuid
+  traceId String?
+  spanId String?
+  parentSpanId String?
   type String
   level TaskEventLevel @default(INFO)
   message String?

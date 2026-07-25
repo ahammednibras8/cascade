@@ -1,3 +1,5 @@
+import type { TraceContext } from "./trace.js";
+
 export type JsonValue =
   | string
   | number
@@ -22,6 +24,7 @@ export type TaskRunContext<TPayload extends JsonValue = JsonValue> = {
   payload: TPayload | null;
   logger: TaskLogger;
   signal: AbortSignal;
+  trace: TraceContext;
 };
 
 const DEFAULT_TASK_TIMEOUT_MS = 300_000;

@@ -1,4 +1,9 @@
-import { packageName, type JsonValue } from "@cascade/core";
+import {
+  createChildTraceContext,
+  createRootTraceContext,
+  packageName,
+  type JsonValue,
+} from "@cascade/core";
 import { Prisma, prisma } from "@cascade/database";
 import { QUEUE_CONCURRENCY_RETRY_MS } from "./config.js";
 import {
@@ -59,6 +64,8 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
       status: true,
       payload: true,
       delayUntil: true,
+      traceId: true,
+      triggerSpanId: true,
       task: {
         select: {
           slug: true,
@@ -87,6 +94,13 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
 
   const localTask = taskRegistry.get(taskRun.task.slug);
   let concurrencyLease: QueueConcurrencyLease | null = null;
+
+  const executionTrace = taskRun.traceId
+    ? createChildTraceContext({
+        traceId: taskRun.traceId,
+        parentSpanId: taskRun.triggerSpanId,
+      })
+    : createRootTraceContext();
 
   if (localTask) {
     const concurrencyLimit = localTask.queue.concurrencyLimit;
@@ -135,6 +149,7 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
           completedAt: null,
           output: Prisma.DbNull,
           error: Prisma.DbNull,
+          traceId: executionTrace.traceId,
         },
       });
 
@@ -168,6 +183,9 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
           type: "task.run.started",
           level: "INFO",
           message: "Task run started by worker",
+          traceId: executionTrace.traceId,
+          spanId: executionTrace.spanId,
+          parentSpanId: executionTrace.parentSpanId,
         },
       });
 
@@ -224,6 +242,9 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
             type: "task.run.failed",
             level: "ERROR",
             message: "No local task registered for task slug",
+            traceId: executionTrace.traceId,
+            spanId: executionTrace.spanId,
+            parentSpanId: executionTrace.parentSpanId,
             data: {
               taskSlug: taskRun.task.slug,
             },
@@ -245,6 +266,9 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
       const logger = createTaskLogger({
         taskRunId: taskRun.id,
         taskAttemptId: attempt.id,
+        traceId: executionTrace.traceId,
+        spanId: executionTrace.spanId,
+        parentSpanId: executionTrace.parentSpanId,
       });
 
       const resolvedPayload = await resolveJsonValue(taskRun.payload);
@@ -259,6 +283,7 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
             payload: resolvedPayload as JsonValue | null,
             logger,
             signal,
+            trace: executionTrace,
           }),
       });
 
@@ -311,6 +336,9 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
             type: "task.run.completed",
             level: "INFO",
             message: "Task run completed successfully",
+            traceId: executionTrace.traceId,
+            spanId: executionTrace.spanId,
+            parentSpanId: executionTrace.parentSpanId,
             data: {
               worker: packageName,
               taskId: localTask.id,
@@ -371,6 +399,9 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
               type: "task.run.retry.scheduled",
               level: "WARN",
               message: "Task run failed and retry was scheduled",
+              traceId: executionTrace.traceId,
+              spanId: executionTrace.spanId,
+              parentSpanId: executionTrace.parentSpanId,
               data: {
                 attemptNumber: attempt.attemptNumber,
                 nextAttemptNumber: attempt.attemptNumber + 1,
@@ -434,6 +465,9 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
             type: "task.run.failed",
             level: "ERROR",
             message: "Task run failed",
+            traceId: executionTrace.traceId,
+            spanId: executionTrace.spanId,
+            parentSpanId: executionTrace.parentSpanId,
             data: serializedError,
           },
         });

@@ -20,6 +20,8 @@ export async function loader({ params }: Route.LoaderArgs) {
       payload: true,
       output: true,
       error: true,
+      traceId: true,
+      triggerSpanId: true,
       idempotencyKeyHash: true,
       idempotencyRequestHash: true,
       startedAt: true,
@@ -74,6 +76,9 @@ export async function loader({ params }: Route.LoaderArgs) {
           message: true,
           data: true,
           createdAt: true,
+          traceId: true,
+          spanId: true,
+          parentSpanId: true,
         },
       },
     },
@@ -110,6 +115,9 @@ export async function loader({ params }: Route.LoaderArgs) {
         message: event.message,
         data: event.data,
         createdAt: event.createdAt.toISOString(),
+        traceId: event.traceId,
+        spanId: event.spanId,
+        parentSpanId: event.parentSpanId,
       })),
     },
   };
@@ -264,6 +272,14 @@ export default function RunDetail({ loaderData }: Route.ComponentProps) {
               <dd className="text-gray-900">{formatDate(run.completedAt)}</dd>
             </div>
           </dl>
+        </div>
+
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <h2 className="font-medium text-gray-900">Trace</h2>
+          <p className="mt-2 font-mono text-xs text-gray-700">{run.traceId ?? "-"}</p>
+          <p className="mt-1 font-mono text-xs text-gray-500">
+            trigger span: {run.triggerSpanId ?? "-"}
+          </p>
         </div>
       </section>
 
