@@ -149,4 +149,47 @@ describe("tasksRouter", () => {
       },
     });
   });
+
+  it("passes replay run requests to the replay service", async () => {
+    replayTaskRun.mockResolvedValue({
+      ok: true,
+      status: 202,
+      taskRun: {
+        id: "33333333-3333-4333-8333-333333333333",
+        taskId: TASK_ID,
+        status: "PENDING",
+        payload: {
+          message: "hello",
+        },
+        createdAt: "2026-01-01T00:00:00.000Z",
+        replayedFromRunId: RUN_ID,
+      },
+    });
+
+    const response = await httpRequest(createApp()).post(`/api/runs/${RUN_ID}/replay`).send();
+
+    expect(response.status).toBe(202);
+
+    expect(replayTaskRun).toHaveBeenCalledWith({
+      auth: {
+        apiKeyId: "api-key-1",
+        environmentId: "environment-1",
+        projectId: "project-1",
+      },
+      runId: RUN_ID,
+    });
+
+    expect(response.body).toEqual({
+      taskRun: {
+        id: "33333333-3333-4333-8333-333333333333",
+        taskId: TASK_ID,
+        status: "PENDING",
+        payload: {
+          message: "hello",
+        },
+        createdAt: "2026-01-01T00:00:00.000Z",
+        replayedFromRunId: RUN_ID,
+      },
+    });
+  });
 });
