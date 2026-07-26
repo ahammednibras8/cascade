@@ -192,4 +192,50 @@ describe("tasksRouter", () => {
       },
     });
   });
+
+  it("passes create schedule requests to the schedule service", async () => {
+    createTaskSchedule.mockResolvedValue({
+      ok: true,
+      status: 201,
+      schedule: {
+        id: "33333333-3333-4333-8333-333333333333",
+        taskId: TASK_ID,
+        name: "Every minute",
+        intervalSeconds: 60,
+        nextRunAt: "2026-01-01T00:01:00.000Z",
+        enabled: true,
+        payload: {
+          message: "scheduled hello",
+        },
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+    });
+
+    const body = {
+      name: "Every minute",
+      intervalSeconds: 60,
+      startAt: "2026-01-01T00:01:00.000Z",
+      payload: {
+        message: "scheduled hello",
+      },
+    };
+
+    const response = await httpRequest(createApp())
+      .post(`/api/tasks/${TASK_ID}/schedules`)
+      .send(body);
+
+    expect(response.status).toBe(201);
+
+    expect(createTaskSchedule).toHaveBeenCalledWith({
+      auth: {
+        apiKeyId: "api-key-1",
+        environmentId: "environment-1",
+        projectId: "project-1",
+      },
+      taskId: TASK_ID,
+      body,
+    });
+
+    expect(response.body.schedule.name).toBe("Every minute");
+  });
 });
