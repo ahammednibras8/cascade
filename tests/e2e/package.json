@@ -3,16 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui",
-    "e2e:headed": "playwright test --headed",
-    "e2e:debug": "playwright test --debug",
+    "e2e": "NODE_OPTIONS=--conditions=development playwright test",
+    "e2e:ui": "NODE_OPTIONS=--conditions=development playwright test --ui",
+    "e2e:headed": "NODE_OPTIONS=--conditions=development playwright test --headed",
+    "e2e:debug": "NODE_OPTIONS=--conditions=development playwright test --debug",
     "e2e:report": "playwright show-report",
     "install:browsers": "playwright install chromium",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
     "@cascade/dashboard": "workspace:*",
+    "@cascade/database": "workspace:*",
     "@playwright/test": "1.61.1"
   }
 }
