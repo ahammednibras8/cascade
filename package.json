@@ -25,7 +25,7 @@
     "fmt:check": "oxfmt --check",
     "knip": "knip",
     "knip:deps": "knip --dependencies",
-    "knip:prod": "knip --exclude devDependencies",
+    "knip:prod": "knip --exclude devDependencies --no-config-hints",
     "prepare": "lefthook install",
     "hooks:install": "lefthook install",
     "hooks:validate": "lefthook validate",

@@ -91,7 +91,6 @@ export {
   maybeStoreJsonValue,
   prisma,
   releaseQueueConcurrency,
-  resolveJsonValue,
   startQueueConcurrencyLeaseHeartbeat,
   startTaskRunHeartbeat,
   stopHeartbeat,
@@ -101,7 +100,6 @@ export {
   txTaskAttemptUpdate,
   txTaskEventCreate,
   txTaskRunUpdateMany,
-  tryAcquireQueueConcurrency,
 };
 
 vi.mock("@cascade/database", () => ({
@@ -181,7 +179,7 @@ export function createMessage() {
   } satisfies TaskRunQueueMessage;
 }
 
-export function createPendingTaskRun() {
+function createPendingTaskRun() {
   return {
     id: RUN_ID,
     taskId: TASK_ID,
