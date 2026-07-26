@@ -17,6 +17,7 @@ import {
   processTaskRun,
   resetTaskRunProcessorHarness,
   startTaskRunHeartbeat,
+  txTaskAttemptCount,
   txTaskAttemptCreate,
   txTaskEventCreate,
   txTaskRunUpdateMany,
@@ -144,12 +145,14 @@ describe("processTaskRun", () => {
     localTaskRetry.delayMs = 1000;
     localTaskRetry.exponentialBackoff = true;
 
+    txTaskAttemptCount.mockResolvedValue(1);
     txTaskAttemptCreate.mockResolvedValue(createAttempt(2));
     localTaskRun.mockRejectedValue(new Error("Temporary failure"));
 
     await processTaskRun(createMessage());
 
     expectTaskRunWasClaimedForExecution();
+    expectTaskAttemptWasStarted(2);
 
     expect(txTaskRunUpdateMany).toHaveBeenNthCalledWith(
       2,
