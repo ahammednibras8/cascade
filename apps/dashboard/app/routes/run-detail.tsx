@@ -211,10 +211,14 @@ export default function RunDetail({ loaderData }: Route.ComponentProps) {
       void revalidator.revalidate();
     };
 
+    events.addEventListener("connected", refreshRun);
     events.addEventListener("run.updated", refreshRun);
     events.addEventListener("run.deleted", refreshRun);
 
     return () => {
+      events.removeEventListener("connected", refreshRun);
+      events.removeEventListener("run.updated", refreshRun);
+      events.removeEventListener("run.deleted", refreshRun);
       events.close();
     };
   }, [run.id, revalidator]);

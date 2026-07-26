@@ -148,3 +148,94 @@ test("shows run payload, output, error, attempts, and logs", async ({ page }) =>
   await expect(page.locator("body")).toContainText("Task failed once");
   await expect(page.locator("body")).toContainText("retryable");
 });
+
+test("updates run detail when SSE detects run changes", async ({ page }) => {
+  const prisma = await getPrisma();
+  const suffix = randomUUID().slice(0, 8);
+
+  const project = await prisma.project.create({
+    data: {
+      slug: `e2e-sse-project-${suffix}`,
+      name: "E2E SSE Project",
+      environments: {
+        create: {
+          slug: `e2e-sse-dev-${suffix}`,
+          name: "E2E SSE Dev",
+          type: "DEVELOPMENT",
+        },
+      },
+    },
+    include: {
+      environments: true,
+    },
+  });
+
+  createdProjectIds.push(project.id);
+
+  const environment = project.environments[0];
+
+  if (!environment) {
+    throw new Error("Expected seeded environment");
+  }
+
+  const task = await prisma.task.create({
+    data: {
+      environmentId: environment.id,
+      slug: `e2e-sse-task-${suffix}`,
+      name: "E2E SSE Task",
+    },
+  });
+
+  const run = await prisma.taskRun.create({
+    data: {
+      taskId: task.id,
+      status: "PENDING",
+      payload: {
+        message: "waiting for realtime update",
+      },
+    },
+  });
+
+  await page.goto(`/runs/${run.id}`);
+
+  await expect(page.getByRole("heading", { name: "Run detail" })).toBeVisible();
+  await expect(page.locator("body")).toContainText("PENDING");
+  await expect(page.locator("body")).toContainText("waiting for realtime update");
+
+  await prisma.taskRun.update({
+    where: {
+      id: run.id,
+    },
+    data: {
+      status: "COMPLETED",
+      output: {
+        ok: true,
+        source: "sse",
+      },
+      completedAt: new Date(),
+    },
+  });
+
+  await prisma.taskEvent.create({
+    data: {
+      taskRunId: run.id,
+      type: "task.log",
+      level: "INFO",
+      message: "Realtime update arrived",
+      data: {
+        source: "sse",
+      },
+    },
+  });
+
+  await expect(page.locator("body")).toContainText("COMPLETED", {
+    timeout: 7_000,
+  });
+
+  await expect(page.locator("body")).toContainText("Realtime update arrived", {
+    timeout: 7_000,
+  });
+
+  await expect(page.locator("body")).toContainText("source");
+  await expect(page.locator("body")).toContainText("sse");
+});
