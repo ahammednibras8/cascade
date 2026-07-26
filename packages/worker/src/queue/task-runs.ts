@@ -35,7 +35,7 @@ function createRedisClient() {
   });
 }
 
-export function getDeploymentQueuePart(deploymentId: string | null | undefined) {
+function getDeploymentQueuePart(deploymentId: string | null | undefined) {
   if (!deploymentId) {
     return "local";
   }
@@ -43,11 +43,11 @@ export function getDeploymentQueuePart(deploymentId: string | null | undefined) 
   return deploymentId;
 }
 
-export function getTaskRunQueueKey(deploymentId: string | null | undefined) {
+function getTaskRunQueueKey(deploymentId: string | null | undefined) {
   return `${TASK_RUN_QUEUE_KEY_PREFIX}:${getDeploymentQueuePart(deploymentId)}`;
 }
 
-export function getTaskRunDelayedQueueKey(deploymentId: string | null | undefined) {
+function getTaskRunDelayedQueueKey(deploymentId: string | null | undefined) {
   return `${TASK_RUN_DELAYED_QUEUE_KEY_PREFIX}:${getDeploymentQueuePart(deploymentId)}`;
 }
 

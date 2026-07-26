@@ -1,14 +1,10 @@
-export class TaskTimeoutError extends Error {
+class TaskTimeoutError extends Error {
   readonly code = "TASK_TIMEOUT";
 
   constructor(readonly timeoutMs: number) {
     super(`Task exceeded timeout of ${timeoutMs}ms`);
     this.name = "TaskTimeoutError";
   }
-}
-
-export function isTaskTimeoutError(error: unknown): error is TaskTimeoutError {
-  return error instanceof TaskTimeoutError;
 }
 
 type RunWithTaskTimeoutInput<TOutput> = {

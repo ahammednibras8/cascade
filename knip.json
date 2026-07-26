@@ -1,3 +1,100 @@
 {
-  "$schema": "https://unpkg.com/knip@6/schema.json"
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreIssues": {
+    "packages/database/src/generated/**": ["exports", "types"]
+  },
+  "workspaces": {
+    ".": {
+      "entry": [
+        "package.json",
+        "turbo.json",
+        "lefthook.yml",
+        ".github/workflows/*.yml",
+        ".github/workflows/*.yaml"
+      ],
+      "project": [
+        "*.{js,ts,json,yml,yaml}",
+        ".configs/**/*.json",
+        ".github/**/*.yml",
+        ".github/**/*.yaml"
+      ]
+    },
+    "apps/api": {
+      "entry": ["src/index.ts", "src/dev/*.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "apps/dashboard": {
+      "entry": [
+        "app/root.tsx",
+        "app/routes/**/*.{ts,tsx}",
+        "react-router.config.ts",
+        "vite.config.ts"
+      ],
+      "project": ["app/**/*.{ts,tsx}", "*.ts", "*.tsx"]
+    },
+    "packages/core": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/database": {
+      "entry": ["src/index.ts", "prisma.config.ts", "prisma/seed/**/*.ts"],
+      "project": ["src/**/*.ts", "prisma/**/*.ts", "prisma.config.ts"]
+    },
+    "packages/sdk": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/storage": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/worker": {
+      "entry": ["src/index.ts", "src/tasks/registry.ts"],
+      "project": ["src/**/*.ts", "scripts/**/*.mjs"]
+    },
+    "packages/clickhouse": {
+      "entry": ["package.json", "src/index.ts"],
+      "project": ["src/**/*.ts", "migrations/**/*.sql"]
+    },
+    "docs": {
+      "entry": ["docs.json", "**/*.mdx", "**/*.md"],
+      "project": ["**/*.{md,mdx,json,yml,yaml}"]
+    },
+    "tests/e2e": {
+      "entry": ["playwright.config.ts", "src/**/*.ts", "tests/**/*.ts"],
+      "project": ["**/*.ts"]
+    }
+  },
+  "ignoreFiles": [
+    "packages/database/src/generated/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.react-router/**",
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
+    "blob-report/**",
+    "hosting/k8s/helm/templates/**"
+  ],
+  "ignoreDependencies": ["@types/node", "@types/react", "@types/react-dom", "@vitest/coverage-v8"],
+  "ignoreBinaries": [
+    "docker",
+    "helm",
+    "infisical",
+    "goose",
+    "mint",
+    "react-router",
+    "react-router-serve",
+    "tsx",
+    "prisma",
+    "tshy",
+    "turbo",
+    "oxlint",
+    "oxfmt",
+    "lefthook",
+    "changeset",
+    "vite",
+    "vitest",
+    "playwright"
+  ]
 }

@@ -46,7 +46,7 @@ function safeEqual(left: string, right: string) {
   return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-export function getApiKeyFromRequest(request: Request) {
+function getApiKeyFromRequest(request: Request) {
   const authorization = request.get("authorization");
 
   if (authorization?.startsWith("Bearer ")) {
@@ -56,7 +56,7 @@ export function getApiKeyFromRequest(request: Request) {
   return request.get("x-api-key")?.trim();
 }
 
-export async function authenticateApiKey(apiKey: string): Promise<ApiAuthContext | null> {
+async function authenticateApiKey(apiKey: string): Promise<ApiAuthContext | null> {
   const keyHash = hashApiKey(apiKey);
 
   const storedApiKey = await prisma.apiKey.findUnique({

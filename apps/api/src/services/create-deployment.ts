@@ -132,28 +132,30 @@ export async function createDeployment(input: CreateDeploymentInput) {
       },
     });
 
-    for (const task of parsed.deployment.tasks) {
-      await tx.task.upsert({
-        where: {
-          environmentId_slug: {
-            environmentId: input.auth.environmentId,
-            slug: task.slug,
+    await Promise.all(
+      parsed.deployment.tasks.map((task) =>
+        tx.task.upsert({
+          where: {
+            environmentId_slug: {
+              environmentId: input.auth.environmentId,
+              slug: task.slug,
+            },
           },
-        },
-        create: {
-          environmentId: input.auth.environmentId,
-          deploymentId: createdDeployment.id,
-          slug: task.slug,
-          name: task.name,
-          description: task.description,
-        },
-        update: {
-          deploymentId: createdDeployment.id,
-          name: task.name,
-          description: task.description,
-        },
-      });
-    }
+          create: {
+            environmentId: input.auth.environmentId,
+            deploymentId: createdDeployment.id,
+            slug: task.slug,
+            name: task.name,
+            description: task.description,
+          },
+          update: {
+            deploymentId: createdDeployment.id,
+            name: task.name,
+            description: task.description,
+          },
+        }),
+      ),
+    );
 
     return tx.deployment.findUniqueOrThrow({
       where: {

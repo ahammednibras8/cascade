@@ -25,7 +25,7 @@
     "fmt:check": "oxfmt --check",
     "knip": "knip",
     "knip:deps": "knip --dependencies",
-    "knip:prod": "knip --production",
+    "knip:prod": "knip --exclude devDependencies",
     "prepare": "lefthook install",
     "hooks:install": "lefthook install",
     "hooks:validate": "lefthook validate",
@@ -68,7 +68,11 @@
     "db:seed": "pnpm --filter @cascade/database run db:seed",
     "clickhouse:migrate": "infisical run --env=dev --path=/ -- pnpm --filter @cascade/clickhouse run migrate",
     "clickhouse:rollback": "infisical run --env=dev --path=/ -- pnpm --filter @cascade/clickhouse run rollback",
-    "clickhouse:status": "infisical run --env=dev --path=/ -- pnpm --filter @cascade/clickhouse run status"
+    "clickhouse:status": "infisical run --env=dev --path=/ -- pnpm --filter @cascade/clickhouse run status",
+    "repo:quick": "pnpm run fmt:check && pnpm run lint:ci && pnpm run check-types",
+    "repo:deps": "pnpm run knip:prod",
+    "repo:security": "pnpm run secrets:scan",
+    "repo:verify": "pnpm run hooks:validate && pnpm run repo:quick && pnpm run repo:deps && pnpm run repo:security"
   },
   "devDependencies": {
     "@changesets/cli": "2.31.0",
