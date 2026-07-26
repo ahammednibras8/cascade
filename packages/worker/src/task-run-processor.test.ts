@@ -334,4 +334,77 @@ describe("processTaskRun", () => {
 
     expect(enqueueTaskRun).not.toHaveBeenCalled();
   });
+
+  it("marks the run failed when the matching local task throws", async () => {
+    const taskError = new Error("Task exploded");
+
+    localTaskRun.mockRejectedValue(taskError);
+
+    await processTaskRun(createMessage());
+
+    expect(txTaskRunUpdateMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: RUN_ID,
+          status: "PENDING",
+        }),
+        data: expect.objectContaining({
+          status: "EXECUTING",
+          lastHeartbeatAt: expect.any(Date),
+          traceId: TRACE_ID,
+        }),
+      }),
+    );
+
+    expect(txTaskRunUpdateMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: {
+          id: RUN_ID,
+          status: "EXECUTING",
+        },
+        data: expect.objectContaining({
+          status: "FAILED",
+          output: "DB_NULL",
+          error: expect.objectContaining({
+            name: "Error",
+            message: "Task exploded",
+          }),
+          completedAt: expect.any(Date),
+        }),
+      }),
+    );
+
+    expect(txTaskAttemptUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: ATTEMPT_ID,
+        },
+        data: expect.objectContaining({
+          status: "FAILED",
+          error: expect.objectContaining({
+            name: "Error",
+            message: "Task exploded",
+          }),
+          completedAt: expect.any(Date),
+        }),
+      }),
+    );
+
+    expect(txTaskEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          taskRunId: RUN_ID,
+          taskAttemptId: ATTEMPT_ID,
+          type: "task.run.failed",
+          level: "ERROR",
+          message: "Task run failed",
+        }),
+      }),
+    );
+
+    expect(enqueueTaskRun).not.toHaveBeenCalled();
+    expect(stopHeartbeat).toHaveBeenCalledOnce();
+  });
 });
