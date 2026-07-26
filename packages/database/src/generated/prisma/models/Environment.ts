@@ -201,6 +201,7 @@ export type EnvironmentWhereInput = {
   project?: Prisma.XOR<Prisma.ProjectScalarRelationFilter, Prisma.ProjectWhereInput>
   apiKeys?: Prisma.ApiKeyListRelationFilter
   tasks?: Prisma.TaskListRelationFilter
+  deployments?: Prisma.DeploymentListRelationFilter
 }
 
 export type EnvironmentOrderByWithRelationInput = {
@@ -214,6 +215,7 @@ export type EnvironmentOrderByWithRelationInput = {
   project?: Prisma.ProjectOrderByWithRelationInput
   apiKeys?: Prisma.ApiKeyOrderByRelationAggregateInput
   tasks?: Prisma.TaskOrderByRelationAggregateInput
+  deployments?: Prisma.DeploymentOrderByRelationAggregateInput
 }
 
 export type EnvironmentWhereUniqueInput = Prisma.AtLeast<{
@@ -231,6 +233,7 @@ export type EnvironmentWhereUniqueInput = Prisma.AtLeast<{
   project?: Prisma.XOR<Prisma.ProjectScalarRelationFilter, Prisma.ProjectWhereInput>
   apiKeys?: Prisma.ApiKeyListRelationFilter
   tasks?: Prisma.TaskListRelationFilter
+  deployments?: Prisma.DeploymentListRelationFilter
 }, "id" | "projectId_slug">
 
 export type EnvironmentOrderByWithAggregationInput = {
@@ -269,6 +272,7 @@ export type EnvironmentCreateInput = {
   project: Prisma.ProjectCreateNestedOneWithoutEnvironmentsInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutEnvironmentInput
   tasks?: Prisma.TaskCreateNestedManyWithoutEnvironmentInput
+  deployments?: Prisma.DeploymentCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentUncheckedCreateInput = {
@@ -281,6 +285,7 @@ export type EnvironmentUncheckedCreateInput = {
   updatedAt?: Date | string
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutEnvironmentInput
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutEnvironmentInput
+  deployments?: Prisma.DeploymentUncheckedCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentUpdateInput = {
@@ -293,6 +298,7 @@ export type EnvironmentUpdateInput = {
   project?: Prisma.ProjectUpdateOneRequiredWithoutEnvironmentsNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutEnvironmentNestedInput
   tasks?: Prisma.TaskUpdateManyWithoutEnvironmentNestedInput
+  deployments?: Prisma.DeploymentUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentUncheckedUpdateInput = {
@@ -305,6 +311,7 @@ export type EnvironmentUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutEnvironmentNestedInput
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutEnvironmentNestedInput
+  deployments?: Prisma.DeploymentUncheckedUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentCreateManyInput = {
@@ -460,6 +467,20 @@ export type EnvironmentUpdateOneRequiredWithoutTasksNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.EnvironmentUpdateToOneWithWhereWithoutTasksInput, Prisma.EnvironmentUpdateWithoutTasksInput>, Prisma.EnvironmentUncheckedUpdateWithoutTasksInput>
 }
 
+export type EnvironmentCreateNestedOneWithoutDeploymentsInput = {
+  create?: Prisma.XOR<Prisma.EnvironmentCreateWithoutDeploymentsInput, Prisma.EnvironmentUncheckedCreateWithoutDeploymentsInput>
+  connectOrCreate?: Prisma.EnvironmentCreateOrConnectWithoutDeploymentsInput
+  connect?: Prisma.EnvironmentWhereUniqueInput
+}
+
+export type EnvironmentUpdateOneRequiredWithoutDeploymentsNestedInput = {
+  create?: Prisma.XOR<Prisma.EnvironmentCreateWithoutDeploymentsInput, Prisma.EnvironmentUncheckedCreateWithoutDeploymentsInput>
+  connectOrCreate?: Prisma.EnvironmentCreateOrConnectWithoutDeploymentsInput
+  upsert?: Prisma.EnvironmentUpsertWithoutDeploymentsInput
+  connect?: Prisma.EnvironmentWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EnvironmentUpdateToOneWithWhereWithoutDeploymentsInput, Prisma.EnvironmentUpdateWithoutDeploymentsInput>, Prisma.EnvironmentUncheckedUpdateWithoutDeploymentsInput>
+}
+
 export type EnvironmentCreateWithoutProjectInput = {
   id?: string
   slug: string
@@ -469,6 +490,7 @@ export type EnvironmentCreateWithoutProjectInput = {
   updatedAt?: Date | string
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutEnvironmentInput
   tasks?: Prisma.TaskCreateNestedManyWithoutEnvironmentInput
+  deployments?: Prisma.DeploymentCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentUncheckedCreateWithoutProjectInput = {
@@ -480,6 +502,7 @@ export type EnvironmentUncheckedCreateWithoutProjectInput = {
   updatedAt?: Date | string
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutEnvironmentInput
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutEnvironmentInput
+  deployments?: Prisma.DeploymentUncheckedCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentCreateOrConnectWithoutProjectInput = {
@@ -530,6 +553,7 @@ export type EnvironmentCreateWithoutApiKeysInput = {
   updatedAt?: Date | string
   project: Prisma.ProjectCreateNestedOneWithoutEnvironmentsInput
   tasks?: Prisma.TaskCreateNestedManyWithoutEnvironmentInput
+  deployments?: Prisma.DeploymentCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentUncheckedCreateWithoutApiKeysInput = {
@@ -541,6 +565,7 @@ export type EnvironmentUncheckedCreateWithoutApiKeysInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutEnvironmentInput
+  deployments?: Prisma.DeploymentUncheckedCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentCreateOrConnectWithoutApiKeysInput = {
@@ -568,6 +593,7 @@ export type EnvironmentUpdateWithoutApiKeysInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.ProjectUpdateOneRequiredWithoutEnvironmentsNestedInput
   tasks?: Prisma.TaskUpdateManyWithoutEnvironmentNestedInput
+  deployments?: Prisma.DeploymentUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentUncheckedUpdateWithoutApiKeysInput = {
@@ -579,6 +605,7 @@ export type EnvironmentUncheckedUpdateWithoutApiKeysInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutEnvironmentNestedInput
+  deployments?: Prisma.DeploymentUncheckedUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentCreateWithoutTasksInput = {
@@ -590,6 +617,7 @@ export type EnvironmentCreateWithoutTasksInput = {
   updatedAt?: Date | string
   project: Prisma.ProjectCreateNestedOneWithoutEnvironmentsInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutEnvironmentInput
+  deployments?: Prisma.DeploymentCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentUncheckedCreateWithoutTasksInput = {
@@ -601,6 +629,7 @@ export type EnvironmentUncheckedCreateWithoutTasksInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutEnvironmentInput
+  deployments?: Prisma.DeploymentUncheckedCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentCreateOrConnectWithoutTasksInput = {
@@ -628,6 +657,7 @@ export type EnvironmentUpdateWithoutTasksInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.ProjectUpdateOneRequiredWithoutEnvironmentsNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutEnvironmentNestedInput
+  deployments?: Prisma.DeploymentUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentUncheckedUpdateWithoutTasksInput = {
@@ -639,6 +669,71 @@ export type EnvironmentUncheckedUpdateWithoutTasksInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutEnvironmentNestedInput
+  deployments?: Prisma.DeploymentUncheckedUpdateManyWithoutEnvironmentNestedInput
+}
+
+export type EnvironmentCreateWithoutDeploymentsInput = {
+  id?: string
+  slug: string
+  name: string
+  type?: $Enums.EnvironmentType
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  project: Prisma.ProjectCreateNestedOneWithoutEnvironmentsInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutEnvironmentInput
+  tasks?: Prisma.TaskCreateNestedManyWithoutEnvironmentInput
+}
+
+export type EnvironmentUncheckedCreateWithoutDeploymentsInput = {
+  id?: string
+  projectId: string
+  slug: string
+  name: string
+  type?: $Enums.EnvironmentType
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutEnvironmentInput
+  tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutEnvironmentInput
+}
+
+export type EnvironmentCreateOrConnectWithoutDeploymentsInput = {
+  where: Prisma.EnvironmentWhereUniqueInput
+  create: Prisma.XOR<Prisma.EnvironmentCreateWithoutDeploymentsInput, Prisma.EnvironmentUncheckedCreateWithoutDeploymentsInput>
+}
+
+export type EnvironmentUpsertWithoutDeploymentsInput = {
+  update: Prisma.XOR<Prisma.EnvironmentUpdateWithoutDeploymentsInput, Prisma.EnvironmentUncheckedUpdateWithoutDeploymentsInput>
+  create: Prisma.XOR<Prisma.EnvironmentCreateWithoutDeploymentsInput, Prisma.EnvironmentUncheckedCreateWithoutDeploymentsInput>
+  where?: Prisma.EnvironmentWhereInput
+}
+
+export type EnvironmentUpdateToOneWithWhereWithoutDeploymentsInput = {
+  where?: Prisma.EnvironmentWhereInput
+  data: Prisma.XOR<Prisma.EnvironmentUpdateWithoutDeploymentsInput, Prisma.EnvironmentUncheckedUpdateWithoutDeploymentsInput>
+}
+
+export type EnvironmentUpdateWithoutDeploymentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumEnvironmentTypeFieldUpdateOperationsInput | $Enums.EnvironmentType
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  project?: Prisma.ProjectUpdateOneRequiredWithoutEnvironmentsNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutEnvironmentNestedInput
+  tasks?: Prisma.TaskUpdateManyWithoutEnvironmentNestedInput
+}
+
+export type EnvironmentUncheckedUpdateWithoutDeploymentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  projectId?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumEnvironmentTypeFieldUpdateOperationsInput | $Enums.EnvironmentType
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutEnvironmentNestedInput
+  tasks?: Prisma.TaskUncheckedUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentCreateManyProjectInput = {
@@ -659,6 +754,7 @@ export type EnvironmentUpdateWithoutProjectInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutEnvironmentNestedInput
   tasks?: Prisma.TaskUpdateManyWithoutEnvironmentNestedInput
+  deployments?: Prisma.DeploymentUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentUncheckedUpdateWithoutProjectInput = {
@@ -670,6 +766,7 @@ export type EnvironmentUncheckedUpdateWithoutProjectInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutEnvironmentNestedInput
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutEnvironmentNestedInput
+  deployments?: Prisma.DeploymentUncheckedUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentUncheckedUpdateManyWithoutProjectInput = {
@@ -689,11 +786,13 @@ export type EnvironmentUncheckedUpdateManyWithoutProjectInput = {
 export type EnvironmentCountOutputType = {
   apiKeys: number
   tasks: number
+  deployments: number
 }
 
 export type EnvironmentCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   apiKeys?: boolean | EnvironmentCountOutputTypeCountApiKeysArgs
   tasks?: boolean | EnvironmentCountOutputTypeCountTasksArgs
+  deployments?: boolean | EnvironmentCountOutputTypeCountDeploymentsArgs
 }
 
 /**
@@ -720,6 +819,13 @@ export type EnvironmentCountOutputTypeCountTasksArgs<ExtArgs extends runtime.Typ
   where?: Prisma.TaskWhereInput
 }
 
+/**
+ * EnvironmentCountOutputType without action
+ */
+export type EnvironmentCountOutputTypeCountDeploymentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DeploymentWhereInput
+}
+
 
 export type EnvironmentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -732,6 +838,7 @@ export type EnvironmentSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
   apiKeys?: boolean | Prisma.Environment$apiKeysArgs<ExtArgs>
   tasks?: boolean | Prisma.Environment$tasksArgs<ExtArgs>
+  deployments?: boolean | Prisma.Environment$deploymentsArgs<ExtArgs>
   _count?: boolean | Prisma.EnvironmentCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["environment"]>
 
@@ -772,6 +879,7 @@ export type EnvironmentInclude<ExtArgs extends runtime.Types.Extensions.Internal
   project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
   apiKeys?: boolean | Prisma.Environment$apiKeysArgs<ExtArgs>
   tasks?: boolean | Prisma.Environment$tasksArgs<ExtArgs>
+  deployments?: boolean | Prisma.Environment$deploymentsArgs<ExtArgs>
   _count?: boolean | Prisma.EnvironmentCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type EnvironmentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -787,6 +895,7 @@ export type $EnvironmentPayload<ExtArgs extends runtime.Types.Extensions.Interna
     project: Prisma.$ProjectPayload<ExtArgs>
     apiKeys: Prisma.$ApiKeyPayload<ExtArgs>[]
     tasks: Prisma.$TaskPayload<ExtArgs>[]
+    deployments: Prisma.$DeploymentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1193,6 +1302,7 @@ export interface Prisma__EnvironmentClient<T, Null = never, ExtArgs extends runt
   project<T extends Prisma.ProjectDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProjectDefaultArgs<ExtArgs>>): Prisma.Prisma__ProjectClient<runtime.Types.Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   apiKeys<T extends Prisma.Environment$apiKeysArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Environment$apiKeysArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   tasks<T extends Prisma.Environment$tasksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Environment$tasksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  deployments<T extends Prisma.Environment$deploymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Environment$deploymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DeploymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1675,6 +1785,30 @@ export type Environment$tasksArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   distinct?: Prisma.TaskScalarFieldEnum | Prisma.TaskScalarFieldEnum[]
+}
+
+/**
+ * Environment.deployments
+ */
+export type Environment$deploymentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Deployment
+   */
+  select?: Prisma.DeploymentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Deployment
+   */
+  omit?: Prisma.DeploymentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeploymentInclude<ExtArgs> | null
+  where?: Prisma.DeploymentWhereInput
+  orderBy?: Prisma.DeploymentOrderByWithRelationInput | Prisma.DeploymentOrderByWithRelationInput[]
+  cursor?: Prisma.DeploymentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DeploymentScalarFieldEnum | Prisma.DeploymentScalarFieldEnum[]
 }
 
 /**

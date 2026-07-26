@@ -60,6 +60,7 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
     select: {
       id: true,
       taskId: true,
+      deploymentId: true,
       status: true,
       payload: true,
     },
@@ -90,6 +91,7 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
   const replayedRun = await prisma.$transaction(async (tx) => {
     const data: Prisma.TaskRunUncheckedCreateInput = {
       taskId: sourceRun.taskId,
+      deploymentId: sourceRun.deploymentId,
       status: "PENDING",
     };
 
@@ -102,6 +104,7 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
       select: {
         id: true,
         taskId: true,
+        deploymentId: true,
         status: true,
         payload: true,
         createdAt: true,
@@ -142,6 +145,7 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
     runId: replayedRun.id,
     taskId: replayedRun.taskId,
     environmentId: auth.environmentId,
+    deploymentId: replayedRun.deploymentId,
   });
 
   return {

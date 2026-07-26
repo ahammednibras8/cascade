@@ -58,7 +58,8 @@ export const ModelName = {
   TaskRun: 'TaskRun',
   TaskAttempt: 'TaskAttempt',
   TaskEvent: 'TaskEvent',
-  TaskSchedule: 'TaskSchedule'
+  TaskSchedule: 'TaskSchedule',
+  Deployment: 'Deployment'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -119,6 +120,7 @@ export type ApiKeyScalarFieldEnum = (typeof ApiKeyScalarFieldEnum)[keyof typeof 
 export const TaskScalarFieldEnum = {
   id: 'id',
   environmentId: 'environmentId',
+  deploymentId: 'deploymentId',
   slug: 'slug',
   name: 'name',
   description: 'description',
@@ -132,6 +134,7 @@ export type TaskScalarFieldEnum = (typeof TaskScalarFieldEnum)[keyof typeof Task
 export const TaskRunScalarFieldEnum = {
   id: 'id',
   taskId: 'taskId',
+  deploymentId: 'deploymentId',
   scheduleId: 'scheduleId',
   status: 'status',
   traceId: 'traceId',
@@ -199,6 +202,19 @@ export const TaskScheduleScalarFieldEnum = {
 } as const
 
 export type TaskScheduleScalarFieldEnum = (typeof TaskScheduleScalarFieldEnum)[keyof typeof TaskScheduleScalarFieldEnum]
+
+
+export const DeploymentScalarFieldEnum = {
+  id: 'id',
+  environmentId: 'environmentId',
+  version: 'version',
+  image: 'image',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type DeploymentScalarFieldEnum = (typeof DeploymentScalarFieldEnum)[keyof typeof DeploymentScalarFieldEnum]
 
 
 export const SortOrder = {

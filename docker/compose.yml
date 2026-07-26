@@ -140,6 +140,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:-cascade}@postgres:5432/${POSTGRES_DB:-cascade}
       QUEUE_REDIS_URL: redis://redis:6379
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
+      CASCADE_DEPLOYMENT_ID: ${CASCADE_DEPLOYMENT_ID:-local}
       S3_ENDPOINT: http://rustfs:9000
       S3_REGION: ${RUSTFS_REGION:-us-east-1}
       S3_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:-cascade}

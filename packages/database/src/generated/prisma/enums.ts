@@ -47,3 +47,12 @@ export const TaskEventLevel = {
 } as const
 
 export type TaskEventLevel = (typeof TaskEventLevel)[keyof typeof TaskEventLevel]
+
+
+export const DeploymentStatus = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  FAILED: 'FAILED'
+} as const
+
+export type DeploymentStatus = (typeof DeploymentStatus)[keyof typeof DeploymentStatus]

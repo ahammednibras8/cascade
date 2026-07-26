@@ -39,6 +39,7 @@ export async function sweepDueTaskSchedules(now = new Date()) {
       task: {
         select: {
           environmentId: true,
+          deploymentId: true,
         },
       },
     },
@@ -79,6 +80,7 @@ export async function sweepDueTaskSchedules(now = new Date()) {
 
       const runData: Prisma.TaskRunUncheckedCreateInput = {
         taskId: schedule.taskId,
+        deploymentId: schedule.task.deploymentId,
         scheduleId: schedule.id,
         status: "PENDING",
         delayUntil: schedule.nextRunAt,
@@ -126,6 +128,7 @@ export async function sweepDueTaskSchedules(now = new Date()) {
         runId: run.id,
         taskId: run.taskId,
         environmentId: schedule.task.environmentId,
+        deploymentId: schedule.task.deploymentId,
         delayUntil: run.delayUntil,
       };
     });
@@ -141,6 +144,7 @@ export async function sweepDueTaskSchedules(now = new Date()) {
         runId: result.runId,
         taskId: result.taskId,
         environmentId: result.environmentId,
+        deploymentId: result.deploymentId,
       },
       {
         delayMs,

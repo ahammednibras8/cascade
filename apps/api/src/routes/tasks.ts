@@ -6,8 +6,42 @@ import { cancelTaskRun } from "../services/cancel-task-run.js";
 import { triggerTaskRun } from "../services/trigger-task-run.js";
 import { replayTaskRun } from "../services/replay-task-run.js";
 import { createTaskSchedule } from "../services/create-task-schedule.js";
+import { createDeployment } from "../services/create-deployment.js";
 
 export const tasksRouter: ExpressRouter = Router();
+
+tasksRouter.post(
+  "/deployments",
+  asyncHandler(async (request, response) => {
+    const auth = request.auth;
+
+    if (!auth) {
+      response.status(401).json({
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Missing API authentication context",
+        },
+      });
+      return;
+    }
+
+    const result = await createDeployment({
+      auth,
+      body: request.body,
+    });
+
+    if (!result.ok) {
+      response.status(result.status).json({
+        error: result.error,
+      });
+      return;
+    }
+
+    response.status(result.status).json({
+      deployment: result.deployment,
+    });
+  }),
+);
 
 tasksRouter.post(
   "/tasks/:taskId/trigger",

@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "react-router build",
-    "dev": "react-router dev --port 3000 --strictPort",
-    "start": "react-router-serve ./build/server/index.js",
+    "dev": "node --env-file=../../.env --conditions=development ./node_modules/@react-router/dev/bin.cjs dev --port 3000 --strictPort",
+    "start": "node --env-file=../../.env ./node_modules/@react-router/serve/bin.cjs ./build/server/index.js",
     "check-types": "react-router typegen && tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest --watch",

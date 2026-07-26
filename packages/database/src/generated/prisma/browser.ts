@@ -57,3 +57,8 @@ export type TaskEvent = Prisma.TaskEventModel
  * 
  */
 export type TaskSchedule = Prisma.TaskScheduleModel
+/**
+ * Model Deployment
+ * 
+ */
+export type Deployment = Prisma.DeploymentModel

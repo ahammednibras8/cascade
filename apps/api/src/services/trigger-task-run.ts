@@ -28,6 +28,7 @@ const taskRunSelect = {
   delayUntil: true,
   traceId: true,
   triggerSpanId: true,
+  deploymentId: true,
 } satisfies Prisma.TaskRunSelect;
 
 type TriggerTaskRunInput = {
@@ -158,6 +159,7 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
       id: true,
       slug: true,
       name: true,
+      deploymentId: true,
     },
   });
 
@@ -251,6 +253,7 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
           status: "PENDING",
           traceId: triggerTrace.traceId,
           triggerSpanId: triggerTrace.spanId,
+          deploymentId: task.deploymentId,
         };
 
         if (storedPayload !== undefined) {
@@ -333,6 +336,7 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
         runId: taskRun.id,
         taskId: taskRun.taskId,
         environmentId: auth.environmentId,
+        deploymentId: taskRun.deploymentId,
       },
       {
         delayMs,

@@ -27,6 +27,7 @@ export type AggregateTaskRun = {
 export type TaskRunMinAggregateOutputType = {
   id: string | null
   taskId: string | null
+  deploymentId: string | null
   scheduleId: string | null
   status: $Enums.TaskRunStatus | null
   traceId: string | null
@@ -44,6 +45,7 @@ export type TaskRunMinAggregateOutputType = {
 export type TaskRunMaxAggregateOutputType = {
   id: string | null
   taskId: string | null
+  deploymentId: string | null
   scheduleId: string | null
   status: $Enums.TaskRunStatus | null
   traceId: string | null
@@ -61,6 +63,7 @@ export type TaskRunMaxAggregateOutputType = {
 export type TaskRunCountAggregateOutputType = {
   id: number
   taskId: number
+  deploymentId: number
   scheduleId: number
   status: number
   traceId: number
@@ -83,6 +86,7 @@ export type TaskRunCountAggregateOutputType = {
 export type TaskRunMinAggregateInputType = {
   id?: true
   taskId?: true
+  deploymentId?: true
   scheduleId?: true
   status?: true
   traceId?: true
@@ -100,6 +104,7 @@ export type TaskRunMinAggregateInputType = {
 export type TaskRunMaxAggregateInputType = {
   id?: true
   taskId?: true
+  deploymentId?: true
   scheduleId?: true
   status?: true
   traceId?: true
@@ -117,6 +122,7 @@ export type TaskRunMaxAggregateInputType = {
 export type TaskRunCountAggregateInputType = {
   id?: true
   taskId?: true
+  deploymentId?: true
   scheduleId?: true
   status?: true
   traceId?: true
@@ -210,6 +216,7 @@ export type TaskRunGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 export type TaskRunGroupByOutputType = {
   id: string
   taskId: string
+  deploymentId: string | null
   scheduleId: string | null
   status: $Enums.TaskRunStatus
   traceId: string | null
@@ -251,6 +258,7 @@ export type TaskRunWhereInput = {
   NOT?: Prisma.TaskRunWhereInput | Prisma.TaskRunWhereInput[]
   id?: Prisma.UuidFilter<"TaskRun"> | string
   taskId?: Prisma.UuidFilter<"TaskRun"> | string
+  deploymentId?: Prisma.UuidNullableFilter<"TaskRun"> | string | null
   scheduleId?: Prisma.UuidNullableFilter<"TaskRun"> | string | null
   status?: Prisma.EnumTaskRunStatusFilter<"TaskRun"> | $Enums.TaskRunStatus
   traceId?: Prisma.StringNullableFilter<"TaskRun"> | string | null
@@ -267,6 +275,7 @@ export type TaskRunWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"TaskRun"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TaskRun"> | Date | string
   task?: Prisma.XOR<Prisma.TaskScalarRelationFilter, Prisma.TaskWhereInput>
+  deployment?: Prisma.XOR<Prisma.DeploymentNullableScalarRelationFilter, Prisma.DeploymentWhereInput> | null
   schedule?: Prisma.XOR<Prisma.TaskScheduleNullableScalarRelationFilter, Prisma.TaskScheduleWhereInput> | null
   attempts?: Prisma.TaskAttemptListRelationFilter
   events?: Prisma.TaskEventListRelationFilter
@@ -275,6 +284,7 @@ export type TaskRunWhereInput = {
 export type TaskRunOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   taskId?: Prisma.SortOrder
+  deploymentId?: Prisma.SortOrderInput | Prisma.SortOrder
   scheduleId?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   traceId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -291,6 +301,7 @@ export type TaskRunOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   task?: Prisma.TaskOrderByWithRelationInput
+  deployment?: Prisma.DeploymentOrderByWithRelationInput
   schedule?: Prisma.TaskScheduleOrderByWithRelationInput
   attempts?: Prisma.TaskAttemptOrderByRelationAggregateInput
   events?: Prisma.TaskEventOrderByRelationAggregateInput
@@ -303,6 +314,7 @@ export type TaskRunWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.TaskRunWhereInput[]
   NOT?: Prisma.TaskRunWhereInput | Prisma.TaskRunWhereInput[]
   taskId?: Prisma.UuidFilter<"TaskRun"> | string
+  deploymentId?: Prisma.UuidNullableFilter<"TaskRun"> | string | null
   scheduleId?: Prisma.UuidNullableFilter<"TaskRun"> | string | null
   status?: Prisma.EnumTaskRunStatusFilter<"TaskRun"> | $Enums.TaskRunStatus
   traceId?: Prisma.StringNullableFilter<"TaskRun"> | string | null
@@ -319,6 +331,7 @@ export type TaskRunWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"TaskRun"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TaskRun"> | Date | string
   task?: Prisma.XOR<Prisma.TaskScalarRelationFilter, Prisma.TaskWhereInput>
+  deployment?: Prisma.XOR<Prisma.DeploymentNullableScalarRelationFilter, Prisma.DeploymentWhereInput> | null
   schedule?: Prisma.XOR<Prisma.TaskScheduleNullableScalarRelationFilter, Prisma.TaskScheduleWhereInput> | null
   attempts?: Prisma.TaskAttemptListRelationFilter
   events?: Prisma.TaskEventListRelationFilter
@@ -327,6 +340,7 @@ export type TaskRunWhereUniqueInput = Prisma.AtLeast<{
 export type TaskRunOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   taskId?: Prisma.SortOrder
+  deploymentId?: Prisma.SortOrderInput | Prisma.SortOrder
   scheduleId?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   traceId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -353,6 +367,7 @@ export type TaskRunScalarWhereWithAggregatesInput = {
   NOT?: Prisma.TaskRunScalarWhereWithAggregatesInput | Prisma.TaskRunScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"TaskRun"> | string
   taskId?: Prisma.UuidWithAggregatesFilter<"TaskRun"> | string
+  deploymentId?: Prisma.UuidNullableWithAggregatesFilter<"TaskRun"> | string | null
   scheduleId?: Prisma.UuidNullableWithAggregatesFilter<"TaskRun"> | string | null
   status?: Prisma.EnumTaskRunStatusWithAggregatesFilter<"TaskRun"> | $Enums.TaskRunStatus
   traceId?: Prisma.StringNullableWithAggregatesFilter<"TaskRun"> | string | null
@@ -387,6 +402,7 @@ export type TaskRunCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   task: Prisma.TaskCreateNestedOneWithoutRunsInput
+  deployment?: Prisma.DeploymentCreateNestedOneWithoutRunsInput
   schedule?: Prisma.TaskScheduleCreateNestedOneWithoutRunsInput
   attempts?: Prisma.TaskAttemptCreateNestedManyWithoutTaskRunInput
   events?: Prisma.TaskEventCreateNestedManyWithoutTaskRunInput
@@ -395,6 +411,7 @@ export type TaskRunCreateInput = {
 export type TaskRunUncheckedCreateInput = {
   id?: string
   taskId: string
+  deploymentId?: string | null
   scheduleId?: string | null
   status?: $Enums.TaskRunStatus
   traceId?: string | null
@@ -431,6 +448,7 @@ export type TaskRunUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   task?: Prisma.TaskUpdateOneRequiredWithoutRunsNestedInput
+  deployment?: Prisma.DeploymentUpdateOneWithoutRunsNestedInput
   schedule?: Prisma.TaskScheduleUpdateOneWithoutRunsNestedInput
   attempts?: Prisma.TaskAttemptUpdateManyWithoutTaskRunNestedInput
   events?: Prisma.TaskEventUpdateManyWithoutTaskRunNestedInput
@@ -439,6 +457,7 @@ export type TaskRunUpdateInput = {
 export type TaskRunUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   taskId?: Prisma.StringFieldUpdateOperationsInput | string
+  deploymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus
   traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -461,6 +480,7 @@ export type TaskRunUncheckedUpdateInput = {
 export type TaskRunCreateManyInput = {
   id?: string
   taskId: string
+  deploymentId?: string | null
   scheduleId?: string | null
   status?: $Enums.TaskRunStatus
   traceId?: string | null
@@ -499,6 +519,7 @@ export type TaskRunUpdateManyMutationInput = {
 export type TaskRunUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   taskId?: Prisma.StringFieldUpdateOperationsInput | string
+  deploymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus
   traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -534,6 +555,7 @@ export type TaskRunTaskIdIdempotencyKeyHashCompoundUniqueInput = {
 export type TaskRunCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   taskId?: Prisma.SortOrder
+  deploymentId?: Prisma.SortOrder
   scheduleId?: Prisma.SortOrder
   status?: Prisma.SortOrder
   traceId?: Prisma.SortOrder
@@ -554,6 +576,7 @@ export type TaskRunCountOrderByAggregateInput = {
 export type TaskRunMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   taskId?: Prisma.SortOrder
+  deploymentId?: Prisma.SortOrder
   scheduleId?: Prisma.SortOrder
   status?: Prisma.SortOrder
   traceId?: Prisma.SortOrder
@@ -571,6 +594,7 @@ export type TaskRunMaxOrderByAggregateInput = {
 export type TaskRunMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   taskId?: Prisma.SortOrder
+  deploymentId?: Prisma.SortOrder
   scheduleId?: Prisma.SortOrder
   status?: Prisma.SortOrder
   traceId?: Prisma.SortOrder
@@ -706,6 +730,48 @@ export type TaskRunUncheckedUpdateManyWithoutScheduleNestedInput = {
   deleteMany?: Prisma.TaskRunScalarWhereInput | Prisma.TaskRunScalarWhereInput[]
 }
 
+export type TaskRunCreateNestedManyWithoutDeploymentInput = {
+  create?: Prisma.XOR<Prisma.TaskRunCreateWithoutDeploymentInput, Prisma.TaskRunUncheckedCreateWithoutDeploymentInput> | Prisma.TaskRunCreateWithoutDeploymentInput[] | Prisma.TaskRunUncheckedCreateWithoutDeploymentInput[]
+  connectOrCreate?: Prisma.TaskRunCreateOrConnectWithoutDeploymentInput | Prisma.TaskRunCreateOrConnectWithoutDeploymentInput[]
+  createMany?: Prisma.TaskRunCreateManyDeploymentInputEnvelope
+  connect?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[]
+}
+
+export type TaskRunUncheckedCreateNestedManyWithoutDeploymentInput = {
+  create?: Prisma.XOR<Prisma.TaskRunCreateWithoutDeploymentInput, Prisma.TaskRunUncheckedCreateWithoutDeploymentInput> | Prisma.TaskRunCreateWithoutDeploymentInput[] | Prisma.TaskRunUncheckedCreateWithoutDeploymentInput[]
+  connectOrCreate?: Prisma.TaskRunCreateOrConnectWithoutDeploymentInput | Prisma.TaskRunCreateOrConnectWithoutDeploymentInput[]
+  createMany?: Prisma.TaskRunCreateManyDeploymentInputEnvelope
+  connect?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[]
+}
+
+export type TaskRunUpdateManyWithoutDeploymentNestedInput = {
+  create?: Prisma.XOR<Prisma.TaskRunCreateWithoutDeploymentInput, Prisma.TaskRunUncheckedCreateWithoutDeploymentInput> | Prisma.TaskRunCreateWithoutDeploymentInput[] | Prisma.TaskRunUncheckedCreateWithoutDeploymentInput[]
+  connectOrCreate?: Prisma.TaskRunCreateOrConnectWithoutDeploymentInput | Prisma.TaskRunCreateOrConnectWithoutDeploymentInput[]
+  upsert?: Prisma.TaskRunUpsertWithWhereUniqueWithoutDeploymentInput | Prisma.TaskRunUpsertWithWhereUniqueWithoutDeploymentInput[]
+  createMany?: Prisma.TaskRunCreateManyDeploymentInputEnvelope
+  set?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[]
+  disconnect?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[]
+  delete?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[]
+  connect?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[]
+  update?: Prisma.TaskRunUpdateWithWhereUniqueWithoutDeploymentInput | Prisma.TaskRunUpdateWithWhereUniqueWithoutDeploymentInput[]
+  updateMany?: Prisma.TaskRunUpdateManyWithWhereWithoutDeploymentInput | Prisma.TaskRunUpdateManyWithWhereWithoutDeploymentInput[]
+  deleteMany?: Prisma.TaskRunScalarWhereInput | Prisma.TaskRunScalarWhereInput[]
+}
+
+export type TaskRunUncheckedUpdateManyWithoutDeploymentNestedInput = {
+  create?: Prisma.XOR<Prisma.TaskRunCreateWithoutDeploymentInput, Prisma.TaskRunUncheckedCreateWithoutDeploymentInput> | Prisma.TaskRunCreateWithoutDeploymentInput[] | Prisma.TaskRunUncheckedCreateWithoutDeploymentInput[]
+  connectOrCreate?: Prisma.TaskRunCreateOrConnectWithoutDeploymentInput | Prisma.TaskRunCreateOrConnectWithoutDeploymentInput[]
+  upsert?: Prisma.TaskRunUpsertWithWhereUniqueWithoutDeploymentInput | Prisma.TaskRunUpsertWithWhereUniqueWithoutDeploymentInput[]
+  createMany?: Prisma.TaskRunCreateManyDeploymentInputEnvelope
+  set?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[]
+  disconnect?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[]
+  delete?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[]
+  connect?: Prisma.TaskRunWhereUniqueInput | Prisma.TaskRunWhereUniqueInput[]
+  update?: Prisma.TaskRunUpdateWithWhereUniqueWithoutDeploymentInput | Prisma.TaskRunUpdateWithWhereUniqueWithoutDeploymentInput[]
+  updateMany?: Prisma.TaskRunUpdateManyWithWhereWithoutDeploymentInput | Prisma.TaskRunUpdateManyWithWhereWithoutDeploymentInput[]
+  deleteMany?: Prisma.TaskRunScalarWhereInput | Prisma.TaskRunScalarWhereInput[]
+}
+
 export type TaskRunCreateWithoutTaskInput = {
   id?: string
   status?: $Enums.TaskRunStatus
@@ -722,6 +788,7 @@ export type TaskRunCreateWithoutTaskInput = {
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  deployment?: Prisma.DeploymentCreateNestedOneWithoutRunsInput
   schedule?: Prisma.TaskScheduleCreateNestedOneWithoutRunsInput
   attempts?: Prisma.TaskAttemptCreateNestedManyWithoutTaskRunInput
   events?: Prisma.TaskEventCreateNestedManyWithoutTaskRunInput
@@ -729,6 +796,7 @@ export type TaskRunCreateWithoutTaskInput = {
 
 export type TaskRunUncheckedCreateWithoutTaskInput = {
   id?: string
+  deploymentId?: string | null
   scheduleId?: string | null
   status?: $Enums.TaskRunStatus
   traceId?: string | null
@@ -780,6 +848,7 @@ export type TaskRunScalarWhereInput = {
   NOT?: Prisma.TaskRunScalarWhereInput | Prisma.TaskRunScalarWhereInput[]
   id?: Prisma.UuidFilter<"TaskRun"> | string
   taskId?: Prisma.UuidFilter<"TaskRun"> | string
+  deploymentId?: Prisma.UuidNullableFilter<"TaskRun"> | string | null
   scheduleId?: Prisma.UuidNullableFilter<"TaskRun"> | string | null
   status?: Prisma.EnumTaskRunStatusFilter<"TaskRun"> | $Enums.TaskRunStatus
   traceId?: Prisma.StringNullableFilter<"TaskRun"> | string | null
@@ -814,6 +883,7 @@ export type TaskRunCreateWithoutAttemptsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   task: Prisma.TaskCreateNestedOneWithoutRunsInput
+  deployment?: Prisma.DeploymentCreateNestedOneWithoutRunsInput
   schedule?: Prisma.TaskScheduleCreateNestedOneWithoutRunsInput
   events?: Prisma.TaskEventCreateNestedManyWithoutTaskRunInput
 }
@@ -821,6 +891,7 @@ export type TaskRunCreateWithoutAttemptsInput = {
 export type TaskRunUncheckedCreateWithoutAttemptsInput = {
   id?: string
   taskId: string
+  deploymentId?: string | null
   scheduleId?: string | null
   status?: $Enums.TaskRunStatus
   traceId?: string | null
@@ -872,6 +943,7 @@ export type TaskRunUpdateWithoutAttemptsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   task?: Prisma.TaskUpdateOneRequiredWithoutRunsNestedInput
+  deployment?: Prisma.DeploymentUpdateOneWithoutRunsNestedInput
   schedule?: Prisma.TaskScheduleUpdateOneWithoutRunsNestedInput
   events?: Prisma.TaskEventUpdateManyWithoutTaskRunNestedInput
 }
@@ -879,6 +951,7 @@ export type TaskRunUpdateWithoutAttemptsInput = {
 export type TaskRunUncheckedUpdateWithoutAttemptsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   taskId?: Prisma.StringFieldUpdateOperationsInput | string
+  deploymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus
   traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -914,6 +987,7 @@ export type TaskRunCreateWithoutEventsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   task: Prisma.TaskCreateNestedOneWithoutRunsInput
+  deployment?: Prisma.DeploymentCreateNestedOneWithoutRunsInput
   schedule?: Prisma.TaskScheduleCreateNestedOneWithoutRunsInput
   attempts?: Prisma.TaskAttemptCreateNestedManyWithoutTaskRunInput
 }
@@ -921,6 +995,7 @@ export type TaskRunCreateWithoutEventsInput = {
 export type TaskRunUncheckedCreateWithoutEventsInput = {
   id?: string
   taskId: string
+  deploymentId?: string | null
   scheduleId?: string | null
   status?: $Enums.TaskRunStatus
   traceId?: string | null
@@ -972,6 +1047,7 @@ export type TaskRunUpdateWithoutEventsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   task?: Prisma.TaskUpdateOneRequiredWithoutRunsNestedInput
+  deployment?: Prisma.DeploymentUpdateOneWithoutRunsNestedInput
   schedule?: Prisma.TaskScheduleUpdateOneWithoutRunsNestedInput
   attempts?: Prisma.TaskAttemptUpdateManyWithoutTaskRunNestedInput
 }
@@ -979,6 +1055,7 @@ export type TaskRunUpdateWithoutEventsInput = {
 export type TaskRunUncheckedUpdateWithoutEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   taskId?: Prisma.StringFieldUpdateOperationsInput | string
+  deploymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus
   traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1014,6 +1091,7 @@ export type TaskRunCreateWithoutScheduleInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   task: Prisma.TaskCreateNestedOneWithoutRunsInput
+  deployment?: Prisma.DeploymentCreateNestedOneWithoutRunsInput
   attempts?: Prisma.TaskAttemptCreateNestedManyWithoutTaskRunInput
   events?: Prisma.TaskEventCreateNestedManyWithoutTaskRunInput
 }
@@ -1021,6 +1099,7 @@ export type TaskRunCreateWithoutScheduleInput = {
 export type TaskRunUncheckedCreateWithoutScheduleInput = {
   id?: string
   taskId: string
+  deploymentId?: string | null
   status?: $Enums.TaskRunStatus
   traceId?: string | null
   triggerSpanId?: string | null
@@ -1065,8 +1144,79 @@ export type TaskRunUpdateManyWithWhereWithoutScheduleInput = {
   data: Prisma.XOR<Prisma.TaskRunUpdateManyMutationInput, Prisma.TaskRunUncheckedUpdateManyWithoutScheduleInput>
 }
 
+export type TaskRunCreateWithoutDeploymentInput = {
+  id?: string
+  status?: $Enums.TaskRunStatus
+  traceId?: string | null
+  triggerSpanId?: string | null
+  idempotencyKeyHash?: string | null
+  idempotencyRequestHash?: string | null
+  payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  delayUntil?: Date | string | null
+  startedAt?: Date | string | null
+  lastHeartbeatAt?: Date | string | null
+  completedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  task: Prisma.TaskCreateNestedOneWithoutRunsInput
+  schedule?: Prisma.TaskScheduleCreateNestedOneWithoutRunsInput
+  attempts?: Prisma.TaskAttemptCreateNestedManyWithoutTaskRunInput
+  events?: Prisma.TaskEventCreateNestedManyWithoutTaskRunInput
+}
+
+export type TaskRunUncheckedCreateWithoutDeploymentInput = {
+  id?: string
+  taskId: string
+  scheduleId?: string | null
+  status?: $Enums.TaskRunStatus
+  traceId?: string | null
+  triggerSpanId?: string | null
+  idempotencyKeyHash?: string | null
+  idempotencyRequestHash?: string | null
+  payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  delayUntil?: Date | string | null
+  startedAt?: Date | string | null
+  lastHeartbeatAt?: Date | string | null
+  completedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  attempts?: Prisma.TaskAttemptUncheckedCreateNestedManyWithoutTaskRunInput
+  events?: Prisma.TaskEventUncheckedCreateNestedManyWithoutTaskRunInput
+}
+
+export type TaskRunCreateOrConnectWithoutDeploymentInput = {
+  where: Prisma.TaskRunWhereUniqueInput
+  create: Prisma.XOR<Prisma.TaskRunCreateWithoutDeploymentInput, Prisma.TaskRunUncheckedCreateWithoutDeploymentInput>
+}
+
+export type TaskRunCreateManyDeploymentInputEnvelope = {
+  data: Prisma.TaskRunCreateManyDeploymentInput | Prisma.TaskRunCreateManyDeploymentInput[]
+  skipDuplicates?: boolean
+}
+
+export type TaskRunUpsertWithWhereUniqueWithoutDeploymentInput = {
+  where: Prisma.TaskRunWhereUniqueInput
+  update: Prisma.XOR<Prisma.TaskRunUpdateWithoutDeploymentInput, Prisma.TaskRunUncheckedUpdateWithoutDeploymentInput>
+  create: Prisma.XOR<Prisma.TaskRunCreateWithoutDeploymentInput, Prisma.TaskRunUncheckedCreateWithoutDeploymentInput>
+}
+
+export type TaskRunUpdateWithWhereUniqueWithoutDeploymentInput = {
+  where: Prisma.TaskRunWhereUniqueInput
+  data: Prisma.XOR<Prisma.TaskRunUpdateWithoutDeploymentInput, Prisma.TaskRunUncheckedUpdateWithoutDeploymentInput>
+}
+
+export type TaskRunUpdateManyWithWhereWithoutDeploymentInput = {
+  where: Prisma.TaskRunScalarWhereInput
+  data: Prisma.XOR<Prisma.TaskRunUpdateManyMutationInput, Prisma.TaskRunUncheckedUpdateManyWithoutDeploymentInput>
+}
+
 export type TaskRunCreateManyTaskInput = {
   id?: string
+  deploymentId?: string | null
   scheduleId?: string | null
   status?: $Enums.TaskRunStatus
   traceId?: string | null
@@ -1100,6 +1250,7 @@ export type TaskRunUpdateWithoutTaskInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deployment?: Prisma.DeploymentUpdateOneWithoutRunsNestedInput
   schedule?: Prisma.TaskScheduleUpdateOneWithoutRunsNestedInput
   attempts?: Prisma.TaskAttemptUpdateManyWithoutTaskRunNestedInput
   events?: Prisma.TaskEventUpdateManyWithoutTaskRunNestedInput
@@ -1107,6 +1258,7 @@ export type TaskRunUpdateWithoutTaskInput = {
 
 export type TaskRunUncheckedUpdateWithoutTaskInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  deploymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus
   traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1128,6 +1280,7 @@ export type TaskRunUncheckedUpdateWithoutTaskInput = {
 
 export type TaskRunUncheckedUpdateManyWithoutTaskInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  deploymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus
   traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1148,6 +1301,7 @@ export type TaskRunUncheckedUpdateManyWithoutTaskInput = {
 export type TaskRunCreateManyScheduleInput = {
   id?: string
   taskId: string
+  deploymentId?: string | null
   status?: $Enums.TaskRunStatus
   traceId?: string | null
   triggerSpanId?: string | null
@@ -1181,6 +1335,7 @@ export type TaskRunUpdateWithoutScheduleInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   task?: Prisma.TaskUpdateOneRequiredWithoutRunsNestedInput
+  deployment?: Prisma.DeploymentUpdateOneWithoutRunsNestedInput
   attempts?: Prisma.TaskAttemptUpdateManyWithoutTaskRunNestedInput
   events?: Prisma.TaskEventUpdateManyWithoutTaskRunNestedInput
 }
@@ -1188,6 +1343,7 @@ export type TaskRunUpdateWithoutScheduleInput = {
 export type TaskRunUncheckedUpdateWithoutScheduleInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   taskId?: Prisma.StringFieldUpdateOperationsInput | string
+  deploymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus
   traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   triggerSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1209,6 +1365,91 @@ export type TaskRunUncheckedUpdateWithoutScheduleInput = {
 export type TaskRunUncheckedUpdateManyWithoutScheduleInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   taskId?: Prisma.StringFieldUpdateOperationsInput | string
+  deploymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  triggerSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKeyHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyRequestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type TaskRunCreateManyDeploymentInput = {
+  id?: string
+  taskId: string
+  scheduleId?: string | null
+  status?: $Enums.TaskRunStatus
+  traceId?: string | null
+  triggerSpanId?: string | null
+  idempotencyKeyHash?: string | null
+  idempotencyRequestHash?: string | null
+  payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  delayUntil?: Date | string | null
+  startedAt?: Date | string | null
+  lastHeartbeatAt?: Date | string | null
+  completedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type TaskRunUpdateWithoutDeploymentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  triggerSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKeyHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyRequestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  task?: Prisma.TaskUpdateOneRequiredWithoutRunsNestedInput
+  schedule?: Prisma.TaskScheduleUpdateOneWithoutRunsNestedInput
+  attempts?: Prisma.TaskAttemptUpdateManyWithoutTaskRunNestedInput
+  events?: Prisma.TaskEventUpdateManyWithoutTaskRunNestedInput
+}
+
+export type TaskRunUncheckedUpdateWithoutDeploymentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  taskId?: Prisma.StringFieldUpdateOperationsInput | string
+  scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  triggerSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKeyHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyRequestHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  output?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  error?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  delayUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  attempts?: Prisma.TaskAttemptUncheckedUpdateManyWithoutTaskRunNestedInput
+  events?: Prisma.TaskEventUncheckedUpdateManyWithoutTaskRunNestedInput
+}
+
+export type TaskRunUncheckedUpdateManyWithoutDeploymentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  taskId?: Prisma.StringFieldUpdateOperationsInput | string
+  scheduleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTaskRunStatusFieldUpdateOperationsInput | $Enums.TaskRunStatus
   traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   triggerSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1268,6 +1509,7 @@ export type TaskRunCountOutputTypeCountEventsArgs<ExtArgs extends runtime.Types.
 export type TaskRunSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   taskId?: boolean
+  deploymentId?: boolean
   scheduleId?: boolean
   status?: boolean
   traceId?: boolean
@@ -1284,6 +1526,7 @@ export type TaskRunSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   createdAt?: boolean
   updatedAt?: boolean
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
+  deployment?: boolean | Prisma.TaskRun$deploymentArgs<ExtArgs>
   schedule?: boolean | Prisma.TaskRun$scheduleArgs<ExtArgs>
   attempts?: boolean | Prisma.TaskRun$attemptsArgs<ExtArgs>
   events?: boolean | Prisma.TaskRun$eventsArgs<ExtArgs>
@@ -1293,6 +1536,7 @@ export type TaskRunSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
 export type TaskRunSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   taskId?: boolean
+  deploymentId?: boolean
   scheduleId?: boolean
   status?: boolean
   traceId?: boolean
@@ -1309,12 +1553,14 @@ export type TaskRunSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   createdAt?: boolean
   updatedAt?: boolean
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
+  deployment?: boolean | Prisma.TaskRun$deploymentArgs<ExtArgs>
   schedule?: boolean | Prisma.TaskRun$scheduleArgs<ExtArgs>
 }, ExtArgs["result"]["taskRun"]>
 
 export type TaskRunSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   taskId?: boolean
+  deploymentId?: boolean
   scheduleId?: boolean
   status?: boolean
   traceId?: boolean
@@ -1331,12 +1577,14 @@ export type TaskRunSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   createdAt?: boolean
   updatedAt?: boolean
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
+  deployment?: boolean | Prisma.TaskRun$deploymentArgs<ExtArgs>
   schedule?: boolean | Prisma.TaskRun$scheduleArgs<ExtArgs>
 }, ExtArgs["result"]["taskRun"]>
 
 export type TaskRunSelectScalar = {
   id?: boolean
   taskId?: boolean
+  deploymentId?: boolean
   scheduleId?: boolean
   status?: boolean
   traceId?: boolean
@@ -1354,9 +1602,10 @@ export type TaskRunSelectScalar = {
   updatedAt?: boolean
 }
 
-export type TaskRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taskId" | "scheduleId" | "status" | "traceId" | "triggerSpanId" | "idempotencyKeyHash" | "idempotencyRequestHash" | "payload" | "output" | "error" | "delayUntil" | "startedAt" | "lastHeartbeatAt" | "completedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["taskRun"]>
+export type TaskRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taskId" | "deploymentId" | "scheduleId" | "status" | "traceId" | "triggerSpanId" | "idempotencyKeyHash" | "idempotencyRequestHash" | "payload" | "output" | "error" | "delayUntil" | "startedAt" | "lastHeartbeatAt" | "completedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["taskRun"]>
 export type TaskRunInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
+  deployment?: boolean | Prisma.TaskRun$deploymentArgs<ExtArgs>
   schedule?: boolean | Prisma.TaskRun$scheduleArgs<ExtArgs>
   attempts?: boolean | Prisma.TaskRun$attemptsArgs<ExtArgs>
   events?: boolean | Prisma.TaskRun$eventsArgs<ExtArgs>
@@ -1364,10 +1613,12 @@ export type TaskRunInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
 }
 export type TaskRunIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
+  deployment?: boolean | Prisma.TaskRun$deploymentArgs<ExtArgs>
   schedule?: boolean | Prisma.TaskRun$scheduleArgs<ExtArgs>
 }
 export type TaskRunIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
+  deployment?: boolean | Prisma.TaskRun$deploymentArgs<ExtArgs>
   schedule?: boolean | Prisma.TaskRun$scheduleArgs<ExtArgs>
 }
 
@@ -1375,6 +1626,7 @@ export type $TaskRunPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   name: "TaskRun"
   objects: {
     task: Prisma.$TaskPayload<ExtArgs>
+    deployment: Prisma.$DeploymentPayload<ExtArgs> | null
     schedule: Prisma.$TaskSchedulePayload<ExtArgs> | null
     attempts: Prisma.$TaskAttemptPayload<ExtArgs>[]
     events: Prisma.$TaskEventPayload<ExtArgs>[]
@@ -1382,6 +1634,7 @@ export type $TaskRunPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     taskId: string
+    deploymentId: string | null
     scheduleId: string | null
     status: $Enums.TaskRunStatus
     traceId: string | null
@@ -1792,6 +2045,7 @@ readonly fields: TaskRunFieldRefs;
 export interface Prisma__TaskRunClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   task<T extends Prisma.TaskDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaskDefaultArgs<ExtArgs>>): Prisma.Prisma__TaskClient<runtime.Types.Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  deployment<T extends Prisma.TaskRun$deploymentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaskRun$deploymentArgs<ExtArgs>>): Prisma.Prisma__DeploymentClient<runtime.Types.Result.GetResult<Prisma.$DeploymentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   schedule<T extends Prisma.TaskRun$scheduleArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaskRun$scheduleArgs<ExtArgs>>): Prisma.Prisma__TaskScheduleClient<runtime.Types.Result.GetResult<Prisma.$TaskSchedulePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   attempts<T extends Prisma.TaskRun$attemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaskRun$attemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   events<T extends Prisma.TaskRun$eventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaskRun$eventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -1826,6 +2080,7 @@ export interface Prisma__TaskRunClient<T, Null = never, ExtArgs extends runtime.
 export interface TaskRunFieldRefs {
   readonly id: Prisma.FieldRef<"TaskRun", 'String'>
   readonly taskId: Prisma.FieldRef<"TaskRun", 'String'>
+  readonly deploymentId: Prisma.FieldRef<"TaskRun", 'String'>
   readonly scheduleId: Prisma.FieldRef<"TaskRun", 'String'>
   readonly status: Prisma.FieldRef<"TaskRun", 'TaskRunStatus'>
   readonly traceId: Prisma.FieldRef<"TaskRun", 'String'>
@@ -2239,6 +2494,25 @@ export type TaskRunDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Limit how many TaskRuns to delete.
    */
   limit?: number
+}
+
+/**
+ * TaskRun.deployment
+ */
+export type TaskRun$deploymentArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Deployment
+   */
+  select?: Prisma.DeploymentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Deployment
+   */
+  omit?: Prisma.DeploymentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeploymentInclude<ExtArgs> | null
+  where?: Prisma.DeploymentWhereInput
 }
 
 /**

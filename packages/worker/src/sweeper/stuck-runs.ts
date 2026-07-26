@@ -40,6 +40,7 @@ export async function sweepStuckTaskRuns(now = new Date()) {
     select: {
       id: true,
       taskId: true,
+      deploymentId: true,
       lastHeartbeatAt: true,
       task: {
         select: {
@@ -156,6 +157,7 @@ export async function sweepStuckTaskRuns(now = new Date()) {
           runId: stuckRun.id,
           taskId: stuckRun.taskId,
           environmentId: stuckRun.task.environmentId,
+          deploymentId: stuckRun.deploymentId,
         },
         {
           delayMs: retryDelayMs,

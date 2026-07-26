@@ -4,10 +4,11 @@ export type TaskRunQueueMessage = {
   runId: string;
   taskId: string;
   environmentId: string;
+  deploymentId: string | null;
 };
 
-export const TASK_RUN_QUEUE_KEY = "cascade:task-runs";
-export const TASK_RUN_DELAYED_QUEUE_KEY = "cascade:task-run:delayed";
+const TASK_RUN_QUEUE_KEY_PREFIX = "cascade:task-runs";
+const TASK_RUN_DELAYED_QUEUE_KEY_PREFIX = "cascade:task-run:delayed";
 
 const globalForRedis = globalThis as unknown as {
   taskRunQueueRedis?: Redis;
@@ -34,6 +35,38 @@ function createRedisClient() {
   });
 }
 
+export function getDeploymentQueuePart(deploymentId: string | null | undefined) {
+  if (!deploymentId) {
+    return "local";
+  }
+
+  return deploymentId;
+}
+
+export function getTaskRunQueueKey(deploymentId: string | null | undefined) {
+  return `${TASK_RUN_QUEUE_KEY_PREFIX}:${getDeploymentQueuePart(deploymentId)}`;
+}
+
+export function getTaskRunDelayedQueueKey(deploymentId: string | null | undefined) {
+  return `${TASK_RUN_DELAYED_QUEUE_KEY_PREFIX}:${getDeploymentQueuePart(deploymentId)}`;
+}
+
+function getWorkerDeploymentId() {
+  const rawDeploymentId = process.env.CASCADE_DEPLOYMENT_ID?.trim();
+
+  if (!rawDeploymentId || rawDeploymentId === "local") {
+    return null;
+  }
+
+  return rawDeploymentId;
+}
+
+export const taskRunQueueRedis = globalForRedis.taskRunQueueRedis ?? createRedisClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForRedis.taskRunQueueRedis = taskRunQueueRedis;
+}
+
 export async function enqueueTaskRun(
   message: TaskRunQueueMessage,
   options: EnqueueTaskRunOptions = {},
@@ -42,16 +75,23 @@ export async function enqueueTaskRun(
   const rawMessage = JSON.stringify(message);
 
   if (delayMs <= 0) {
-    await taskRunQueueRedis.rpush(TASK_RUN_QUEUE_KEY, rawMessage);
+    await taskRunQueueRedis.rpush(getTaskRunQueueKey(message.deploymentId), rawMessage);
     return;
   }
 
-  await taskRunQueueRedis.zadd(TASK_RUN_DELAYED_QUEUE_KEY, Date.now() + delayMs, rawMessage);
+  await taskRunQueueRedis.zadd(
+    getTaskRunDelayedQueueKey(message.deploymentId),
+    Date.now() + delayMs,
+    rawMessage,
+  );
 }
 
-async function promoteDueTaskRunMessages() {
+async function promoteDueTaskRunMessages(deploymentId: string | null) {
+  const delayedQueueKey = getTaskRunDelayedQueueKey(deploymentId);
+  const queueKey = getTaskRunQueueKey(deploymentId);
+
   const rawMessages = await taskRunQueueRedis.zrangebyscore(
-    TASK_RUN_DELAYED_QUEUE_KEY,
+    delayedQueueKey,
     0,
     Date.now(),
     "LIMIT",
@@ -61,25 +101,21 @@ async function promoteDueTaskRunMessages() {
 
   await Promise.all(
     rawMessages.map(async (rawMessage) => {
-      const removed = await taskRunQueueRedis.zrem(TASK_RUN_DELAYED_QUEUE_KEY, rawMessage);
+      const removed = await taskRunQueueRedis.zrem(delayedQueueKey, rawMessage);
 
       if (removed === 1) {
-        await taskRunQueueRedis.rpush(TASK_RUN_QUEUE_KEY, rawMessage);
+        await taskRunQueueRedis.rpush(queueKey, rawMessage);
       }
     }),
   );
 }
 
-export const taskRunQueueRedis = globalForRedis.taskRunQueueRedis ?? createRedisClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForRedis.taskRunQueueRedis = taskRunQueueRedis;
-}
-
 export async function popTaskRunMessage() {
-  await promoteDueTaskRunMessages();
+  const deploymentId = getWorkerDeploymentId();
 
-  const result = await taskRunQueueRedis.blpop(TASK_RUN_QUEUE_KEY, 5);
+  await promoteDueTaskRunMessages(deploymentId);
+
+  const result = await taskRunQueueRedis.blpop(getTaskRunQueueKey(deploymentId), 5);
 
   if (!result) {
     return null;
