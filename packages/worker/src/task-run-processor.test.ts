@@ -407,4 +407,40 @@ describe("processTaskRun", () => {
     expect(enqueueTaskRun).not.toHaveBeenCalled();
     expect(stopHeartbeat).toHaveBeenCalledOnce();
   });
+
+  it("stores DbNull when the local task returns undefined", async () => {
+    localTaskRun.mockResolvedValue(undefined);
+
+    await processTaskRun(createMessage());
+
+    expect(maybeStoreJsonValue).not.toHaveBeenCalled();
+
+    expect(txTaskRunUpdateMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: {
+          id: RUN_ID,
+          status: "EXECUTING",
+        },
+        data: expect.objectContaining({
+          status: "COMPLETED",
+          output: "DB_NULL",
+          error: "DB_NULL",
+          completedAt: expect.any(Date),
+        }),
+      }),
+    );
+
+    expect(txTaskAttemptUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: ATTEMPT_ID,
+        },
+        data: expect.objectContaining({
+          status: "COMPLETED",
+          completedAt: expect.any(Date),
+        }),
+      }),
+    );
+  });
 });
