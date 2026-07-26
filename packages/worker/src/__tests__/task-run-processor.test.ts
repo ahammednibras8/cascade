@@ -21,6 +21,11 @@ import {
   txTaskAttemptCreate,
   txTaskEventCreate,
   txTaskRunUpdateMany,
+  localTaskQueue,
+  releaseQueueConcurrency,
+  startQueueConcurrencyLeaseHeartbeat,
+  stopQueueConcurrencyHeartbeat,
+  tryAcquireQueueConcurrency,
 } from "./task-run-processor/harness.js";
 import {
   expectHeartbeatWasStopped,
@@ -238,5 +243,60 @@ describe("processTaskRun", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("requeues without executing when queue concurrency limit is reached", async () => {
+    localTaskQueue.concurrencyLimit = 1;
+    tryAcquireQueueConcurrency.mockResolvedValue(null);
+
+    await processTaskRun(createMessage());
+
+    expect(tryAcquireQueueConcurrency).toHaveBeenCalledWith({
+      environmentId: ENVIRONMENT_ID,
+      queueName: "hello",
+      runId: RUN_ID,
+      limit: 1,
+    });
+
+    expect(enqueueTaskRun).toHaveBeenCalledWith(createMessage(), {
+      delayMs: 1000,
+    });
+
+    expect(txTaskRunUpdateMany).not.toHaveBeenCalled();
+    expect(localTaskRun).not.toHaveBeenCalled();
+    expect(startTaskRunHeartbeat).not.toHaveBeenCalled();
+    expect(startQueueConcurrencyLeaseHeartbeat).not.toHaveBeenCalled();
+    expect(releaseQueueConcurrency).not.toHaveBeenCalled();
+  });
+
+  it("executes with a queue concurrency lease and releases it after completion", async () => {
+    const lease = {
+      key: "cascade:queue-concurrency:environment-1:hello",
+      token: "run-1:lease-token",
+      ttlMs: 60_000,
+    };
+
+    localTaskQueue.concurrencyLimit = 1;
+    tryAcquireQueueConcurrency.mockResolvedValue(lease);
+
+    await processTaskRun(createMessage());
+
+    expect(tryAcquireQueueConcurrency).toHaveBeenCalledWith({
+      environmentId: ENVIRONMENT_ID,
+      queueName: "hello",
+      runId: RUN_ID,
+      limit: 1,
+    });
+
+    expect(startQueueConcurrencyLeaseHeartbeat).toHaveBeenCalledWith(lease);
+    expect(localTaskRun).toHaveBeenCalledOnce();
+
+    expectTaskRunWasClaimedForExecution();
+    expectTaskRunWasCompletedWithOutput({
+      ok: true,
+    });
+
+    expect(stopQueueConcurrencyHeartbeat).toHaveBeenCalledOnce();
+    expect(releaseQueueConcurrency).toHaveBeenCalledWith(lease);
   });
 });

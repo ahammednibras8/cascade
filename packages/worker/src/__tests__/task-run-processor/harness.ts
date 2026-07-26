@@ -31,6 +31,11 @@ type LocalTaskRetry = {
   exponentialBackoff: boolean;
 };
 
+type LocalTaskQueue = {
+  name: string;
+  concurrencyLimit: number | null;
+};
+
 const localTaskRun = vi.hoisted(() => vi.fn<(context: unknown) => Promise<unknown>>());
 
 const localTaskRetry = vi.hoisted(
@@ -38,6 +43,13 @@ const localTaskRetry = vi.hoisted(
     maxAttempts: 1,
     delayMs: 0,
     exponentialBackoff: false,
+  }),
+);
+
+const localTaskQueue = vi.hoisted(
+  (): LocalTaskQueue => ({
+    name: "hello",
+    concurrencyLimit: null,
   }),
 );
 
@@ -100,6 +112,8 @@ export {
   txTaskAttemptUpdate,
   txTaskEventCreate,
   txTaskRunUpdateMany,
+  localTaskQueue,
+  tryAcquireQueueConcurrency,
 };
 
 vi.mock("@cascade/database", () => ({
@@ -158,10 +172,7 @@ vi.mock("../../tasks/registry.js", () => ({
         id: "hello",
         timeoutMs: 30_000,
         retry: localTaskRetry,
-        queue: {
-          name: "hello",
-          concurrencyLimit: null,
-        },
+        queue: localTaskQueue,
         run: localTaskRun,
       };
     }),
@@ -237,6 +248,9 @@ export function resetTaskRunProcessorHarness() {
   localTaskRetry.maxAttempts = 1;
   localTaskRetry.delayMs = 0;
   localTaskRetry.exponentialBackoff = false;
+
+  localTaskQueue.name = "hello";
+  localTaskQueue.concurrencyLimit = null;
 }
 
 function mockTransactionClient() {
