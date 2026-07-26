@@ -2,6 +2,9 @@ import express from "express";
 import httpRequest from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const RUN_ID = "22222222-2222-4222-8222-222222222222";
+const TASK_ID = "11111111-1111-4111-8111-111111111111";
+
 const triggerTaskRun = vi.hoisted(() => vi.fn<(input: unknown) => Promise<unknown>>());
 
 const cancelTaskRun = vi.hoisted(() => vi.fn<(input: unknown) => Promise<unknown>>());
@@ -108,5 +111,42 @@ describe("tasksRouter", () => {
     });
 
     expect(response.body.taskRun.idempotentReplay).toBe(true);
+  });
+
+  it("passes cancel run requests to the cancel service", async () => {
+    cancelTaskRun.mockResolvedValue({
+      ok: true,
+      status: 200,
+      taskRun: {
+        id: RUN_ID,
+        taskId: TASK_ID,
+        status: "CANCELED",
+        canceled: true,
+        alreadyCanceled: false,
+      },
+    });
+
+    const response = await httpRequest(createApp()).post(`/api/runs/${RUN_ID}/cancel`).send();
+
+    expect(response.status).toBe(200);
+
+    expect(cancelTaskRun).toHaveBeenCalledWith({
+      auth: {
+        apiKeyId: "api-key-1",
+        environmentId: "environment-1",
+        projectId: "project-1",
+      },
+      runId: RUN_ID,
+    });
+
+    expect(response.body).toEqual({
+      taskRun: {
+        id: RUN_ID,
+        taskId: TASK_ID,
+        status: "CANCELED",
+        canceled: true,
+        alreadyCanceled: false,
+      },
+    });
   });
 });
