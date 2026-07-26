@@ -1,5 +1,5 @@
 import { type Request } from "express";
-import { Prisma } from "@cascade/database";
+import type { Prisma } from "@cascade/database";
 import { createHash } from "node:crypto";
 
 export const IDEMPOTENCY_KEY_MAX_LENGTH = 255;
