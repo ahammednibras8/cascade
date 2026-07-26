@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ATTEMPT_ID,
   ENVIRONMENT_ID,
@@ -201,5 +201,42 @@ describe("processTaskRun", () => {
     expect(enqueueTaskRun).toHaveBeenCalledWith(createMessage(), {
       delayMs: 2000,
     });
+  });
+
+  it("does not execute a run before delayUntil", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+
+    try {
+      const delayUntil = new Date("2026-01-01T00:01:00.000Z");
+
+      prisma.taskRun.findFirst.mockResolvedValue({
+        id: RUN_ID,
+        taskId: TASK_ID,
+        status: "PENDING",
+        payload: {
+          message: "hello",
+        },
+        delayUntil,
+        traceId: TRACE_ID,
+        triggerSpanId: PARENT_SPAN_ID,
+        task: {
+          slug: "hello",
+          name: "Hello",
+        },
+      });
+
+      await processTaskRun(createMessage());
+
+      expect(enqueueTaskRun).toHaveBeenCalledWith(createMessage(), {
+        delayMs: 60_000,
+      });
+
+      expect(txTaskRunUpdateMany).not.toHaveBeenCalled();
+      expect(localTaskRun).not.toHaveBeenCalled();
+      expect(startTaskRunHeartbeat).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

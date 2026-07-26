@@ -372,4 +372,101 @@ describe("triggerTaskRun", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(enqueueTaskRun).not.toHaveBeenCalled();
   });
+
+  it("creates a delayed pending run and enqueues it with delayMs", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+
+    try {
+      const delayUntil = new Date("2026-01-01T00:01:00.000Z");
+
+      prisma.task.findFirst.mockResolvedValue(createTask());
+      txTaskRunCreate.mockResolvedValue(
+        createTaskRun({
+          delayUntil,
+        }),
+      );
+
+      const result = await triggerTaskRun({
+        auth,
+        taskId: TASK_ID,
+        body: {
+          payload: {
+            message: "hello",
+          },
+          delayUntil: delayUntil.toISOString(),
+        },
+        idempotencyKey: undefined,
+        traceparent: undefined,
+      });
+
+      expect(result.ok).toBe(true);
+
+      expect(txTaskRunCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            id: RUN_ID,
+            taskId: TASK_ID,
+            status: "PENDING",
+            delayUntil,
+          }),
+        }),
+      );
+
+      expect(txTaskEventCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            taskRunId: RUN_ID,
+            type: "task.triggered",
+            data: expect.objectContaining({
+              delayUntil: "2026-01-01T00:01:00.000Z",
+            }),
+          }),
+        }),
+      );
+
+      expect(enqueueTaskRun).toHaveBeenCalledWith(
+        {
+          runId: RUN_ID,
+          taskId: TASK_ID,
+          environmentId: auth.environmentId,
+          deploymentId: "deployment-1",
+        },
+        {
+          delayMs: 60_000,
+        },
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("rejects invalid delayUntil values", async () => {
+    prisma.task.findFirst.mockResolvedValue(createTask());
+
+    const result = await triggerTaskRun({
+      auth,
+      taskId: TASK_ID,
+      body: {
+        payload: {
+          message: "hello",
+        },
+        delayUntil: "not-a-date",
+      },
+      idempotencyKey: undefined,
+      traceparent: undefined,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      status: 400,
+      error: {
+        code: "INVALID_DELAY_UNTIL",
+        message: "delayUntil must be a valid ISO date string",
+      },
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(enqueueTaskRun).not.toHaveBeenCalled();
+  });
 });
