@@ -17,6 +17,9 @@ concurrency:
 env:
   CI: true
   DATABASE_URL: postgresql://cascade:cascade@localhost:5432/cascade
+  QUEUE_REDIS_URL: redis://localhost:6379
+  API_KEY_PEPPER: ci-api-key-pepper
+  CASCADE_API_URL: http://localhost:3001
 
 jobs:
   quality:
@@ -35,6 +38,16 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U cascade -d cascade"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -81,6 +94,14 @@ jobs:
 
       - name: Install Playwright browser
         run: pnpm --filter @cascade/e2e exec playwright install chromium --with-deps
+
+      - name: Write CI env file
+        run: |
+          {
+            echo "DATABASE_URL=$DATABASE_URL"
+            echo "QUEUE_REDIS_URL=$QUEUE_REDIS_URL"
+            echo "API_KEY_PEPPER=$API_KEY_PEPPER"
+          } > .env
 
       - name: Run E2E
         env:
