@@ -62,6 +62,68 @@ describe("tasksRouter", () => {
     vi.clearAllMocks();
   });
 
+  it("passes deployment registration requests to the deployment service", async () => {
+    createDeployment.mockResolvedValue({
+      ok: true,
+      status: 201,
+      deployment: {
+        id: "deployment-1",
+        environmentId: "environment-1",
+        version: "v1",
+        image: "ghcr.io/cascade/worker:v1",
+        status: "ACTIVE",
+        tasks: [
+          {
+            id: "task-1",
+            slug: "hello",
+            name: "Hello",
+          },
+        ],
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+    });
+
+    const body = {
+      version: "v1",
+      image: "ghcr.io/cascade/worker:v1",
+      tasks: [
+        {
+          slug: "hello",
+          name: "Hello",
+        },
+      ],
+    };
+
+    const response = await httpRequest(createApp()).post("/api/deployments").send(body);
+
+    expect(response.status).toBe(201);
+
+    expect(createDeployment).toHaveBeenCalledWith({
+      auth: {
+        apiKeyId: "api-key-1",
+        environmentId: "environment-1",
+        projectId: "project-1",
+      },
+      body,
+    });
+
+    expect(response.body.deployment).toEqual({
+      id: "deployment-1",
+      environmentId: "environment-1",
+      version: "v1",
+      image: "ghcr.io/cascade/worker:v1",
+      status: "ACTIVE",
+      tasks: [
+        {
+          id: "task-1",
+          slug: "hello",
+          name: "Hello",
+        },
+      ],
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+  });
+
   it("passes Idempotency-Key to the trigger service and returns replay metadata", async () => {
     triggerTaskRun.mockResolvedValue({
       ok: true,
