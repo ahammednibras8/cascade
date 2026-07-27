@@ -24,6 +24,21 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: cascade
+          POSTGRES_PASSWORD: cascade
+          POSTGRES_DB: cascade
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cascade -d cascade"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -52,11 +67,17 @@ jobs:
       - name: Typecheck
         run: pnpm run check-types
 
+      - name: Unit tests
+        run: pnpm run test:unit
+
       - name: Validate database schema
         run: pnpm run db:validate
 
+      - name: Apply database migrations
+        run: pnpm run db:deploy
+
       - name: Render Helm chart
-        run: pnpm run hosting:template
+        run: helm template cascade hosting/k8s/helm --set image.tag=${{ github.sha }}
 
       - name: Install Playwright browser
         run: pnpm --filter @cascade/e2e exec playwright install chromium --with-deps
