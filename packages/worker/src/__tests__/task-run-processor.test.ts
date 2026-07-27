@@ -103,6 +103,9 @@ describe("processTaskRun", () => {
           type: "task.run.completed",
           level: "INFO",
           message: "Task run completed successfully",
+          traceId: TRACE_ID,
+          spanId: SPAN_ID,
+          parentSpanId: PARENT_SPAN_ID,
         }),
       }),
     );

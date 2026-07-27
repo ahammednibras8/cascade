@@ -70,9 +70,14 @@ vi.mock("node:crypto", async (importOriginal) => {
   };
 });
 
-vi.mock("@cascade/core", () => ({
-  parseTraceparent: vi.fn<(traceparent: string | undefined) => null>(() => null),
-  createRootTraceContext: vi.fn<
+const parseTraceparent = vi.hoisted(() =>
+  vi.fn<(traceparent: string | undefined) => { traceId: string; spanId: string } | null>(
+    () => null,
+  ),
+);
+
+const createRootTraceContext = vi.hoisted(() =>
+  vi.fn<
     () => {
       traceId: string;
       spanId: string;
@@ -83,16 +88,29 @@ vi.mock("@cascade/core", () => ({
     spanId: SPAN_ID,
     parentSpanId: null,
   })),
-  createChildTraceContext: vi.fn<
+);
+
+const createChildTraceContext = vi.hoisted(() =>
+  vi.fn<
     (input: { traceId: string; parentSpanId: string }) => {
       traceId: string;
       spanId: string;
       parentSpanId: string;
     }
   >(),
-  toTraceparent: vi.fn<(input: { traceId: string; spanId: string }) => string>(
+);
+
+const toTraceparent = vi.hoisted(() =>
+  vi.fn<(input: { traceId: string; spanId: string }) => string>(
     (input) => `00-${input.traceId}-${input.spanId}-01`,
   ),
+);
+
+vi.mock("@cascade/core", () => ({
+  parseTraceparent,
+  createRootTraceContext,
+  createChildTraceContext,
+  toTraceparent,
 }));
 
 const { triggerTaskRun } = await import("./trigger-task-run.js");
@@ -127,6 +145,21 @@ function createTaskRun(overrides: Record<string, unknown> = {}) {
 describe("triggerTaskRun", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    parseTraceparent.mockReset();
+    parseTraceparent.mockReturnValue(null);
+
+    createRootTraceContext.mockReset();
+    createRootTraceContext.mockReturnValue({
+      traceId: TRACE_ID,
+      spanId: SPAN_ID,
+      parentSpanId: null,
+    });
+
+    createChildTraceContext.mockReset();
+
+    toTraceparent.mockReset();
+    toTraceparent.mockImplementation((input) => `00-${input.traceId}-${input.spanId}-01`);
 
     randomUUID.mockReturnValue(RUN_ID);
 
@@ -468,5 +501,79 @@ describe("triggerTaskRun", () => {
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(enqueueTaskRun).not.toHaveBeenCalled();
+  });
+
+  it("continues an incoming traceparent when triggering a task", async () => {
+    const parentTraceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const parentSpanId = "bbbbbbbbbbbbbbbb";
+    const childSpanId = "cccccccccccccccc";
+    const incomingTraceparent = `00-${parentTraceId}-${parentSpanId}-01`;
+
+    parseTraceparent.mockReturnValue({
+      traceId: parentTraceId,
+      spanId: parentSpanId,
+    });
+
+    createChildTraceContext.mockReturnValue({
+      traceId: parentTraceId,
+      spanId: childSpanId,
+      parentSpanId,
+    });
+
+    prisma.task.findFirst.mockResolvedValue(createTask());
+
+    txTaskRunCreate.mockResolvedValue(
+      createTaskRun({
+        traceId: parentTraceId,
+        triggerSpanId: childSpanId,
+      }),
+    );
+
+    const result = await triggerTaskRun({
+      auth,
+      taskId: TASK_ID,
+      body: {
+        payload: {
+          message: "hello",
+        },
+      },
+      idempotencyKey: undefined,
+      traceparent: incomingTraceparent,
+    });
+
+    expect(result.ok).toBe(true);
+
+    if (!result.ok) {
+      throw new Error("Expected triggerTaskRun to succeed");
+    }
+
+    expect(parseTraceparent).toHaveBeenCalledWith(incomingTraceparent);
+    expect(createRootTraceContext).not.toHaveBeenCalled();
+
+    expect(createChildTraceContext).toHaveBeenCalledWith({
+      traceId: parentTraceId,
+      parentSpanId,
+    });
+
+    expect(txTaskRunCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          traceId: parentTraceId,
+          triggerSpanId: childSpanId,
+        }),
+      }),
+    );
+
+    expect(txTaskEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          traceId: parentTraceId,
+          spanId: childSpanId,
+          parentSpanId,
+        }),
+      }),
+    );
+
+    expect(result.taskRun.traceparent).toBe(`00-${parentTraceId}-${childSpanId}-01`);
   });
 });

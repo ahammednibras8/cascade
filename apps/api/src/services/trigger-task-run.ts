@@ -298,6 +298,9 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
             type: "task.triggered",
             level: "INFO",
             message: "Task trigger accepted and run is pending",
+            traceId: triggerTrace.traceId,
+            spanId: triggerTrace.spanId,
+            parentSpanId: triggerTrace.parentSpanId,
             data: eventData,
           },
         });
