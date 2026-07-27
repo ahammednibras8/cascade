@@ -17,6 +17,14 @@ const createDeployment = vi.hoisted(() => vi.fn<(input: unknown) => Promise<unkn
 
 const getTaskRun = vi.hoisted(() => vi.fn<(input: unknown) => Promise<unknown>>());
 
+const listTaskRunEvents = vi.hoisted(() => vi.fn<(input: unknown) => Promise<unknown>>());
+
+const prisma = vi.hoisted(() => ({
+  taskRun: {
+    findMany: vi.fn<(input: unknown) => Promise<unknown[]>>(),
+  },
+}));
+
 vi.mock("../../src/services/trigger-task-run.js", () => ({
   triggerTaskRun,
 }));
@@ -39,6 +47,14 @@ vi.mock("../../src/services/create-deployment.js", () => ({
 
 vi.mock("../../src/services/get-task-run.js", () => ({
   getTaskRun,
+}));
+
+vi.mock("../../src/services/list-task-run-events.js", () => ({
+  listTaskRunEvents,
+}));
+
+vi.mock("@cascade/database", () => ({
+  prisma,
 }));
 
 const { tasksRouter } = await import("../../src/routes/tasks.js");
@@ -217,6 +233,158 @@ describe("tasksRouter", () => {
         taskSlug: "hello",
       }),
     );
+  });
+
+  it("passes run status requests to the run status service", async () => {
+    getTaskRun.mockResolvedValue({
+      ok: true,
+      status: 200,
+      taskRun: {
+        id: RUN_ID,
+        task: {
+          id: TASK_ID,
+          slug: "hello",
+          name: "Hello",
+        },
+        status: "COMPLETED",
+        payload: {
+          message: "hello",
+        },
+        output: {
+          ok: true,
+        },
+        error: null,
+        attemptsCount: 1,
+        eventsCount: 4,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:05.000Z",
+      },
+    });
+
+    const response = await httpRequest(createApp()).get(`/api/runs/${RUN_ID}`);
+
+    expect(response.status).toBe(200);
+
+    expect(getTaskRun).toHaveBeenCalledWith({
+      auth: {
+        apiKeyId: "api-key-1",
+        environmentId: "environment-1",
+        projectId: "project-1",
+      },
+      runId: RUN_ID,
+    });
+
+    expect(response.body.taskRun).toMatchObject({
+      id: RUN_ID,
+      status: "COMPLETED",
+      attemptsCount: 1,
+      eventsCount: 4,
+    });
+  });
+
+  it("passes run event requests to the run event service", async () => {
+    listTaskRunEvents.mockResolvedValue({
+      ok: true,
+      status: 200,
+      events: [
+        {
+          id: "event-1",
+          taskAttemptId: null,
+          type: "task.run.completed",
+          level: "INFO",
+          message: "Task completed",
+          data: {
+            ok: true,
+          },
+          traceId: "11111111111111111111111111111111",
+          spanId: "2222222222222222",
+          parentSpanId: null,
+          createdAt: "2026-01-01T00:00:05.000Z",
+        },
+      ],
+    });
+
+    const response = await httpRequest(createApp()).get(`/api/runs/${RUN_ID}/events`);
+
+    expect(response.status).toBe(200);
+
+    expect(listTaskRunEvents).toHaveBeenCalledWith({
+      auth: {
+        apiKeyId: "api-key-1",
+        environmentId: "environment-1",
+        projectId: "project-1",
+      },
+      runId: RUN_ID,
+    });
+
+    expect(response.body.events).toEqual([
+      {
+        id: "event-1",
+        taskAttemptId: null,
+        type: "task.run.completed",
+        level: "INFO",
+        message: "Task completed",
+        data: {
+          ok: true,
+        },
+        traceId: "11111111111111111111111111111111",
+        spanId: "2222222222222222",
+        parentSpanId: null,
+        createdAt: "2026-01-01T00:00:05.000Z",
+      },
+    ]);
+  });
+
+  it("lists task runs for the authenticated environment", async () => {
+    prisma.taskRun.findMany.mockResolvedValue([
+      {
+        id: RUN_ID,
+        status: "COMPLETED",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        startedAt: new Date("2026-01-01T00:00:01.000Z"),
+        completedAt: new Date("2026-01-01T00:00:05.000Z"),
+        task: {
+          id: TASK_ID,
+          slug: "hello",
+          name: "Hello",
+        },
+        _count: {
+          attempts: 1,
+        },
+      },
+    ]);
+
+    const response = await httpRequest(createApp()).get("/api/runs");
+
+    expect(response.status).toBe(200);
+
+    expect(prisma.taskRun.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          task: {
+            environmentId: "environment-1",
+          },
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: 50,
+      }),
+    );
+
+    expect(response.body.taskRuns).toEqual([
+      {
+        id: RUN_ID,
+        status: "COMPLETED",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        startedAt: "2026-01-01T00:00:01.000Z",
+        completedAt: "2026-01-01T00:00:05.000Z",
+        task: {
+          id: TASK_ID,
+          slug: "hello",
+          name: "Hello",
+        },
+        attemptsCount: 1,
+      },
+    ]);
   });
 
   it("passes cancel run requests to the cancel service", async () => {
