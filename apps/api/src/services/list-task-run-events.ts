@@ -52,7 +52,15 @@ export async function listTaskRunEvents(input: {
     ok: true as const,
     status: 200 as const,
     events: events.map((event) => ({
-      ...event,
+      id: event.id,
+      taskAttemptId: event.taskAttemptId,
+      type: event.type,
+      level: event.level,
+      message: event.message,
+      data: event.data,
+      traceId: event.traceId,
+      spanId: event.traceId,
+      parentSpanId: event.parentSpanId,
       createdAt: event.createdAt.toISOString(),
     })),
   };
