@@ -33,7 +33,8 @@ const taskRunSelect = {
 
 type TriggerTaskRunInput = {
   auth: ApiAuthContext;
-  taskId: string | undefined;
+  taskId?: string | undefined;
+  taskSlug?: string | undefined;
   body: unknown;
   idempotencyKey: string | undefined;
   traceparent: string | undefined;
@@ -136,10 +137,28 @@ function getDelayUntil(
   };
 }
 
-export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<TriggerTaskRunResult> {
-  const { auth, taskId, body, idempotencyKey } = input;
+function isValidTaskSlug(value: string | undefined): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
 
-  if (!isUuid(taskId)) {
+export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<TriggerTaskRunResult> {
+  const { auth, taskId, taskSlug, body, idempotencyKey } = input;
+
+  const hasTaskId = taskId !== undefined;
+  const hasTaskSlug = taskSlug !== undefined;
+
+  if (hasTaskId === hasTaskSlug) {
+    return {
+      ok: false,
+      status: 400,
+      error: {
+        code: "INVALID_TASK_REFERENCE",
+        message: "Provide exactly one of taskId or taskSlug",
+      },
+    };
+  }
+
+  if (hasTaskId && !isUuid(taskId)) {
     return {
       ok: false,
       status: 400,
@@ -150,11 +169,44 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
     };
   }
 
-  const task = await prisma.task.findFirst({
-    where: {
+  if (hasTaskSlug && !isValidTaskSlug(taskSlug)) {
+    return {
+      ok: false,
+      status: 400,
+      error: {
+        code: "INVALID_TASK_SLUG",
+        message: "taskSlug must be a non-empty string",
+      },
+    };
+  }
+
+  let taskWhere: Prisma.TaskWhereInput;
+
+  if (hasTaskId) {
+    taskWhere = {
       id: taskId,
       environmentId: auth.environmentId,
-    },
+    };
+  } else {
+    if (!taskSlug) {
+      return {
+        ok: false,
+        status: 400,
+        error: {
+          code: "INVALID_TASK_SLUG",
+          message: "taskSlug must be a non-empty string",
+        },
+      };
+    }
+
+    taskWhere = {
+      slug: taskSlug,
+      environmentId: auth.environmentId,
+    };
+  }
+
+  const task = await prisma.task.findFirst({
+    where: taskWhere,
     select: {
       id: true,
       slug: true,
@@ -173,6 +225,8 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
       },
     };
   }
+
+  const resolvedTaskId = task.id;
 
   const payload = getPayload(body);
 
@@ -213,14 +267,14 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
   const idempotencyKeyHash = idempotencyKey ? hashValue(idempotencyKey) : undefined;
   const idempotencyRequestHash = idempotencyKeyHash
     ? hashTriggerRequest({
-        taskId,
+        taskId: resolvedTaskId,
         payload,
         delayUntil,
       })
     : undefined;
 
   let taskRun = idempotencyKeyHash
-    ? await findExistingIdempotentTaskRun(taskId, idempotencyKeyHash)
+    ? await findExistingIdempotentTaskRun(resolvedTaskId, idempotencyKeyHash)
     : null;
 
   let created = false;
@@ -241,7 +295,7 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
           : await maybeStoreJsonValue({
               kind: "PAYLOAD",
               environmentId: auth.environmentId,
-              taskId,
+              taskId: resolvedTaskId,
               runId,
               value: payload,
             });
@@ -249,7 +303,7 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
       taskRun = await prisma.$transaction(async (tx) => {
         const data: Prisma.TaskRunUncheckedCreateInput = {
           id: runId,
-          taskId,
+          taskId: resolvedTaskId,
           status: "PENDING",
           traceId: triggerTrace.traceId,
           triggerSpanId: triggerTrace.spanId,
@@ -312,7 +366,7 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
         throw error;
       }
 
-      const existingRun = await findExistingIdempotentTaskRun(taskId, idempotencyKeyHash);
+      const existingRun = await findExistingIdempotentTaskRun(resolvedTaskId, idempotencyKeyHash);
 
       if (!existingRun) {
         throw error;

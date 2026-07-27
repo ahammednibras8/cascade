@@ -44,6 +44,44 @@ tasksRouter.post(
 );
 
 tasksRouter.post(
+  "/tasks/slug/:taskSlug/trigger",
+  asyncHandler(async (request, response) => {
+    const auth = request.auth;
+
+    if (!auth) {
+      response.status(401).json({
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Missing API authentication context",
+        },
+      });
+      return;
+    }
+
+    const result = await triggerTaskRun({
+      auth,
+      taskSlug: getSingleParam(request.params.taskSlug),
+      body: request.body,
+      idempotencyKey: getIdempotencyKey(request),
+      traceparent: request.get("traceparent")?.trim(),
+    });
+
+    if (!result.ok) {
+      response.status(result.status).json({
+        error: result.error,
+      });
+      return;
+    }
+
+    response
+      .status(result.status)
+      .set("Idempotent-Replayed", result.idempotentReplayed ? "true" : "false")
+      .set("traceparent", result.taskRun.traceparent)
+      .json({ taskRun: result.taskRun });
+  }),
+);
+
+tasksRouter.post(
   "/tasks/:taskId/trigger",
   asyncHandler(async (request, response) => {
     const auth = request.auth;

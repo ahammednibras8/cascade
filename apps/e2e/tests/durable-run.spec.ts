@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createCascadeClient, defineTask } from "@cascade/sdk";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 const databaseURL =
@@ -107,39 +108,34 @@ test.afterAll(async () => {
   await prisma.$disconnect();
 });
 
-test("triggers, executes, persists, and displays a durable task run", async ({ page, request }) => {
-  const { prisma, project, environment, task, apiKey } = await createHelloTaskWithApiKey();
+test("triggers, executes, persists, and displays a durable task run", async ({ page }) => {
+  const { prisma, task, apiKey } = await createHelloTaskWithApiKey();
 
-  const triggerResponse = await request.post(`${apiURL}/api/tasks/${task.id}/trigger`, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Idempotency-Key": `e2e-${randomUUID()}`,
-    },
-    data: {
-      payload: {
-        message: "hello from true durable e2e",
-        projectSlug: project.slug,
-        environmentSlug: environment.slug,
-      },
+  const helloTask = defineTask<{ message: string }>({
+    id: "hello",
+    run() {
+      return {
+        ok: true,
+      };
     },
   });
 
-  const triggerResponseText = await triggerResponse.text();
+  const cascade = createCascadeClient({
+    baseUrl: apiURL,
+    apiKey,
+  });
 
-  expect(triggerResponse.status(), triggerResponseText).toBe(202);
+  const taskRun = await cascade.triggerTask(helloTask, {
+    payload: {
+      message: "hello from true durable e2e",
+    },
+    idempotencyKey: `e2e-${randomUUID()}`,
+  });
 
-  const triggerBody = JSON.parse(triggerResponseText) as {
-    taskRun: {
-      id: string;
-      taskId: string;
-      status: string;
-    };
-  };
+  expect(taskRun.taskId).toBe(task.id);
+  expect(taskRun.status).toBe("PENDING");
 
-  expect(triggerBody.taskRun.taskId).toBe(task.id);
-  expect(triggerBody.taskRun.status).toBe("PENDING");
-
-  const runId = triggerBody.taskRun.id;
+  const runId = taskRun.id;
 
   await expect
     .poll(

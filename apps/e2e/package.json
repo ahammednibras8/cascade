@@ -14,6 +14,7 @@
   "devDependencies": {
     "@cascade/dashboard": "workspace:*",
     "@cascade/database": "workspace:*",
+    "@cascade/sdk": "workspace:*",
     "@playwright/test": "1.61.1"
   }
 }

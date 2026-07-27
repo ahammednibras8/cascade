@@ -1,7 +1,13 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "noEmit": false
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "types": ["node"],
+    "verbatimModuleSyntax": false
   },
-  "exclude": ["test/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", ".tshy", ".tshy-build", "test/**/*.ts"]
 }

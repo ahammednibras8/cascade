@@ -175,6 +175,44 @@ describe("tasksRouter", () => {
     expect(response.body.taskRun.idempotentReplay).toBe(true);
   });
 
+  it("passes task slugs to the trigger service", async () => {
+    triggerTaskRun.mockResolvedValue({
+      ok: true,
+      status: 202,
+      idempotentReplayed: false,
+      taskRun: {
+        id: "run-1",
+        taskId: TASK_ID,
+        taskSlug: "hello",
+        taskName: "Hello",
+        status: "PENDING",
+        payload: {
+          name: "Nibras",
+        },
+        createdAt: "2026-01-01T00:00:00.000Z",
+        idempotentReplay: false,
+        traceparent: "00-11111111111111111111111111111111-2222222222222222-01",
+      },
+    });
+
+    const response = await httpRequest(createApp())
+      .post("/api/tasks/slug/hello/trigger")
+      .set("Authorization", "Bearer test")
+      .send({
+        payload: {
+          name: "Nibras",
+        },
+      });
+
+    expect(response.status).toBe(202);
+
+    expect(triggerTaskRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        taskSlug: "hello",
+      }),
+    );
+  });
+
   it("passes cancel run requests to the cancel service", async () => {
     cancelTaskRun.mockResolvedValue({
       ok: true,

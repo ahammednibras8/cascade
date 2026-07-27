@@ -576,4 +576,54 @@ describe("triggerTaskRun", () => {
 
     expect(result.taskRun.traceparent).toBe(`00-${parentTraceId}-${childSpanId}-01`);
   });
+
+  it("creates a pending task run when triggering by task slug", async () => {
+    prisma.task.findFirst.mockResolvedValue(createTask());
+    txTaskRunCreate.mockResolvedValue(createTaskRun());
+
+    const result = await triggerTaskRun({
+      auth,
+      taskSlug: "hello",
+      body: {
+        payload: {
+          name: "Ahammed",
+        },
+      },
+      idempotencyKey: undefined,
+      traceparent: undefined,
+    });
+
+    if (!result.ok) {
+      throw new Error("Expected triggerTaskRun to succeed");
+    }
+
+    expect(result.status).toBe(202);
+
+    expect(prisma.task.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          slug: "hello",
+          environmentId: auth.environmentId,
+        },
+      }),
+    );
+
+    expect(txTaskRunCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          taskId: TASK_ID,
+          status: "PENDING",
+        }),
+      }),
+    );
+
+    expect(enqueueTaskRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: "22222222-2222-4222-8222-222222222222",
+        taskId: TASK_ID,
+        environmentId: auth.environmentId,
+      }),
+      expect.anything(),
+    );
+  });
 });

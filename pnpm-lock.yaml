@@ -510,6 +510,9 @@ importers:
       '@cascade/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@cascade/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@playwright/test':
         specifier: 1.61.1
         version: 1.61.1
