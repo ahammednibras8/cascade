@@ -4,7 +4,7 @@ import {
   createRootTraceContext,
   parseTraceparent,
   toTraceparent,
-} from "./trace.js";
+} from "../src/trace.js";
 
 describe("trace helpers", () => {
   it("creates valid root trace context", () => {

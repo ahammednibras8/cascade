@@ -4,5 +4,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "prisma.config.ts", "prisma/seed/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "prisma.config.ts", "prisma/seed/**/*.ts"]
 }

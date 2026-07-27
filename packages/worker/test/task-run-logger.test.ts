@@ -11,7 +11,7 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-const { createTaskLogger } = await import("../task-run-logger.js");
+const { createTaskLogger } = await import("../src/task-run-logger.js");
 
 describe("createTaskLogger", () => {
   beforeEach(() => {

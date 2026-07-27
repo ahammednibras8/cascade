@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApiAuthContext } from "../auth/api-key.js";
+import type { ApiAuthContext } from "../../src/auth/api-key.js";
 
 type RunStatus = "PENDING" | "EXECUTING" | "COMPLETED" | "FAILED" | "CANCELED";
 type AttemptStatus = "EXECUTING" | "COMPLETED" | "FAILED" | "CANCELED";
@@ -61,7 +61,7 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-const { cancelTaskRun } = await import("./cancel-task-run.js");
+const { cancelTaskRun } = await import("../../src/services/cancel-task-run.js");
 
 function createRun(overrides: Partial<DbRun> = {}): DbRun {
   return {

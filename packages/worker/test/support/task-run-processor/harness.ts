@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import type { TaskRunQueueMessage } from "../../queue/task-runs.js";
+import type { TaskRunQueueMessage } from "../../../src/queue/task-runs.js";
 
 export const RUN_ID = "run-1";
 export const TASK_ID = "task-1";
@@ -144,24 +144,24 @@ vi.mock("@cascade/storage", () => ({
   maybeStoreJsonValue,
 }));
 
-vi.mock("../../queue/task-runs.js", () => ({
+vi.mock("../../../src/queue/task-runs.js", () => ({
   enqueueTaskRun,
 }));
 
-vi.mock("../../queue/concurrency-limits.js", () => ({
+vi.mock("../../../src/queue/concurrency-limits.js", () => ({
   tryAcquireQueueConcurrency,
   releaseQueueConcurrency,
 }));
 
-vi.mock("../../timers/queue-concurrency-lease.js", () => ({
+vi.mock("../../../src/timers/queue-concurrency-lease.js", () => ({
   startQueueConcurrencyLeaseHeartbeat,
 }));
 
-vi.mock("../../timers/task-run-heartbeat.js", () => ({
+vi.mock("../../../src/timers/task-run-heartbeat.js", () => ({
   startTaskRunHeartbeat,
 }));
 
-vi.mock("../../tasks/registry.js", () => ({
+vi.mock("../../../src/tasks/registry.js", () => ({
   taskRegistry: {
     get: vi.fn<(id: string) => unknown>((id) => {
       if (id !== "hello") {
@@ -179,7 +179,7 @@ vi.mock("../../tasks/registry.js", () => ({
   },
 }));
 
-export const { processTaskRun } = await import("../../task-run-processor.js");
+export const { processTaskRun } = await import("../../../src/task-run-processor.js");
 
 export function createMessage() {
   return {

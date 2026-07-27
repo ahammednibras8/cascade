@@ -67,11 +67,11 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-vi.mock("../queue/task-runs.js", () => ({
+vi.mock("../../src/queue/task-runs.js", () => ({
   enqueueTaskRun,
 }));
 
-const { sweepDueTaskSchedules } = await import("../scheduler/task-schedules.js");
+const { sweepDueTaskSchedules } = await import("../../src/scheduler/task-schedules.js");
 
 function createSchedule(): DueSchedule {
   return {

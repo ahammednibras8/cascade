@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { runWithTaskTimeout } from "../task-timeout.js";
+import { runWithTaskTimeout } from "../src/task-timeout.js";
 
 describe("runWithTaskTimeout", () => {
   afterEach(() => {

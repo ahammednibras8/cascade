@@ -13,7 +13,7 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-const { hashApiKey, requireApiKey } = await import("./api-key.js");
+const { hashApiKey, requireApiKey } = await import("../../src/auth/api-key.js");
 
 function createApp() {
   const app = express();

@@ -63,7 +63,7 @@ vi.mock("@cascade/database", () => ({
   },
 }));
 
-const { loader } = await import("./run-detail.js");
+const { loader } = await import("../../app/routes/run-detail.js");
 
 describe("run detail loader", () => {
   beforeEach(() => {

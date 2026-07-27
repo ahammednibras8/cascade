@@ -50,17 +50,17 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-vi.mock("../tasks/registry.js", () => ({
+vi.mock("../../src/tasks/registry.js", () => ({
   taskRegistry: {
     get: taskRegistryGet,
   },
 }));
 
-vi.mock("../queue/task-runs.js", () => ({
+vi.mock("../../src/queue/task-runs.js", () => ({
   enqueueTaskRun,
 }));
 
-const { sweepStuckTaskRuns } = await import("../sweeper/stuck-runs.js");
+const { sweepStuckTaskRuns } = await import("../../src/sweeper/stuck-runs.js");
 
 function createStuckRun(attemptNumber = 1) {
   return {

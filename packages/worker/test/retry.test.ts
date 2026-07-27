@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getRetryDelayMs } from "../retry.js";
+import { getRetryDelayMs } from "../src/retry.js";
 
 describe("getRetryDelayMs", () => {
   it("returns fixed delay when exponential backoff is disabled", () => {

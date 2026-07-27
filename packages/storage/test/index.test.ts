@@ -99,7 +99,7 @@ function sha256(value: string) {
 
 async function loadStorage() {
   vi.resetModules();
-  return import("./index.js");
+  return import("../src/index.js");
 }
 
 describe("@cascade/storage", () => {

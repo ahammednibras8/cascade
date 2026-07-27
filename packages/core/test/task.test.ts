@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createTaskRegistry, task } from "./task.js";
+import { createTaskRegistry, task } from "../src/task.js";
 
 describe("task", () => {
   it("creates a task definition with defaults", async () => {

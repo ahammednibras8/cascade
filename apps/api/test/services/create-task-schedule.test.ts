@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApiAuthContext } from "../auth/api-key.js";
+import type { ApiAuthContext } from "../../src/auth/api-key.js";
 
 type CreatedSchedule = {
   id: string;
@@ -44,7 +44,7 @@ vi.mock("@cascade/storage", () => ({
   maybeStoreJsonValue,
 }));
 
-const { createTaskSchedule } = await import("./create-task-schedule.js");
+const { createTaskSchedule } = await import("../../src/services/create-task-schedule.js");
 
 describe("createTaskSchedule", () => {
   beforeEach(() => {

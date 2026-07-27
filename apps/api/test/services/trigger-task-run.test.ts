@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApiAuthContext } from "../auth/api-key.js";
-import { hashTriggerRequest } from "../lib/idempotency.js";
+import type { ApiAuthContext } from "../../src/auth/api-key.js";
+import { hashTriggerRequest } from "../../src/lib/idempotency.js";
 
 type TransactionClient = {
   taskRun: {
@@ -53,7 +53,7 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-vi.mock("../queue/task-runs.js", () => ({
+vi.mock("../../src/queue/task-runs.js", () => ({
   enqueueTaskRun,
 }));
 
@@ -113,7 +113,7 @@ vi.mock("@cascade/core", () => ({
   toTraceparent,
 }));
 
-const { triggerTaskRun } = await import("./trigger-task-run.js");
+const { triggerTaskRun } = await import("../../src/services/trigger-task-run.js");
 
 function createTask() {
   return {

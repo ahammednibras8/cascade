@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApiAuthContext } from "../auth/api-key.js";
+import type { ApiAuthContext } from "../../src/auth/api-key.js";
 
 type RunStatus = "PENDING" | "EXECUTING" | "COMPLETED" | "FAILED" | "CANCELED";
 
@@ -60,11 +60,11 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-vi.mock("../queue/task-runs.js", () => ({
+vi.mock("../../src/queue/task-runs.js", () => ({
   enqueueTaskRun,
 }));
 
-const { replayTaskRun } = await import("./replay-task-run.js");
+const { replayTaskRun } = await import("../../src/services/replay-task-run.js");
 
 function createSourceRun(overrides: Partial<SourceRun> = {}): SourceRun {
   return {

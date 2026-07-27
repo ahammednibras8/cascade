@@ -15,27 +15,27 @@ const createTaskSchedule = vi.hoisted(() => vi.fn<(input: unknown) => Promise<un
 
 const createDeployment = vi.hoisted(() => vi.fn<(input: unknown) => Promise<unknown>>());
 
-vi.mock("../services/trigger-task-run.js", () => ({
+vi.mock("../../src/services/trigger-task-run.js", () => ({
   triggerTaskRun,
 }));
 
-vi.mock("../services/cancel-task-run.js", () => ({
+vi.mock("../../src/services/cancel-task-run.js", () => ({
   cancelTaskRun,
 }));
 
-vi.mock("../services/replay-task-run.js", () => ({
+vi.mock("../../src/services/replay-task-run.js", () => ({
   replayTaskRun,
 }));
 
-vi.mock("../services/create-task-schedule.js", () => ({
+vi.mock("../../src/services/create-task-schedule.js", () => ({
   createTaskSchedule,
 }));
 
-vi.mock("../services/create-deployment.js", () => ({
+vi.mock("../../src/services/create-deployment.js", () => ({
   createDeployment,
 }));
 
-const { tasksRouter } = await import("./tasks.js");
+const { tasksRouter } = await import("../../src/routes/tasks.js");
 
 function createApp() {
   const app = express();

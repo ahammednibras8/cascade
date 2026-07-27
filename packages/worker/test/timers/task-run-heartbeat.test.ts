@@ -10,7 +10,7 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-const { startTaskRunHeartbeat } = await import("../timers/task-run-heartbeat.js");
+const { startTaskRunHeartbeat } = await import("../../src/timers/task-run-heartbeat.js");
 
 describe("startTaskRunHeartbeat", () => {
   beforeEach(() => {

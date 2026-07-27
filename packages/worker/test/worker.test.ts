@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ShutdownSignal } from "./lifecycle/shutdown.js";
-import type { TaskRunQueueMessage } from "./queue/task-runs.js";
+import type { ShutdownSignal } from "../src/lifecycle/shutdown.js";
+import type { TaskRunQueueMessage } from "../src/queue/task-runs.js";
 
 const popTaskRunMessage = vi.hoisted(() => vi.fn<() => Promise<TaskRunQueueMessage | null>>());
 
@@ -28,24 +28,24 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-vi.mock("./queue/task-runs.js", () => ({
+vi.mock("../src/queue/task-runs.js", () => ({
   popTaskRunMessage,
   taskRunQueueRedis,
 }));
 
-vi.mock("./task-run-processor.js", () => ({
+vi.mock("../src/task-run-processor.js", () => ({
   processTaskRun,
 }));
 
-vi.mock("./timers/stuck-run-sweeper.js", () => ({
+vi.mock("../src/timers/stuck-run-sweeper.js", () => ({
   startStuckRunSweeper,
 }));
 
-vi.mock("./timers/task-schedule-scheduler.js", () => ({
+vi.mock("../src/timers/task-schedule-scheduler.js", () => ({
   startTaskScheduleScheduler,
 }));
 
-const { runWorker } = await import("./worker.js");
+const { runWorker } = await import("../src/worker.js");
 
 function createShutdownSignal() {
   let checks = 0;

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApiAuthContext } from "../auth/api-key.js";
+import type { ApiAuthContext } from "../../src/auth/api-key.js";
 
 type TransactionClient = {
   deployment: {
@@ -32,7 +32,7 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-const { createDeployment } = await import("./create-deployment.js");
+const { createDeployment } = await import("../../src/services/create-deployment.js");
 
 const auth = {
   apiKeyId: "api-key-1",

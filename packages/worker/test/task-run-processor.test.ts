@@ -26,7 +26,7 @@ import {
   startQueueConcurrencyLeaseHeartbeat,
   stopQueueConcurrencyHeartbeat,
   tryAcquireQueueConcurrency,
-} from "./task-run-processor/harness.js";
+} from "./support/task-run-processor/harness.js";
 import {
   expectHeartbeatWasStopped,
   expectTaskAttemptWasCompleted,
@@ -35,7 +35,7 @@ import {
   expectTaskRunWasClaimedForExecution,
   expectTaskRunWasCompletedWithOutput,
   expectTaskRunWasFailed,
-} from "./task-run-processor/assertions.js";
+} from "./support/task-run-processor/assertions.js";
 
 describe("processTaskRun", () => {
   beforeEach(() => {

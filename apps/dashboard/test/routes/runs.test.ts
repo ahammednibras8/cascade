@@ -34,7 +34,7 @@ vi.mock("@cascade/database", () => ({
   },
 }));
 
-const { loader } = await import("./runs.js");
+const { loader } = await import("../../app/routes/runs.js");
 
 describe("runs loader", () => {
   beforeEach(() => {
