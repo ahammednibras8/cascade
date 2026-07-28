@@ -9,37 +9,54 @@ class TaskTimeoutError extends Error {
 
 type RunWithTaskTimeoutInput<TOutput> = {
   timeoutMs: number | null;
+  signal?: AbortSignal;
   run: (signal: AbortSignal) => TOutput | Promise<TOutput>;
 };
 
 export async function runWithTaskTimeout<TOutput>(input: RunWithTaskTimeoutInput<TOutput>) {
   const abortController = new AbortController();
-  const timeoutMs = input.timeoutMs;
 
-  if (timeoutMs === null) {
-    return input.run(abortController.signal);
+  const forwardExternalAbort = () => {
+    abortController.abort(input.signal?.reason);
+  };
+
+  if (input.signal) {
+    if (input.signal.aborted) {
+      forwardExternalAbort();
+    } else {
+      input.signal.addEventListener("abort", forwardExternalAbort, {
+        once: true,
+      });
+    }
   }
-
-  const timeoutError = new TaskTimeoutError(timeoutMs);
 
   let timeout: NodeJS.Timeout | undefined;
 
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeout = setTimeout(() => {
-      abortController.abort(timeoutError);
-      reject(timeoutError);
-    }, timeoutMs);
-
-    timeout.unref();
-  });
-
-  const taskPromise = Promise.resolve(input.run(abortController.signal));
-
   try {
+    const taskPromise = Promise.resolve().then(() => input.run(abortController.signal));
+    const timeoutMs = input.timeoutMs;
+
+    if (timeoutMs === null) {
+      return await taskPromise;
+    }
+
+    const timeoutError = new TaskTimeoutError(timeoutMs);
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeout = setTimeout(() => {
+        abortController.abort(timeoutError);
+        reject(timeoutError);
+      }, timeoutMs);
+
+      timeout.unref();
+    });
+
     return await Promise.race([taskPromise, timeoutPromise]);
   } finally {
     if (timeout) {
       clearTimeout(timeout);
     }
+
+    input.signal?.removeEventListener("abort", forwardExternalAbort);
   }
 }

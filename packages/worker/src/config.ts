@@ -24,3 +24,8 @@ export const PENDING_RUN_SWEEP_INTERVAL_MS = getPositiveIntegerEnv(
   "PENDING_RUN_SWEEP_INTERVAL_MS",
   10_000,
 );
+
+export const TASK_RUN_CANCELLATION_POLL_INTERVAL_MS = getPositiveIntegerEnv(
+  "TASK_RUN_CANCELLATION_POLL_INTERVAL_MS",
+  500,
+);

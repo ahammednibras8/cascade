@@ -56,6 +56,7 @@ const localTaskQueue = vi.hoisted(
 const prisma = vi.hoisted(() => ({
   taskRun: {
     findFirst: vi.fn<(args: unknown) => Promise<unknown>>(),
+    findUnique: vi.fn<(args: unknown) => Promise<{ status: string } | null>>(),
     updateMany: vi.fn<(args: unknown) => Promise<{ count: number }>>(),
   },
   $transaction: vi.fn<<T>(callback: TransactionCallback<T>) => Promise<T>>(),
@@ -222,6 +223,7 @@ export function resetTaskRunProcessorHarness() {
   mockTransactionClient();
 
   prisma.taskRun.findFirst.mockResolvedValue(createPendingTaskRun());
+  prisma.taskRun.findUnique.mockResolvedValue({ status: "EXECUTING" });
   prisma.taskRun.updateMany.mockResolvedValue({ count: 1 });
 
   txTaskRunUpdateMany.mockResolvedValue({ count: 1 });

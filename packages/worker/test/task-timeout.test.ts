@@ -79,4 +79,36 @@ describe("runWithTaskTimeout", () => {
       ok: true,
     });
   });
+
+  it("forwards an external abort signal to the task", async () => {
+    const abortController = new AbortController();
+    const abortReason = new Error("Task run was canceled");
+    let receivedSignal: AbortSignal | undefined;
+    let markReady: () => void;
+    const taskReady = new Promise<void>((resolve) => {
+      markReady = resolve;
+    });
+
+    const resultPromise = runWithTaskTimeout({
+      timeoutMs: null,
+      signal: abortController.signal,
+      run: (signal) => {
+        receivedSignal = signal;
+
+        return new Promise((_, reject) => {
+          signal.addEventListener("abort", () => {
+            reject(signal.reason);
+          });
+          markReady();
+        });
+      },
+    });
+
+    await taskReady;
+    abortController.abort(abortReason);
+
+    await expect(resultPromise).rejects.toBe(abortReason);
+    expect(receivedSignal?.aborted).toBe(true);
+    expect(receivedSignal?.reason).toBe(abortReason);
+  });
 });

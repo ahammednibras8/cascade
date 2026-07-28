@@ -29,6 +29,7 @@ import { runWithTaskTimeout } from "./task-timeout.js";
 import { taskRegistry } from "./tasks/registry.js";
 import { startQueueConcurrencyLeaseHeartbeat } from "./timers/queue-concurrency-lease.js";
 import { startTaskRunHeartbeat } from "./timers/task-run-heartbeat.js";
+import { isTaskRunCanceled, startTaskRunCancellationWatcher } from "./task-run-cancellation.js";
 
 function getExecutionTrace(taskRun: ProcessableTaskRun) {
   return taskRun.traceId
@@ -69,6 +70,7 @@ async function executeLocalTask(input: {
   attempt: TaskRunAttempt;
   localTask: TaskDefinition;
   trace: TraceContext;
+  cancellationSignal: AbortSignal;
 }) {
   const logger = createTaskLogger({
     taskRunId: input.taskRun.id,
@@ -82,6 +84,7 @@ async function executeLocalTask(input: {
 
   return runWithTaskTimeout({
     timeoutMs: input.localTask.timeoutMs,
+    signal: input.cancellationSignal,
     run: (signal) =>
       input.localTask.run({
         runId: input.taskRun.id,
@@ -102,7 +105,12 @@ async function handleTaskFailure(input: {
   localTask: TaskDefinition;
   trace: TraceContext;
   error: unknown;
+  cancellationSignal: AbortSignal;
 }) {
+  if (input.cancellationSignal.aborted || (await isTaskRunCanceled(input.taskRun.id))) {
+    return;
+  }
+
   const serializedError = serializeTaskRunError(input.error);
   const shouldRetry = input.attempt.attemptNumber < input.localTask.retry.maxAttempts;
   const retryDelayMs = shouldRetry
@@ -148,30 +156,58 @@ async function runClaimedTask(input: {
 }) {
   process.stdout.write(`Running task ${input.taskRun.task.slug} (${input.taskRun.id})\n`);
 
-  const stopHeartbeat = startTaskRunHeartbeat(input.taskRun.id);
+  const cancellationController = new AbortController();
+
+  const stopCancellationWatcher = await startTaskRunCancellationWatcher({
+    taskRunId: input.taskRun.id,
+    abortController: cancellationController,
+  });
 
   try {
-    const output = await executeLocalTask(input);
-    const storedOutput = await storeTaskOutput({
-      output,
-      message: input.message,
-      taskRun: input.taskRun,
-    });
+    if (cancellationController.signal.aborted) {
+      return;
+    }
 
-    await completeTaskRun({
-      taskRunId: input.taskRun.id,
-      attemptId: input.attempt.id,
-      trace: input.trace,
-      output: storedOutput,
-      localTaskId: input.localTask.id,
-    });
-  } catch (error) {
-    await handleTaskFailure({
-      ...input,
-      error,
-    });
+    const stopHeartbeat = startTaskRunHeartbeat(input.taskRun.id);
+
+    try {
+      const output = await executeLocalTask({
+        ...input,
+        cancellationSignal: cancellationController.signal,
+      });
+
+      if (cancellationController.signal.aborted || (await isTaskRunCanceled(input.taskRun.id))) {
+        return;
+      }
+
+      const storedOutput = await storeTaskOutput({
+        output,
+        message: input.message,
+        taskRun: input.taskRun,
+      });
+
+      if (cancellationController.signal.aborted || (await isTaskRunCanceled(input.taskRun.id))) {
+        return;
+      }
+
+      await completeTaskRun({
+        taskRunId: input.taskRun.id,
+        attemptId: input.attempt.id,
+        trace: input.trace,
+        output: storedOutput,
+        localTaskId: input.localTask.id,
+      });
+    } catch (error) {
+      await handleTaskFailure({
+        ...input,
+        error,
+        cancellationSignal: cancellationController.signal,
+      });
+    } finally {
+      stopHeartbeat();
+    }
   } finally {
-    stopHeartbeat();
+    stopCancellationWatcher();
   }
 }
 
