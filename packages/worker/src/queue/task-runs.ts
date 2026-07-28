@@ -1,4 +1,5 @@
 import { Redis } from "ioredis";
+import { runPromoteDelayedTaskRunsCommand } from "../redis/promote-delayed-task-runs-command.js";
 
 export type TaskRunQueueMessage = {
   runId: string;
@@ -87,27 +88,12 @@ export async function enqueueTaskRun(
 }
 
 async function promoteDueTaskRunMessages(deploymentId: string | null) {
-  const delayedQueueKey = getTaskRunDelayedQueueKey(deploymentId);
-  const queueKey = getTaskRunQueueKey(deploymentId);
-
-  const rawMessages = await taskRunQueueRedis.zrangebyscore(
-    delayedQueueKey,
-    0,
-    Date.now(),
-    "LIMIT",
-    0,
-    100,
-  );
-
-  await Promise.all(
-    rawMessages.map(async (rawMessage) => {
-      const removed = await taskRunQueueRedis.zrem(delayedQueueKey, rawMessage);
-
-      if (removed === 1) {
-        await taskRunQueueRedis.rpush(queueKey, rawMessage);
-      }
-    }),
-  );
+  return runPromoteDelayedTaskRunsCommand(taskRunQueueRedis, {
+    delayedQueueKey: getTaskRunDelayedQueueKey(deploymentId),
+    queueKey: getTaskRunQueueKey(deploymentId),
+    now: Date.now(),
+    limit: 100,
+  });
 }
 
 export async function popTaskRunMessage() {
