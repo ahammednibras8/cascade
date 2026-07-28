@@ -1,5 +1,5 @@
 import type { Route } from "./+types/run-detail";
-import { Link, useRevalidator } from "react-router";
+import { Form, Link, useNavigation, useRevalidator } from "react-router";
 import { useEffect } from "react";
 import { StatusBadge } from "~/components/status-badge";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
@@ -74,6 +74,44 @@ export async function loader({ params }: Route.LoaderArgs) {
       events: eventsResponse.events,
     },
   };
+}
+
+export async function action({ params, request }: Route.ActionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (intent !== "cancel" && intent !== "replay") {
+    throw new Response("Invalid action", {
+      status: 400,
+    });
+  }
+
+  const runId = encodeURIComponent(params.runId);
+
+  const path = intent === "cancel" ? `/api/runs/${runId}/cancel` : `/api/runs/${runId}/replay`;
+
+  try {
+    return await cascadeApiRequest<{
+      taskRun: {
+        id: string;
+        status: string;
+      };
+    }>(path, {
+      method: "POST",
+    });
+  } catch (error) {
+    const status =
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      typeof error.status === "number"
+        ? error.status
+        : 500;
+
+    throw new Response("Could not update task run", {
+      status,
+    });
+  }
 }
 
 function formatDate(value: string | null) {
@@ -156,6 +194,11 @@ function JsonBlock({ value }: { value: unknown }) {
 export default function RunDetail({ loaderData }: Route.ComponentProps) {
   const { run } = loaderData;
   const revalidator = useRevalidator();
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
+  const canCancel = run.status === "PENDING" || run.status === "EXECUTING";
+  const canReplay =
+    run.status === "COMPLETED" || run.status === "FAILED" || run.status === "CANCELED";
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -180,6 +223,35 @@ export default function RunDetail({ loaderData }: Route.ComponentProps) {
         </div>
 
         <p className="mt-2 font-mono text-sm text-gray-500">{run.id}</p>
+        <div className="mt-4 flex gap-2">
+          {canCancel ? (
+            <Form method="post">
+              <button
+                type="submit"
+                name="intent"
+                value="cancel"
+                disabled={isSubmitting}
+                className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSubmitting ? "Updating..." : "Cancel run"}
+              </button>
+            </Form>
+          ) : null}
+
+          {canReplay ? (
+            <Form method="post">
+              <button
+                type="submit"
+                name="intent"
+                value="replay"
+                disabled={isSubmitting}
+                className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSubmitting ? "Updating..." : "Replay run"}
+              </button>
+            </Form>
+          ) : null}
+        </div>
         <p className="mt-1 text-xs text-gray-500">
           {revalidator.state === "loading" ? "Refreshing..." : "Live updates enabled"}
         </p>

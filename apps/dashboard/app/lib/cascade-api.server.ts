@@ -32,8 +32,9 @@ function getApiKey() {
   return apiKey;
 }
 
-export async function cascadeApiRequest<T>(path: string): Promise<T> {
+export async function cascadeApiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${getApiUrl()}${path}`, {
+    ...init,
     headers: {
       Authorization: `Bearer ${getApiKey()}`,
     },

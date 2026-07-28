@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { action } from "../../app/routes/run-detail.js";
 
 const cascadeApiRequest = vi.hoisted(() => vi.fn<(path: string) => Promise<unknown>>());
 
@@ -126,6 +127,56 @@ describe("run detail loader", () => {
       } as never),
     ).rejects.toMatchObject({
       status: 404,
+    });
+  });
+
+  it("sends a cancel request to the API", async () => {
+    cascadeApiRequest.mockResolvedValue({
+      taskRun: {
+        id: "run-1",
+        status: "CANCELED",
+      },
+    });
+
+    await action({
+      params: {
+        runId: "run-1",
+      },
+      request: new Request("http://localhost/runs/run-1", {
+        method: "POST",
+        body: new URLSearchParams({
+          intent: "cancel",
+        }),
+      }),
+    } as never);
+
+    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/runs/run-1/cancel", {
+      method: "POST",
+    });
+  });
+
+  it("sends a replay request to the API", async () => {
+    cascadeApiRequest.mockResolvedValue({
+      taskRun: {
+        id: "run-2",
+        status: "PENDING",
+      },
+    });
+
+    await action({
+      params: {
+        runId: "run-1",
+      },
+      request: new Request("http://localhost/runs/run-1", {
+        method: "POST",
+        body: new URLSearchParams({
+          intent: "replay",
+        }),
+      }),
+    } as never);
+
+    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/runs/run-1/replay", {
+      method: "POST",
     });
   });
 });

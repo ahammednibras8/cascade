@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
+import { getDashboardTestEnvironment } from "./support/dashboard-environment.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
-const createdProjectIds: string[] = [];
+const createdTaskIds: string[] = [];
 
 async function getPrisma() {
   const { prisma } = await import("@cascade/database");
@@ -12,11 +13,16 @@ async function getPrisma() {
 
 test.afterEach(async () => {
   const prisma = await getPrisma();
+  const taskIds = createdTaskIds.splice(0);
 
-  await prisma.project.deleteMany({
+  if (taskIds.length === 0) {
+    return;
+  }
+
+  await prisma.task.deleteMany({
     where: {
       id: {
-        in: createdProjectIds.splice(0),
+        in: taskIds,
       },
     },
   });
@@ -29,32 +35,8 @@ test.afterAll(async () => {
 
 test("shows task runs in the dashboard table", async ({ page }) => {
   const prisma = await getPrisma();
+  const { environment, project } = await getDashboardTestEnvironment();
   const suffix = randomUUID().slice(0, 8);
-
-  const project = await prisma.project.create({
-    data: {
-      slug: `e2e-project-${suffix}`,
-      name: "E2E Project",
-      environments: {
-        create: {
-          slug: `e2e-dev-${suffix}`,
-          name: "E2E Dev",
-          type: "DEVELOPMENT",
-        },
-      },
-    },
-    include: {
-      environments: true,
-    },
-  });
-
-  createdProjectIds.push(project.id);
-
-  const environment = project.environments[0];
-
-  if (!environment) {
-    throw new Error("Expected seeded environment");
-  }
 
   const task = await prisma.task.create({
     data: {
@@ -63,6 +45,8 @@ test("shows task runs in the dashboard table", async ({ page }) => {
       name: "E2E Hello Task",
     },
   });
+
+  createdTaskIds.push(task.id);
 
   const run = await prisma.taskRun.create({
     data: {
@@ -86,6 +70,6 @@ test("shows task runs in the dashboard table", async ({ page }) => {
   await expect(row).toContainText("PENDING");
   await expect(row).toContainText("E2E Hello Task");
   await expect(row).toContainText(task.slug);
-  await expect(row).toContainText("E2E Project");
+  await expect(row).toContainText(project.name);
   await expect(row).toContainText(`${project.slug}/${environment.slug}`);
 });

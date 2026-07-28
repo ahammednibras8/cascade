@@ -342,14 +342,26 @@ describe("tasksRouter", () => {
         status: "COMPLETED",
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         startedAt: new Date("2026-01-01T00:00:01.000Z"),
+        lastHeartbeatAt: null,
         completedAt: new Date("2026-01-01T00:00:05.000Z"),
         task: {
           id: TASK_ID,
           slug: "hello",
           name: "Hello",
+          environment: {
+            id: "environment-1",
+            slug: "dev",
+            name: "Development",
+            project: {
+              id: "project-1",
+              slug: "cascade",
+              name: "Cascade",
+            },
+          },
         },
         _count: {
           attempts: 1,
+          events: 4,
         },
       },
     ]);
@@ -376,13 +388,25 @@ describe("tasksRouter", () => {
         status: "COMPLETED",
         createdAt: "2026-01-01T00:00:00.000Z",
         startedAt: "2026-01-01T00:00:01.000Z",
+        lastHeartbeatAt: null,
         completedAt: "2026-01-01T00:00:05.000Z",
         task: {
           id: TASK_ID,
           slug: "hello",
           name: "Hello",
+          environment: {
+            id: "environment-1",
+            slug: "dev",
+            name: "Development",
+            project: {
+              id: "project-1",
+              slug: "cascade",
+              name: "Cascade",
+            },
+          },
         },
         attemptsCount: 1,
+        eventsCount: 4,
       },
     ]);
   });

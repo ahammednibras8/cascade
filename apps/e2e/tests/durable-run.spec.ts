@@ -1,14 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { createCascadeClient, defineTask } from "@cascade/sdk";
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
+import { ensureDashboardApiKey, getDashboardApiKey } from "./support/dashboard-environment.js";
 
 const databaseURL =
   process.env.DATABASE_URL ?? "postgresql://cascade:cascade@localhost:15432/cascade";
-const apiKeyPepper = process.env.API_KEY_PEPPER ?? "dev-api-key-pepper-change-me";
 const apiURL = process.env.CASCADE_API_URL ?? "http://localhost:3001";
 
 process.env.DATABASE_URL = databaseURL;
-process.env.API_KEY_PEPPER = apiKeyPepper;
 
 const createdProjectIds: string[] = [];
 
@@ -19,22 +18,9 @@ async function getPrisma() {
   return database.prisma;
 }
 
-function generateApiKey() {
-  return `csc_e2e_${randomBytes(32).toString("base64url")}`;
-}
-
-function getApiKeyPrefix(apiKey: string) {
-  return apiKey.slice(0, 16);
-}
-
-function hashApiKey(apiKey: string) {
-  return createHash("sha256").update(`${apiKeyPepper}:${apiKey}`).digest("hex");
-}
-
 async function createHelloTaskWithApiKey() {
   const prisma = await getPrisma();
   const suffix = randomUUID().slice(0, 8);
-  const apiKey = generateApiKey();
 
   const project = await prisma.project.create({
     data: {
@@ -45,13 +31,6 @@ async function createHelloTaskWithApiKey() {
           slug: `e2e-durable-dev-${suffix}`,
           name: "E2E Durable Dev",
           type: "DEVELOPMENT",
-          apiKeys: {
-            create: {
-              name: "E2E durable API key",
-              keyPrefix: getApiKeyPrefix(apiKey),
-              keyHash: hashApiKey(apiKey),
-            },
-          },
         },
       },
     },
@@ -68,6 +47,8 @@ async function createHelloTaskWithApiKey() {
     throw new Error("Expected created environment");
   }
 
+  await ensureDashboardApiKey(environment.id);
+
   // Important: worker registry currently has only task id/slug "hello".
   const task = await prisma.task.create({
     data: {
@@ -82,7 +63,7 @@ async function createHelloTaskWithApiKey() {
     project,
     environment,
     task,
-    apiKey,
+    apiKey: getDashboardApiKey(),
   };
 }
 
@@ -216,4 +197,121 @@ test("triggers, executes, persists, and displays a durable task run", async ({ p
   await expect(page.locator("body")).toContainText("Hello from local task registry");
   await expect(page.locator("body")).toContainText("task.run.completed");
   await expect(page.locator("body")).toContainText("Hello task started");
+});
+
+test("dashboard cancels a pending task run", async ({ page }) => {
+  const { prisma, task } = await createHelloTaskWithApiKey();
+
+  const pendingRun = await prisma.taskRun.create({
+    data: {
+      taskId: task.id,
+      status: "PENDING",
+    },
+  });
+
+  await page.goto(`/runs/${pendingRun.id}`);
+
+  const cancelButton = page.getByRole("button", {
+    name: "Cancel run",
+  });
+
+  await expect(cancelButton).toBeVisible();
+
+  await cancelButton.click();
+
+  await expect
+    .poll(
+      async () => {
+        const run = await prisma.taskRun.findUnique({
+          where: {
+            id: pendingRun.id,
+          },
+          select: {
+            status: true,
+          },
+        });
+
+        return run?.status ?? null;
+      },
+      {
+        timeout: 10_000,
+      },
+    )
+    .toBe("CANCELED");
+
+  await expect(page.locator("body")).toContainText("CANCELED");
+});
+
+test("dashboard replays a completed task run", async ({ page }) => {
+  const { prisma, task } = await createHelloTaskWithApiKey();
+
+  const sourceRun = await prisma.taskRun.create({
+    data: {
+      taskId: task.id,
+      status: "COMPLETED",
+      completedAt: new Date(),
+    },
+  });
+
+  await page.goto(`/runs/${sourceRun.id}`);
+
+  const replayButton = page.getByRole("button", {
+    name: "Replay run",
+  });
+
+  await expect(replayButton).toBeVisible();
+
+  await replayButton.click();
+
+  await expect
+    .poll(
+      async () =>
+        prisma.taskRun.count({
+          where: {
+            taskId: task.id,
+          },
+        }),
+      {
+        timeout: 10_000,
+      },
+    )
+    .toBe(2);
+
+  const replayedRun = await prisma.taskRun.findFirst({
+    where: {
+      taskId: task.id,
+      id: {
+        not: sourceRun.id,
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      id: true,
+      status: true,
+    },
+  });
+
+  expect(replayedRun).not.toBeNull();
+
+  await expect
+    .poll(
+      async () => {
+        const run = await prisma.taskRun.findUnique({
+          where: {
+            id: replayedRun!.id,
+          },
+          select: {
+            status: true,
+          },
+        });
+
+        return run?.status ?? null;
+      },
+      {
+        timeout: 20_000,
+      },
+    )
+    .toBe("COMPLETED");
 });

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
+import { ensureDashboardApiKey } from "./support/dashboard-environment.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -55,6 +56,8 @@ test("shows run payload, output, error, attempts, and logs", async ({ page }) =>
   if (!environment) {
     throw new Error("Expected seeded environment");
   }
+
+  await ensureDashboardApiKey(environment.id);
 
   const task = await prisma.task.create({
     data: {
@@ -177,6 +180,8 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
   if (!environment) {
     throw new Error("Expected seeded environment");
   }
+
+  await ensureDashboardApiKey(environment.id);
 
   const task = await prisma.task.create({
     data: {

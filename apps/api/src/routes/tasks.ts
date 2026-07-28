@@ -218,17 +218,33 @@ tasksRouter.get(
         status: true,
         createdAt: true,
         startedAt: true,
+        lastHeartbeatAt: true,
         completedAt: true,
         task: {
           select: {
             id: true,
             slug: true,
             name: true,
+            environment: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+                project: {
+                  select: {
+                    id: true,
+                    slug: true,
+                    name: true,
+                  },
+                },
+              },
+            },
           },
         },
         _count: {
           select: {
             attempts: true,
+            events: true,
           },
         },
       },
@@ -240,9 +256,11 @@ tasksRouter.get(
         status: run.status,
         createdAt: run.createdAt.toISOString(),
         startedAt: run.startedAt?.toISOString() ?? null,
+        lastHeartbeatAt: run.lastHeartbeatAt?.toISOString() ?? null,
         completedAt: run.completedAt?.toISOString() ?? null,
         task: run.task,
         attemptsCount: run._count.attempts,
+        eventsCount: run._count.events,
       })),
     });
   }),
