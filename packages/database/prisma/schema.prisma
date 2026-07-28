@@ -145,6 +145,7 @@ model TaskRun {
   @@index([taskId, createdAt])
   @@index([scheduleId, createdAt])
   @@index([status, createdAt])
+  @@index([status, updatedAt])
   @@index([status, lastHeartbeatAt])
   @@index([status, delayUntil])
 }

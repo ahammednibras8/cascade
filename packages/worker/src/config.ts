@@ -17,3 +17,10 @@ function getPositiveIntegerEnv(name: string, fallback: number) {
 export const WORKER_CONCURRENCY = getPositiveIntegerEnv("WORKER_CONCURRENCY", 4);
 
 export const QUEUE_CONCURRENCY_RETRY_MS = getPositiveIntegerEnv("QUEUE_CONCURRENCY_RETRY_MS", 1000);
+
+export const PENDING_RUN_RECOVERY_MS = getPositiveIntegerEnv("PENDING_RUN_RECOVERY_MS", 30_000);
+
+export const PENDING_RUN_SWEEP_INTERVAL_MS = getPositiveIntegerEnv(
+  "PENDING_RUN_SWEEP_INTERVAL_MS",
+  10_000,
+);

@@ -1,79 +1,182 @@
 import {
   createChildTraceContext,
   createRootTraceContext,
-  packageName,
   type JsonValue,
+  type TaskDefinition,
+  type TraceContext,
 } from "@cascade/core";
-import { Prisma, prisma } from "@cascade/database";
-import { QUEUE_CONCURRENCY_RETRY_MS } from "./config.js";
-import {
-  releaseQueueConcurrency,
-  tryAcquireQueueConcurrency,
-  type QueueConcurrencyLease,
-} from "./queue/concurrency-limits.js";
+import { Prisma } from "@cascade/database";
+import { maybeStoreJsonValue, resolveJsonValue } from "@cascade/storage";
+import { releaseQueueConcurrency, type QueueConcurrencyLease } from "./queue/concurrency-limits.js";
 import { enqueueTaskRun, type TaskRunQueueMessage } from "./queue/task-runs.js";
 import { getRetryDelayMs } from "./retry.js";
+import { acquireTaskRunConcurrency } from "./task-run-processing/concurrency.js";
+import { serializeTaskRunError } from "./task-run-processing/errors.js";
+import {
+  completeTaskRun,
+  failTaskRunForMissingLocalTask,
+  failTaskRunPermanently,
+  scheduleTaskRunRetry,
+} from "./task-run-processing/results.js";
+import {
+  claimTaskRunForExecution,
+  loadTaskRunForProcessing,
+  type ProcessableTaskRun,
+  type TaskRunAttempt,
+} from "./task-run-processing/state.js";
 import { createTaskLogger } from "./task-run-logger.js";
+import { runWithTaskTimeout } from "./task-timeout.js";
 import { taskRegistry } from "./tasks/registry.js";
 import { startQueueConcurrencyLeaseHeartbeat } from "./timers/queue-concurrency-lease.js";
 import { startTaskRunHeartbeat } from "./timers/task-run-heartbeat.js";
-import { runWithTaskTimeout } from "./task-timeout.js";
-import { maybeStoreJsonValue, resolveJsonValue } from "@cascade/storage";
 
-function serializeError(error: unknown): Prisma.InputJsonValue {
-  if (error instanceof Error) {
-    const data: Record<string, Prisma.InputJsonValue> = {
-      name: error.name,
-      message: error.message,
-    };
+function getExecutionTrace(taskRun: ProcessableTaskRun) {
+  return taskRun.traceId
+    ? createChildTraceContext({
+        traceId: taskRun.traceId,
+        parentSpanId: taskRun.triggerSpanId,
+      })
+    : createRootTraceContext();
+}
 
-    if (error.stack) {
-      data.stack = error.stack;
-    }
+async function requeueDelayedTaskRun(message: TaskRunQueueMessage, delayUntil: Date) {
+  await enqueueTaskRun(message, {
+    delayMs: delayUntil.getTime() - Date.now(),
+  });
+}
 
-    const errorWithCode = error as { code?: unknown; timeoutMs?: unknown };
-
-    if (typeof errorWithCode.code === "string") {
-      data.code = errorWithCode.code;
-    }
-
-    if (typeof errorWithCode.timeoutMs === "number") {
-      data.timeoutMs = errorWithCode.timeoutMs;
-    }
-
-    return data;
+async function storeTaskOutput(input: {
+  output: JsonValue | void;
+  message: TaskRunQueueMessage;
+  taskRun: ProcessableTaskRun;
+}) {
+  if (input.output === undefined) {
+    return Prisma.DbNull;
   }
 
-  return {
-    message: String(error),
-  };
+  return (await maybeStoreJsonValue({
+    kind: "OUTPUT",
+    environmentId: input.message.environmentId,
+    taskId: input.taskRun.id,
+    runId: input.taskRun.id,
+    value: input.output,
+  })) as Prisma.InputJsonValue;
+}
+
+async function executeLocalTask(input: {
+  message: TaskRunQueueMessage;
+  taskRun: ProcessableTaskRun;
+  attempt: TaskRunAttempt;
+  localTask: TaskDefinition;
+  trace: TraceContext;
+}) {
+  const logger = createTaskLogger({
+    taskRunId: input.taskRun.id,
+    taskAttemptId: input.attempt.id,
+    traceId: input.trace.traceId,
+    spanId: input.trace.spanId,
+    parentSpanId: input.trace.parentSpanId,
+  });
+
+  const payload = await resolveJsonValue(input.taskRun.payload);
+
+  return runWithTaskTimeout({
+    timeoutMs: input.localTask.timeoutMs,
+    run: (signal) =>
+      input.localTask.run({
+        runId: input.taskRun.id,
+        taskId: input.taskRun.taskId,
+        environmentId: input.message.environmentId,
+        payload: payload as JsonValue | null,
+        logger,
+        signal,
+        trace: input.trace,
+      }),
+  });
+}
+
+async function handleTaskFailure(input: {
+  message: TaskRunQueueMessage;
+  taskRun: ProcessableTaskRun;
+  attempt: TaskRunAttempt;
+  localTask: TaskDefinition;
+  trace: TraceContext;
+  error: unknown;
+}) {
+  const serializedError = serializeTaskRunError(input.error);
+  const shouldRetry = input.attempt.attemptNumber < input.localTask.retry.maxAttempts;
+  const retryDelayMs = shouldRetry
+    ? getRetryDelayMs(input.attempt.attemptNumber, input.localTask.retry)
+    : 0;
+
+  if (!shouldRetry) {
+    await failTaskRunPermanently({
+      taskRunId: input.taskRun.id,
+      attempt: input.attempt,
+      trace: input.trace,
+      error: serializedError,
+    });
+    return;
+  }
+
+  const retryAt = new Date(Date.now() + retryDelayMs);
+  const retried = await scheduleTaskRunRetry({
+    taskRunId: input.taskRun.id,
+    attempt: input.attempt,
+    trace: input.trace,
+    error: serializedError,
+    retryAt,
+    retryDelayMs,
+    maxAttempts: input.localTask.retry.maxAttempts,
+  });
+
+  if (!retried) {
+    return;
+  }
+
+  await enqueueTaskRun(input.message, {
+    delayMs: retryDelayMs,
+  });
+}
+
+async function runClaimedTask(input: {
+  message: TaskRunQueueMessage;
+  taskRun: ProcessableTaskRun;
+  attempt: TaskRunAttempt;
+  localTask: TaskDefinition;
+  trace: TraceContext;
+}) {
+  process.stdout.write(`Running task ${input.taskRun.task.slug} (${input.taskRun.id})\n`);
+
+  const stopHeartbeat = startTaskRunHeartbeat(input.taskRun.id);
+
+  try {
+    const output = await executeLocalTask(input);
+    const storedOutput = await storeTaskOutput({
+      output,
+      message: input.message,
+      taskRun: input.taskRun,
+    });
+
+    await completeTaskRun({
+      taskRunId: input.taskRun.id,
+      attemptId: input.attempt.id,
+      trace: input.trace,
+      output: storedOutput,
+      localTaskId: input.localTask.id,
+    });
+  } catch (error) {
+    await handleTaskFailure({
+      ...input,
+      error,
+    });
+  } finally {
+    stopHeartbeat();
+  }
 }
 
 export async function processTaskRun(message: TaskRunQueueMessage) {
-  const taskRun = await prisma.taskRun.findFirst({
-    where: {
-      id: message.runId,
-      taskId: message.taskId,
-      task: {
-        environmentId: message.environmentId,
-      },
-    },
-    select: {
-      id: true,
-      taskId: true,
-      status: true,
-      payload: true,
-      delayUntil: true,
-      traceId: true,
-      triggerSpanId: true,
-      task: {
-        select: {
-          slug: true,
-          name: true,
-        },
-      },
-    },
-  });
+  const taskRun = await loadTaskRunForProcessing(message);
 
   if (!taskRun) {
     process.stderr.write(`TaskRun not found: ${message.runId}\n`);
@@ -85,406 +188,76 @@ export async function processTaskRun(message: TaskRunQueueMessage) {
   }
 
   if (taskRun.delayUntil && taskRun.delayUntil > new Date()) {
-    await enqueueTaskRun(message, {
-      delayMs: taskRun.delayUntil.getTime() - Date.now(),
-    });
-
+    await requeueDelayedTaskRun(message, taskRun.delayUntil);
     return;
   }
 
   const localTask = taskRegistry.get(taskRun.task.slug);
-  let concurrencyLease: QueueConcurrencyLease | null = null;
+  const trace = getExecutionTrace(taskRun);
+  const concurrency = await acquireTaskRunConcurrency({
+    message,
+    taskRun,
+    localTask,
+  });
 
-  const executionTrace = taskRun.traceId
-    ? createChildTraceContext({
-        traceId: taskRun.traceId,
-        parentSpanId: taskRun.triggerSpanId,
-      })
-    : createRootTraceContext();
-
-  if (localTask) {
-    const concurrencyLimit = localTask.queue.concurrencyLimit;
-
-    if (concurrencyLimit !== null) {
-      concurrencyLease = await tryAcquireQueueConcurrency({
-        environmentId: message.environmentId,
-        queueName: localTask.queue.name,
-        runId: taskRun.id,
-        limit: concurrencyLimit,
-      });
-
-      if (!concurrencyLease) {
-        await enqueueTaskRun(message, {
-          delayMs: QUEUE_CONCURRENCY_RETRY_MS,
-        });
-
-        return;
-      }
-    }
+  if (concurrency.status === "deferred") {
+    return;
   }
 
+  await processTaskRunWithLease({
+    message,
+    taskRun,
+    localTask,
+    trace,
+    concurrencyLease: concurrency.lease,
+  });
+}
+
+async function processTaskRunWithLease(input: {
+  message: TaskRunQueueMessage;
+  taskRun: ProcessableTaskRun;
+  localTask: TaskDefinition | undefined;
+  trace: TraceContext;
+  concurrencyLease: QueueConcurrencyLease | null;
+}) {
   try {
-    const attempt = await prisma.$transaction(async (tx) => {
-      const startedAt = new Date();
-
-      const claim = await tx.taskRun.updateMany({
-        where: {
-          id: taskRun.id,
-          status: "PENDING",
-          OR: [
-            {
-              delayUntil: null,
-            },
-            {
-              delayUntil: {
-                lte: startedAt,
-              },
-            },
-          ],
-        },
-        data: {
-          status: "EXECUTING",
-          startedAt,
-          lastHeartbeatAt: startedAt,
-          completedAt: null,
-          output: Prisma.DbNull,
-          error: Prisma.DbNull,
-          traceId: executionTrace.traceId,
-        },
-      });
-
-      if (claim.count !== 1) {
-        return null;
-      }
-
-      const previousAttempts = await tx.taskAttempt.count({
-        where: {
-          taskRunId: taskRun.id,
-        },
-      });
-
-      const createdAttempt = await tx.taskAttempt.create({
-        data: {
-          taskRunId: taskRun.id,
-          attemptNumber: previousAttempts + 1,
-          status: "EXECUTING",
-          startedAt: new Date(),
-        },
-        select: {
-          id: true,
-          attemptNumber: true,
-        },
-      });
-
-      await tx.taskEvent.create({
-        data: {
-          taskRunId: taskRun.id,
-          taskAttemptId: createdAttempt.id,
-          type: "task.run.started",
-          level: "INFO",
-          message: "Task run started by worker",
-          traceId: executionTrace.traceId,
-          spanId: executionTrace.spanId,
-          parentSpanId: executionTrace.parentSpanId,
-        },
-      });
-
-      return createdAttempt;
+    const attempt = await claimTaskRunForExecution({
+      taskRun: input.taskRun,
+      trace: input.trace,
     });
 
     if (!attempt) {
-      process.stderr.write(`TaskRun ${taskRun.id} was already claimed; skipping\n`);
+      process.stderr.write(`TaskRun ${input.taskRun.id} was already claimed; skipping\n`);
       return;
     }
 
-    if (!localTask) {
-      await prisma.$transaction(async (tx) => {
-        const completedAt = new Date();
-
-        const error = {
-          code: "TASK_NOT_REGISTERED",
-          message: `No local task registered for slug: ${taskRun.task.slug}`,
-        };
-
-        const updateRun = await tx.taskRun.updateMany({
-          where: {
-            id: taskRun.id,
-            status: "EXECUTING",
-          },
-          data: {
-            status: "FAILED",
-            output: Prisma.DbNull,
-            error,
-            lastHeartbeatAt: completedAt,
-            completedAt,
-          },
-        });
-
-        if (updateRun.count !== 1) {
-          return;
-        }
-
-        await tx.taskAttempt.update({
-          where: {
-            id: attempt.id,
-          },
-          data: {
-            status: "FAILED",
-            error,
-            completedAt,
-          },
-        });
-
-        await tx.taskEvent.create({
-          data: {
-            taskRunId: taskRun.id,
-            taskAttemptId: attempt.id,
-            type: "task.run.failed",
-            level: "ERROR",
-            message: "No local task registered for task slug",
-            traceId: executionTrace.traceId,
-            spanId: executionTrace.spanId,
-            parentSpanId: executionTrace.parentSpanId,
-            data: {
-              taskSlug: taskRun.task.slug,
-            },
-          },
-        });
+    if (!input.localTask) {
+      await failTaskRunForMissingLocalTask({
+        taskRun: input.taskRun,
+        attempt,
+        trace: input.trace,
       });
-
       return;
     }
 
-    process.stdout.write(`Running task ${taskRun.task.slug} (${taskRun.id})\n`);
-
-    const stopHeartbeat = startTaskRunHeartbeat(taskRun.id);
-    const stopQueueConcurrencyHeartbeat = concurrencyLease
-      ? startQueueConcurrencyLeaseHeartbeat(concurrencyLease)
+    const stopQueueConcurrencyHeartbeat = input.concurrencyLease
+      ? startQueueConcurrencyLeaseHeartbeat(input.concurrencyLease)
       : () => {};
 
     try {
-      const logger = createTaskLogger({
-        taskRunId: taskRun.id,
-        taskAttemptId: attempt.id,
-        traceId: executionTrace.traceId,
-        spanId: executionTrace.spanId,
-        parentSpanId: executionTrace.parentSpanId,
+      await runClaimedTask({
+        message: input.message,
+        taskRun: input.taskRun,
+        attempt,
+        localTask: input.localTask,
+        trace: input.trace,
       });
-
-      const resolvedPayload = await resolveJsonValue(taskRun.payload);
-
-      const output = await runWithTaskTimeout({
-        timeoutMs: localTask.timeoutMs,
-        run: (signal) =>
-          localTask.run({
-            runId: taskRun.id,
-            taskId: taskRun.taskId,
-            environmentId: message.environmentId,
-            payload: resolvedPayload as JsonValue | null,
-            logger,
-            signal,
-            trace: executionTrace,
-          }),
-      });
-
-      const normalizedOutput =
-        output === undefined
-          ? Prisma.DbNull
-          : ((await maybeStoreJsonValue({
-              kind: "OUTPUT",
-              environmentId: message.environmentId,
-              taskId: taskRun.id,
-              runId: taskRun.id,
-              value: output as JsonValue,
-            })) as Prisma.InputJsonValue);
-
-      const completed = await prisma.$transaction(async (tx) => {
-        const completedAt = new Date();
-
-        const updateRun = await tx.taskRun.updateMany({
-          where: {
-            id: taskRun.id,
-            status: "EXECUTING",
-          },
-          data: {
-            status: "COMPLETED",
-            output: normalizedOutput,
-            error: Prisma.DbNull,
-            lastHeartbeatAt: completedAt,
-            completedAt,
-          },
-        });
-
-        if (updateRun.count !== 1) {
-          return false;
-        }
-
-        await tx.taskAttempt.update({
-          where: {
-            id: attempt.id,
-          },
-          data: {
-            status: "COMPLETED",
-            completedAt,
-          },
-        });
-
-        await tx.taskEvent.create({
-          data: {
-            taskRunId: taskRun.id,
-            taskAttemptId: attempt.id,
-            type: "task.run.completed",
-            level: "INFO",
-            message: "Task run completed successfully",
-            traceId: executionTrace.traceId,
-            spanId: executionTrace.spanId,
-            parentSpanId: executionTrace.parentSpanId,
-            data: {
-              worker: packageName,
-              taskId: localTask.id,
-            },
-          },
-        });
-
-        return true;
-      });
-
-      if (!completed) {
-        return;
-      }
-    } catch (error) {
-      const serializedError = serializeError(error);
-      const shouldRetry = attempt.attemptNumber < localTask.retry.maxAttempts;
-      const retryDelayMs = shouldRetry
-        ? getRetryDelayMs(attempt.attemptNumber, localTask.retry)
-        : 0;
-
-      if (shouldRetry) {
-        const retried = await prisma.$transaction(async (tx) => {
-          const failedAt = new Date();
-
-          const updateRun = await tx.taskRun.updateMany({
-            where: {
-              id: taskRun.id,
-              status: "EXECUTING",
-            },
-            data: {
-              status: "PENDING",
-              output: Prisma.DbNull,
-              error: serializedError,
-              lastHeartbeatAt: null,
-              completedAt: null,
-            },
-          });
-
-          if (updateRun.count !== 1) {
-            return false;
-          }
-
-          await tx.taskAttempt.update({
-            where: {
-              id: attempt.id,
-            },
-            data: {
-              status: "FAILED",
-              error: serializedError,
-              completedAt: failedAt,
-            },
-          });
-
-          await tx.taskEvent.create({
-            data: {
-              taskRunId: taskRun.id,
-              taskAttemptId: attempt.id,
-              type: "task.run.retry.scheduled",
-              level: "WARN",
-              message: "Task run failed and retry was scheduled",
-              traceId: executionTrace.traceId,
-              spanId: executionTrace.spanId,
-              parentSpanId: executionTrace.parentSpanId,
-              data: {
-                attemptNumber: attempt.attemptNumber,
-                nextAttemptNumber: attempt.attemptNumber + 1,
-                maxAttempts: localTask.retry.maxAttempts,
-                delayMs: retryDelayMs,
-                error: serializedError,
-              },
-            },
-          });
-
-          return true;
-        });
-
-        if (!retried) {
-          return;
-        }
-
-        await enqueueTaskRun(message, {
-          delayMs: retryDelayMs,
-        });
-
-        return;
-      }
-
-      const failed = await prisma.$transaction(async (tx) => {
-        const completedAt = new Date();
-
-        const updateRun = await tx.taskRun.updateMany({
-          where: {
-            id: taskRun.id,
-            status: "EXECUTING",
-          },
-          data: {
-            status: "FAILED",
-            output: Prisma.DbNull,
-            error: serializedError,
-            lastHeartbeatAt: completedAt,
-            completedAt,
-          },
-        });
-
-        if (updateRun.count !== 1) {
-          return false;
-        }
-
-        await tx.taskAttempt.update({
-          where: {
-            id: attempt.id,
-          },
-          data: {
-            status: "FAILED",
-            error: serializedError,
-            completedAt,
-          },
-        });
-
-        await tx.taskEvent.create({
-          data: {
-            taskRunId: taskRun.id,
-            taskAttemptId: attempt.id,
-            type: "task.run.failed",
-            level: "ERROR",
-            message: "Task run failed",
-            traceId: executionTrace.traceId,
-            spanId: executionTrace.spanId,
-            parentSpanId: executionTrace.parentSpanId,
-            data: serializedError,
-          },
-        });
-
-        return true;
-      });
-
-      if (!failed) {
-        return;
-      }
     } finally {
-      stopHeartbeat();
       stopQueueConcurrencyHeartbeat();
     }
   } finally {
-    if (concurrencyLease) {
-      await releaseQueueConcurrency(concurrencyLease);
+    if (input.concurrencyLease) {
+      await releaseQueueConcurrency(input.concurrencyLease);
     }
   }
 }

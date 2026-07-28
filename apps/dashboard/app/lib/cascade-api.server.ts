@@ -1,11 +1,49 @@
 class CascadeApiError extends Error {
   constructor(
     readonly status: number,
+    readonly responseBody: unknown,
     message: string,
   ) {
     super(message);
     this.name = "CascadeApiError";
   }
+}
+
+type CascadeErrorBody = {
+  error?: {
+    code?: unknown;
+    message?: unknown;
+  };
+};
+
+async function readResponseBody(response: Response) {
+  const text = await response.text();
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
+
+function getErrorMessage(status: number, body: unknown) {
+  const errorBody = body as CascadeErrorBody;
+  const apiMessage = errorBody.error?.message;
+  const apiCode = errorBody.error?.code;
+
+  if (typeof apiMessage === "string" && typeof apiCode === "string") {
+    return `Cascade API request failed (${status} ${apiCode}): ${apiMessage}`;
+  }
+
+  if (typeof apiMessage === "string") {
+    return `Cascade API request failed (${status}): ${apiMessage}`;
+  }
+
+  return `Cascade API request failed (${status})`;
 }
 
 function getApiUrl(): string {
@@ -37,14 +75,15 @@ export async function cascadeApiRequest<T>(path: string, init: RequestInit = {})
     ...init,
     headers: {
       Authorization: `Bearer ${getApiKey()}`,
+      ...init.headers,
     },
   });
 
-  const body = (await response.json()) as T;
+  const body = await readResponseBody(response);
 
   if (!response.ok) {
-    throw new CascadeApiError(response.status, "Cascade API request failed");
+    throw new CascadeApiError(response.status, body, getErrorMessage(response.status, body));
   }
 
-  return body;
+  return body as T;
 }

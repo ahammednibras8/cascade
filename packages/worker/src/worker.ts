@@ -8,6 +8,7 @@ import { popTaskRunMessage, taskRunQueueRedis } from "./queue/task-runs.js";
 import { processTaskRun } from "./task-run-processor.js";
 import { startTaskScheduleScheduler } from "./timers/task-schedule-scheduler.js";
 import { startStuckRunSweeper } from "./timers/stuck-run-sweeper.js";
+import { startPendingRunSweeper } from "./timers/pending-run-sweeper.js";
 
 const inFlight = new Set<Promise<void>>();
 
@@ -31,6 +32,7 @@ export async function runWorker(shutdownSignal: ShutdownSignal) {
   process.stdout.write(`Starting worker with ${packageName}\n`);
 
   const stopStuckRunSweeper = startStuckRunSweeper();
+  const stopPendingRunSweeper = startPendingRunSweeper();
   const stopTaskScheduleScheduler = startTaskScheduleScheduler();
 
   try {
@@ -57,6 +59,7 @@ export async function runWorker(shutdownSignal: ShutdownSignal) {
     await Promise.allSettled(inFlight);
   } finally {
     stopStuckRunSweeper();
+    stopPendingRunSweeper();
     stopTaskScheduleScheduler();
 
     await taskRunQueueRedis.quit();

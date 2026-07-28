@@ -78,3 +78,40 @@ export async function getDashboardTestEnvironment() {
     apiKey,
   };
 }
+
+async function getLocalDashboardEnvironment() {
+  const { prisma } = await import("@cascade/database");
+
+  const project = await prisma.project.upsert({
+    where: {
+      slug: "local",
+    },
+    update: {},
+    create: {
+      slug: "local",
+      name: "Local Project",
+    },
+  });
+
+  return prisma.environment.upsert({
+    where: {
+      projectId_slug: {
+        projectId: project.id,
+        slug: "dev",
+      },
+    },
+    update: {},
+    create: {
+      projectId: project.id,
+      slug: "dev",
+      name: "Development",
+      type: "DEVELOPMENT",
+    },
+  });
+}
+
+export async function restoreDashboardApiKey() {
+  const environment = await getLocalDashboardEnvironment();
+
+  await ensureDashboardApiKey(environment.id);
+}

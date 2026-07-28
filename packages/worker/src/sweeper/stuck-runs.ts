@@ -73,6 +73,8 @@ export async function sweepStuckTaskRuns(now = new Date()) {
     const retryDelayMs =
       shouldRetry && localTask ? getRetryDelayMs(attemptNumber, localTask.retry) : 0;
 
+    const retryAt = shouldRetry ? new Date(now.getTime() + retryDelayMs) : null;
+
     const error = createStuckRunError({
       lastHeartbeatAt: stuckRun.lastHeartbeatAt,
       timeoutMs: STUCK_RUN_TIMEOUT_MS,
@@ -97,6 +99,7 @@ export async function sweepStuckTaskRuns(now = new Date()) {
         data: shouldRetry
           ? {
               status: "PENDING",
+              delayUntil: retryAt,
               output: Prisma.DbNull,
               error,
               lastHeartbeatAt: null,
@@ -151,7 +154,7 @@ export async function sweepStuckTaskRuns(now = new Date()) {
       return true;
     });
 
-    if (claimed && shouldRetry) {
+    if (claimed && retryAt) {
       await enqueueTaskRun(
         {
           runId: stuckRun.id,
@@ -160,7 +163,7 @@ export async function sweepStuckTaskRuns(now = new Date()) {
           deploymentId: stuckRun.deploymentId,
         },
         {
-          delayMs: retryDelayMs,
+          delayMs: Math.max(retryAt.getTime() - now.getTime(), 0),
         },
       );
     }

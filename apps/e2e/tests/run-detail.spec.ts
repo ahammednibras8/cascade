@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import { ensureDashboardApiKey } from "./support/dashboard-environment.js";
+import { ensureDashboardApiKey, restoreDashboardApiKey } from "./support/dashboard-environment.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -13,14 +13,21 @@ async function getPrisma() {
 
 test.afterEach(async () => {
   const prisma = await getPrisma();
+  const projectIds = createdProjectIds.splice(0);
+
+  if (projectIds.length === 0) {
+    return;
+  }
 
   await prisma.project.deleteMany({
     where: {
       id: {
-        in: createdProjectIds.splice(0),
+        in: projectIds,
       },
     },
   });
+
+  await restoreDashboardApiKey();
 });
 
 test.afterAll(async () => {

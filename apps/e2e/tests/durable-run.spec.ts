@@ -1,7 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { createCascadeClient, defineTask } from "@cascade/sdk";
 import { randomUUID } from "node:crypto";
-import { ensureDashboardApiKey, getDashboardApiKey } from "./support/dashboard-environment.js";
+import {
+  ensureDashboardApiKey,
+  getDashboardApiKey,
+  restoreDashboardApiKey,
+} from "./support/dashboard-environment.js";
 
 const databaseURL =
   process.env.DATABASE_URL ?? "postgresql://cascade:cascade@localhost:15432/cascade";
@@ -82,6 +86,8 @@ test.afterEach(async () => {
       },
     },
   });
+
+  await restoreDashboardApiKey();
 });
 
 test.afterAll(async () => {

@@ -17,6 +17,9 @@ const prisma = vi.hoisted(() => ({
 const startStuckRunSweeper = vi.hoisted(() => vi.fn<() => () => void>());
 const stopStuckRunSweeper = vi.hoisted(() => vi.fn<() => void>());
 
+const startPendingRunSweeper = vi.hoisted(() => vi.fn<() => () => void>());
+const stopPendingRunSweeper = vi.hoisted(() => vi.fn<() => void>());
+
 const startTaskScheduleScheduler = vi.hoisted(() => vi.fn<() => () => void>());
 const stopTaskScheduleScheduler = vi.hoisted(() => vi.fn<() => void>());
 
@@ -39,6 +42,10 @@ vi.mock("../src/task-run-processor.js", () => ({
 
 vi.mock("../src/timers/stuck-run-sweeper.js", () => ({
   startStuckRunSweeper,
+}));
+
+vi.mock("../src/timers/pending-run-sweeper.js", () => ({
+  startPendingRunSweeper,
 }));
 
 vi.mock("../src/timers/task-schedule-scheduler.js", () => ({
@@ -64,9 +71,11 @@ describe("runWorker", () => {
     vi.clearAllMocks();
 
     stopStuckRunSweeper.mockReturnValue(undefined);
+    stopPendingRunSweeper.mockReturnValue(undefined);
     stopTaskScheduleScheduler.mockReturnValue(undefined);
 
     startStuckRunSweeper.mockReturnValue(stopStuckRunSweeper);
+    startPendingRunSweeper.mockReturnValue(stopPendingRunSweeper);
     startTaskScheduleScheduler.mockReturnValue(stopTaskScheduleScheduler);
 
     processTaskRun.mockResolvedValue(undefined);
@@ -87,12 +96,14 @@ describe("runWorker", () => {
     await runWorker(createShutdownSignal());
 
     expect(startStuckRunSweeper).toHaveBeenCalledOnce();
+    expect(startPendingRunSweeper).toHaveBeenCalledOnce();
     expect(startTaskScheduleScheduler).toHaveBeenCalledOnce();
 
     expect(popTaskRunMessage).toHaveBeenCalledTimes(2);
     expect(processTaskRun).toHaveBeenCalledWith(message);
 
     expect(stopStuckRunSweeper).toHaveBeenCalledOnce();
+    expect(stopPendingRunSweeper).toHaveBeenCalledOnce();
     expect(stopTaskScheduleScheduler).toHaveBeenCalledOnce();
 
     expect(taskRunQueueRedis.quit).toHaveBeenCalledOnce();
