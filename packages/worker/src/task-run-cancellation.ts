@@ -1,7 +1,7 @@
 import { prisma } from "@cascade/database";
 import { TASK_RUN_CANCELLATION_POLL_INTERVAL_MS } from "./config.js";
 
-export class TaskRunCanceledError extends Error {
+class TaskRunCanceledError extends Error {
   readonly code = "RUN_CANCELED";
 
   constructor(readonly taskRunId: string) {
