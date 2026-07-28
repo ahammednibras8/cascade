@@ -1,4 +1,4 @@
-export class CascadeApiError extends Error {
+class CascadeApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
@@ -8,7 +8,7 @@ export class CascadeApiError extends Error {
   }
 }
 
-export function getApiUrl(): string {
+function getApiUrl(): string {
   const apiUrl = process.env.CASCADE_API_URL;
 
   if (!apiUrl) {
