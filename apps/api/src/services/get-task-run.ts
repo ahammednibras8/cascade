@@ -30,11 +30,45 @@ export async function getTaskRun(input: { auth: ApiAuthContext; runId: string | 
       completedAt: true,
       createdAt: true,
       updatedAt: true,
+      traceId: true,
+      triggerSpanId: true,
       task: {
-        select: { id: true, slug: true, name: true },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          environment: {
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              project: {
+                select: {
+                  id: true,
+                  slug: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
       },
       _count: {
         select: { attempts: true, events: true },
+      },
+      attempts: {
+        orderBy: {
+          attemptNumber: "asc",
+        },
+        select: {
+          id: true,
+          attemptNumber: true,
+          status: true,
+          error: true,
+          startedAt: true,
+          completedAt: true,
+          createdAt: true,
+        },
       },
     },
   });
@@ -67,6 +101,17 @@ export async function getTaskRun(input: { auth: ApiAuthContext; runId: string | 
       task: run.task,
       attemptsCount: run._count.attempts,
       eventsCount: run._count.events,
+      traceId: run.traceId,
+      triggerSpanId: run.triggerSpanId,
+      attempts: run.attempts.map((attempt) => ({
+        id: attempt.id,
+        attemptNumber: attempt.attemptNumber,
+        starus: attempt.status,
+        error: attempt.error,
+        startedAt: attempt.startedAt?.toISOString() ?? null,
+        completedAt: attempt.completedAt?.toISOString() ?? null,
+        createdAt: attempt.createdAt.toISOString(),
+      })),
     },
   };
 }

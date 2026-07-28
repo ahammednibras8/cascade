@@ -1,54 +1,39 @@
 import type { Route } from "./+types/runs";
 import { Link } from "react-router";
 import { StatusBadge } from "~/components/status-badge";
+import { cascadeApiRequest } from "~/lib/cascade-api.server";
 
 export function meta() {
   return [{ title: "Runs | Cascade" }];
 }
 
 export async function loader() {
-  const { prisma } = await import("@cascade/database");
-
-  const runs = await prisma.taskRun.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: 50,
-    select: {
-      id: true,
-      status: true,
-      createdAt: true,
-      startedAt: true,
-      lastHeartbeatAt: true,
-      completedAt: true,
+  const response = await cascadeApiRequest<{
+    taskRuns: Array<{
+      id: string;
+      status: string;
+      createdAt: string;
+      startedAt: string | null;
+      lastHeartbeatAt: string | null;
+      completedAt: string | null;
       task: {
-        select: {
-          slug: true,
-          name: true,
-          environment: {
-            select: {
-              slug: true,
-              project: {
-                select: {
-                  slug: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      _count: {
-        select: {
-          attempts: true,
-          events: true,
-        },
-      },
-    },
-  });
+        slug: string;
+        name: string;
+        environment: {
+          slug: string;
+          project: {
+            slug: string;
+            name: string;
+          };
+        };
+      };
+      attemptsCount: number;
+      eventsCount: number;
+    }>;
+  }>("/api/runs");
 
   return {
-    runs: runs.map((run) => ({
+    runs: response.taskRuns.map((run) => ({
       id: run.id,
       status: run.status,
       taskSlug: run.task.slug,
@@ -56,12 +41,12 @@ export async function loader() {
       environmentSlug: run.task.environment.slug,
       projectSlug: run.task.environment.project.slug,
       projectName: run.task.environment.project.name,
-      attemptsCount: run._count.attempts,
-      eventsCount: run._count.events,
-      createdAt: run.createdAt.toISOString(),
-      startedAt: run.startedAt?.toISOString() ?? null,
-      lastHeartbeatAt: run.lastHeartbeatAt?.toISOString() ?? null,
-      completedAt: run.completedAt?.toISOString() ?? null,
+      attemptsCount: run.attemptsCount,
+      eventsCount: run.eventsCount,
+      createdAt: run.createdAt,
+      startedAt: run.startedAt,
+      lastHeartbeatAt: run.lastHeartbeatAt,
+      completedAt: run.completedAt,
     })),
   };
 }

@@ -14,8 +14,11 @@ pre-commit:
     guard-env:
       run: |
         staged_files="$(git diff --cached --name-only)"
+
         for file in $staged_files; do
           case "$file" in
+            .env.example|docker/.env.example)
+              ;;
             .env|.env.*|docker/.env|docker/.env.*)
               echo "Refusing to commit env file: $file"
               exit 1

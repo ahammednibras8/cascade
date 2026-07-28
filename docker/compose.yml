@@ -108,7 +108,8 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:-cascade}@postgres:5432/${POSTGRES_DB:-cascade}
+      CASCADE_API_URL: http://api:3001
+      CASCADE_DASHBOARD_API_KEY: ${CASCADE_DASHBOARD_API_KEY}
     ports:
       - "${DASHBOARD_PORT:-3000}:3000"
     healthcheck:

@@ -6,6 +6,9 @@
       "outputs": ["dist/**", "build/**", ".react-router/**"],
       "passThroughEnv": ["DATABASE_URL"]
     },
+    "@cascade/docs#build": {
+      "outputs": []
+    },
     "check-types": {
       "dependsOn": ["^check-types"],
       "passThroughEnv": ["DATABASE_URL"]

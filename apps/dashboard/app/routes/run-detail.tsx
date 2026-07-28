@@ -2,123 +2,76 @@ import type { Route } from "./+types/run-detail";
 import { Link, useRevalidator } from "react-router";
 import { useEffect } from "react";
 import { StatusBadge } from "~/components/status-badge";
+import { cascadeApiRequest } from "~/lib/cascade-api.server";
 
 export function meta() {
   return [{ title: "Run detail | Cascade" }];
 }
 
 export async function loader({ params }: Route.LoaderArgs) {
-  const { prisma } = await import("@cascade/database");
+  const runId = params.runId;
 
-  const run = await prisma.taskRun.findUnique({
-    where: {
-      id: params.runId,
-    },
-    select: {
-      id: true,
-      status: true,
-      payload: true,
-      output: true,
-      error: true,
-      traceId: true,
-      triggerSpanId: true,
-      idempotencyKeyHash: true,
-      idempotencyRequestHash: true,
-      startedAt: true,
-      lastHeartbeatAt: true,
-      completedAt: true,
-      createdAt: true,
-      updatedAt: true,
-      task: {
-        select: {
-          id: true,
-          slug: true,
-          name: true,
+  const [runResponse, eventsResponse] = await Promise.all([
+    cascadeApiRequest<{
+      taskRun: {
+        id: string;
+        status: string;
+        payload: unknown;
+        output: unknown;
+        error: unknown;
+        traceId: string | null;
+        triggerSpanId: string | null;
+        startedAt: string | null;
+        lastHeartbeatAt: string | null;
+        completedAt: string | null;
+        createdAt: string;
+        updatedAt: string;
+        task: {
+          id: string;
+          slug: string;
+          name: string;
           environment: {
-            select: {
-              id: true,
-              slug: true,
-              name: true,
-              project: {
-                select: {
-                  id: true,
-                  slug: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      attempts: {
-        orderBy: {
-          attemptNumber: "asc",
-        },
-        select: {
-          id: true,
-          attemptNumber: true,
-          status: true,
-          error: true,
-          startedAt: true,
-          completedAt: true,
-          createdAt: true,
-        },
-      },
-      events: {
-        orderBy: {
-          createdAt: "asc",
-        },
-        select: {
-          id: true,
-          taskAttemptId: true,
-          type: true,
-          level: true,
-          message: true,
-          data: true,
-          createdAt: true,
-          traceId: true,
-          spanId: true,
-          parentSpanId: true,
-        },
-      },
-    },
-  });
-
-  if (!run) {
-    throw new Response("Run not found", {
-      status: 404,
-    });
-  }
+            id: string;
+            slug: string;
+            name: string;
+            project: {
+              id: string;
+              slug: string;
+              name: string;
+            };
+          };
+        };
+        attempts: Array<{
+          id: string;
+          attemptNumber: number;
+          status: string;
+          error: unknown;
+          startedAt: string | null;
+          completedAt: string | null;
+          createdAt: string;
+        }>;
+      };
+    }>(`/api/runs/${encodeURIComponent(runId)}`),
+    cascadeApiRequest<{
+      events: Array<{
+        id: string;
+        taskAttemptId: string | null;
+        type: string;
+        level: string;
+        message: string | null;
+        data: unknown;
+        createdAt: string;
+        traceId: string | null;
+        spanId: string | null;
+        parentSpanId: string | null;
+      }>;
+    }>(`/api/runs/${encodeURIComponent(runId)}/events`),
+  ]);
 
   return {
     run: {
-      ...run,
-      startedAt: run.startedAt?.toISOString() ?? null,
-      lastHeartbeatAt: run.lastHeartbeatAt?.toISOString() ?? null,
-      completedAt: run.completedAt?.toISOString() ?? null,
-      createdAt: run.createdAt.toISOString(),
-      updatedAt: run.updatedAt.toISOString(),
-      attempts: run.attempts.map((attempt) => ({
-        id: attempt.id,
-        attemptNumber: attempt.attemptNumber,
-        status: attempt.status,
-        error: attempt.error,
-        startedAt: attempt.startedAt?.toISOString() ?? null,
-        completedAt: attempt.completedAt?.toISOString() ?? null,
-        createdAt: attempt.createdAt.toISOString(),
-      })),
-      events: run.events.map((event) => ({
-        id: event.id,
-        taskAttemptId: event.taskAttemptId,
-        type: event.type,
-        level: event.level,
-        message: event.message,
-        data: event.data,
-        createdAt: event.createdAt.toISOString(),
-        traceId: event.traceId,
-        spanId: event.spanId,
-        parentSpanId: event.parentSpanId,
-      })),
+      ...runResponse.taskRun,
+      events: eventsResponse.events,
     },
   };
 }
@@ -205,23 +158,14 @@ export default function RunDetail({ loaderData }: Route.ComponentProps) {
   const revalidator = useRevalidator();
 
   useEffect(() => {
-    const events = new EventSource(`/runs/${run.id}/events`);
-
-    const refreshRun = () => {
+    const interval = window.setInterval(() => {
       void revalidator.revalidate();
-    };
-
-    events.addEventListener("connected", refreshRun);
-    events.addEventListener("run.updated", refreshRun);
-    events.addEventListener("run.deleted", refreshRun);
+    }, 2_000);
 
     return () => {
-      events.removeEventListener("connected", refreshRun);
-      events.removeEventListener("run.updated", refreshRun);
-      events.removeEventListener("run.deleted", refreshRun);
-      events.close();
+      window.clearInterval(interval);
     };
-  }, [run.id, revalidator]);
+  }, [revalidator]);
 
   return (
     <main className="mx-auto max-w-7xl p-6">

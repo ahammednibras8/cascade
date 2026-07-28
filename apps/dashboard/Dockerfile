@@ -17,7 +17,6 @@ FROM pnpm-base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 COPY apps/dashboard/package.json apps/dashboard/package.json
-COPY packages/database/package.json packages/database/package.json
 
 RUN --mount=type=cache,id=cascade-pnpm-store,target=/pnpm/store,sharing=locked \
 pnpm install --frozen-lockfile --ignore-scripts --filter @cascade/dashboard... --network-concurrency=4 --child-concurrency=2
@@ -28,13 +27,10 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY .configs .configs
 
 COPY apps/dashboard apps/dashboard
-COPY packages/database packages/database
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/dashboard/node_modules ./apps/dashboard/node_modules
-COPY --from=deps /app/packages/database/node_modules ./packages/database/node_modules
 
-RUN DATABASE_URL="postgresql://cascade:cascade@localhost:5432/cascade" pnpm --filter @cascade/database run build
 RUN pnpm --filter @cascade/dashboard run build
 
 RUN --mount=type=cache,id=cascade-pnpm-store,target=/pnpm/store \

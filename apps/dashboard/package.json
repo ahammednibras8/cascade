@@ -12,7 +12,6 @@
     "test:coverage": "vitest run --coverage --passWithNoTests"
   },
   "dependencies": {
-    "@cascade/database": "workspace:*",
     "@radix-ui/themes": "^3.3.0",
     "@react-router/node": "8.2.0",
     "@react-router/serve": "8.2.0",

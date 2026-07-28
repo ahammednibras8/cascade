@@ -1,37 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-type DbRun = {
-  id: string;
-  status: string;
-  createdAt: Date;
-  startedAt: Date | null;
-  lastHeartbeatAt: Date | null;
-  completedAt: Date | null;
-  task: {
-    slug: string;
-    name: string;
-    environment: {
-      slug: string;
-      project: {
-        slug: string;
-        name: string;
-      };
-    };
-  };
-  _count: {
-    attempts: number;
-    events: number;
-  };
-};
+const cascadeApiRequest = vi.hoisted(() => vi.fn<(path: string) => Promise<unknown>>());
 
-const taskRunFindMany = vi.hoisted(() => vi.fn<(args: unknown) => Promise<DbRun[]>>());
-
-vi.mock("@cascade/database", () => ({
-  prisma: {
-    taskRun: {
-      findMany: taskRunFindMany,
-    },
-  },
+vi.mock("../../app/lib/cascade-api.server.js", () => ({
+  cascadeApiRequest,
 }));
 
 const { loader } = await import("../../app/routes/runs.js");
@@ -42,45 +14,35 @@ describe("runs loader", () => {
   });
 
   it("returns latest task runs for the table", async () => {
-    const createdAt = new Date("2026-01-01T00:00:00.000Z");
-    const startedAt = new Date("2026-01-01T00:00:05.000Z");
-
-    taskRunFindMany.mockResolvedValue([
-      {
-        id: "run-1",
-        status: "EXECUTING",
-        createdAt,
-        startedAt,
-        lastHeartbeatAt: null,
-        completedAt: null,
-        task: {
-          slug: "hello",
-          name: "Hello",
-          environment: {
-            slug: "dev",
-            project: {
-              slug: "cascade",
-              name: "Cascade",
+    cascadeApiRequest.mockResolvedValue({
+      taskRuns: [
+        {
+          id: "run-1",
+          status: "EXECUTING",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          startedAt: "2026-01-01T00:00:05.000Z",
+          lastHeartbeatAt: null,
+          completedAt: null,
+          task: {
+            slug: "hello",
+            name: "Hello",
+            environment: {
+              slug: "dev",
+              project: {
+                slug: "cascade",
+                name: "Cascade",
+              },
             },
           },
+          attemptsCount: 1,
+          eventsCount: 3,
         },
-        _count: {
-          attempts: 1,
-          events: 3,
-        },
-      },
-    ]);
+      ],
+    });
 
     const result = await loader();
 
-    expect(taskRunFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 50,
-      }),
-    );
+    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/runs");
 
     expect(result).toEqual({
       runs: [
@@ -104,7 +66,9 @@ describe("runs loader", () => {
   });
 
   it("returns an empty runs list", async () => {
-    taskRunFindMany.mockResolvedValue([]);
+    cascadeApiRequest.mockResolvedValue({
+      taskRuns: [],
+    });
 
     await expect(loader()).resolves.toEqual({
       runs: [],
