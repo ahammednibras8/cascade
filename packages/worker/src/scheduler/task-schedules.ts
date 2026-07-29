@@ -80,9 +80,21 @@ export async function sweepDueTaskSchedules(now = new Date()) {
       }
 
       if (schedule.task.executionConfig === null) {
-        throw new Error(
-          `Scheduled task ${schedule.taskId} has no execution configuration. Redeploy the task.`,
+        await tx.taskSchedule.update({
+          where: {
+            id: schedule.id,
+          },
+          data: {
+            enabled: false,
+            lockedAt: null,
+          },
+        });
+
+        process.stderr.write(
+          `Disabled schedule ${schedule.id} for task ${schedule.taskId}: missing execution configuration. Redeploy the task and re-enable the schedule.\n`,
         );
+
+        return null;
       }
 
       const runData: Prisma.TaskRunUncheckedCreateInput = {

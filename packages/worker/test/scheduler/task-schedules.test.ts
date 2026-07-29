@@ -248,7 +248,7 @@ describe("sweepDueTaskSchedules", () => {
     expect(enqueueTaskRun).not.toHaveBeenCalled();
   });
 
-  it("throws when a due schedule task has no execution config", async () => {
+  it("disables a due schedule when its task has no execution config", async () => {
     prisma.taskSchedule.findMany.mockResolvedValue([
       {
         ...createSchedule(),
@@ -259,10 +259,18 @@ describe("sweepDueTaskSchedules", () => {
       },
     ]);
 
-    await expect(sweepDueTaskSchedules(NOW)).rejects.toThrow(
-      "Scheduled task task-1 has no execution configuration. Redeploy the task.",
-    );
+    const count = await sweepDueTaskSchedules(NOW);
 
+    expect(count).toBe(1);
+    expect(txTaskScheduleUpdate).toHaveBeenCalledWith({
+      where: {
+        id: SCHEDULE_ID,
+      },
+      data: {
+        enabled: false,
+        lockedAt: null,
+      },
+    });
     expect(txTaskRunCreate).not.toHaveBeenCalled();
     expect(enqueueTaskRun).not.toHaveBeenCalled();
   });
