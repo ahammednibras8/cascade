@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { ensureDashboardApiKey, restoreDashboardApiKey } from "./support/dashboard-environment.js";
+import { createExecutionConfig } from "./support/execution-config.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -66,11 +67,14 @@ test("shows run payload, output, error, attempts, and logs", async ({ page }) =>
 
   await ensureDashboardApiKey(environment.id);
 
+  const executionConfig = createExecutionConfig(`e2e-detail-task-${suffix}`);
+
   const task = await prisma.task.create({
     data: {
       environmentId: environment.id,
       slug: `e2e-detail-task-${suffix}`,
       name: "E2E Detail Task",
+      executionConfig,
     },
   });
 
@@ -78,6 +82,7 @@ test("shows run payload, output, error, attempts, and logs", async ({ page }) =>
     data: {
       taskId: task.id,
       status: "FAILED",
+      executionConfig,
       payload: {
         message: "hello from detail e2e",
       },
@@ -190,11 +195,14 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
 
   await ensureDashboardApiKey(environment.id);
 
+  const executionConfig = createExecutionConfig(`e2e-sse-task-${suffix}`);
+
   const task = await prisma.task.create({
     data: {
       environmentId: environment.id,
       slug: `e2e-sse-task-${suffix}`,
       name: "E2E SSE Task",
+      executionConfig,
     },
   });
 
@@ -202,6 +210,7 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
     data: {
       taskId: task.id,
       status: "PENDING",
+      executionConfig,
       payload: {
         message: "waiting for realtime update",
       },

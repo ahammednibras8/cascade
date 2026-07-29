@@ -98,6 +98,7 @@ model Task {
   slug String
   name String
   description String?
+  executionConfig Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -125,6 +126,7 @@ model TaskRun {
   payload Json?
   output Json?
   error Json?
+  executionConfig Json?
   delayUntil DateTime?
   startedAt DateTime?
   lastHeartbeatAt DateTime?

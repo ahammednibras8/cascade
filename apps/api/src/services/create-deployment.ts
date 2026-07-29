@@ -1,4 +1,5 @@
-import { prisma } from "@cascade/database";
+import { parseTaskExecutionConfig, type TaskExecutionConfig } from "@cascade/core";
+import { prisma, type Prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../auth/api-key.js";
 
 type CreateDeploymentInput = {
@@ -10,6 +11,7 @@ type DeploymentTaskInput = {
   slug: string;
   name: string;
   description: string | null;
+  executionConfig: TaskExecutionConfig;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -88,10 +90,25 @@ function parseDeploymentBody(body: unknown) {
       };
     }
 
+    const executionConfig = parseTaskExecutionConfig(task.executionConfig);
+
+    if (!executionConfig) {
+      return {
+        ok: false as const,
+        status: 400,
+        error: {
+          code: "INVALID_TASK_EXECUTION_CONFIG",
+          message:
+            "task.executionConfig must contain schemaVersion, timeoutMs, retry, and queue settings",
+        },
+      };
+    }
+
     parsedTasks.push({
       slug: task.slug.trim(),
       name: typeof task.name === "string" && task.name.trim() ? task.name.trim() : task.slug.trim(),
       description: typeof task.description === "string" ? task.description : null,
+      executionConfig,
     });
   }
 
@@ -147,11 +164,13 @@ export async function createDeployment(input: CreateDeploymentInput) {
             slug: task.slug,
             name: task.name,
             description: task.description,
+            executionConfig: task.executionConfig as Prisma.InputJsonValue,
           },
           update: {
             deploymentId: createdDeployment.id,
             name: task.name,
             description: task.description,
+            executionConfig: task.executionConfig as Prisma.InputJsonValue,
           },
         }),
       ),

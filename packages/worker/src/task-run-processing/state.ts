@@ -10,6 +10,7 @@ export type ProcessableTaskRun = {
   delayUntil: Date | null;
   traceId: string | null;
   triggerSpanId: string | null;
+  executionConfig: unknown;
   task: {
     slug: string;
     name: string;
@@ -38,6 +39,7 @@ export async function loadTaskRunForProcessing(message: TaskRunQueueMessage) {
       delayUntil: true,
       traceId: true,
       triggerSpanId: true,
+      executionConfig: true,
       task: {
         select: {
           slug: true,

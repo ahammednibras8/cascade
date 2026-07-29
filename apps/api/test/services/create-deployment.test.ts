@@ -34,6 +34,20 @@ vi.mock("@cascade/database", () => ({
 
 const { createDeployment } = await import("../../src/services/create-deployment.js");
 
+const EXECUTION_CONFIG = {
+  schemaVersion: 1,
+  timeoutMs: 30_000,
+  retry: {
+    maxAttempts: 3,
+    delayMs: 1000,
+    exponentialBackoff: true,
+  },
+  queue: {
+    name: "hello",
+    concurrencyLimit: 2,
+  },
+};
+
 const auth = {
   apiKeyId: "api-key-1",
   environmentId: "environment-1",
@@ -95,6 +109,7 @@ describe("createDeployment", () => {
             slug: " hello ",
             name: " Hello ",
             description: "Greets the user",
+            executionConfig: EXECUTION_CONFIG,
           },
         ],
       },
@@ -138,11 +153,13 @@ describe("createDeployment", () => {
         slug: "hello",
         name: "Hello",
         description: "Greets the user",
+        executionConfig: EXECUTION_CONFIG,
       },
       update: {
         deploymentId: "deployment-1",
         name: "Hello",
         description: "Greets the user",
+        executionConfig: EXECUTION_CONFIG,
       },
     });
 
@@ -198,6 +215,33 @@ describe("createDeployment", () => {
       error: {
         code: "INVALID_TASKS",
         message: "tasks must be a non-empty array",
+      },
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects deployment tasks without complete execution config", async () => {
+    const result = await createDeployment({
+      auth,
+      body: {
+        version: "v1",
+        image: "ghcr.io/cascade/worker:v1",
+        tasks: [
+          {
+            slug: "hello",
+          },
+        ],
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      status: 400,
+      error: {
+        code: "INVALID_TASK_EXECUTION_CONFIG",
+        message:
+          "task.executionConfig must contain schemaVersion, timeoutMs, retry, and queue settings",
       },
     });
 

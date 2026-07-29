@@ -9,6 +9,7 @@ type SourceRun = {
   deploymentId: string | null;
   status: RunStatus;
   payload: unknown;
+  executionConfig: unknown;
 };
 
 type ReplayedRun = {
@@ -35,6 +36,19 @@ const SOURCE_RUN_ID = "22222222-2222-4222-8222-222222222222";
 const REPLAYED_RUN_ID = "33333333-3333-4333-8333-333333333333";
 const TASK_ID = "11111111-1111-4111-8111-111111111111";
 const CREATED_AT = new Date("2026-01-01T00:00:00.000Z");
+const EXECUTION_CONFIG = {
+  schemaVersion: 1,
+  timeoutMs: 30_000,
+  retry: {
+    maxAttempts: 3,
+    delayMs: 1000,
+    exponentialBackoff: true,
+  },
+  queue: {
+    name: "hello",
+    concurrencyLimit: 2,
+  },
+};
 
 const auth = {
   apiKeyId: "api-key-1",
@@ -75,6 +89,7 @@ function createSourceRun(overrides: Partial<SourceRun> = {}): SourceRun {
     payload: {
       message: "hello",
     },
+    executionConfig: EXECUTION_CONFIG,
     ...overrides,
   };
 }
@@ -190,6 +205,31 @@ describe("replayTaskRun", () => {
     expect(enqueueTaskRun).not.toHaveBeenCalled();
   });
 
+  it("rejects legacy runs without execution config snapshots", async () => {
+    prisma.taskRun.findFirst.mockResolvedValue(
+      createSourceRun({
+        executionConfig: null,
+      }),
+    );
+
+    const result = await replayTaskRun({
+      auth,
+      runId: SOURCE_RUN_ID,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      status: 409,
+      error: {
+        code: "RUN_EXECUTION_CONFIG_MISSING",
+        message: "This legacy run has no execution configuration snapshot and cannot be replayed",
+      },
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(enqueueTaskRun).not.toHaveBeenCalled();
+  });
+
   it("creates a new pending run from a failed source run and enqueues it", async () => {
     prisma.taskRun.findFirst.mockResolvedValue(
       createSourceRun({
@@ -222,6 +262,7 @@ describe("replayTaskRun", () => {
         taskId: TASK_ID,
         deploymentId: "deployment-1",
         status: "PENDING",
+        executionConfig: EXECUTION_CONFIG,
         payload: {
           message: "hello",
         },

@@ -6,6 +6,7 @@ import {
   getDashboardApiKey,
   restoreDashboardApiKey,
 } from "./support/dashboard-environment.js";
+import { createExecutionConfig } from "./support/execution-config.js";
 
 const databaseURL =
   process.env.DATABASE_URL ?? "postgresql://cascade:cascade@localhost:15432/cascade";
@@ -53,12 +54,15 @@ async function createHelloTaskWithApiKey() {
 
   await ensureDashboardApiKey(environment.id);
 
+  const executionConfig = createExecutionConfig("hello");
+
   // Important: worker registry currently has only task id/slug "hello".
   const task = await prisma.task.create({
     data: {
       environmentId: environment.id,
       slug: "hello",
       name: "Hello",
+      executionConfig,
     },
   });
 
@@ -67,6 +71,7 @@ async function createHelloTaskWithApiKey() {
     project,
     environment,
     task,
+    executionConfig,
     apiKey: getDashboardApiKey(),
   };
 }
@@ -206,12 +211,13 @@ test("triggers, executes, persists, and displays a durable task run", async ({ p
 });
 
 test("dashboard cancels a pending task run", async ({ page }) => {
-  const { prisma, task } = await createHelloTaskWithApiKey();
+  const { prisma, task, executionConfig } = await createHelloTaskWithApiKey();
 
   const pendingRun = await prisma.taskRun.create({
     data: {
       taskId: task.id,
       status: "PENDING",
+      executionConfig,
     },
   });
 
@@ -249,12 +255,13 @@ test("dashboard cancels a pending task run", async ({ page }) => {
 });
 
 test("dashboard replays a completed task run", async ({ page }) => {
-  const { prisma, task } = await createHelloTaskWithApiKey();
+  const { prisma, task, executionConfig } = await createHelloTaskWithApiKey();
 
   const sourceRun = await prisma.taskRun.create({
     data: {
       taskId: task.id,
       status: "COMPLETED",
+      executionConfig,
       completedAt: new Date(),
     },
   });

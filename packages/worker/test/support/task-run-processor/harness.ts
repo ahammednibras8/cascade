@@ -25,32 +25,42 @@ type TransactionClient = {
 
 type TransactionCallback<T> = (tx: TransactionClient) => Promise<T>;
 
-type LocalTaskRetry = {
-  maxAttempts: number;
-  delayMs: number;
-  exponentialBackoff: boolean;
-};
-
-type LocalTaskQueue = {
-  name: string;
-  concurrencyLimit: number | null;
+type TaskExecutionConfig = {
+  schemaVersion: 1;
+  timeoutMs: number | null;
+  retry: {
+    maxAttempts: number;
+    delayMs: number;
+    exponentialBackoff: boolean;
+  };
+  queue: {
+    name: string;
+    concurrencyLimit: number | null;
+  };
 };
 
 const localTaskRun = vi.hoisted(() => vi.fn<(context: unknown) => Promise<unknown>>());
 
-const localTaskRetry = vi.hoisted(
-  (): LocalTaskRetry => ({
-    maxAttempts: 1,
-    delayMs: 0,
-    exponentialBackoff: false,
+const taskExecutionConfig = vi.hoisted(
+  (): TaskExecutionConfig => ({
+    schemaVersion: 1,
+    timeoutMs: 30_000,
+    retry: {
+      maxAttempts: 1,
+      delayMs: 0,
+      exponentialBackoff: false,
+    },
+    queue: {
+      name: "hello",
+      concurrencyLimit: null,
+    },
   }),
 );
 
-const localTaskQueue = vi.hoisted(
-  (): LocalTaskQueue => ({
-    name: "hello",
-    concurrencyLimit: null,
-  }),
+const parseTaskExecutionConfig = vi.hoisted(() =>
+  vi.fn<(value: unknown) => TaskExecutionConfig | null>((value) =>
+    value === taskExecutionConfig ? taskExecutionConfig : null,
+  ),
 );
 
 const prisma = vi.hoisted(() => ({
@@ -100,8 +110,8 @@ const releaseQueueConcurrency = vi.hoisted(() => vi.fn<(lease: unknown) => Promi
 
 export {
   enqueueTaskRun,
-  localTaskRetry,
   localTaskRun,
+  parseTaskExecutionConfig,
   maybeStoreJsonValue,
   prisma,
   releaseQueueConcurrency,
@@ -114,7 +124,7 @@ export {
   txTaskAttemptUpdate,
   txTaskEventCreate,
   txTaskRunUpdateMany,
-  localTaskQueue,
+  taskExecutionConfig,
   tryAcquireQueueConcurrency,
 };
 
@@ -127,6 +137,7 @@ vi.mock("@cascade/database", () => ({
 
 vi.mock("@cascade/core", () => ({
   packageName: "@cascade/core",
+  parseTaskExecutionConfig,
   createRootTraceContext: vi.fn<() => unknown>(() => ({
     traceId: TRACE_ID,
     spanId: SPAN_ID,
@@ -173,8 +184,15 @@ vi.mock("../../../src/tasks/registry.js", () => ({
       return {
         id: "hello",
         timeoutMs: 30_000,
-        retry: localTaskRetry,
-        queue: localTaskQueue,
+        retry: {
+          maxAttempts: 1,
+          delayMs: 0,
+          exponentialBackoff: false,
+        },
+        queue: {
+          name: "hello",
+          concurrencyLimit: null,
+        },
         run: localTaskRun,
       };
     }),
@@ -203,6 +221,7 @@ function createPendingTaskRun() {
     delayUntil: null,
     traceId: TRACE_ID,
     triggerSpanId: PARENT_SPAN_ID,
+    executionConfig: taskExecutionConfig,
     task: {
       slug: "hello",
       name: "Hello",
@@ -249,12 +268,12 @@ export function resetTaskRunProcessorHarness() {
   releaseQueueConcurrency.mockResolvedValue(undefined);
   enqueueTaskRun.mockResolvedValue(undefined);
 
-  localTaskRetry.maxAttempts = 1;
-  localTaskRetry.delayMs = 0;
-  localTaskRetry.exponentialBackoff = false;
-
-  localTaskQueue.name = "hello";
-  localTaskQueue.concurrencyLimit = null;
+  taskExecutionConfig.timeoutMs = 30_000;
+  taskExecutionConfig.retry.maxAttempts = 1;
+  taskExecutionConfig.retry.delayMs = 0;
+  taskExecutionConfig.retry.exponentialBackoff = false;
+  taskExecutionConfig.queue.name = "hello";
+  taskExecutionConfig.queue.concurrencyLimit = null;
 }
 
 function mockTransactionClient() {

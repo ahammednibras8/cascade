@@ -1,4 +1,4 @@
-import { Prisma, prisma } from "@cascade/database";
+import { prisma, type Prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../auth/api-key.js";
 import { getPayload } from "../lib/trigger-payload.js";
 import {
@@ -212,6 +212,7 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
       slug: true,
       name: true,
       deploymentId: true,
+      executionConfig: true,
     },
   });
 
@@ -222,6 +223,17 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
       error: {
         code: "TASK_NOT_FOUND",
         message: "Task was not found in this environment",
+      },
+    };
+  }
+
+  if (task.executionConfig === null) {
+    return {
+      ok: false,
+      status: 409,
+      error: {
+        code: "TASK_EXECUTION_CONFIG_MISSING",
+        message: "Task must be registered by a deployment with executionConfig before it can run",
       },
     };
   }
@@ -308,6 +320,7 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
           traceId: triggerTrace.traceId,
           triggerSpanId: triggerTrace.spanId,
           deploymentId: task.deploymentId,
+          executionConfig: task.executionConfig as Prisma.InputJsonValue,
         };
 
         if (storedPayload !== undefined) {

@@ -9,6 +9,7 @@ type DueSchedule = {
   task: {
     environmentId: string;
     deploymentId: string | null;
+    executionConfig: unknown;
   };
 };
 
@@ -40,6 +41,19 @@ const RUN_ID = "run-1";
 const TASK_ID = "task-1";
 const ENVIRONMENT_ID = "environment-1";
 const DEPLOYMENT_ID = "deployment-1";
+const EXECUTION_CONFIG = {
+  schemaVersion: 1,
+  timeoutMs: 30_000,
+  retry: {
+    maxAttempts: 3,
+    delayMs: 1000,
+    exponentialBackoff: true,
+  },
+  queue: {
+    name: "hello",
+    concurrencyLimit: 2,
+  },
+};
 
 const prisma = vi.hoisted(() => ({
   taskSchedule: {
@@ -85,6 +99,7 @@ function createSchedule(): DueSchedule {
     task: {
       environmentId: ENVIRONMENT_ID,
       deploymentId: DEPLOYMENT_ID,
+      executionConfig: EXECUTION_CONFIG,
     },
   };
 }
@@ -167,6 +182,7 @@ describe("sweepDueTaskSchedules", () => {
         scheduleId: SCHEDULE_ID,
         status: "PENDING",
         delayUntil: NEXT_RUN_AT,
+        executionConfig: EXECUTION_CONFIG,
         payload: {
           message: "scheduled hello",
         },
@@ -229,6 +245,25 @@ describe("sweepDueTaskSchedules", () => {
     expect(txTaskRunCreate).not.toHaveBeenCalled();
     expect(txTaskEventCreate).not.toHaveBeenCalled();
     expect(txTaskScheduleUpdate).not.toHaveBeenCalled();
+    expect(enqueueTaskRun).not.toHaveBeenCalled();
+  });
+
+  it("throws when a due schedule task has no execution config", async () => {
+    prisma.taskSchedule.findMany.mockResolvedValue([
+      {
+        ...createSchedule(),
+        task: {
+          ...createSchedule().task,
+          executionConfig: null,
+        },
+      },
+    ]);
+
+    await expect(sweepDueTaskSchedules(NOW)).rejects.toThrow(
+      "Scheduled task task-1 has no execution configuration. Redeploy the task.",
+    );
+
+    expect(txTaskRunCreate).not.toHaveBeenCalled();
     expect(enqueueTaskRun).not.toHaveBeenCalled();
   });
 });

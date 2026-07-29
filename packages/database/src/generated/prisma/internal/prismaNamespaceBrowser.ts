@@ -124,6 +124,7 @@ export const TaskScalarFieldEnum = {
   slug: 'slug',
   name: 'name',
   description: 'description',
+  executionConfig: 'executionConfig',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -144,6 +145,7 @@ export const TaskRunScalarFieldEnum = {
   payload: 'payload',
   output: 'output',
   error: 'error',
+  executionConfig: 'executionConfig',
   delayUntil: 'delayUntil',
   startedAt: 'startedAt',
   lastHeartbeatAt: 'lastHeartbeatAt',

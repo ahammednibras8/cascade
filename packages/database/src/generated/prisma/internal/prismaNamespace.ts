@@ -1176,6 +1176,7 @@ export const TaskScalarFieldEnum = {
   slug: 'slug',
   name: 'name',
   description: 'description',
+  executionConfig: 'executionConfig',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1196,6 +1197,7 @@ export const TaskRunScalarFieldEnum = {
   payload: 'payload',
   output: 'output',
   error: 'error',
+  executionConfig: 'executionConfig',
   delayUntil: 'delayUntil',
   startedAt: 'startedAt',
   lastHeartbeatAt: 'lastHeartbeatAt',
@@ -1359,20 +1361,6 @@ export type ListEnumEnvironmentTypeFieldRefInput<$PrismaModel> = FieldRefInputTy
 
 
 /**
- * Reference to a field of type 'TaskRunStatus'
- */
-export type EnumTaskRunStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TaskRunStatus'>
-    
-
-
-/**
- * Reference to a field of type 'TaskRunStatus[]'
- */
-export type ListEnumTaskRunStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TaskRunStatus[]'>
-    
-
-
-/**
  * Reference to a field of type 'Json'
  */
 export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
@@ -1383,6 +1371,20 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'TaskRunStatus'
+ */
+export type EnumTaskRunStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TaskRunStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'TaskRunStatus[]'
+ */
+export type ListEnumTaskRunStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TaskRunStatus[]'>
     
 
 

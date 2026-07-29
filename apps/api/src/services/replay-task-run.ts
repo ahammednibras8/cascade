@@ -1,6 +1,6 @@
 import type { ApiAuthContext } from "../auth/api-key.js";
 import { isUuid } from "../lib/route-params.js";
-import { prisma, Prisma } from "@cascade/database";
+import { prisma, type Prisma } from "@cascade/database";
 import { enqueueTaskRun } from "../queue/task-runs.js";
 
 type ReplayTaskRunInput = {
@@ -63,6 +63,7 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
       deploymentId: true,
       status: true,
       payload: true,
+      executionConfig: true,
     },
   });
 
@@ -73,6 +74,17 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
       error: {
         code: "RUN_NOT_FOUND",
         message: "Task run was not found in this environment",
+      },
+    };
+  }
+
+  if (sourceRun.executionConfig === null) {
+    return {
+      ok: false,
+      status: 409,
+      error: {
+        code: "RUN_EXECUTION_CONFIG_MISSING",
+        message: "This legacy run has no execution configuration snapshot and cannot be replayed",
       },
     };
   }
@@ -93,6 +105,7 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
       taskId: sourceRun.taskId,
       deploymentId: sourceRun.deploymentId,
       status: "PENDING",
+      executionConfig: sourceRun.executionConfig as Prisma.InputJsonValue,
     };
 
     if (sourceRun.payload !== null) {

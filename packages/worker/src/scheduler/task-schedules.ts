@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 
-import { prisma, Prisma } from "@cascade/database";
+import { prisma, type Prisma } from "@cascade/database";
 import { enqueueTaskRun } from "../queue/task-runs.js";
 
 const SCHEDULE_BATCH_SIZE = 50;
@@ -40,6 +40,7 @@ export async function sweepDueTaskSchedules(now = new Date()) {
         select: {
           environmentId: true,
           deploymentId: true,
+          executionConfig: true,
         },
       },
     },
@@ -78,12 +79,19 @@ export async function sweepDueTaskSchedules(now = new Date()) {
         return null;
       }
 
+      if (schedule.task.executionConfig === null) {
+        throw new Error(
+          `Scheduled task ${schedule.taskId} has no execution configuration. Redeploy the task.`,
+        );
+      }
+
       const runData: Prisma.TaskRunUncheckedCreateInput = {
         taskId: schedule.taskId,
         deploymentId: schedule.task.deploymentId,
         scheduleId: schedule.id,
         status: "PENDING",
         delayUntil: schedule.nextRunAt,
+        executionConfig: schedule.task.executionConfig as Prisma.InputJsonValue,
       };
 
       if (schedule.payload !== null) {

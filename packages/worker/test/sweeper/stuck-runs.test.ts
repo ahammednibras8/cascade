@@ -37,8 +37,6 @@ const txTaskAttemptUpdate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<un
 
 const txTaskEventCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
 
-const taskRegistryGet = vi.hoisted(() => vi.fn<(taskSlug: string) => unknown>());
-
 const enqueueTaskRun = vi.hoisted(() =>
   vi.fn<(message: unknown, options: unknown) => Promise<void>>(),
 );
@@ -50,26 +48,36 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-vi.mock("../../src/tasks/registry.js", () => ({
-  taskRegistry: {
-    get: taskRegistryGet,
-  },
-}));
-
 vi.mock("../../src/queue/task-runs.js", () => ({
   enqueueTaskRun,
 }));
 
 const { sweepStuckTaskRuns } = await import("../../src/sweeper/stuck-runs.js");
 
-function createStuckRun(attemptNumber = 1) {
+function createExecutionConfig(maxAttempts = 3) {
+  return {
+    schemaVersion: 1,
+    timeoutMs: 30_000,
+    retry: {
+      maxAttempts,
+      delayMs: 1000,
+      exponentialBackoff: true,
+    },
+    queue: {
+      name: "hello",
+      concurrencyLimit: 2,
+    },
+  };
+}
+
+function createStuckRun(attemptNumber = 1, executionConfig: unknown = createExecutionConfig()) {
   return {
     id: RUN_ID,
     taskId: TASK_ID,
     deploymentId: DEPLOYMENT_ID,
+    executionConfig,
     lastHeartbeatAt: LAST_HEARTBEAT_AT,
     task: {
-      slug: "hello",
       environmentId: ENVIRONMENT_ID,
     },
     attempts: [
@@ -113,16 +121,7 @@ describe("sweepStuckTaskRuns", () => {
   });
 
   it("marks a stuck executing run failed when no retry attempts remain", async () => {
-    prisma.taskRun.findMany.mockResolvedValue([createStuckRun(1)]);
-
-    taskRegistryGet.mockReturnValue({
-      id: "hello",
-      retry: {
-        maxAttempts: 1,
-        delayMs: 1000,
-        exponentialBackoff: true,
-      },
-    });
+    prisma.taskRun.findMany.mockResolvedValue([createStuckRun(1, createExecutionConfig(1))]);
 
     const sweptCount = await sweepStuckTaskRuns(NOW);
 
@@ -206,15 +205,6 @@ describe("sweepStuckTaskRuns", () => {
 
   it("marks a stuck executing run pending and enqueues a retry when attempts remain", async () => {
     prisma.taskRun.findMany.mockResolvedValue([createStuckRun(2)]);
-
-    taskRegistryGet.mockReturnValue({
-      id: "hello",
-      retry: {
-        maxAttempts: 3,
-        delayMs: 1000,
-        exponentialBackoff: true,
-      },
-    });
 
     const sweptCount = await sweepStuckTaskRuns(NOW);
 

@@ -1,4 +1,4 @@
-import type { TaskDefinition } from "@cascade/core";
+import type { TaskExecutionConfig } from "@cascade/core";
 import { QUEUE_CONCURRENCY_RETRY_MS } from "../config.js";
 import {
   tryAcquireQueueConcurrency,
@@ -24,11 +24,11 @@ type ConcurrencyResult =
 export async function acquireTaskRunConcurrency(input: {
   message: TaskRunQueueMessage;
   taskRun: ProcessableTaskRun;
-  localTask: TaskDefinition | undefined;
+  executionConfig: TaskExecutionConfig;
 }): Promise<ConcurrencyResult> {
-  const localTask = input.localTask;
+  const concurrencyLimit = input.executionConfig.queue.concurrencyLimit;
 
-  if (!localTask || localTask.queue.concurrencyLimit === null) {
+  if (concurrencyLimit === null) {
     return {
       status: "not-required",
       lease: null,
@@ -37,9 +37,9 @@ export async function acquireTaskRunConcurrency(input: {
 
   const lease = await tryAcquireQueueConcurrency({
     environmentId: input.message.environmentId,
-    queueName: localTask.queue.name,
+    queueName: input.executionConfig.queue.name,
     runId: input.taskRun.id,
-    limit: localTask.queue.concurrencyLimit,
+    limit: concurrencyLimit,
   });
 
   if (lease) {
@@ -50,16 +50,15 @@ export async function acquireTaskRunConcurrency(input: {
   }
 
   const retryAt = new Date(Date.now() + QUEUE_CONCURRENCY_RETRY_MS);
-  const deferred = await deferTaskRun({
+
+  await deferTaskRun({
     taskRunId: input.taskRun.id,
     retryAt,
   });
 
-  if (deferred.count === 1) {
-    await enqueueTaskRun(input.message, {
-      delayMs: QUEUE_CONCURRENCY_RETRY_MS,
-    });
-  }
+  await enqueueTaskRun(input.message, {
+    delayMs: QUEUE_CONCURRENCY_RETRY_MS,
+  });
 
   return {
     status: "deferred",

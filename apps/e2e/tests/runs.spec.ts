@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { getDashboardTestEnvironment } from "./support/dashboard-environment.js";
+import { createExecutionConfig } from "./support/execution-config.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -37,12 +38,14 @@ test("shows task runs in the dashboard table", async ({ page }) => {
   const prisma = await getPrisma();
   const { environment, project } = await getDashboardTestEnvironment();
   const suffix = randomUUID().slice(0, 8);
+  const executionConfig = createExecutionConfig(`e2e-hello-${suffix}`);
 
   const task = await prisma.task.create({
     data: {
       environmentId: environment.id,
       slug: `e2e-hello-${suffix}`,
       name: "E2E Hello Task",
+      executionConfig,
     },
   });
 
@@ -52,6 +55,7 @@ test("shows task runs in the dashboard table", async ({ page }) => {
     data: {
       taskId: task.id,
       status: "PENDING",
+      executionConfig,
       payload: {
         message: "hello from e2e",
       },

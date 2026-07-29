@@ -18,6 +18,19 @@ const RUN_ID = "22222222-2222-4222-8222-222222222222";
 const CREATED_AT = new Date("2026-01-01T00:00:00.000Z");
 const TRACE_ID = "11111111111111111111111111111111";
 const SPAN_ID = "2222222222222222";
+const EXECUTION_CONFIG = {
+  schemaVersion: 1,
+  timeoutMs: 30_000,
+  retry: {
+    maxAttempts: 3,
+    delayMs: 1000,
+    exponentialBackoff: true,
+  },
+  queue: {
+    name: "hello",
+    concurrencyLimit: 2,
+  },
+};
 
 const auth = {
   apiKeyId: "api-key-1",
@@ -121,6 +134,7 @@ function createTask() {
     slug: "hello",
     name: "Hello",
     deploymentId: "deployment-1",
+    executionConfig: EXECUTION_CONFIG,
   };
 }
 
@@ -300,6 +314,7 @@ describe("triggerTaskRun", () => {
           traceId: TRACE_ID,
           triggerSpanId: SPAN_ID,
           deploymentId: "deployment-1",
+          executionConfig: EXECUTION_CONFIG,
           payload: {
             message: "hello",
           },
@@ -368,6 +383,37 @@ describe("triggerTaskRun", () => {
     expect(result.status).toBe(200);
     expect(result.idempotentReplayed).toBe(true);
     expect(result.taskRun.idempotentReplay).toBe(true);
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(enqueueTaskRun).not.toHaveBeenCalled();
+  });
+
+  it("rejects tasks without an execution config snapshot source", async () => {
+    prisma.task.findFirst.mockResolvedValue({
+      ...createTask(),
+      executionConfig: null,
+    });
+
+    const result = await triggerTaskRun({
+      auth,
+      taskId: TASK_ID,
+      body: {
+        payload: {
+          message: "hello",
+        },
+      },
+      idempotencyKey: undefined,
+      traceparent: undefined,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      status: 409,
+      error: {
+        code: "TASK_EXECUTION_CONFIG_MISSING",
+        message: "Task must be registered by a deployment with executionConfig before it can run",
+      },
+    });
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(enqueueTaskRun).not.toHaveBeenCalled();

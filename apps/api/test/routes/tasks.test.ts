@@ -13,6 +13,20 @@ import {
   triggerTaskRun,
 } from "./tasks-router-harness.js";
 
+const EXECUTION_CONFIG = {
+  schemaVersion: 1,
+  timeoutMs: 30_000,
+  retry: {
+    maxAttempts: 3,
+    delayMs: 1000,
+    exponentialBackoff: true,
+  },
+  queue: {
+    name: "hello",
+    concurrencyLimit: 2,
+  },
+};
+
 describe("tasksRouter write routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -46,6 +60,7 @@ describe("tasksRouter write routes", () => {
         {
           slug: "hello",
           name: "Hello",
+          executionConfig: EXECUTION_CONFIG,
         },
       ],
     };

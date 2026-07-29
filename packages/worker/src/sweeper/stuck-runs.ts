@@ -1,7 +1,7 @@
 /* eslint-disable no-await-in-loop */
 
+import { parseTaskExecutionConfig } from "@cascade/core";
 import { prisma, Prisma } from "@cascade/database";
-import { taskRegistry } from "../tasks/registry.js";
 import { getRetryDelayMs } from "../retry.js";
 import { enqueueTaskRun } from "../queue/task-runs.js";
 
@@ -41,10 +41,10 @@ export async function sweepStuckTaskRuns(now = new Date()) {
       id: true,
       taskId: true,
       deploymentId: true,
+      executionConfig: true,
       lastHeartbeatAt: true,
       task: {
         select: {
-          slug: true,
           environmentId: true,
         },
       },
@@ -67,11 +67,13 @@ export async function sweepStuckTaskRuns(now = new Date()) {
 
   for (const stuckRun of stuckRuns) {
     const latestAttempt = stuckRun.attempts[0];
-    const localTask = taskRegistry.get(stuckRun.task.slug);
+    const executionConfig = parseTaskExecutionConfig(stuckRun.executionConfig);
     const attemptNumber = latestAttempt?.attemptNumber ?? 1;
-    const shouldRetry = Boolean(localTask && attemptNumber < localTask.retry.maxAttempts);
+    const shouldRetry = Boolean(
+      executionConfig && attemptNumber < executionConfig.retry.maxAttempts,
+    );
     const retryDelayMs =
-      shouldRetry && localTask ? getRetryDelayMs(attemptNumber, localTask.retry) : 0;
+      executionConfig && shouldRetry ? getRetryDelayMs(attemptNumber, executionConfig.retry) : 0;
 
     const retryAt = shouldRetry ? new Date(now.getTime() + retryDelayMs) : null;
 
@@ -144,7 +146,7 @@ export async function sweepStuckTaskRuns(now = new Date()) {
             reason: "STUCK_RUN",
             attemptNumber,
             nextAttemptNumber: shouldRetry ? attemptNumber + 1 : null,
-            maxAttempts: localTask?.retry.maxAttempts ?? null,
+            maxAttempts: executionConfig?.retry.maxAttempts ?? null,
             delayMs: retryDelayMs,
             error,
           },

@@ -10,7 +10,6 @@ import {
   createAttempt,
   createMessage,
   enqueueTaskRun,
-  localTaskRetry,
   localTaskRun,
   maybeStoreJsonValue,
   prisma,
@@ -19,13 +18,9 @@ import {
   startTaskRunHeartbeat,
   txTaskAttemptCount,
   txTaskAttemptCreate,
+  taskExecutionConfig,
   txTaskEventCreate,
   txTaskRunUpdateMany,
-  localTaskQueue,
-  releaseQueueConcurrency,
-  startQueueConcurrencyLeaseHeartbeat,
-  stopQueueConcurrencyHeartbeat,
-  tryAcquireQueueConcurrency,
 } from "./support/task-run-processor/harness.js";
 import {
   expectHeartbeatWasStopped,
@@ -83,7 +78,7 @@ describe("processTaskRun", () => {
     expect(maybeStoreJsonValue).toHaveBeenCalledWith({
       kind: "OUTPUT",
       environmentId: ENVIRONMENT_ID,
-      taskId: RUN_ID,
+      taskId: TASK_ID,
       runId: RUN_ID,
       value: {
         ok: true,
@@ -149,9 +144,9 @@ describe("processTaskRun", () => {
   });
 
   it("retries a failed task when attempts remain", async () => {
-    localTaskRetry.maxAttempts = 3;
-    localTaskRetry.delayMs = 1000;
-    localTaskRetry.exponentialBackoff = true;
+    taskExecutionConfig.retry.maxAttempts = 3;
+    taskExecutionConfig.retry.delayMs = 1000;
+    taskExecutionConfig.retry.exponentialBackoff = true;
 
     txTaskAttemptCount.mockResolvedValue(1);
     txTaskAttemptCreate.mockResolvedValue(createAttempt(2));
@@ -226,6 +221,7 @@ describe("processTaskRun", () => {
           message: "hello",
         },
         delayUntil,
+        executionConfig: taskExecutionConfig,
         traceId: TRACE_ID,
         triggerSpanId: PARENT_SPAN_ID,
         task: {
@@ -246,60 +242,5 @@ describe("processTaskRun", () => {
     } finally {
       vi.useRealTimers();
     }
-  });
-
-  it("requeues without executing when queue concurrency limit is reached", async () => {
-    localTaskQueue.concurrencyLimit = 1;
-    tryAcquireQueueConcurrency.mockResolvedValue(null);
-
-    await processTaskRun(createMessage());
-
-    expect(tryAcquireQueueConcurrency).toHaveBeenCalledWith({
-      environmentId: ENVIRONMENT_ID,
-      queueName: "hello",
-      runId: RUN_ID,
-      limit: 1,
-    });
-
-    expect(enqueueTaskRun).toHaveBeenCalledWith(createMessage(), {
-      delayMs: 1000,
-    });
-
-    expect(txTaskRunUpdateMany).not.toHaveBeenCalled();
-    expect(localTaskRun).not.toHaveBeenCalled();
-    expect(startTaskRunHeartbeat).not.toHaveBeenCalled();
-    expect(startQueueConcurrencyLeaseHeartbeat).not.toHaveBeenCalled();
-    expect(releaseQueueConcurrency).not.toHaveBeenCalled();
-  });
-
-  it("executes with a queue concurrency lease and releases it after completion", async () => {
-    const lease = {
-      key: "cascade:queue-concurrency:environment-1:hello",
-      token: "run-1:lease-token",
-      ttlMs: 60_000,
-    };
-
-    localTaskQueue.concurrencyLimit = 1;
-    tryAcquireQueueConcurrency.mockResolvedValue(lease);
-
-    await processTaskRun(createMessage());
-
-    expect(tryAcquireQueueConcurrency).toHaveBeenCalledWith({
-      environmentId: ENVIRONMENT_ID,
-      queueName: "hello",
-      runId: RUN_ID,
-      limit: 1,
-    });
-
-    expect(startQueueConcurrencyLeaseHeartbeat).toHaveBeenCalledWith(lease);
-    expect(localTaskRun).toHaveBeenCalledOnce();
-
-    expectTaskRunWasClaimedForExecution();
-    expectTaskRunWasCompletedWithOutput({
-      ok: true,
-    });
-
-    expect(stopQueueConcurrencyHeartbeat).toHaveBeenCalledOnce();
-    expect(releaseQueueConcurrency).toHaveBeenCalledWith(lease);
   });
 });

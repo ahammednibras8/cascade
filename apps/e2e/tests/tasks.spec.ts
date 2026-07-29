@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { ensureDashboardApiKey, restoreDashboardApiKey } from "./support/dashboard-environment.js";
+import { createExecutionConfig } from "./support/execution-config.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -65,6 +66,8 @@ test("shows registered tasks in the dashboard table", async ({ page }) => {
   }
 
   await ensureDashboardApiKey(environment.id);
+  const taskSlug = `e2e-task-${suffix}`;
+  const executionConfig = createExecutionConfig(taskSlug);
 
   const deployment = await prisma.deployment.create({
     data: {
@@ -79,9 +82,10 @@ test("shows registered tasks in the dashboard table", async ({ page }) => {
     data: {
       environmentId: environment.id,
       deploymentId: deployment.id,
-      slug: `e2e-task-${suffix}`,
+      slug: taskSlug,
       name: "E2E Task List Task",
       description: "Visible from the task list e2e test",
+      executionConfig,
     },
   });
 
@@ -90,6 +94,7 @@ test("shows registered tasks in the dashboard table", async ({ page }) => {
       taskId: task.id,
       deploymentId: deployment.id,
       status: "COMPLETED",
+      executionConfig,
       payload: {
         source: "tasks e2e",
       },
