@@ -4,7 +4,17 @@ import type { TaskRunQueueMessage } from "../src/queue/task-runs.js";
 
 const popTaskRunMessage = vi.hoisted(() => vi.fn<() => Promise<TaskRunQueueMessage | null>>());
 
-const processTaskRun = vi.hoisted(() => vi.fn<(message: TaskRunQueueMessage) => Promise<void>>());
+const taskRegistry = vi.hoisted(() => ({
+  get: vi.fn<(id: string) => unknown>(),
+  has: vi.fn<(id: string) => boolean>(),
+  list: vi.fn<() => unknown[]>(),
+}));
+
+const loadTaskRegistry = vi.hoisted(() => vi.fn<() => Promise<unknown>>());
+
+const processTaskRun = vi.hoisted(() =>
+  vi.fn<(message: TaskRunQueueMessage, taskRegistry: unknown) => Promise<void>>(),
+);
 
 const taskRunQueueRedis = vi.hoisted(() => ({
   quit: vi.fn<() => Promise<void>>(),
@@ -38,6 +48,10 @@ vi.mock("../src/queue/task-runs.js", () => ({
 
 vi.mock("../src/task-run-processor.js", () => ({
   processTaskRun,
+}));
+
+vi.mock("../src/tasks/load-registry.js", () => ({
+  loadTaskRegistry,
 }));
 
 vi.mock("../src/timers/stuck-run-sweeper.js", () => ({
@@ -79,6 +93,7 @@ describe("runWorker", () => {
     startTaskScheduleScheduler.mockReturnValue(stopTaskScheduleScheduler);
 
     processTaskRun.mockResolvedValue(undefined);
+    loadTaskRegistry.mockResolvedValue(taskRegistry);
     taskRunQueueRedis.quit.mockResolvedValue(undefined);
     prisma.$disconnect.mockResolvedValue(undefined);
   });
@@ -99,8 +114,9 @@ describe("runWorker", () => {
     expect(startPendingRunSweeper).toHaveBeenCalledOnce();
     expect(startTaskScheduleScheduler).toHaveBeenCalledOnce();
 
-    expect(popTaskRunMessage).toHaveBeenCalledTimes(2);
-    expect(processTaskRun).toHaveBeenCalledWith(message);
+    expect(loadTaskRegistry).toHaveBeenCalledOnce();
+    expect(popTaskRunMessage).toHaveBeenCalledOnce();
+    expect(processTaskRun).toHaveBeenCalledWith(message, taskRegistry);
 
     expect(stopStuckRunSweeper).toHaveBeenCalledOnce();
     expect(stopPendingRunSweeper).toHaveBeenCalledOnce();

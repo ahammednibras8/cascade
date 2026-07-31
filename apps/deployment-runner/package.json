@@ -6,7 +6,8 @@
     "dev": "node --env-file=../../.env --conditions=development --import tsx --watch src/index.ts",
     "start": "node dist/index.js",
     "build": "tsc --project tsconfig.build.json",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@cascade/database": "workspace:*"
@@ -14,6 +15,7 @@
   "devDependencies": {
     "@types/node": "24.13.3",
     "tsx": "4.23.1",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
   }
 }

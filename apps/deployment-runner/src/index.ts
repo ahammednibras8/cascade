@@ -3,9 +3,15 @@ import { deploymentRunnerConfig } from "./config.js";
 import { reconcileDeployments } from "./reconcile-deployments.js";
 
 let shuttingDown = false;
+let resolveShutdown: (() => void) | undefined;
+
+const shutdown = new Promise<void>((resolve) => {
+  resolveShutdown = resolve;
+});
 
 function requestShutdown() {
   shuttingDown = true;
+  resolveShutdown?.();
 }
 
 process.on("SIGINT", requestShutdown);
@@ -32,11 +38,7 @@ async function main() {
 
   interval.unref();
 
-  while (!shuttingDown) {
-    await new Promise((resolve) => {
-      setTimeout(resolve, 250);
-    });
-  }
+  await shutdown;
 
   clearInterval(interval);
 

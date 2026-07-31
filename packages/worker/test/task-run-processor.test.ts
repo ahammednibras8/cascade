@@ -19,6 +19,7 @@ import {
   txTaskAttemptCount,
   txTaskAttemptCreate,
   taskExecutionConfig,
+  taskRegistry,
   txTaskEventCreate,
   txTaskRunUpdateMany,
 } from "./support/task-run-processor/harness.js";
@@ -38,7 +39,7 @@ describe("processTaskRun", () => {
   });
 
   it("executes the matching local task and completes the run", async () => {
-    await processTaskRun(createMessage());
+    await processTaskRun(createMessage(), taskRegistry);
 
     expect(prisma.taskRun.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -112,7 +113,7 @@ describe("processTaskRun", () => {
   it("marks the run failed when the matching local task throws", async () => {
     localTaskRun.mockRejectedValue(new Error("Task exploded"));
 
-    await processTaskRun(createMessage());
+    await processTaskRun(createMessage(), taskRegistry);
 
     expectTaskRunWasClaimedForExecution();
     expectTaskRunWasFailed("Task exploded");
@@ -136,7 +137,7 @@ describe("processTaskRun", () => {
   it("stores DbNull when the local task returns undefined", async () => {
     localTaskRun.mockResolvedValue(undefined);
 
-    await processTaskRun(createMessage());
+    await processTaskRun(createMessage(), taskRegistry);
 
     expect(maybeStoreJsonValue).not.toHaveBeenCalled();
     expectTaskRunWasCompletedWithOutput("DB_NULL");
@@ -152,7 +153,7 @@ describe("processTaskRun", () => {
     txTaskAttemptCreate.mockResolvedValue(createAttempt(2));
     localTaskRun.mockRejectedValue(new Error("Temporary failure"));
 
-    await processTaskRun(createMessage());
+    await processTaskRun(createMessage(), taskRegistry);
 
     expectTaskRunWasClaimedForExecution();
     expectTaskAttemptWasStarted(2);
@@ -230,7 +231,7 @@ describe("processTaskRun", () => {
         },
       });
 
-      await processTaskRun(createMessage());
+      await processTaskRun(createMessage(), taskRegistry);
 
       expect(enqueueTaskRun).toHaveBeenCalledWith(createMessage(), {
         delayMs: 60_000,

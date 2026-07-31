@@ -9,6 +9,7 @@ import {
   resetTaskRunProcessorHarness,
   startTaskRunHeartbeat,
   stopHeartbeat,
+  taskRegistry,
   txTaskAttemptUpdate,
   txTaskRunUpdateMany,
 } from "./support/task-run-processor/harness.js";
@@ -23,7 +24,7 @@ describe("processTaskRun cancellation", () => {
       status: "CANCELED",
     });
 
-    await processTaskRun(createMessage());
+    await processTaskRun(createMessage(), taskRegistry);
 
     expect(txTaskRunUpdateMany).toHaveBeenCalledTimes(1);
     expect(localTaskRun).not.toHaveBeenCalled();
@@ -41,7 +42,7 @@ describe("processTaskRun cancellation", () => {
         status: "CANCELED",
       });
 
-    await processTaskRun(createMessage());
+    await processTaskRun(createMessage(), taskRegistry);
 
     expect(localTaskRun).toHaveBeenCalledOnce();
     expect(startTaskRunHeartbeat).toHaveBeenCalledWith(RUN_ID);

@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 import type { TaskRunQueueMessage } from "../../../src/queue/task-runs.js";
+import type { LoadedTaskRegistry } from "../../../src/tasks/load-registry.js";
 
 export const RUN_ID = "run-1";
 export const TASK_ID = "task-1";
@@ -174,30 +175,37 @@ vi.mock("../../../src/timers/task-run-heartbeat.js", () => ({
   startTaskRunHeartbeat,
 }));
 
-vi.mock("../../../src/tasks/registry.js", () => ({
-  taskRegistry: {
-    get: vi.fn<(id: string) => unknown>((id) => {
-      if (id !== "hello") {
-        return undefined;
-      }
+export const taskRegistry = {
+  get(id: string) {
+    if (id !== "hello") {
+      return undefined;
+    }
 
-      return {
-        id: "hello",
-        timeoutMs: 30_000,
-        retry: {
-          maxAttempts: 1,
-          delayMs: 0,
-          exponentialBackoff: false,
-        },
-        queue: {
-          name: "hello",
-          concurrencyLimit: null,
-        },
-        run: localTaskRun,
-      };
-    }),
+    return {
+      id: "hello",
+      timeoutMs: 30_000,
+      retry: {
+        maxAttempts: 1,
+        delayMs: 0,
+        exponentialBackoff: false,
+      },
+      queue: {
+        name: "hello",
+        concurrencyLimit: null,
+      },
+      run: localTaskRun,
+    };
   },
-}));
+
+  has(id: string) {
+    return id === "hello";
+  },
+
+  list() {
+    const task = this.get("hello");
+    return task ? [task] : [];
+  },
+} as LoadedTaskRegistry;
 
 export const { processTaskRun } = await import("../../../src/task-run-processor.js");
 

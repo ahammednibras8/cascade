@@ -7,6 +7,7 @@ import {
   parseTaskExecutionConfig,
   processTaskRun,
   resetTaskRunProcessorHarness,
+  taskRegistry,
   txTaskAttemptUpdate,
   txTaskEventCreate,
   txTaskRunUpdateMany,
@@ -20,7 +21,7 @@ describe("processTaskRun execution config", () => {
   it("fails the run without executing local code when the snapshot is invalid", async () => {
     parseTaskExecutionConfig.mockReturnValueOnce(null);
 
-    await processTaskRun(createMessage());
+    await processTaskRun(createMessage(), taskRegistry);
 
     expect(localTaskRun).not.toHaveBeenCalled();
 

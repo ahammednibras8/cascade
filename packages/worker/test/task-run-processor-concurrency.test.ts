@@ -12,6 +12,7 @@ import {
   startTaskRunHeartbeat,
   stopQueueConcurrencyHeartbeat,
   taskExecutionConfig,
+  taskRegistry,
   txTaskRunUpdateMany,
   tryAcquireQueueConcurrency,
 } from "./support/task-run-processor/harness.js";
@@ -29,7 +30,7 @@ describe("processTaskRun queue concurrency", () => {
     taskExecutionConfig.queue.concurrencyLimit = 1;
     tryAcquireQueueConcurrency.mockResolvedValue(null);
 
-    await processTaskRun(createMessage());
+    await processTaskRun(createMessage(), taskRegistry);
 
     expect(tryAcquireQueueConcurrency).toHaveBeenCalledWith({
       environmentId: ENVIRONMENT_ID,
@@ -59,7 +60,7 @@ describe("processTaskRun queue concurrency", () => {
     taskExecutionConfig.queue.concurrencyLimit = 1;
     tryAcquireQueueConcurrency.mockResolvedValue(lease);
 
-    await processTaskRun(createMessage());
+    await processTaskRun(createMessage(), taskRegistry);
 
     expect(tryAcquireQueueConcurrency).toHaveBeenCalledWith({
       environmentId: ENVIRONMENT_ID,

@@ -47,9 +47,14 @@ export async function runDocker(args: string[]) {
 
 export async function inspectContainer(name: string) {
   try {
-    const output = await runDocker(["inspect", "--format", "{{.Id}} {{.State.Running}}", name]);
+    const output = await runDocker([
+      "inspect",
+      "--format",
+      "{{.Id}} {{.State.Running}} {{.State.Restarting}}",
+      name,
+    ]);
 
-    const [id, running] = output.split(" ");
+    const [id, running, restarting] = output.split(" ");
 
     if (!id) {
       return null;
@@ -58,6 +63,7 @@ export async function inspectContainer(name: string) {
     return {
       id,
       running: running === "true",
+      restarting: restarting === "true",
     };
   } catch (error) {
     if (error instanceof DockerCommandError && error.exitCode === 1) {

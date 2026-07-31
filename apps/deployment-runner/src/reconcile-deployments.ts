@@ -29,7 +29,7 @@ function getDeploymentWorkerEnvironment(deploymentId: string) {
     S3_ACCESS_KEY_ID: deploymentRunnerConfig.s3AccessKeyId,
     S3_SECRET_ACCESS_KEY: deploymentRunnerConfig.s3SecretAccessKey,
     S3_BUCKET: deploymentRunnerConfig.s3Bucket,
-    S3_FORCE_PATH_STYLE: deploymentRunnerConfig.s3Bucket,
+    S3_FORCE_PATH_STYLE: deploymentRunnerConfig.s3ForcePathStyle,
     LARGE_PAYLOAD_THRESHOLD_BYTES: deploymentRunnerConfig.largePayloadThresholdBytes,
   };
 
@@ -81,7 +81,7 @@ async function ensureDeploymentContainerRunning(
   const containerName = getContainerName(deployment.id);
   const existingContainer = await inspectContainer(containerName);
 
-  if (existingContainer?.running) {
+  if (existingContainer?.running && !existingContainer.restarting) {
     await prisma.deployment.update({
       where: {
         id: deployment.id,
@@ -206,11 +206,11 @@ async function reconcileInactiveDeployment(deployment: Deployment) {
 export async function reconcileDeployments() {
   const deployments = await getDeployments();
 
-  for (const deployment of deployments) {
-    if (deployment.status === "ACTIVE") {
-      await reconcileActiveDeployment(deployment);
-    } else {
-      await reconcileInactiveDeployment(deployment);
-    }
-  }
+  await Promise.all(
+    deployments.map((deployment) =>
+      deployment.status === "ACTIVE"
+        ? reconcileActiveDeployment(deployment)
+        : reconcileInactiveDeployment(deployment),
+    ),
+  );
 }
