@@ -142,6 +142,7 @@ services:
       QUEUE_REDIS_URL: redis://redis:6379
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
       CASCADE_DEPLOYMENT_ID: ${CASCADE_DEPLOYMENT_ID:-local}
+      CASCADE_TASK_MODULE: ./tasks/local.js
       S3_ENDPOINT: http://rustfs:9000
       S3_REGION: ${RUSTFS_REGION:-us-east-1}
       S3_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:-cascade}
@@ -149,6 +150,41 @@ services:
       S3_BUCKET: ${S3_BUCKET:-cascade-task-payloads}
       S3_FORCE_PATH_STYLE: "true"
       LARGE_PAYLOAD_THRESHOLD_BYTES: ${LARGE_PAYLOAD_THRESHOLD_BYTES:-262144}
+
+  deployment-runner:
+    profiles:
+      - app
+    image: cascade-deployment-runner:local
+    build:
+      context: ..
+      dockerfile: apps/deployment-runner/Dockerfile
+    container_name: cascade-deployment-runner
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:-cascade}@postgres:5432/${POSTGRES_DB:-cascade}
+      DEPLOYMENT_DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:-cascade}@postgres:5432/${POSTGRES_DB:-cascade}
+      DEPLOYMENT_QUEUE_REDIS_URL: redis://redis:6379
+      DEPLOYMENT_DOCKER_NETWORK: cascade_default
+      DEPLOYMENT_WORKER_CONCURRENCY: ${DEPLOYMENT_WORKER_CONCURRENCY:-2}
+      DEPLOYMENT_RUNNER_POLL_MS: ${DEPLOYMENT_RUNNER_POLL_MS:-5000}
+      DEPLOYMENT_PULL_IMAGES: "false"
+      S3_ENDPOINT: http://rustfs:9000
+      S3_REGION: ${RUSTFS_REGION:-us-east-1}
+      S3_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:-cascade}
+      S3_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:-cascade-password}
+      S3_BUCKET: ${S3_BUCKET:-cascade-task-payloads}
+      S3_FORCE_PATH_STYLE: "true"
+      LARGE_PAYLOAD_THRESHOLD_BYTES: ${LARGE_PAYLOAD_THRESHOLD_BYTES:-262144}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
   clickhouse:
     profiles:

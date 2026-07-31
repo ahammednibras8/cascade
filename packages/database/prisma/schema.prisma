@@ -43,6 +43,15 @@ enum DeploymentStatus {
   FAILED
 }
 
+enum DeploymentRuntimeStatus {
+  PENDING
+  STARTING
+  RUNNING
+  DRAINING
+  STOPPED
+  FAILED
+}
+
 model Project {
   id String @id @default(uuid()) @db.Uuid
   slug String @unique
@@ -220,6 +229,13 @@ model Deployment {
   version String
   image String
   status DeploymentStatus @default(ACTIVE)
+  
+  runtimeStatus DeploymentRuntimeStatus @default(PENDING)
+  runtimeContainerId String?
+  runtimeError String?
+  runtimeStartedAt DateTime?
+  runtimeStoppedAt DateTime?
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

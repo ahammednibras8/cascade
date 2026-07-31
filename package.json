@@ -44,7 +44,7 @@
     "services:logs": "docker compose --env-file docker/.env -f docker/compose.yml logs -f",
     "services:ps": "docker compose --env-file docker/.env -f docker/compose.yml ps",
     "services:reset": "docker compose --env-file docker/.env -f docker/compose.yml down -v",
-    "compose:build": "COMPOSE_PARALLEL_LIMIT=1 docker compose --env-file docker/.env -f docker/compose.yml --profile app build api dashboard worker",
+    "compose:build": "COMPOSE_PARALLEL_LIMIT=1 docker compose --env-file docker/.env -f docker/compose.yml --profile app build api dashboard worker deployment-runner",
     "compose:up": "docker compose --env-file docker/.env -f docker/compose.yml --profile app up -d --no-build",
     "compose:rebuild": "pnpm run compose:build && pnpm run compose:up",
     "compose:up:storage": "docker compose --env-file docker/.env -f docker/compose.yml --profile app --profile storage up -d --no-build",

@@ -56,3 +56,15 @@ export const DeploymentStatus = {
 } as const
 
 export type DeploymentStatus = (typeof DeploymentStatus)[keyof typeof DeploymentStatus]
+
+
+export const DeploymentRuntimeStatus = {
+  PENDING: 'PENDING',
+  STARTING: 'STARTING',
+  RUNNING: 'RUNNING',
+  DRAINING: 'DRAINING',
+  STOPPED: 'STOPPED',
+  FAILED: 'FAILED'
+} as const
+
+export type DeploymentRuntimeStatus = (typeof DeploymentRuntimeStatus)[keyof typeof DeploymentRuntimeStatus]

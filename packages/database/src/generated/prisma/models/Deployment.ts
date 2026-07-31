@@ -30,6 +30,11 @@ export type DeploymentMinAggregateOutputType = {
   version: string | null
   image: string | null
   status: $Enums.DeploymentStatus | null
+  runtimeStatus: $Enums.DeploymentRuntimeStatus | null
+  runtimeContainerId: string | null
+  runtimeError: string | null
+  runtimeStartedAt: Date | null
+  runtimeStoppedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,6 +45,11 @@ export type DeploymentMaxAggregateOutputType = {
   version: string | null
   image: string | null
   status: $Enums.DeploymentStatus | null
+  runtimeStatus: $Enums.DeploymentRuntimeStatus | null
+  runtimeContainerId: string | null
+  runtimeError: string | null
+  runtimeStartedAt: Date | null
+  runtimeStoppedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,6 +60,11 @@ export type DeploymentCountAggregateOutputType = {
   version: number
   image: number
   status: number
+  runtimeStatus: number
+  runtimeContainerId: number
+  runtimeError: number
+  runtimeStartedAt: number
+  runtimeStoppedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -62,6 +77,11 @@ export type DeploymentMinAggregateInputType = {
   version?: true
   image?: true
   status?: true
+  runtimeStatus?: true
+  runtimeContainerId?: true
+  runtimeError?: true
+  runtimeStartedAt?: true
+  runtimeStoppedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -72,6 +92,11 @@ export type DeploymentMaxAggregateInputType = {
   version?: true
   image?: true
   status?: true
+  runtimeStatus?: true
+  runtimeContainerId?: true
+  runtimeError?: true
+  runtimeStartedAt?: true
+  runtimeStoppedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +107,11 @@ export type DeploymentCountAggregateInputType = {
   version?: true
   image?: true
   status?: true
+  runtimeStatus?: true
+  runtimeContainerId?: true
+  runtimeError?: true
+  runtimeStartedAt?: true
+  runtimeStoppedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -165,6 +195,11 @@ export type DeploymentGroupByOutputType = {
   version: string
   image: string
   status: $Enums.DeploymentStatus
+  runtimeStatus: $Enums.DeploymentRuntimeStatus
+  runtimeContainerId: string | null
+  runtimeError: string | null
+  runtimeStartedAt: Date | null
+  runtimeStoppedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: DeploymentCountAggregateOutputType | null
@@ -196,6 +231,11 @@ export type DeploymentWhereInput = {
   version?: Prisma.StringFilter<"Deployment"> | string
   image?: Prisma.StringFilter<"Deployment"> | string
   status?: Prisma.EnumDeploymentStatusFilter<"Deployment"> | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFilter<"Deployment"> | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.StringNullableFilter<"Deployment"> | string | null
+  runtimeError?: Prisma.StringNullableFilter<"Deployment"> | string | null
+  runtimeStartedAt?: Prisma.DateTimeNullableFilter<"Deployment"> | Date | string | null
+  runtimeStoppedAt?: Prisma.DateTimeNullableFilter<"Deployment"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Deployment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Deployment"> | Date | string
   environment?: Prisma.XOR<Prisma.EnvironmentScalarRelationFilter, Prisma.EnvironmentWhereInput>
@@ -209,6 +249,11 @@ export type DeploymentOrderByWithRelationInput = {
   version?: Prisma.SortOrder
   image?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  runtimeStatus?: Prisma.SortOrder
+  runtimeContainerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  runtimeError?: Prisma.SortOrderInput | Prisma.SortOrder
+  runtimeStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  runtimeStoppedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   environment?: Prisma.EnvironmentOrderByWithRelationInput
@@ -226,6 +271,11 @@ export type DeploymentWhereUniqueInput = Prisma.AtLeast<{
   version?: Prisma.StringFilter<"Deployment"> | string
   image?: Prisma.StringFilter<"Deployment"> | string
   status?: Prisma.EnumDeploymentStatusFilter<"Deployment"> | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFilter<"Deployment"> | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.StringNullableFilter<"Deployment"> | string | null
+  runtimeError?: Prisma.StringNullableFilter<"Deployment"> | string | null
+  runtimeStartedAt?: Prisma.DateTimeNullableFilter<"Deployment"> | Date | string | null
+  runtimeStoppedAt?: Prisma.DateTimeNullableFilter<"Deployment"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Deployment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Deployment"> | Date | string
   environment?: Prisma.XOR<Prisma.EnvironmentScalarRelationFilter, Prisma.EnvironmentWhereInput>
@@ -239,6 +289,11 @@ export type DeploymentOrderByWithAggregationInput = {
   version?: Prisma.SortOrder
   image?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  runtimeStatus?: Prisma.SortOrder
+  runtimeContainerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  runtimeError?: Prisma.SortOrderInput | Prisma.SortOrder
+  runtimeStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  runtimeStoppedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.DeploymentCountOrderByAggregateInput
@@ -255,6 +310,11 @@ export type DeploymentScalarWhereWithAggregatesInput = {
   version?: Prisma.StringWithAggregatesFilter<"Deployment"> | string
   image?: Prisma.StringWithAggregatesFilter<"Deployment"> | string
   status?: Prisma.EnumDeploymentStatusWithAggregatesFilter<"Deployment"> | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusWithAggregatesFilter<"Deployment"> | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.StringNullableWithAggregatesFilter<"Deployment"> | string | null
+  runtimeError?: Prisma.StringNullableWithAggregatesFilter<"Deployment"> | string | null
+  runtimeStartedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Deployment"> | Date | string | null
+  runtimeStoppedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Deployment"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Deployment"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Deployment"> | Date | string
 }
@@ -264,6 +324,11 @@ export type DeploymentCreateInput = {
   version: string
   image: string
   status?: $Enums.DeploymentStatus
+  runtimeStatus?: $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: string | null
+  runtimeError?: string | null
+  runtimeStartedAt?: Date | string | null
+  runtimeStoppedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   environment: Prisma.EnvironmentCreateNestedOneWithoutDeploymentsInput
@@ -277,6 +342,11 @@ export type DeploymentUncheckedCreateInput = {
   version: string
   image: string
   status?: $Enums.DeploymentStatus
+  runtimeStatus?: $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: string | null
+  runtimeError?: string | null
+  runtimeStartedAt?: Date | string | null
+  runtimeStoppedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutDeploymentInput
@@ -288,6 +358,11 @@ export type DeploymentUpdateInput = {
   version?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFieldUpdateOperationsInput | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runtimeStoppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   environment?: Prisma.EnvironmentUpdateOneRequiredWithoutDeploymentsNestedInput
@@ -301,6 +376,11 @@ export type DeploymentUncheckedUpdateInput = {
   version?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFieldUpdateOperationsInput | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runtimeStoppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutDeploymentNestedInput
@@ -313,6 +393,11 @@ export type DeploymentCreateManyInput = {
   version: string
   image: string
   status?: $Enums.DeploymentStatus
+  runtimeStatus?: $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: string | null
+  runtimeError?: string | null
+  runtimeStartedAt?: Date | string | null
+  runtimeStoppedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -322,6 +407,11 @@ export type DeploymentUpdateManyMutationInput = {
   version?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFieldUpdateOperationsInput | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runtimeStoppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -332,6 +422,11 @@ export type DeploymentUncheckedUpdateManyInput = {
   version?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFieldUpdateOperationsInput | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runtimeStoppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -362,6 +457,11 @@ export type DeploymentCountOrderByAggregateInput = {
   version?: Prisma.SortOrder
   image?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  runtimeStatus?: Prisma.SortOrder
+  runtimeContainerId?: Prisma.SortOrder
+  runtimeError?: Prisma.SortOrder
+  runtimeStartedAt?: Prisma.SortOrder
+  runtimeStoppedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -372,6 +472,11 @@ export type DeploymentMaxOrderByAggregateInput = {
   version?: Prisma.SortOrder
   image?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  runtimeStatus?: Prisma.SortOrder
+  runtimeContainerId?: Prisma.SortOrder
+  runtimeError?: Prisma.SortOrder
+  runtimeStartedAt?: Prisma.SortOrder
+  runtimeStoppedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -382,6 +487,11 @@ export type DeploymentMinOrderByAggregateInput = {
   version?: Prisma.SortOrder
   image?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  runtimeStatus?: Prisma.SortOrder
+  runtimeContainerId?: Prisma.SortOrder
+  runtimeError?: Prisma.SortOrder
+  runtimeStartedAt?: Prisma.SortOrder
+  runtimeStoppedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -464,11 +574,20 @@ export type EnumDeploymentStatusFieldUpdateOperationsInput = {
   set?: $Enums.DeploymentStatus
 }
 
+export type EnumDeploymentRuntimeStatusFieldUpdateOperationsInput = {
+  set?: $Enums.DeploymentRuntimeStatus
+}
+
 export type DeploymentCreateWithoutEnvironmentInput = {
   id?: string
   version: string
   image: string
   status?: $Enums.DeploymentStatus
+  runtimeStatus?: $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: string | null
+  runtimeError?: string | null
+  runtimeStartedAt?: Date | string | null
+  runtimeStoppedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   tasks?: Prisma.TaskCreateNestedManyWithoutDeploymentInput
@@ -480,6 +599,11 @@ export type DeploymentUncheckedCreateWithoutEnvironmentInput = {
   version: string
   image: string
   status?: $Enums.DeploymentStatus
+  runtimeStatus?: $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: string | null
+  runtimeError?: string | null
+  runtimeStartedAt?: Date | string | null
+  runtimeStoppedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutDeploymentInput
@@ -521,6 +645,11 @@ export type DeploymentScalarWhereInput = {
   version?: Prisma.StringFilter<"Deployment"> | string
   image?: Prisma.StringFilter<"Deployment"> | string
   status?: Prisma.EnumDeploymentStatusFilter<"Deployment"> | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFilter<"Deployment"> | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.StringNullableFilter<"Deployment"> | string | null
+  runtimeError?: Prisma.StringNullableFilter<"Deployment"> | string | null
+  runtimeStartedAt?: Prisma.DateTimeNullableFilter<"Deployment"> | Date | string | null
+  runtimeStoppedAt?: Prisma.DateTimeNullableFilter<"Deployment"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Deployment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Deployment"> | Date | string
 }
@@ -530,6 +659,11 @@ export type DeploymentCreateWithoutTasksInput = {
   version: string
   image: string
   status?: $Enums.DeploymentStatus
+  runtimeStatus?: $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: string | null
+  runtimeError?: string | null
+  runtimeStartedAt?: Date | string | null
+  runtimeStoppedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   environment: Prisma.EnvironmentCreateNestedOneWithoutDeploymentsInput
@@ -542,6 +676,11 @@ export type DeploymentUncheckedCreateWithoutTasksInput = {
   version: string
   image: string
   status?: $Enums.DeploymentStatus
+  runtimeStatus?: $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: string | null
+  runtimeError?: string | null
+  runtimeStartedAt?: Date | string | null
+  runtimeStoppedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   runs?: Prisma.TaskRunUncheckedCreateNestedManyWithoutDeploymentInput
@@ -568,6 +707,11 @@ export type DeploymentUpdateWithoutTasksInput = {
   version?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFieldUpdateOperationsInput | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runtimeStoppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   environment?: Prisma.EnvironmentUpdateOneRequiredWithoutDeploymentsNestedInput
@@ -580,6 +724,11 @@ export type DeploymentUncheckedUpdateWithoutTasksInput = {
   version?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFieldUpdateOperationsInput | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runtimeStoppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   runs?: Prisma.TaskRunUncheckedUpdateManyWithoutDeploymentNestedInput
@@ -590,6 +739,11 @@ export type DeploymentCreateWithoutRunsInput = {
   version: string
   image: string
   status?: $Enums.DeploymentStatus
+  runtimeStatus?: $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: string | null
+  runtimeError?: string | null
+  runtimeStartedAt?: Date | string | null
+  runtimeStoppedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   environment: Prisma.EnvironmentCreateNestedOneWithoutDeploymentsInput
@@ -602,6 +756,11 @@ export type DeploymentUncheckedCreateWithoutRunsInput = {
   version: string
   image: string
   status?: $Enums.DeploymentStatus
+  runtimeStatus?: $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: string | null
+  runtimeError?: string | null
+  runtimeStartedAt?: Date | string | null
+  runtimeStoppedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutDeploymentInput
@@ -628,6 +787,11 @@ export type DeploymentUpdateWithoutRunsInput = {
   version?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFieldUpdateOperationsInput | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runtimeStoppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   environment?: Prisma.EnvironmentUpdateOneRequiredWithoutDeploymentsNestedInput
@@ -640,6 +804,11 @@ export type DeploymentUncheckedUpdateWithoutRunsInput = {
   version?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFieldUpdateOperationsInput | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runtimeStoppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutDeploymentNestedInput
@@ -650,6 +819,11 @@ export type DeploymentCreateManyEnvironmentInput = {
   version: string
   image: string
   status?: $Enums.DeploymentStatus
+  runtimeStatus?: $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: string | null
+  runtimeError?: string | null
+  runtimeStartedAt?: Date | string | null
+  runtimeStoppedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -659,6 +833,11 @@ export type DeploymentUpdateWithoutEnvironmentInput = {
   version?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFieldUpdateOperationsInput | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runtimeStoppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tasks?: Prisma.TaskUpdateManyWithoutDeploymentNestedInput
@@ -670,6 +849,11 @@ export type DeploymentUncheckedUpdateWithoutEnvironmentInput = {
   version?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFieldUpdateOperationsInput | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runtimeStoppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutDeploymentNestedInput
@@ -681,6 +865,11 @@ export type DeploymentUncheckedUpdateManyWithoutEnvironmentInput = {
   version?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus
+  runtimeStatus?: Prisma.EnumDeploymentRuntimeStatusFieldUpdateOperationsInput | $Enums.DeploymentRuntimeStatus
+  runtimeContainerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  runtimeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runtimeStoppedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -731,6 +920,11 @@ export type DeploymentSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   version?: boolean
   image?: boolean
   status?: boolean
+  runtimeStatus?: boolean
+  runtimeContainerId?: boolean
+  runtimeError?: boolean
+  runtimeStartedAt?: boolean
+  runtimeStoppedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
@@ -745,6 +939,11 @@ export type DeploymentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   version?: boolean
   image?: boolean
   status?: boolean
+  runtimeStatus?: boolean
+  runtimeContainerId?: boolean
+  runtimeError?: boolean
+  runtimeStartedAt?: boolean
+  runtimeStoppedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
@@ -756,6 +955,11 @@ export type DeploymentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   version?: boolean
   image?: boolean
   status?: boolean
+  runtimeStatus?: boolean
+  runtimeContainerId?: boolean
+  runtimeError?: boolean
+  runtimeStartedAt?: boolean
+  runtimeStoppedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
@@ -767,11 +971,16 @@ export type DeploymentSelectScalar = {
   version?: boolean
   image?: boolean
   status?: boolean
+  runtimeStatus?: boolean
+  runtimeContainerId?: boolean
+  runtimeError?: boolean
+  runtimeStartedAt?: boolean
+  runtimeStoppedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type DeploymentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "environmentId" | "version" | "image" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["deployment"]>
+export type DeploymentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "environmentId" | "version" | "image" | "status" | "runtimeStatus" | "runtimeContainerId" | "runtimeError" | "runtimeStartedAt" | "runtimeStoppedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["deployment"]>
 export type DeploymentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
   tasks?: boolean | Prisma.Deployment$tasksArgs<ExtArgs>
@@ -798,6 +1007,11 @@ export type $DeploymentPayload<ExtArgs extends runtime.Types.Extensions.Internal
     version: string
     image: string
     status: $Enums.DeploymentStatus
+    runtimeStatus: $Enums.DeploymentRuntimeStatus
+    runtimeContainerId: string | null
+    runtimeError: string | null
+    runtimeStartedAt: Date | null
+    runtimeStoppedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["deployment"]>
@@ -1231,6 +1445,11 @@ export interface DeploymentFieldRefs {
   readonly version: Prisma.FieldRef<"Deployment", 'String'>
   readonly image: Prisma.FieldRef<"Deployment", 'String'>
   readonly status: Prisma.FieldRef<"Deployment", 'DeploymentStatus'>
+  readonly runtimeStatus: Prisma.FieldRef<"Deployment", 'DeploymentRuntimeStatus'>
+  readonly runtimeContainerId: Prisma.FieldRef<"Deployment", 'String'>
+  readonly runtimeError: Prisma.FieldRef<"Deployment", 'String'>
+  readonly runtimeStartedAt: Prisma.FieldRef<"Deployment", 'DateTime'>
+  readonly runtimeStoppedAt: Prisma.FieldRef<"Deployment", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Deployment", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Deployment", 'DateTime'>
 }

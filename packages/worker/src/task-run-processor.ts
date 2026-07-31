@@ -19,8 +19,8 @@ import {
   loadTaskRunForProcessing,
   type ProcessableTaskRun,
 } from "./task-run-processing/state.js";
-import { taskRegistry } from "./tasks/registry.js";
 import { startQueueConcurrencyLeaseHeartbeat } from "./timers/queue-concurrency-lease.js";
+import type { LoadedTaskRegistry } from "./tasks/load-registry.js";
 
 function getExecutionTrace(taskRun: ProcessableTaskRun) {
   return taskRun.traceId
@@ -37,7 +37,10 @@ async function requeueDelayedTaskRun(message: TaskRunQueueMessage, delayUntil: D
   });
 }
 
-export async function processTaskRun(message: TaskRunQueueMessage) {
+export async function processTaskRun(
+  message: TaskRunQueueMessage,
+  taskRegistry: LoadedTaskRegistry,
+) {
   const taskRun = await loadTaskRunForProcessing(message);
 
   if (!taskRun) {

@@ -212,6 +212,11 @@ export const DeploymentScalarFieldEnum = {
   version: 'version',
   image: 'image',
   status: 'status',
+  runtimeStatus: 'runtimeStatus',
+  runtimeContainerId: 'runtimeContainerId',
+  runtimeError: 'runtimeError',
+  runtimeStartedAt: 'runtimeStartedAt',
+  runtimeStoppedAt: 'runtimeStoppedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

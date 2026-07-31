@@ -1264,6 +1264,11 @@ export const DeploymentScalarFieldEnum = {
   version: 'version',
   image: 'image',
   status: 'status',
+  runtimeStatus: 'runtimeStatus',
+  runtimeContainerId: 'runtimeContainerId',
+  runtimeError: 'runtimeError',
+  runtimeStartedAt: 'runtimeStartedAt',
+  runtimeStoppedAt: 'runtimeStoppedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1448,6 +1453,20 @@ export type EnumDeploymentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
  * Reference to a field of type 'DeploymentStatus[]'
  */
 export type ListEnumDeploymentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DeploymentStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'DeploymentRuntimeStatus'
+ */
+export type EnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DeploymentRuntimeStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'DeploymentRuntimeStatus[]'
+ */
+export type ListEnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DeploymentRuntimeStatus[]'>
     
 
 

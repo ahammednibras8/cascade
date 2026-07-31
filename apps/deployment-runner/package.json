@@ -1,0 +1,19 @@
+{
+  "name": "@cascade/deployment-runner",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file=../../.env --conditions=development --import tsx --watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc --project tsconfig.build.json",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cascade/database": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "tsx": "4.23.1",
+    "typescript": "6.0.3"
+  }
+}

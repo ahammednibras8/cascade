@@ -56,4 +56,7 @@ COPY --from=build /app/packages/core ./packages/core
 COPY --from=build /app/packages/database ./packages/database
 COPY --from=build /app/packages/storage ./packages/storage
 
+RUN mkdir -p ./node_modules/@cascade \
+  && ln -s ../../packages/core ./node_modules/@cascade/core
+
 CMD ["node", "packages/worker/dist/index.js"]

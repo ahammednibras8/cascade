@@ -355,6 +355,13 @@ export type EnumDeploymentStatusFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumDeploymentStatusFilter<$PrismaModel> | $Enums.DeploymentStatus
 }
 
+export type EnumDeploymentRuntimeStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.DeploymentRuntimeStatus | Prisma.EnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.DeploymentRuntimeStatus[] | Prisma.ListEnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DeploymentRuntimeStatus[] | Prisma.ListEnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDeploymentRuntimeStatusFilter<$PrismaModel> | $Enums.DeploymentRuntimeStatus
+}
+
 export type EnumDeploymentStatusWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.DeploymentStatus | Prisma.EnumDeploymentStatusFieldRefInput<$PrismaModel>
   in?: $Enums.DeploymentStatus[] | Prisma.ListEnumDeploymentStatusFieldRefInput<$PrismaModel>
@@ -363,6 +370,16 @@ export type EnumDeploymentStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumDeploymentStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumDeploymentStatusFilter<$PrismaModel>
+}
+
+export type EnumDeploymentRuntimeStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.DeploymentRuntimeStatus | Prisma.EnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.DeploymentRuntimeStatus[] | Prisma.ListEnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DeploymentRuntimeStatus[] | Prisma.ListEnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDeploymentRuntimeStatusWithAggregatesFilter<$PrismaModel> | $Enums.DeploymentRuntimeStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumDeploymentRuntimeStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumDeploymentRuntimeStatusFilter<$PrismaModel>
 }
 
 export type NestedUuidFilter<$PrismaModel = never> = {
@@ -688,6 +705,13 @@ export type NestedEnumDeploymentStatusFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumDeploymentStatusFilter<$PrismaModel> | $Enums.DeploymentStatus
 }
 
+export type NestedEnumDeploymentRuntimeStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.DeploymentRuntimeStatus | Prisma.EnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.DeploymentRuntimeStatus[] | Prisma.ListEnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DeploymentRuntimeStatus[] | Prisma.ListEnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDeploymentRuntimeStatusFilter<$PrismaModel> | $Enums.DeploymentRuntimeStatus
+}
+
 export type NestedEnumDeploymentStatusWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.DeploymentStatus | Prisma.EnumDeploymentStatusFieldRefInput<$PrismaModel>
   in?: $Enums.DeploymentStatus[] | Prisma.ListEnumDeploymentStatusFieldRefInput<$PrismaModel>
@@ -696,6 +720,16 @@ export type NestedEnumDeploymentStatusWithAggregatesFilter<$PrismaModel = never>
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumDeploymentStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumDeploymentStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumDeploymentRuntimeStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.DeploymentRuntimeStatus | Prisma.EnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.DeploymentRuntimeStatus[] | Prisma.ListEnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DeploymentRuntimeStatus[] | Prisma.ListEnumDeploymentRuntimeStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDeploymentRuntimeStatusWithAggregatesFilter<$PrismaModel> | $Enums.DeploymentRuntimeStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumDeploymentRuntimeStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumDeploymentRuntimeStatusFilter<$PrismaModel>
 }
 
 

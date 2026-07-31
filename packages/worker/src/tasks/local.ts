@@ -1,4 +1,4 @@
-import { createTaskRegistry, task } from "@cascade/core";
+import { task, type TaskDefinition } from "@cascade/core";
 
 const helloTask = task({
   id: "hello",
@@ -18,8 +18,6 @@ const helloTask = task({
       payload,
     });
 
-    await logger.debug("Hello task preparing output");
-
     const output = {
       ok: true,
       message: "Hello from local task registry",
@@ -35,4 +33,4 @@ const helloTask = task({
   },
 });
 
-export const taskRegistry = createTaskRegistry([helloTask]);
+export default [helloTask] satisfies readonly TaskDefinition[];
