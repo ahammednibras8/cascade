@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 
-export class DockerCommandError extends Error {
+class DockerCommandError extends Error {
   constructor(
     readonly exitCode: number,
     message: string,

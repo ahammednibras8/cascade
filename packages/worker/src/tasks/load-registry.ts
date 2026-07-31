@@ -1,4 +1,5 @@
 import { createTaskRegistry, type TaskDefinition } from "@cascade/core";
+import localTasks from "./local.js";
 
 export type LoadedTaskRegistry = ReturnType<typeof createTaskRegistry>;
 
@@ -24,8 +25,11 @@ export async function loadTaskRegistry(): Promise<LoadedTaskRegistry> {
     throw new Error("CASCADE_TASK_MODULE is required in production worker containers");
   }
 
-  const moduleSpecifier = configuredModule || "./local.js";
-  const taskModule = (await import(moduleSpecifier)) as TaskModule;
+  if (!configuredModule) {
+    return createTaskRegistry(localTasks);
+  }
+
+  const taskModule = (await import(configuredModule)) as TaskModule;
 
   return createTaskRegistry(getTaskDefinitions(taskModule));
 }
