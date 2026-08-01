@@ -4,6 +4,14 @@ import type { TaskRunQueueMessage } from "../src/queue/task-runs.js";
 
 const popTaskRunMessage = vi.hoisted(() => vi.fn<() => Promise<TaskRunQueueMessage | null>>());
 
+const workerRole = vi.hoisted(
+  (): {
+    current: "control" | "deployment" | "local";
+  } => ({
+    current: "local",
+  }),
+);
+
 const taskRegistry = vi.hoisted(() => ({
   get: vi.fn<(id: string) => unknown>(),
   has: vi.fn<(id: string) => boolean>(),
@@ -39,6 +47,13 @@ vi.mock("@cascade/core", () => ({
 
 vi.mock("@cascade/database", () => ({
   prisma,
+}));
+
+vi.mock("../src/config.js", () => ({
+  WORKER_CONCURRENCY: 4,
+  get WORKER_ROLE() {
+    return workerRole.current;
+  },
 }));
 
 vi.mock("../src/queue/task-runs.js", () => ({
@@ -83,6 +98,7 @@ function createShutdownSignal() {
 describe("runWorker", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    workerRole.current = "local";
 
     stopStuckRunSweeper.mockReturnValue(undefined);
     stopPendingRunSweeper.mockReturnValue(undefined);
@@ -110,17 +126,17 @@ describe("runWorker", () => {
 
     await runWorker(createShutdownSignal());
 
-    expect(startStuckRunSweeper).toHaveBeenCalledOnce();
-    expect(startPendingRunSweeper).toHaveBeenCalledOnce();
-    expect(startTaskScheduleScheduler).toHaveBeenCalledOnce();
+    expect(startStuckRunSweeper).not.toHaveBeenCalled();
+    expect(startPendingRunSweeper).not.toHaveBeenCalled();
+    expect(startTaskScheduleScheduler).not.toHaveBeenCalled();
 
     expect(loadTaskRegistry).toHaveBeenCalledOnce();
-    expect(popTaskRunMessage).toHaveBeenCalledOnce();
+    expect(popTaskRunMessage).toHaveBeenCalledTimes(2);
     expect(processTaskRun).toHaveBeenCalledWith(message, taskRegistry);
 
-    expect(stopStuckRunSweeper).toHaveBeenCalledOnce();
-    expect(stopPendingRunSweeper).toHaveBeenCalledOnce();
-    expect(stopTaskScheduleScheduler).toHaveBeenCalledOnce();
+    expect(stopStuckRunSweeper).not.toHaveBeenCalled();
+    expect(stopPendingRunSweeper).not.toHaveBeenCalled();
+    expect(stopTaskScheduleScheduler).not.toHaveBeenCalled();
 
     expect(taskRunQueueRedis.quit).toHaveBeenCalledOnce();
     expect(prisma.$disconnect).toHaveBeenCalledOnce();
@@ -136,5 +152,23 @@ describe("runWorker", () => {
 
     expect(taskRunQueueRedis.quit).toHaveBeenCalledOnce();
     expect(prisma.$disconnect).toHaveBeenCalledOnce();
+  });
+
+  it("runs control sweepers without polling the queue", async () => {
+    workerRole.current = "control";
+
+    await runWorker(createShutdownSignal());
+
+    expect(startStuckRunSweeper).toHaveBeenCalledOnce();
+    expect(startPendingRunSweeper).toHaveBeenCalledOnce();
+    expect(startTaskScheduleScheduler).toHaveBeenCalledOnce();
+
+    expect(loadTaskRegistry).not.toHaveBeenCalled();
+    expect(popTaskRunMessage).not.toHaveBeenCalled();
+    expect(processTaskRun).not.toHaveBeenCalled();
+
+    expect(stopStuckRunSweeper).toHaveBeenCalledOnce();
+    expect(stopPendingRunSweeper).toHaveBeenCalledOnce();
+    expect(stopTaskScheduleScheduler).toHaveBeenCalledOnce();
   });
 });

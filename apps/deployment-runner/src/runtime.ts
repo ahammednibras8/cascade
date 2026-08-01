@@ -1,4 +1,4 @@
-export type RuntimeWorker = {
+type RuntimeWorker = {
   id: string;
   running: boolean;
   restarting: boolean;

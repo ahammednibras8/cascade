@@ -1,4 +1,4 @@
-import { AppsV1Api, KubeConfig, V1Deployment } from "@kubernetes/client-node";
+import { AppsV1Api, KubeConfig, type V1Deployment } from "@kubernetes/client-node";
 import type { DeploymentWorkerRuntime, StartDeploymentWorkerInput } from "./runtime.js";
 import { deploymentRunnerConfig } from "./config.js";
 
@@ -147,25 +147,26 @@ export function createKubernetesDeploymentRuntime(): DeploymentWorkerRuntime {
   const appsApi = createAppsApi();
   const namespace = deploymentRunnerConfig.kubernetesNamespace;
 
-  async function waitUntilDeleted(name: string) {
-    for (let attempt = 0; attempt < DELETE_POLL_ATTEMPTS; attempt++) {
-      try {
-        await appsApi.readNamespacedDeployment({
-          name,
-          namespace,
-        });
-      } catch (error) {
-        if (isNotFoundError(error)) {
-          return;
-        }
-
-        throw error;
-      }
-
-      await waitForDelay(DELETE_POLL_INTERVAL_MS);
+  async function waitUntilDeleted(name: string, attempt = 0): Promise<void> {
+    if (attempt >= DELETE_POLL_ATTEMPTS) {
+      throw new Error(`Timed out waiting for Kubernetes Deployment ${name} to be deleted`);
     }
 
-    throw new Error(`Timed out waiting for Kubernetes Deployment ${name} to be deleted`);
+    try {
+      await appsApi.readNamespacedDeployment({
+        name,
+        namespace,
+      });
+    } catch (error) {
+      if (isNotFoundError(error)) {
+        return;
+      }
+
+      throw error;
+    }
+
+    await waitForDelay(DELETE_POLL_INTERVAL_MS);
+    await waitUntilDeleted(name, attempt + 1);
   }
 
   return {
