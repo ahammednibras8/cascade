@@ -2,9 +2,9 @@
 
 import { packageName } from "@cascade/core";
 import { prisma } from "@cascade/database";
-import { WORKER_CONCURRENCY } from "./config.js";
+import { WORKER_CONCURRENCY, WORKER_ROLE } from "./config.js";
 import type { ShutdownSignal } from "./lifecycle/shutdown.js";
-import { enqueueTaskRun, popTaskRunMessage, taskRunQueueRedis } from "./queue/task-runs.js";
+import { popTaskRunMessage, taskRunQueueRedis } from "./queue/task-runs.js";
 import { processTaskRun } from "./task-run-processor.js";
 import { startTaskScheduleScheduler } from "./timers/task-schedule-scheduler.js";
 import { startStuckRunSweeper } from "./timers/stuck-run-sweeper.js";
@@ -29,21 +29,33 @@ async function waitForAvailableWorkerSlot() {
   await Promise.race(inFlight);
 }
 
+async function waitForShutdown(shutdownSignal: ShutdownSignal) {
+  while (!shutdownSignal.isShuttingDown()) {
+    await new Promise((resolve) => {
+      setTimeout(resolve, 250);
+    });
+  }
+}
+
 export async function runWorker(shutdownSignal: ShutdownSignal) {
-  process.stdout.write(`Starting worker with ${packageName}\n`);
+  process.stdout.write(`Starting ${WORKER_ROLE} worker with ${packageName}\n`);
 
-  const taskRegistry = await loadTaskRegistry();
+  const isControlWorker = WORKER_ROLE === "control";
+  const isQueueWorker = WORKER_ROLE === "deployment" || WORKER_ROLE === "local";
 
-  const stopStuckRunSweeper = startStuckRunSweeper();
-  const stopPendingRunSweeper = startPendingRunSweeper();
-  const stopTaskScheduleScheduler = startTaskScheduleScheduler();
+  const stopStuckRunSweeper = isControlWorker ? startStuckRunSweeper() : () => {};
+  const stopPendingRunSweeper = isControlWorker ? startPendingRunSweeper() : () => {};
+  const stopTaskScheduleScheduler = isControlWorker ? startTaskScheduleScheduler() : () => {};
 
   try {
-    while (true) {
-      if (shutdownSignal.isShuttingDown()) {
-        break;
-      }
+    if (!isQueueWorker) {
+      await waitForShutdown(shutdownSignal);
+      return;
+    }
 
+    const taskRegistry = await loadTaskRegistry();
+
+    while (!shutdownSignal.isShuttingDown()) {
       await waitForAvailableWorkerSlot();
 
       const message = await popTaskRunMessage();
@@ -52,15 +64,9 @@ export async function runWorker(shutdownSignal: ShutdownSignal) {
         continue;
       }
 
-      if (shutdownSignal.isShuttingDown()) {
-        await enqueueTaskRun(message);
-        break;
-      }
-
       const task = processTaskRun(message, taskRegistry).catch((error: unknown) => {
         process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`);
       });
-
       trackInFlightTask(task);
     }
 

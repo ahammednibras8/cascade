@@ -1,47 +1,172 @@
-replicaCount: 1
+runtimeSecret:
+  existingSecret: ""
 
-image:
-  repository: ghcr.io/ahammednibras8/cascade-dashboard
-  tag: ""
-  pullPolicy: IfNotPresent
+apiSecret:
+  existingSecret: ""
 
-containerPort: 3000
+dashboardSecret:
+  existingSecret: ""
 
-env:
-  - name: NODE_ENV
-    value: production
+api:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/ahammednibras8/cascade-api
+    tag: ""
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
-service:
-  type: ClusterIP
-  port: 80
+dashboard:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/ahammednibras8/cascade-dashboard
+    tag: ""
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: cascade.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
-ingress:
+deploymentRunner:
+  enabled: true
+  image:
+    repository: ghcr.io/ahammednibras8/cascade-deployment-runner
+    tag: ""
+    pullPolicy: IfNotPresent
+  serviceAccount:
+    create: true
+    name: ""
+  workerConcurrency: 2
+  pollIntervalMs: 5000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+workers:
+  image:
+    repository: ghcr.io/ahammednibras8/cascade-worker
+    tag: ""
+    pullPolicy: IfNotPresent
+  local:
+    enabled: true
+    replicaCount: 1
+    concurrency: 2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  control:
+    enabled: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+migrations:
+  enabled: true
+  backoffLimit: 3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+postgres:
   enabled: false
-  className: ""
-  annotations: {}
-  hosts:
-    - host: cascade.local
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
+  image:
+    repository: postgres
+    tag: 17-alpine
+    pullPolicy: IfNotPresent
+  database: cascade
+  username: cascade
+  auth:
+    existingSecret: ""
+    passwordKey: POSTGRES_PASSWORD
+  persistence:
+    storageClass: ""
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
 
-resources:
-  requests:
-    cpu: 100m
-    memory: 128Mi
-  limits:
-    cpu: 500m
-    memory: 512Mi
+redis:
+  enabled: false
+  image:
+    repository: redis
+    tag: 7-alpine
+    pullPolicy: IfNotPresent
+  auth:
+    existingSecret: ""
+    passwordKey: REDIS_PASSWORD
+  persistence:
+    storageClass: ""
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
-probes:
-  readiness:
-    enabled: true
-    path: /
-    initialDelaySeconds: 5
-    periodSeconds: 10
-  liveness:
-    enabled: true
-    path: /
-    initialDelaySeconds: 15
-    periodSeconds: 20
+rustfs:
+  enabled: false
+  image:
+    repository: rustfs/rustfs
+    tag: 1.0.0-beta.11-preview.1
+    pullPolicy: IfNotPresent
+  region: us-east-1
+  auth:
+    existingSecret: ""
+    accessKeyKey: RUSTFS_ACCESS_KEY
+    secretKeyKey: RUSTFS_SECRET_KEY
+  persistence:
+    storageClass: ""
+    dataSize: 30Gi
+    logsSize: 5Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi

@@ -8,6 +8,12 @@ function getRequiredEnv(name: string) {
   return value;
 }
 
+function getOptionalEnv(name: string) {
+  const value = process.env[name]?.trim();
+
+  return value || undefined;
+}
+
 function getPositiveIntegerEnv(name: string, fallback: number) {
   const rawValue = process.env[name];
 
@@ -34,10 +40,33 @@ function getBooleanEnv(name: string, fallback: boolean) {
   return value === "true";
 }
 
+export type DeploymentRuntimeKind = "docker" | "kubernetes";
+
+function getDeploymentRuntime(): DeploymentRuntimeKind {
+  const runtime = process.env.DEPLOYMENT_RUNTIME ?? "docker";
+
+  if (runtime === "docker" || runtime === "kubernetes") {
+    return runtime;
+  }
+
+  throw new Error("DEPLOYMENT_RUNTIME must be docker or kubernetes");
+}
+
+const runtime = getDeploymentRuntime();
+
 export const deploymentRunnerConfig = {
+  runtime,
+
   reconcileIntervalMs: getPositiveIntegerEnv("DEPLOYMENT_RUNNER_POLL_MS", 5_000),
 
-  dockerNetwork: getRequiredEnv("DEPLOYMENT_DOCKER_NETWORK"),
+  dockerNetwork: runtime === "docker" ? getRequiredEnv("DEPLOYMENT_DOCKER_NETWORK") : undefined,
+
+  kubernetesNamespace: getOptionalEnv("DEPLOYMENT_KUBERNETES_NAMESPACE") ?? "default",
+
+  kubernetesRuntimeSecretName:
+    runtime === "kubernetes"
+      ? getRequiredEnv("DEPLOYMENT_KUBERNETES_RUNTIME_SECRET_NAME")
+      : undefined,
 
   deploymentDatabaseUrl: getRequiredEnv("DEPLOYMENT_DATABASE_URL"),
   deploymentQueueRedisUrl: getRequiredEnv("DEPLOYMENT_QUEUE_REDIS_URL"),
@@ -46,11 +75,11 @@ export const deploymentRunnerConfig = {
 
   pullImages: getBooleanEnv("DEPLOYMENT_PULL_IMAGES", false),
 
-  s3Endpoint: process.env.S3_ENDPOINT,
-  s3Region: process.env.S3_REGION,
-  s3AccessKeyId: process.env.S3_ACCESS_KEY_ID,
-  s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-  s3Bucket: process.env.S3_BUCKET,
-  s3ForcePathStyle: process.env.S3_FORCE_PATH_STYLE,
-  largePayloadThresholdBytes: process.env.LARGE_PAYLOAD_THRESHOLD_BYTES,
+  s3Endpoint: getOptionalEnv("S3_ENDPOINT"),
+  s3Region: getOptionalEnv("S3_REGION"),
+  s3AccessKeyId: getOptionalEnv("S3_ACCESS_KEY_ID"),
+  s3SecretAccessKey: getOptionalEnv("S3_SECRET_ACCESS_KEY"),
+  s3Bucket: getOptionalEnv("S3_BUCKET"),
+  s3ForcePathStyle: getOptionalEnv("S3_FORCE_PATH_STYLE"),
+  largePayloadThresholdBytes: getOptionalEnv("LARGE_PAYLOAD_THRESHOLD_BYTES"),
 };

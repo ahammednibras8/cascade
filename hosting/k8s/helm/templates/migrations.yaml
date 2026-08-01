@@ -1,0 +1,47 @@
+{{- if .Values.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "cascade.fullname" . }}-migrations
+  labels:
+    {{- include "cascade.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrations
+  annotations:
+    {{- if .Values.postgres.enabled }}
+    "helm.sh/hook": post-install,post-upgrade
+    {{- else }}
+    "helm.sh/hook": pre-install,pre-upgrade
+    {{- end }}
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "cascade.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrations
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: OnFailure
+      containers:
+        - name: migrations
+          image: "{{ .Values.api.image.repository }}:{{ required "api.image.tag is required" .Values.api.image.tag }}"
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          workingDir: /app/packages/database
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              ./node_modules/.bin/prisma migrate deploy
+              node /app/apps/api/dist/dev/sync-dashboard-api-key.js
+          envFrom:
+            - secretRef:
+                name: {{ include "cascade.runtimeSecretName" . }}
+            - secretRef:
+                name: {{ include "cascade.apiSecretName" . }}
+            - secretRef:
+                name: {{ include "cascade.dashboardSecretName" . }}
+          resources:
+            {{- toYaml .Values.migrations.resources | nindent 12 }}
+{{- end }}

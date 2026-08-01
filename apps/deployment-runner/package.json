@@ -10,7 +10,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@cascade/database": "workspace:*"
+    "@cascade/database": "workspace:*",
+    "@kubernetes/client-node": "^1.4.0"
   },
   "devDependencies": {
     "@types/node": "24.13.3",

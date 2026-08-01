@@ -29,3 +29,17 @@ export const TASK_RUN_CANCELLATION_POLL_INTERVAL_MS = getPositiveIntegerEnv(
   "TASK_RUN_CANCELLATION_POLL_INTERVAL_MS",
   500,
 );
+
+export type WorkerRole = "control" | "deployment" | "local";
+
+function getWorkerRole(): WorkerRole {
+  const role = process.env.CASCADE_WORKER_ROLE ?? "local";
+
+  if (role === "control" || role === "deployment" || role === "local") {
+    return role;
+  }
+
+  throw new Error("CASCADE_WORKER_ROLE must be control, deployment, or local");
+}
+
+export const WORKER_ROLE = getWorkerRole();

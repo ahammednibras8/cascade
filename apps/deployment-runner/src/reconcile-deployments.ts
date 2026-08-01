@@ -1,12 +1,8 @@
 import { prisma } from "@cascade/database";
-import { inspectContainer, removeContainer, runDocker } from "./docker.js";
 import { deploymentRunnerConfig } from "./config.js";
+import { deploymentRuntime } from "./deployment-runtime.js";
 
 type Deployment = Awaited<ReturnType<typeof getDeployments>>[number];
-
-function getContainerName(deploymentId: string) {
-  return `cascade-deployment-${deploymentId}`;
-}
 
 function getSafeErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
@@ -17,6 +13,7 @@ function getSafeErrorMessage(error: unknown) {
 function getDeploymentWorkerEnvironment(deploymentId: string) {
   const environment: Record<string, string> = {
     NODE_ENV: "production",
+    CASCADE_WORKER_ROLE: "deployment",
     CASCADE_DEPLOYMENT_ID: deploymentId,
     DATABASE_URL: deploymentRunnerConfig.deploymentDatabaseUrl,
     QUEUE_REDIS_URL: deploymentRunnerConfig.deploymentQueueRedisUrl,
@@ -74,21 +71,20 @@ async function markDeploymentFailed(deployment: Deployment, error: unknown) {
   });
 }
 
-async function ensureDeploymentContainerRunning(
+async function ensureDeploymentWorkerRunning(
   deployment: Deployment,
   finalRuntimeStatus: "RUNNING" | "DRAINING",
 ) {
-  const containerName = getContainerName(deployment.id);
-  const existingContainer = await inspectContainer(containerName);
+  const existingWorker = await deploymentRuntime.inspect(deployment.id);
 
-  if (existingContainer?.running && !existingContainer.restarting) {
+  if (existingWorker?.running && !existingWorker.restarting) {
     await prisma.deployment.update({
       where: {
         id: deployment.id,
       },
       data: {
         runtimeStatus: finalRuntimeStatus,
-        runtimeContainerId: existingContainer.id,
+        runtimeContainerId: existingWorker.id,
         runtimeError: null,
         runtimeStartedAt: deployment.runtimeStartedAt ?? new Date(),
         runtimeStoppedAt: null,
@@ -98,8 +94,8 @@ async function ensureDeploymentContainerRunning(
     return;
   }
 
-  if (existingContainer) {
-    await removeContainer(containerName);
+  if (existingWorker) {
+    await deploymentRuntime.remove(deployment.id);
   }
 
   await prisma.deployment.update({
@@ -113,34 +109,11 @@ async function ensureDeploymentContainerRunning(
     },
   });
 
-  if (deploymentRunnerConfig.pullImages) {
-    await runDocker(["pull", deployment.image]);
-  }
-
-  const environment = getDeploymentWorkerEnvironment(deployment.id);
-
-  const dockerArgs = [
-    "run",
-    "--detach",
-    "--name",
-    containerName,
-    "--label",
-    "cascade.managed=true",
-    "--label",
-    `cascade.deployment-id=${deployment.id}`,
-    "--network",
-    deploymentRunnerConfig.dockerNetwork,
-    "--restart",
-    "unless-stopped",
-  ];
-
-  for (const [name, value] of Object.entries(environment)) {
-    dockerArgs.push("--env", `${name}=${value}`);
-  }
-
-  dockerArgs.push(deployment.image);
-
-  const containerId = await runDocker(dockerArgs);
+  const runtimeWorkerId = await deploymentRuntime.start({
+    deploymentId: deployment.id,
+    image: deployment.image,
+    environment: getDeploymentWorkerEnvironment(deployment.id),
+  });
 
   await prisma.deployment.update({
     where: {
@@ -148,7 +121,7 @@ async function ensureDeploymentContainerRunning(
     },
     data: {
       runtimeStatus: finalRuntimeStatus,
-      runtimeContainerId: containerId,
+      runtimeContainerId: runtimeWorkerId,
       runtimeError: null,
       runtimeStartedAt: new Date(),
       runtimeStoppedAt: null,
@@ -158,7 +131,7 @@ async function ensureDeploymentContainerRunning(
 
 async function reconcileActiveDeployment(deployment: Deployment) {
   try {
-    await ensureDeploymentContainerRunning(deployment, "RUNNING");
+    await ensureDeploymentWorkerRunning(deployment, "RUNNING");
   } catch (error) {
     await markDeploymentFailed(deployment, error);
   }
@@ -176,7 +149,7 @@ async function reconcileInactiveDeployment(deployment: Deployment) {
 
   if (activeRunCount > 0) {
     try {
-      await ensureDeploymentContainerRunning(deployment, "DRAINING");
+      await ensureDeploymentWorkerRunning(deployment, "DRAINING");
     } catch (error) {
       await markDeploymentFailed(deployment, error);
     }
@@ -185,7 +158,7 @@ async function reconcileInactiveDeployment(deployment: Deployment) {
   }
 
   try {
-    await removeContainer(getContainerName(deployment.id));
+    await deploymentRuntime.remove(deployment.id);
 
     await prisma.deployment.update({
       where: {

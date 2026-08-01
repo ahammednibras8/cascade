@@ -22,3 +22,35 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
 app.kubernetes.io/name: {{ include "cascade.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
+
+{{- define "cascade.deploymentRunnerServiceAccountName" -}}
+{{- if .Values.deploymentRunner.serviceAccount.create -}}
+{{- default (printf "%s-deployment-runner" (include "cascade.fullname" .)) .Values.deploymentRunner.serviceAccount.name -}}
+{{- else -}}
+{{- required "deploymentRunner.serviceAccount.name is required when service account creation is disabled" .Values.deploymentRunner.serviceAccount.name -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "cascade.runtimeSecretName" -}}
+{{- required "runtimeSecret.existingSecret is required" .Values.runtimeSecret.existingSecret -}}
+{{- end -}}
+
+{{- define "cascade.apiSecretName" -}}
+{{- required "apiSecret.existingSecret is required" .Values.apiSecret.existingSecret -}}
+{{- end -}}
+
+{{- define "cascade.dashboardSecretName" -}}
+{{- required "dashboardSecret.existingSecret is required" .Values.dashboardSecret.existingSecret -}}
+{{- end -}}
+
+{{- define "cascade.postgresSecretName" -}}
+{{- required "postgres.auth.existingSecret is required when postgres.enabled is true" .Values.postgres.auth.existingSecret -}}
+{{- end -}}
+
+{{- define "cascade.redisSecretName" -}}
+{{- required "redis.auth.existingSecret is required when redis.enabled is true" .Values.redis.auth.existingSecret -}}
+{{- end -}}
+
+{{- define "cascade.rustfsSecretName" -}}
+{{- required "rustfs.auth.existingSecret is required when rustfs.enabled is true" .Values.rustfs.auth.existingSecret -}}
+{{- end -}}
