@@ -67,6 +67,8 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      rustfs:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       API_PORT: 3001
@@ -136,6 +138,8 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      rustfs:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:-cascade}@postgres:5432/${POSTGRES_DB:-cascade}
@@ -190,6 +194,8 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      rustfs:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:-cascade}@postgres:5432/${POSTGRES_DB:-cascade}
@@ -232,6 +238,7 @@ services:
 
   rustfs-volume-init:
     profiles:
+      - app
       - storage
     image: alpine:3.20
     container_name: cascade-rustfs-volume-init
@@ -242,6 +249,7 @@ services:
 
   rustfs:
     profiles:
+      - app
       - storage
     image: rustfs/rustfs:latest
     container_name: cascade-rustfs
