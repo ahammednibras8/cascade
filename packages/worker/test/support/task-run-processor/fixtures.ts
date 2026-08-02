@@ -10,22 +10,6 @@ export const TRACE_ID = "11111111111111111111111111111111";
 export const SPAN_ID = "2222222222222222";
 export const PARENT_SPAN_ID = "3333333333333333";
 
-export function createTaskExecutionConfig(): TaskExecutionConfig {
-  return {
-    schemaVersion: 1,
-    timeoutMs: 30_000,
-    retry: {
-      maxAttempts: 1,
-      delayMs: 0,
-      exponentialBackoff: false,
-    },
-    queue: {
-      name: "hello",
-      concurrencyLimit: null,
-    },
-  };
-}
-
 export function resetTaskExecutionConfig(config: TaskExecutionConfig) {
   config.timeoutMs = 30_000;
   config.retry.maxAttempts = 1;

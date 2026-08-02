@@ -107,9 +107,7 @@ export {
   maybeStoreJsonValue,
   parseTraceparent,
   prisma,
-  randomUUID,
   recordTaskRunTriggered,
-  toTraceparent,
   txTaskEventCreate,
   txTaskRunCreate,
 };
@@ -147,9 +145,9 @@ vi.mock("@cascade/core", () => ({
   toTraceparent,
 }));
 
-export const { triggerTaskRun } = await import("../../../src/services/trigger-task-run.js");
+const { triggerTaskRun } = await import("../../../src/services/trigger-task-run.js");
 
-export function createDefaultTriggerBody() {
+function createDefaultTriggerBody() {
   return {
     payload: {
       message: "hello",
