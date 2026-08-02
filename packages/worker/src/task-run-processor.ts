@@ -2,6 +2,7 @@ import {
   createChildTraceContext,
   createRootTraceContext,
   parseTaskExecutionConfig,
+  toTraceparent,
   type TaskDefinition,
   type TaskExecutionConfig,
   type TraceContext,
@@ -21,6 +22,7 @@ import {
 } from "./task-run-processing/state.js";
 import { startQueueConcurrencyLeaseHeartbeat } from "./timers/queue-concurrency-lease.js";
 import type { LoadedTaskRegistry } from "./tasks/load-registry.js";
+import { withRemoteParentSpan } from "@cascade/telemetry";
 
 function getExecutionTrace(taskRun: ProcessableTaskRun) {
   return taskRun.traceId
@@ -31,9 +33,78 @@ function getExecutionTrace(taskRun: ProcessableTaskRun) {
     : createRootTraceContext();
 }
 
+function getStoredTriggerTrace(taskRun: ProcessableTaskRun): TraceContext | null {
+  if (!taskRun.traceId || !taskRun.triggerSpanId) {
+    return null;
+  }
+
+  return {
+    traceId: taskRun.traceId,
+    spanId: taskRun.triggerSpanId,
+    parentSpanId: null,
+    traceFlags: "01",
+    traceparent: toTraceparent({
+      traceId: taskRun.traceId,
+      spanId: taskRun.triggerSpanId,
+    }),
+  };
+}
+
 async function requeueDelayedTaskRun(message: TaskRunQueueMessage, delayUntil: Date) {
   await enqueueTaskRun(message, {
     delayMs: delayUntil.getTime() - Date.now(),
+  });
+}
+
+async function processLoadedTaskRun(input: {
+  message: TaskRunQueueMessage;
+  taskRun: ProcessableTaskRun;
+  taskRegistry: LoadedTaskRegistry;
+  trace: TraceContext;
+}) {
+  const executionConfig = parseTaskExecutionConfig(input.taskRun.executionConfig);
+
+  if (!executionConfig) {
+    const attempt = await claimTaskRunForExecution({
+      taskRun: input.taskRun,
+      trace: input.trace,
+    });
+
+    if (!attempt) {
+      return;
+    }
+
+    await failTaskRunPermanently({
+      taskRunId: input.taskRun.id,
+      attempt,
+      trace: input.trace,
+      error: {
+        code: "EXECUTION_CONFIG_MISSING",
+        message: "Task run has no valid execution configuration snapshot",
+      },
+    });
+
+    return;
+  }
+
+  const localTask = input.taskRegistry.get(input.taskRun.task.slug);
+  const concurrency = await acquireTaskRunConcurrency({
+    message: input.message,
+    taskRun: input.taskRun,
+    executionConfig,
+  });
+
+  if (concurrency.status === "deferred") {
+    return;
+  }
+
+  await processTaskRunWithLease({
+    message: input.message,
+    taskRun: input.taskRun,
+    localTask,
+    executionConfig,
+    trace: input.trace,
+    concurrencyLease: concurrency.lease,
   });
 }
 
@@ -57,51 +128,37 @@ export async function processTaskRun(
     return;
   }
 
-  const executionConfig = parseTaskExecutionConfig(taskRun.executionConfig);
-  const trace = getExecutionTrace(taskRun);
+  const fallbackTrace = getExecutionTrace(taskRun);
+  const storedTriggerTrace = getStoredTriggerTrace(taskRun);
 
-  if (!executionConfig) {
-    const attempt = await claimTaskRunForExecution({
+  if (!storedTriggerTrace) {
+    await processLoadedTaskRun({
+      message,
       taskRun,
-      trace,
+      taskRegistry,
+      trace: fallbackTrace,
     });
+    return;
+  }
 
-    if (!attempt) {
-      return;
-    }
-
-    await failTaskRunPermanently({
-      taskRunId: taskRun.id,
-      attempt,
-      trace,
-      error: {
-        code: "EXECUTION_CONFIG_MISSING",
-        message: "Task run has no valid execution configuration snapshot",
+  await withRemoteParentSpan(
+    {
+      name: "cascade.task.run.execute",
+      parent: storedTriggerTrace,
+      attributes: {
+        "cascade.task_run.id": taskRun.id,
+        "cascade.task.id": taskRun.taskId,
+        "cascade.task.slug": taskRun.task.slug,
       },
-    });
-
-    return;
-  }
-
-  const localTask = taskRegistry.get(taskRun.task.slug);
-  const concurrency = await acquireTaskRunConcurrency({
-    message,
-    taskRun,
-    executionConfig,
-  });
-
-  if (concurrency.status === "deferred") {
-    return;
-  }
-
-  await processTaskRunWithLease({
-    message,
-    taskRun,
-    localTask,
-    executionConfig,
-    trace,
-    concurrencyLease: concurrency.lease,
-  });
+    },
+    async (otelTrace) =>
+      processLoadedTaskRun({
+        message,
+        taskRun,
+        taskRegistry,
+        trace: otelTrace ?? fallbackTrace,
+      }),
+  );
 }
 
 async function processTaskRunWithLease(input: {

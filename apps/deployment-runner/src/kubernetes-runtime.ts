@@ -67,6 +67,24 @@ function getWorkerConcurrency(input: StartDeploymentWorkerInput) {
   return workerConcurrency;
 }
 
+const DEPLOYMENT_WORKER_TELEMETRY_ENVIRONMENT_VARIABLES = [
+  "OTEL_ENABLED",
+  "OTEL_EXPORTER_MODE",
+  "OTEL_EXPORTER_OTLP_ENDPOINT",
+  "OTEL_DEPLOYMENT_ENVIRONMENT",
+  "OTEL_METRIC_EXPORT_INTERVAL_MS",
+  "OTEL_SERVICE_NAME",
+  "CASCADE_VERSION",
+] as const;
+
+function getDeploymentWorkerTelemetryEnvironment(input: StartDeploymentWorkerInput) {
+  return DEPLOYMENT_WORKER_TELEMETRY_ENVIRONMENT_VARIABLES.flatMap((name) => {
+    const value = input.environment[name];
+
+    return value ? [{ name, value }] : [];
+  });
+}
+
 function createDeploymentManifest(input: StartDeploymentWorkerInput): V1Deployment {
   const name = getDeploymentName(input.deploymentId);
   const labels = {
@@ -126,6 +144,7 @@ function createDeploymentManifest(input: StartDeploymentWorkerInput): V1Deployme
                   name: "WORKER_CONCURRENCY",
                   value: getWorkerConcurrency(input),
                 },
+                ...getDeploymentWorkerTelemetryEnvironment(input),
               ],
             },
           ],

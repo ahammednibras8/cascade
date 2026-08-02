@@ -95,6 +95,11 @@ describe("createKubernetesDeploymentRuntime", () => {
       image: "cascade-worker:v1",
       environment: {
         WORKER_CONCURRENCY: "3",
+        OTEL_ENABLED: "true",
+        OTEL_EXPORTER_MODE: "otlp",
+        OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability.svc.cluster.local:4318",
+        OTEL_DEPLOYMENT_ENVIRONMENT: "production",
+        OTEL_SERVICE_NAME: "cascade-deployment-worker",
       },
     });
 
@@ -128,6 +133,18 @@ describe("createKubernetesDeploymentRuntime", () => {
           {
             name: "WORKER_CONCURRENCY",
             value: "3",
+          },
+          {
+            name: "OTEL_ENABLED",
+            value: "true",
+          },
+          {
+            name: "OTEL_EXPORTER_OTLP_ENDPOINT",
+            value: "http://otel-collector.observability.svc.cluster.local:4318",
+          },
+          {
+            name: "OTEL_SERVICE_NAME",
+            value: "cascade-deployment-worker",
           },
         ]),
       }),

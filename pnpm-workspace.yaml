@@ -23,5 +23,6 @@ allowBuilds:
   keytar: false
   lefthook: true
   prisma: true
+  protobufjs: true
   puppeteer: false
   sharp: true

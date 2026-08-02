@@ -54,3 +54,22 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "cascade.rustfsSecretName" -}}
 {{- required "rustfs.auth.existingSecret is required when rustfs.enabled is true" .Values.rustfs.auth.existingSecret -}}
 {{- end -}}
+
+{{- define "cascade.telemetryEnv" -}}
+{{- if .root.Values.telemetry.enabled }}
+- name: OTEL_ENABLED
+  value: "true"
+- name: OTEL_EXPORTER_MODE
+  value: otlp
+- name: OTEL_EXPORTER_OTLP_ENDPOINT
+  value: {{ required "telemetry.endpoint is required when telemetry.enabled is true" .root.Values.telemetry.endpoint | quote }}
+- name: OTEL_DEPLOYMENT_ENVIRONMENT
+  value: {{ .root.Values.telemetry.deploymentEnvironment | quote }}
+- name: OTEL_METRIC_EXPORT_INTERVAL_MS
+  value: {{ .root.Values.telemetry.metricExportIntervalMs | quote }}
+- name: CASCADE_VERSION
+  value: {{ .root.Chart.AppVersion | quote }}
+- name: OTEL_SERVICE_NAME
+  value: {{ .serviceName | quote }}
+{{- end }}
+{{- end }}

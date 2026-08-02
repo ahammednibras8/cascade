@@ -1,220 +1,49 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApiAuthContext } from "../../src/auth/api-key.js";
 import { hashTriggerRequest } from "../../src/lib/idempotency.js";
-
-type TransactionClient = {
-  taskRun: {
-    create: (args: unknown) => Promise<unknown>;
-  };
-  taskEvent: {
-    create: (args: unknown) => Promise<unknown>;
-  };
-};
-
-type TransactionCallback = (tx: TransactionClient) => Promise<unknown>;
-
-const TASK_ID = "11111111-1111-4111-8111-111111111111";
-const RUN_ID = "22222222-2222-4222-8222-222222222222";
-const CREATED_AT = new Date("2026-01-01T00:00:00.000Z");
-const TRACE_ID = "11111111111111111111111111111111";
-const SPAN_ID = "2222222222222222";
-const EXECUTION_CONFIG = {
-  schemaVersion: 1,
-  timeoutMs: 30_000,
-  retry: {
-    maxAttempts: 3,
-    delayMs: 1000,
-    exponentialBackoff: true,
-  },
-  queue: {
-    name: "hello",
-    concurrencyLimit: 2,
-  },
-};
-
-const auth = {
-  apiKeyId: "api-key-1",
-  environmentId: "environment-1",
-  projectId: "project-1",
-} satisfies ApiAuthContext;
-
-const prisma = vi.hoisted(() => ({
-  task: {
-    findFirst: vi.fn<(args: unknown) => Promise<unknown>>(),
-  },
-  taskRun: {
-    findFirst: vi.fn<(args: unknown) => Promise<unknown>>(),
-  },
-  $transaction: vi.fn<(callback: TransactionCallback) => Promise<unknown>>(),
-}));
-
-const txTaskRunCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
-const txTaskEventCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
-
-const enqueueTaskRun = vi.hoisted(() =>
-  vi.fn<(message: unknown, options?: unknown) => Promise<void>>(),
-);
-
-const maybeStoreJsonValue = vi.hoisted(() =>
-  vi.fn<(input: { value: unknown }) => Promise<unknown>>(),
-);
-
-const randomUUID = vi.hoisted(() => vi.fn<() => string>());
-
-vi.mock("@cascade/database", () => ({
-  Prisma: {},
-  prisma,
-}));
-
-vi.mock("../../src/queue/task-runs.js", () => ({
-  enqueueTaskRun,
-}));
-
-vi.mock("@cascade/storage", () => ({
-  maybeStoreJsonValue,
-}));
-
-vi.mock("node:crypto", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("node:crypto")>();
-
-  return {
-    ...actual,
-    randomUUID,
-  };
-});
-
-const parseTraceparent = vi.hoisted(() =>
-  vi.fn<(traceparent: string | undefined) => { traceId: string; spanId: string } | null>(
-    () => null,
-  ),
-);
-
-const createRootTraceContext = vi.hoisted(() =>
-  vi.fn<
-    () => {
-      traceId: string;
-      spanId: string;
-      parentSpanId: null;
-    }
-  >(() => ({
-    traceId: TRACE_ID,
-    spanId: SPAN_ID,
-    parentSpanId: null,
-  })),
-);
-
-const createChildTraceContext = vi.hoisted(() =>
-  vi.fn<
-    (input: { traceId: string; parentSpanId: string }) => {
-      traceId: string;
-      spanId: string;
-      parentSpanId: string;
-    }
-  >(),
-);
-
-const toTraceparent = vi.hoisted(() =>
-  vi.fn<(input: { traceId: string; spanId: string }) => string>(
-    (input) => `00-${input.traceId}-${input.spanId}-01`,
-  ),
-);
-
-vi.mock("@cascade/core", () => ({
-  parseTraceparent,
-  createRootTraceContext,
+import {
+  expectFailure,
+  expectNoRunCreatedOrQueued,
+  expectPendingTaskRunResponse,
+  expectPayloadStored,
+  expectRunQueued,
+  expectTaskLookupById,
+  expectTaskLookupBySlug,
+  expectTaskRunCreated,
+  expectTriggerEventWritten,
+  expectTriggerSucceeded,
+} from "../support/trigger-task-run/assertions.js";
+import {
+  auth,
   createChildTraceContext,
-  toTraceparent,
-}));
-
-const { triggerTaskRun } = await import("../../src/services/trigger-task-run.js");
-
-function createTask() {
-  return {
-    id: TASK_ID,
-    slug: "hello",
-    name: "Hello",
-    deploymentId: "deployment-1",
-    executionConfig: EXECUTION_CONFIG,
-  };
-}
-
-function createTaskRun(overrides: Record<string, unknown> = {}) {
-  return {
-    id: RUN_ID,
-    taskId: TASK_ID,
-    status: "PENDING",
-    payload: {
-      message: "hello",
-    },
-    createdAt: CREATED_AT,
-    idempotencyRequestHash: null,
-    delayUntil: null,
-    traceId: TRACE_ID,
-    triggerSpanId: SPAN_ID,
-    deploymentId: "deployment-1",
-    ...overrides,
-  };
-}
+  createRootTraceContext,
+  createTask,
+  createTaskRun,
+  enqueueTaskRun,
+  parseTraceparent,
+  prisma,
+  recordTaskRunTriggered,
+  resetTriggerTaskRunHarness,
+  RUN_ID,
+  TASK_ID,
+  triggerByTaskId,
+  triggerByTaskSlug,
+  txTaskRunCreate,
+} from "../support/trigger-task-run/harness.js";
 
 describe("triggerTaskRun", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-
-    parseTraceparent.mockReset();
-    parseTraceparent.mockReturnValue(null);
-
-    createRootTraceContext.mockReset();
-    createRootTraceContext.mockReturnValue({
-      traceId: TRACE_ID,
-      spanId: SPAN_ID,
-      parentSpanId: null,
-    });
-
-    createChildTraceContext.mockReset();
-
-    toTraceparent.mockReset();
-    toTraceparent.mockImplementation((input) => `00-${input.traceId}-${input.spanId}-01`);
-
-    randomUUID.mockReturnValue(RUN_ID);
-
-    maybeStoreJsonValue.mockImplementation(async (input) => input.value);
-
-    prisma.$transaction.mockImplementation(async (callback) =>
-      callback({
-        taskRun: {
-          create: txTaskRunCreate,
-        },
-        taskEvent: {
-          create: txTaskEventCreate,
-        },
-      }),
-    );
-
-    txTaskEventCreate.mockResolvedValue({
-      id: "event-1",
-    });
+    resetTriggerTaskRunHarness();
   });
 
   it("rejects invalid task ids", async () => {
-    const result = await triggerTaskRun({
-      auth,
+    const result = await triggerByTaskId({
       taskId: "not-a-uuid",
-      body: {
-        payload: {
-          message: "hello",
-        },
-      },
-      idempotencyKey: undefined,
-      traceparent: undefined,
     });
 
-    expect(result).toEqual({
-      ok: false,
+    expectFailure(result, {
       status: 400,
-      error: {
-        code: "INVALID_TASK_ID",
-        message: "taskId must be a valid UUID",
-      },
+      code: "INVALID_TASK_ID",
+      message: "taskId must be a valid UUID",
     });
 
     expect(prisma.task.findFirst).not.toHaveBeenCalled();
@@ -224,36 +53,14 @@ describe("triggerTaskRun", () => {
   it("rejects tasks outside the authenticated environment", async () => {
     prisma.task.findFirst.mockResolvedValue(null);
 
-    const result = await triggerTaskRun({
-      auth,
-      taskId: TASK_ID,
-      body: {
-        payload: {
-          message: "hello",
-        },
-      },
-      idempotencyKey: undefined,
-      traceparent: undefined,
-    });
+    const result = await triggerByTaskId();
 
-    expect(result).toEqual({
-      ok: false,
+    expectFailure(result, {
       status: 404,
-      error: {
-        code: "TASK_NOT_FOUND",
-        message: "Task was not found in this environment",
-      },
+      code: "TASK_NOT_FOUND",
+      message: "Task was not found in this environment",
     });
-
-    expect(prisma.task.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          id: TASK_ID,
-          environmentId: auth.environmentId,
-        },
-      }),
-    );
-
+    expectTaskLookupById();
     expect(enqueueTaskRun).not.toHaveBeenCalled();
   });
 
@@ -261,89 +68,14 @@ describe("triggerTaskRun", () => {
     prisma.task.findFirst.mockResolvedValue(createTask());
     txTaskRunCreate.mockResolvedValue(createTaskRun());
 
-    const result = await triggerTaskRun({
-      auth,
-      taskId: TASK_ID,
-      body: {
-        payload: {
-          message: "hello",
-        },
-      },
-      idempotencyKey: undefined,
-      traceparent: undefined,
-    });
+    const result = await triggerByTaskId();
 
-    expect(result.ok).toBe(true);
-
-    if (!result.ok) {
-      throw new Error("Expected triggerTaskRun to succeed");
-    }
-
-    expect(result.status).toBe(202);
-    expect(result.idempotentReplayed).toBe(false);
-    expect(result.taskRun).toEqual({
-      id: RUN_ID,
-      taskId: TASK_ID,
-      taskSlug: "hello",
-      taskName: "Hello",
-      status: "PENDING",
-      payload: {
-        message: "hello",
-      },
-      createdAt: CREATED_AT.toISOString(),
-      idempotentReplay: false,
-      traceparent: `00-${TRACE_ID}-${SPAN_ID}-01`,
-    });
-
-    expect(maybeStoreJsonValue).toHaveBeenCalledWith({
-      kind: "PAYLOAD",
-      environmentId: auth.environmentId,
-      taskId: TASK_ID,
-      runId: RUN_ID,
-      value: {
-        message: "hello",
-      },
-    });
-
-    expect(txTaskRunCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          id: RUN_ID,
-          taskId: TASK_ID,
-          status: "PENDING",
-          traceId: TRACE_ID,
-          triggerSpanId: SPAN_ID,
-          deploymentId: "deployment-1",
-          executionConfig: EXECUTION_CONFIG,
-          payload: {
-            message: "hello",
-          },
-        }),
-      }),
-    );
-
-    expect(txTaskEventCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          taskRunId: RUN_ID,
-          type: "task.triggered",
-          level: "INFO",
-          message: "Task trigger accepted and run is pending",
-        }),
-      }),
-    );
-
-    expect(enqueueTaskRun).toHaveBeenCalledWith(
-      {
-        runId: RUN_ID,
-        taskId: TASK_ID,
-        environmentId: auth.environmentId,
-        deploymentId: "deployment-1",
-      },
-      {
-        delayMs: 0,
-      },
-    );
+    expectPendingTaskRunResponse(result);
+    expectPayloadStored();
+    expectTaskRunCreated();
+    expectTriggerEventWritten();
+    expectRunQueued();
+    expect(recordTaskRunTriggered).toHaveBeenCalledOnce();
   });
 
   it("returns an existing run for a matching idempotent replay", async () => {
@@ -351,41 +83,32 @@ describe("triggerTaskRun", () => {
       message: "hello",
     };
 
-    const idempotencyRequestHash = hashTriggerRequest({
-      taskId: TASK_ID,
-      payload,
-      delayUntil: undefined,
-    });
-
     prisma.task.findFirst.mockResolvedValue(createTask());
     prisma.taskRun.findFirst.mockResolvedValue(
       createTaskRun({
-        idempotencyRequestHash,
+        idempotencyRequestHash: hashTriggerRequest({
+          taskId: TASK_ID,
+          payload,
+          delayUntil: undefined,
+        }),
       }),
     );
 
-    const result = await triggerTaskRun({
-      auth,
-      taskId: TASK_ID,
+    const result = await triggerByTaskId({
       body: {
         payload,
       },
       idempotencyKey: "trigger-request-1",
-      traceparent: undefined,
     });
 
-    expect(result.ok).toBe(true);
+    const success = expectTriggerSucceeded(result);
 
-    if (!result.ok) {
-      throw new Error("Expected triggerTaskRun to succeed");
-    }
-
-    expect(result.status).toBe(200);
-    expect(result.idempotentReplayed).toBe(true);
-    expect(result.taskRun.idempotentReplay).toBe(true);
-
+    expect(success.status).toBe(200);
+    expect(success.idempotentReplayed).toBe(true);
+    expect(success.taskRun.idempotentReplay).toBe(true);
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(enqueueTaskRun).not.toHaveBeenCalled();
+    expect(recordTaskRunTriggered).not.toHaveBeenCalled();
   });
 
   it("rejects tasks without an execution config snapshot source", async () => {
@@ -394,29 +117,15 @@ describe("triggerTaskRun", () => {
       executionConfig: null,
     });
 
-    const result = await triggerTaskRun({
-      auth,
-      taskId: TASK_ID,
-      body: {
-        payload: {
-          message: "hello",
-        },
-      },
-      idempotencyKey: undefined,
-      traceparent: undefined,
-    });
+    const result = await triggerByTaskId();
 
-    expect(result).toEqual({
-      ok: false,
+    expect(result.ok).toBe(false);
+    expectFailure(result, {
       status: 409,
-      error: {
-        code: "TASK_EXECUTION_CONFIG_MISSING",
-        message: "Task must be registered by a deployment with executionConfig before it can run",
-      },
+      code: "TASK_EXECUTION_CONFIG_MISSING",
+      message: "Task must be registered by a deployment with executionConfig before it can run",
     });
-
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(enqueueTaskRun).not.toHaveBeenCalled();
+    expectNoRunCreatedOrQueued();
   });
 
   it("rejects idempotency key reuse with a different request", async () => {
@@ -427,29 +136,17 @@ describe("triggerTaskRun", () => {
       }),
     );
 
-    const result = await triggerTaskRun({
-      auth,
-      taskId: TASK_ID,
-      body: {
-        payload: {
-          message: "hello",
-        },
-      },
+    const result = await triggerByTaskId({
       idempotencyKey: "trigger-request-1",
-      traceparent: undefined,
     });
 
-    expect(result).toEqual({
-      ok: false,
+    expect(result.ok).toBe(false);
+    expectFailure(result, {
       status: 409,
-      error: {
-        code: "IDEMPOTENCY_CONFLICT",
-        message: "This Idempotency-Key was already used with a different trigger request",
-      },
+      code: "IDEMPOTENCY_CONFLICT",
+      message: "This Idempotency-Key was already used with a different trigger request",
     });
-
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(enqueueTaskRun).not.toHaveBeenCalled();
+    expectNoRunCreatedOrQueued();
   });
 
   it("creates a delayed pending run and enqueues it with delayMs", async () => {
@@ -466,55 +163,25 @@ describe("triggerTaskRun", () => {
         }),
       );
 
-      const result = await triggerTaskRun({
-        auth,
-        taskId: TASK_ID,
+      const result = await triggerByTaskId({
         body: {
           payload: {
             message: "hello",
           },
           delayUntil: delayUntil.toISOString(),
         },
-        idempotencyKey: undefined,
-        traceparent: undefined,
       });
 
       expect(result.ok).toBe(true);
-
-      expect(txTaskRunCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            id: RUN_ID,
-            taskId: TASK_ID,
-            status: "PENDING",
-            delayUntil,
-          }),
+      expectTaskRunCreated({
+        delayUntil,
+      });
+      expectTriggerEventWritten({
+        data: expect.objectContaining({
+          delayUntil: "2026-01-01T00:01:00.000Z",
         }),
-      );
-
-      expect(txTaskEventCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            taskRunId: RUN_ID,
-            type: "task.triggered",
-            data: expect.objectContaining({
-              delayUntil: "2026-01-01T00:01:00.000Z",
-            }),
-          }),
-        }),
-      );
-
-      expect(enqueueTaskRun).toHaveBeenCalledWith(
-        {
-          runId: RUN_ID,
-          taskId: TASK_ID,
-          environmentId: auth.environmentId,
-          deploymentId: "deployment-1",
-        },
-        {
-          delayMs: 60_000,
-        },
-      );
+      });
+      expectRunQueued(60_000);
     } finally {
       vi.useRealTimers();
     }
@@ -523,30 +190,22 @@ describe("triggerTaskRun", () => {
   it("rejects invalid delayUntil values", async () => {
     prisma.task.findFirst.mockResolvedValue(createTask());
 
-    const result = await triggerTaskRun({
-      auth,
-      taskId: TASK_ID,
+    const result = await triggerByTaskId({
       body: {
         payload: {
           message: "hello",
         },
         delayUntil: "not-a-date",
       },
-      idempotencyKey: undefined,
-      traceparent: undefined,
     });
 
-    expect(result).toEqual({
-      ok: false,
+    expect(result.ok).toBe(false);
+    expectFailure(result, {
       status: 400,
-      error: {
-        code: "INVALID_DELAY_UNTIL",
-        message: "delayUntil must be a valid ISO date string",
-      },
+      code: "INVALID_DELAY_UNTIL",
+      message: "delayUntil must be a valid ISO date string",
     });
-
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(enqueueTaskRun).not.toHaveBeenCalled();
+    expectNoRunCreatedOrQueued();
   });
 
   it("continues an incoming traceparent when triggering a task", async () => {
@@ -559,15 +218,12 @@ describe("triggerTaskRun", () => {
       traceId: parentTraceId,
       spanId: parentSpanId,
     });
-
     createChildTraceContext.mockReturnValue({
       traceId: parentTraceId,
       spanId: childSpanId,
       parentSpanId,
     });
-
     prisma.task.findFirst.mockResolvedValue(createTask());
-
     txTaskRunCreate.mockResolvedValue(
       createTaskRun({
         traceId: parentTraceId,
@@ -575,97 +231,54 @@ describe("triggerTaskRun", () => {
       }),
     );
 
-    const result = await triggerTaskRun({
-      auth,
-      taskId: TASK_ID,
-      body: {
-        payload: {
-          message: "hello",
-        },
-      },
-      idempotencyKey: undefined,
+    const result = await triggerByTaskId({
       traceparent: incomingTraceparent,
     });
 
-    expect(result.ok).toBe(true);
-
-    if (!result.ok) {
-      throw new Error("Expected triggerTaskRun to succeed");
-    }
+    const success = expectTriggerSucceeded(result);
 
     expect(parseTraceparent).toHaveBeenCalledWith(incomingTraceparent);
     expect(createRootTraceContext).not.toHaveBeenCalled();
-
     expect(createChildTraceContext).toHaveBeenCalledWith({
       traceId: parentTraceId,
       parentSpanId,
     });
-
-    expect(txTaskRunCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          traceId: parentTraceId,
-          triggerSpanId: childSpanId,
-        }),
-      }),
-    );
-
-    expect(txTaskEventCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          traceId: parentTraceId,
-          spanId: childSpanId,
-          parentSpanId,
-        }),
-      }),
-    );
-
-    expect(result.taskRun.traceparent).toBe(`00-${parentTraceId}-${childSpanId}-01`);
+    expectTaskRunCreated({
+      traceId: parentTraceId,
+      triggerSpanId: childSpanId,
+    });
+    expectTriggerEventWritten({
+      traceId: parentTraceId,
+      spanId: childSpanId,
+      parentSpanId,
+    });
+    expect(success.taskRun.traceparent).toBe(`00-${parentTraceId}-${childSpanId}-01`);
   });
 
   it("creates a pending task run when triggering by task slug", async () => {
     prisma.task.findFirst.mockResolvedValue(createTask());
     txTaskRunCreate.mockResolvedValue(createTaskRun());
 
-    const result = await triggerTaskRun({
-      auth,
-      taskSlug: "hello",
+    const result = await triggerByTaskSlug({
       body: {
         payload: {
           name: "Ahammed",
         },
       },
-      idempotencyKey: undefined,
-      traceparent: undefined,
     });
 
-    if (!result.ok) {
-      throw new Error("Expected triggerTaskRun to succeed");
-    }
+    const success = expectTriggerSucceeded(result);
 
-    expect(result.status).toBe(202);
-
-    expect(prisma.task.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          slug: "hello",
-          environmentId: auth.environmentId,
-        },
-      }),
-    );
-
-    expect(txTaskRunCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          taskId: TASK_ID,
-          status: "PENDING",
-        }),
-      }),
-    );
-
+    expect(success.status).toBe(202);
+    expectTaskLookupBySlug();
+    expectTaskRunCreated({
+      payload: {
+        name: "Ahammed",
+      },
+    });
     expect(enqueueTaskRun).toHaveBeenCalledWith(
       expect.objectContaining({
-        runId: "22222222-2222-4222-8222-222222222222",
+        runId: RUN_ID,
         taskId: TASK_ID,
         environmentId: auth.environmentId,
       }),

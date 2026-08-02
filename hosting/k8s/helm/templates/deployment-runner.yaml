@@ -19,6 +19,7 @@ spec:
         app.kubernetes.io/component: deployment-runner
     spec:
       serviceAccountName: {{ include "cascade.deploymentRunnerServiceAccountName" . }}
+      terminationGracePeriodSeconds: 30
       containers:
         - name: deployment-runner
           image: "{{ .Values.deploymentRunner.image.repository }}:{{ required "deploymentRunner.image.tag is required" .Values.deploymentRunner.image.tag }}"
@@ -51,6 +52,7 @@ spec:
               value: {{ .Values.deploymentRunner.workerConcurrency | quote }}
             - name: DEPLOYMENT_RUNNER_POLL_MS
               value: {{ .Values.deploymentRunner.pollIntervalMs | quote }}
+          {{- include "cascade.telemetryEnv" (dict "root" . "serviceName" "cascade-deployment-runner") | nindent 12 }}
           resources:
             {{- toYaml .Values.deploymentRunner.resources | nindent 12 }}
 {{- end }}

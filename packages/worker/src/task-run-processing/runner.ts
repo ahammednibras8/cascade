@@ -10,6 +10,7 @@ import { startTaskRunHeartbeat } from "../timers/task-run-heartbeat.js";
 import { serializeTaskRunError } from "./errors.js";
 import { completeTaskRun, failTaskRunPermanently, scheduleTaskRunRetry } from "./results.js";
 import type { ProcessableTaskRun, TaskRunAttempt } from "./state.js";
+import { recordTaskRunExecution } from "@cascade/telemetry";
 
 async function storeTaskOutput(input: {
   output: JsonValue | void;
@@ -72,6 +73,7 @@ async function handleTaskFailure(input: {
   trace: TraceContext;
   error: unknown;
   cancellationSignal: AbortSignal;
+  executionStartedAtMs: number;
 }) {
   if (input.cancellationSignal.aborted || (await isTaskRunCanceled(input.taskRun.id))) {
     return;
@@ -84,12 +86,19 @@ async function handleTaskFailure(input: {
     : 0;
 
   if (!shouldRetry) {
-    await failTaskRunPermanently({
+    const failed = await failTaskRunPermanently({
       taskRunId: input.taskRun.id,
       attempt: input.attempt,
       trace: input.trace,
       error: serializedError,
     });
+
+    if (failed) {
+      recordTaskRunExecution({
+        outcome: "failed",
+        durationMs: performance.now() - input.executionStartedAtMs,
+      });
+    }
     return;
   }
 
@@ -107,6 +116,11 @@ async function handleTaskFailure(input: {
   if (!retried) {
     return;
   }
+
+  recordTaskRunExecution({
+    outcome: "retried",
+    durationMs: performance.now() - input.executionStartedAtMs,
+  });
 
   await enqueueTaskRun(input.message, {
     delayMs: retryDelayMs,
@@ -134,6 +148,8 @@ export async function runClaimedTask(input: {
       return;
     }
 
+    const executionStartedAtMs = performance.now();
+
     const stopHeartbeat = startTaskRunHeartbeat(input.taskRun.id);
 
     try {
@@ -156,18 +172,26 @@ export async function runClaimedTask(input: {
         return;
       }
 
-      await completeTaskRun({
+      const completed = await completeTaskRun({
         taskRunId: input.taskRun.id,
         attemptId: input.attempt.id,
         trace: input.trace,
         output: storedOutput,
         localTaskId: input.localTask.id,
       });
+
+      if (completed) {
+        recordTaskRunExecution({
+          outcome: "completed",
+          durationMs: performance.now() - executionStartedAtMs,
+        });
+      }
     } catch (error) {
       await handleTaskFailure({
         ...input,
         error,
         cancellationSignal: cancellationController.signal,
+        executionStartedAtMs,
       });
     } finally {
       stopHeartbeat();

@@ -28,6 +28,15 @@ function getDeploymentWorkerEnvironment(deploymentId: string) {
     S3_BUCKET: deploymentRunnerConfig.s3Bucket,
     S3_FORCE_PATH_STYLE: deploymentRunnerConfig.s3ForcePathStyle,
     LARGE_PAYLOAD_THRESHOLD_BYTES: deploymentRunnerConfig.largePayloadThresholdBytes,
+
+    OTEL_ENABLED: deploymentRunnerConfig.otelEnabled,
+    OTEL_EXPORTER_MODE: deploymentRunnerConfig.otelExporterMode,
+    OTEL_EXPORTER_OTLP_ENDPOINT: deploymentRunnerConfig.otelEndpoint,
+    OTEL_DEPLOYMENT_ENVIRONMENT: deploymentRunnerConfig.otelDeploymentEnvironment,
+    OTEL_METRIC_EXPORT_INTERVAL_MS: deploymentRunnerConfig.otelMetricExportIntervalMs,
+    CASCADE_VERSION: deploymentRunnerConfig.cascadeVersion,
+    OTEL_SERVICE_NAME:
+      deploymentRunnerConfig.otelEnabled === "true" ? "cascade-deployment-worker" : undefined,
   };
 
   for (const [name, value] of Object.entries(optionalEnvironment)) {

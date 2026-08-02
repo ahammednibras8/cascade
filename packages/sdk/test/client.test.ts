@@ -1,5 +1,50 @@
 import { describe, expect, it, vi } from "vitest";
 import { CascadeApiError, createCascadeClient, defineTask } from "../src/index.js";
+import {
+  context,
+  ROOT_CONTEXT,
+  trace,
+  TraceFlags,
+  type Context,
+  type ContextManager,
+} from "@opentelemetry/api";
+
+class TestContextManager implements ContextManager {
+  private activeContext = ROOT_CONTEXT;
+
+  active() {
+    return this.activeContext;
+  }
+
+  with<A extends unknown[], F extends (...args: A) => ReturnType<F>>(
+    activeContext: Context,
+    fn: F,
+    thisArg?: ThisParameterType<F>,
+    ...args: A
+  ): ReturnType<F> {
+    const previousContext = this.activeContext;
+    this.activeContext = activeContext;
+
+    try {
+      return fn.call(thisArg, ...args);
+    } finally {
+      this.activeContext = previousContext;
+    }
+  }
+
+  bind<T>(_activeContext: Context, target: T) {
+    return target;
+  }
+
+  enable() {
+    return this;
+  }
+
+  disable() {
+    this.activeContext = ROOT_CONTEXT;
+    return this;
+  }
+}
 
 describe("defineTask", () => {
   it("creates a normalized task definition", () => {
@@ -75,6 +120,66 @@ describe("createCascadeClient", () => {
       "http://localhost:3001/api/tasks/slug/hello/trigger",
       expect.objectContaining({
         method: "POST",
+      }),
+    );
+  });
+
+  it("uses the active OpenTelemetry traceparent when triggering a task", async () => {
+    context.setGlobalContextManager(new TestContextManager());
+
+    const fetchMock = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({
+            taskRun: {
+              id: "run-1",
+              taskId: "task-1",
+              taskSlug: "hello",
+              taskName: "Hello",
+              status: "PENDING",
+              payload: null,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              idempotentReplay: false,
+              traceparent: "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
+            },
+          }),
+          { status: 202 },
+        ),
+    );
+
+    const client = createCascadeClient({
+      baseUrl: "http://localhost:3001",
+      apiKey: "test-key",
+      fetch: fetchMock,
+    });
+
+    const activeContext = trace.setSpanContext(context.active(), {
+      traceId: "11111111111111111111111111111111",
+      spanId: "2222222222222222",
+      traceFlags: TraceFlags.SAMPLED,
+    });
+
+    try {
+      await context.with(activeContext, async () => {
+        await client.triggerTask(
+          defineTask({
+            id: "hello",
+            run() {
+              return { ok: true };
+            },
+          }),
+        );
+      });
+    } finally {
+      context.disable();
+    }
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3001/api/tasks/slug/hello/trigger",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          traceparent: "00-11111111111111111111111111111111-2222222222222222-01",
+        }),
       }),
     );
   });

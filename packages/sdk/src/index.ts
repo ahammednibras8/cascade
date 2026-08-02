@@ -1,10 +1,18 @@
 import {
   createRootTraceContext,
   task,
+  toTraceparent,
   type JsonValue,
   type TaskDefinition,
   type TaskDefinitionInput,
 } from "@cascade/core";
+import {
+  context,
+  isSpanContextValid,
+  trace,
+  TraceFlags,
+  type SpanContext,
+} from "@opentelemetry/api";
 
 export { createPackageInfo, packageName } from "@cascade/core";
 
@@ -155,6 +163,24 @@ function getErrorCode(body: unknown) {
   return "CASCADE_API_ERROR";
 }
 
+function getTraceFlags(spanContext: SpanContext): "00" | "01" {
+  return spanContext.traceFlags & TraceFlags.SAMPLED ? "01" : "00";
+}
+
+function getActiveTraceparent() {
+  const spanContext = trace.getSpanContext(context.active());
+
+  if (!spanContext || !isSpanContextValid(spanContext)) {
+    return undefined;
+  }
+
+  return toTraceparent({
+    traceId: spanContext.traceId,
+    spanId: spanContext.spanId,
+    traceFlags: getTraceFlags(spanContext),
+  });
+}
+
 export function createCascadeClient(options: CascadeClientOptions) {
   const baseUrl = trimTrailingSlash(options.baseUrl);
   const fetchImplementation = getFetch(options.fetch);
@@ -187,7 +213,10 @@ export function createCascadeClient(options: CascadeClientOptions) {
       taskDefinition: TaskDefinition<TPayload, TOutput>,
       triggerOptions: TriggerTaskOptions<TPayload> = {},
     ) {
-      const traceparent = triggerOptions.traceparent ?? createRootTraceContext().traceparent;
+      const traceparent =
+        triggerOptions.traceparent ??
+        getActiveTraceparent() ??
+        createRootTraceContext().traceparent;
 
       const response = await request<TriggerTaskSuccessResponse<TPayload>>(
         `/api/tasks/slug/${encodeURIComponent(taskDefinition.id)}/trigger`,

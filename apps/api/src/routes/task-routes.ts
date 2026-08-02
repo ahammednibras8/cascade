@@ -6,6 +6,7 @@ import { createTaskSchedule } from "../services/create-task-schedule.js";
 import { listTasks } from "../services/list-tasks.js";
 import { triggerTaskRun } from "../services/trigger-task-run.js";
 import { getAuthOrRespond } from "./route-auth.js";
+import { withActiveSpan } from "@cascade/telemetry";
 
 export const taskRoutes: ExpressRouter = Router();
 
@@ -35,13 +36,26 @@ taskRoutes.post(
       return;
     }
 
-    const result = await triggerTaskRun({
-      auth,
-      taskSlug: getSingleParam(request.params.taskSlug),
-      body: request.body,
-      idempotencyKey: getIdempotencyKey(request),
-      traceparent: request.get("traceparent")?.trim(),
-    });
+    const taskSlug = getSingleParam(request.params.taskSlug);
+
+    const result = await withActiveSpan(
+      {
+        name: "cascade.task.run.trigger",
+        attributes: {
+          "cascade.environment.id": auth.environmentId,
+          "cascade.task.slug": taskSlug ?? "unknown",
+        },
+      },
+      async (traceContext) =>
+        triggerTaskRun({
+          auth,
+          taskSlug,
+          body: request.body,
+          idempotencyKey: getIdempotencyKey(request),
+          traceparent: request.get("traceparent")?.trim(),
+          ...(traceContext ? { trace: traceContext } : {}),
+        }),
+    );
 
     writeTriggerTaskRunResponse(result, response);
   }),
@@ -56,13 +70,26 @@ taskRoutes.post(
       return;
     }
 
-    const result = await triggerTaskRun({
-      auth,
-      taskId: getSingleParam(request.params.taskId),
-      body: request.body,
-      idempotencyKey: getIdempotencyKey(request),
-      traceparent: request.get("traceparent")?.trim(),
-    });
+    const taskId = getSingleParam(request.params.taskId);
+
+    const result = await withActiveSpan(
+      {
+        name: "cascade.task.run.trigger",
+        attributes: {
+          "cascade.environment.id": auth.environmentId,
+          "cascade.task.id": taskId ?? "unknown",
+        },
+      },
+      async (traceContext) =>
+        triggerTaskRun({
+          auth,
+          taskId,
+          body: request.body,
+          idempotencyKey: getIdempotencyKey(request),
+          traceparent: request.get("traceparent")?.trim(),
+          ...(traceContext ? { trace: traceContext } : {}),
+        }),
+    );
 
     writeTriggerTaskRunResponse(result, response);
   }),

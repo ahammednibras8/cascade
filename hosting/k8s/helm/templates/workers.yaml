@@ -38,6 +38,8 @@ spec:
               value: file:///app/packages/worker/dist/tasks/local.js
             - name: WORKER_CONCURRENCY
               value: {{ .Values.workers.local.concurrency | quote }}
+          {{- include "cascade.telemetryEnv" (dict "root" . "serviceName" "cascade-worker-local") | nindent 12 }}
+
           resources:
             {{- toYaml .Values.workers.local.resources | nindent 12 }}
 {{- end }}
@@ -76,6 +78,9 @@ spec:
               value: production
             - name: CASCADE_WORKER_ROLE
               value: control
+          {{- include "cascade.telemetryEnv" (dict "root" . "serviceName" "cascade-worker-control") | nindent 12 }}
+
+
           resources:
             {{- toYaml .Values.workers.control.resources | nindent 12 }}
 {{- end }}

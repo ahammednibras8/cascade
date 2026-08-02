@@ -51,7 +51,7 @@ function getTaskRunDelayedQueueKey(deploymentId: string | null | undefined) {
   return `${TASK_RUN_DELAYED_QUEUE_KEY_PREFIX}:${getDeploymentQueuePart(deploymentId)}`;
 }
 
-const taskRunQueueRedis = globalForRedis.taskRunQueueRedis ?? createRedisClient();
+export const taskRunQueueRedis = globalForRedis.taskRunQueueRedis ?? createRedisClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForRedis.taskRunQueueRedis = taskRunQueueRedis;

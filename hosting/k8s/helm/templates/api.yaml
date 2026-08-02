@@ -19,6 +19,7 @@ spec:
         app.kubernetes.io/component: api
     spec:
       automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
       containers:
         - name: api
           image: "{{ .Values.api.image.repository }}:{{ required "api.image.tag is required" .Values.api.image.tag }}"
@@ -36,6 +37,7 @@ spec:
               value: production
             - name: API_PORT
               value: "3001"
+          {{- include "cascade.telemetryEnv" (dict "root" . "serviceName" "cascade-api") | nindent 12 }}
           readinessProbe:
             httpGet:
               path: /healthz

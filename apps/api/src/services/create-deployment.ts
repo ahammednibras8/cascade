@@ -122,6 +122,25 @@ function parseDeploymentBody(body: unknown) {
   };
 }
 
+function isDeploymentVersionConflict(error: unknown) {
+  if (
+    typeof error !== "object" ||
+    error === null ||
+    !("code" in error) ||
+    (error as { code?: unknown }).code !== "P2002"
+  ) {
+    return false;
+  }
+
+  const target = (error as { meta?: { target?: unknown } }).meta?.target;
+
+  if (Array.isArray(target)) {
+    return target.includes("environmentId") && target.includes("version");
+  }
+
+  return target === "Deployment_environmentId_version_key";
+}
+
 export async function createDeployment(input: CreateDeploymentInput) {
   const parsed = parseDeploymentBody(input.body);
 
@@ -129,71 +148,88 @@ export async function createDeployment(input: CreateDeploymentInput) {
     return parsed;
   }
 
-  const deployment = await prisma.$transaction(async (tx) => {
-    await tx.deployment.updateMany({
-      where: {
-        environmentId: input.auth.environmentId,
-        status: "ACTIVE",
-      },
-      data: {
-        status: "INACTIVE",
-      },
-    });
+  let deployment;
 
-    const createdDeployment = await tx.deployment.create({
-      data: {
-        environmentId: input.auth.environmentId,
-        version: parsed.deployment.version,
-        image: parsed.deployment.image,
-        status: "ACTIVE",
-      },
-    });
+  try {
+    deployment = await prisma.$transaction(async (tx) => {
+      await tx.deployment.updateMany({
+        where: {
+          environmentId: input.auth.environmentId,
+          status: "ACTIVE",
+        },
+        data: {
+          status: "INACTIVE",
+        },
+      });
 
-    await Promise.all(
-      parsed.deployment.tasks.map((task) =>
-        tx.task.upsert({
-          where: {
-            environmentId_slug: {
+      const createdDeployment = await tx.deployment.create({
+        data: {
+          environmentId: input.auth.environmentId,
+          version: parsed.deployment.version,
+          image: parsed.deployment.image,
+          status: "ACTIVE",
+        },
+      });
+
+      await Promise.all(
+        parsed.deployment.tasks.map((task) =>
+          tx.task.upsert({
+            where: {
+              environmentId_slug: {
+                environmentId: input.auth.environmentId,
+                slug: task.slug,
+              },
+            },
+            create: {
               environmentId: input.auth.environmentId,
+              deploymentId: createdDeployment.id,
               slug: task.slug,
+              name: task.name,
+              description: task.description,
+              executionConfig: task.executionConfig as Prisma.InputJsonValue,
+            },
+            update: {
+              deploymentId: createdDeployment.id,
+              name: task.name,
+              description: task.description,
+              executionConfig: task.executionConfig as Prisma.InputJsonValue,
+            },
+          }),
+        ),
+      );
+
+      return tx.deployment.findUniqueOrThrow({
+        where: {
+          id: createdDeployment.id,
+        },
+        include: {
+          tasks: {
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+            },
+            orderBy: {
+              slug: "asc",
             },
           },
-          create: {
-            environmentId: input.auth.environmentId,
-            deploymentId: createdDeployment.id,
-            slug: task.slug,
-            name: task.name,
-            description: task.description,
-            executionConfig: task.executionConfig as Prisma.InputJsonValue,
-          },
-          update: {
-            deploymentId: createdDeployment.id,
-            name: task.name,
-            description: task.description,
-            executionConfig: task.executionConfig as Prisma.InputJsonValue,
-          },
-        }),
-      ),
-    );
-
-    return tx.deployment.findUniqueOrThrow({
-      where: {
-        id: createdDeployment.id,
-      },
-      include: {
-        tasks: {
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-          },
-          orderBy: {
-            slug: "asc",
-          },
         },
-      },
+      });
     });
-  });
+  } catch (error) {
+    if (isDeploymentVersionConflict(error)) {
+      return {
+        ok: false as const,
+        status: 409,
+        error: {
+          code: "DEPLOYMENT_VERSION_EXISTS",
+          message: "A deployment with this version already exists in the environment",
+        },
+      };
+    }
+
+    throw error;
+  }
 
   return {
     ok: true as const,

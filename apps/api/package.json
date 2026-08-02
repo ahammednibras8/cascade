@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file=../../.env --conditions=development --import tsx --watch src/index.ts",
+    "dev": "node --env-file=../../.env --conditions=development --import tsx --import @cascade/telemetry/register --watch src/index.ts",
     "dev:create-api-key": "node --env-file=../../.env --conditions=development --import tsx src/dev/create-api-key.ts",
     "dev:sync-dashboard-api-key": "node --env-file=../../.env --conditions=development --import tsx src/dev/sync-dashboard-api-key.ts",
-    "start": "node dist/index.js",
+    "start": "node --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import @cascade/telemetry/register dist/index.js",
     "build": "tsc --project tsconfig.build.json",
     "check-types": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
@@ -15,6 +15,8 @@
     "@cascade/core": "workspace:*",
     "@cascade/database": "workspace:*",
     "@cascade/storage": "workspace:*",
+    "@cascade/telemetry": "workspace:*",
+    "@opentelemetry/instrumentation": "^0.221.0",
     "express": "5.2.1",
     "ioredis": "5.11.1"
   },

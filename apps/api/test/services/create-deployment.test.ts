@@ -247,4 +247,36 @@ describe("createDeployment", () => {
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
+
+  it("returns 409 when the deployment version already exists in the environment", async () => {
+    prisma.$transaction.mockRejectedValueOnce({
+      code: "P2002",
+      meta: {
+        target: ["environmentId", "version"],
+      },
+    });
+
+    await expect(
+      createDeployment({
+        auth,
+        body: {
+          version: "v1",
+          image: "ghcr.io/cascade/worker:v1",
+          tasks: [
+            {
+              slug: "hello",
+              executionConfig: EXECUTION_CONFIG,
+            },
+          ],
+        },
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      status: 409,
+      error: {
+        code: "DEPLOYMENT_VERSION_EXISTS",
+        message: "A deployment with this version already exists in the environment",
+      },
+    });
+  });
 });

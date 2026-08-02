@@ -22,6 +22,8 @@ import {
   taskRegistry,
   txTaskEventCreate,
   txTaskRunUpdateMany,
+  withRemoteParentSpan,
+  recordTaskRunExecution,
 } from "./support/task-run-processor/harness.js";
 import {
   expectHeartbeatWasStopped,
@@ -40,6 +42,25 @@ describe("processTaskRun", () => {
 
   it("executes the matching local task and completes the run", async () => {
     await processTaskRun(createMessage(), taskRegistry);
+
+    expect(withRemoteParentSpan).toHaveBeenCalledWith(
+      {
+        name: "cascade.task.run.execute",
+        parent: {
+          traceId: TRACE_ID,
+          spanId: PARENT_SPAN_ID,
+          parentSpanId: null,
+          traceFlags: "01",
+          traceparent: `00-${TRACE_ID}-${PARENT_SPAN_ID}-01`,
+        },
+        attributes: {
+          "cascade.task_run.id": RUN_ID,
+          "cascade.task.id": TASK_ID,
+          "cascade.task.slug": "hello",
+        },
+      },
+      expect.any(Function),
+    );
 
     expect(prisma.taskRun.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -108,6 +129,11 @@ describe("processTaskRun", () => {
 
     expectHeartbeatWasStopped();
     expect(enqueueTaskRun).not.toHaveBeenCalled();
+
+    expect(recordTaskRunExecution).toHaveBeenCalledWith({
+      outcome: "completed",
+      durationMs: expect.any(Number),
+    });
   });
 
   it("marks the run failed when the matching local task throws", async () => {
@@ -132,6 +158,11 @@ describe("processTaskRun", () => {
     );
 
     expect(enqueueTaskRun).not.toHaveBeenCalled();
+
+    expect(recordTaskRunExecution).toHaveBeenCalledWith({
+      outcome: "failed",
+      durationMs: expect.any(Number),
+    });
   });
 
   it("stores DbNull when the local task returns undefined", async () => {
@@ -204,6 +235,11 @@ describe("processTaskRun", () => {
 
     expect(enqueueTaskRun).toHaveBeenCalledWith(createMessage(), {
       delayMs: 2000,
+    });
+
+    expect(recordTaskRunExecution).toHaveBeenCalledWith({
+      outcome: "retried",
+      durationMs: expect.any(Number),
     });
   });
 

@@ -1,6 +1,7 @@
 import { prisma } from "@cascade/database";
 import { deploymentRunnerConfig } from "./config.js";
 import { reconcileDeployments } from "./reconcile-deployments.js";
+import { shutdownTelemetry } from "@cascade/telemetry";
 
 let shuttingDown = false;
 let resolveShutdown: (() => void) | undefined;
@@ -43,6 +44,7 @@ async function main() {
   clearInterval(interval);
 
   await prisma.$disconnect();
+  await shutdownTelemetry();
 
   process.stdout.write("Deployment runner stopped\n");
 }

@@ -22,6 +22,8 @@ COPY .configs .configs
 
 COPY apps/deployment-runner/package.json apps/deployment-runner/package.json
 COPY packages/database/package.json packages/database/package.json
+COPY packages/core/package.json packages/core/package.json
+COPY packages/telemetry/package.json packages/telemetry/package.json
 
 RUN --mount=type=cache,id=cascade-pnpm-store,target=/pnpm/store,sharing=locked \
   pnpm install --frozen-lockfile --ignore-scripts --filter @cascade/deployment-runner... \
@@ -31,10 +33,14 @@ FROM deps AS build
 
 COPY apps/deployment-runner apps/deployment-runner
 COPY packages/database packages/database
+COPY packages/core packages/core
+COPY packages/telemetry packages/telemetry
 
 RUN DATABASE_URL="postgresql://cascade:cascade@localhost:5432/cascade" \
   pnpm --filter @cascade/database run build
 
+RUN pnpm --filter @cascade/core run build
+RUN pnpm --filter @cascade/telemetry run build
 RUN pnpm --filter @cascade/deployment-runner run build
 
 FROM base AS runner
@@ -50,5 +56,7 @@ COPY --from=build /app/node_modules ./node_modules
 
 COPY --from=build /app/apps/deployment-runner ./apps/deployment-runner
 COPY --from=build /app/packages/database ./packages/database
+COPY --from=build /app/packages/core ./packages/core
+COPY --from=build /app/packages/telemetry ./packages/telemetry
 
-CMD ["node", "apps/deployment-runner/dist/index.js"]
+CMD [ "node", "--experimental-loader=@opentelemetry/instrumentation/hook.mjs", "--import=@cascade/telemetry/register", "apps/deployment-runner/dist/index.js" ]

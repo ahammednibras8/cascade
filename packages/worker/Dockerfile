@@ -19,6 +19,7 @@ COPY packages/worker/package.json packages/worker/package.json
 COPY packages/core/package.json packages/core/package.json
 COPY packages/database/package.json packages/database/package.json
 COPY packages/storage/package.json packages/storage/package.json
+COPY packages/telemetry/package.json packages/telemetry/package.json
 
 RUN --mount=type=cache,id=cascade-pnpm-store,target=/pnpm/store,sharing=locked \
 pnpm install --frozen-lockfile --ignore-scripts --filter @cascade/worker... --network-concurrency=4 --child-concurrency=2
@@ -29,8 +30,10 @@ COPY packages/worker packages/worker
 COPY packages/core packages/core
 COPY packages/database packages/database
 COPY packages/storage packages/storage
+COPY packages/telemetry packages/telemetry
 
 RUN DATABASE_URL="postgresql://cascade:cascade@localhost:5432/cascade" pnpm --filter @cascade/database run build
+RUN pnpm --filter @cascade/telemetry run build
 RUN pnpm --filter @cascade/core run build
 RUN pnpm --filter @cascade/storage run build
 RUN pnpm --filter @cascade/worker run build
@@ -55,8 +58,9 @@ COPY --from=build /app/packages/worker ./packages/worker
 COPY --from=build /app/packages/core ./packages/core
 COPY --from=build /app/packages/database ./packages/database
 COPY --from=build /app/packages/storage ./packages/storage
+COPY --from=build /app/packages/telemetry ./packages/telemetry
 
 RUN mkdir -p ./node_modules/@cascade \
   && ln -s ../../packages/core ./node_modules/@cascade/core
 
-CMD ["node", "packages/worker/dist/index.js"]
+  CMD [ "node", "--experimental-loader=@opentelemetry/instrumentation/hook.mjs", "--import=@cascade/telemetry/register", "packages/worker/dist/index.js" ]

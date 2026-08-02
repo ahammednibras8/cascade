@@ -6,26 +6,20 @@ import {
   TASK_ID,
   cancelTaskRun,
   createApp,
+  createCancelTaskRunSuccess,
   createDeployment,
+  createDeploymentBody,
+  createDeploymentSuccess,
+  createDeploymentVersionExistsFailure,
+  createListTasksSuccess,
+  createReplayTaskRunSuccess,
   createTaskSchedule,
+  createTaskScheduleSuccess,
+  createTriggerTaskRunSuccess,
   listTasks,
   replayTaskRun,
   triggerTaskRun,
 } from "./tasks-router-harness.js";
-
-const EXECUTION_CONFIG = {
-  schemaVersion: 1,
-  timeoutMs: 30_000,
-  retry: {
-    maxAttempts: 3,
-    delayMs: 1000,
-    exponentialBackoff: true,
-  },
-  queue: {
-    name: "hello",
-    concurrencyLimit: 2,
-  },
-};
 
 describe("tasksRouter write routes", () => {
   beforeEach(() => {
@@ -33,37 +27,9 @@ describe("tasksRouter write routes", () => {
   });
 
   it("passes deployment registration requests to the deployment service", async () => {
-    createDeployment.mockResolvedValue({
-      ok: true,
-      status: 201,
-      deployment: {
-        id: "deployment-1",
-        environmentId: "environment-1",
-        version: "v1",
-        image: "ghcr.io/cascade/worker:v1",
-        status: "ACTIVE",
-        tasks: [
-          {
-            id: "task-1",
-            slug: "hello",
-            name: "Hello",
-          },
-        ],
-        createdAt: "2026-01-01T00:00:00.000Z",
-      },
-    });
+    createDeployment.mockResolvedValue(createDeploymentSuccess());
 
-    const body = {
-      version: "v1",
-      image: "ghcr.io/cascade/worker:v1",
-      tasks: [
-        {
-          slug: "hello",
-          name: "Hello",
-          executionConfig: EXECUTION_CONFIG,
-        },
-      ],
-    };
+    const body = createDeploymentBody();
 
     const response = await httpRequest(createApp()).post("/api/deployments").send(body);
 
@@ -76,24 +42,12 @@ describe("tasksRouter write routes", () => {
   });
 
   it("passes Idempotency-Key to the trigger service and returns replay metadata", async () => {
-    triggerTaskRun.mockResolvedValue({
-      ok: true,
-      status: 200,
-      idempotentReplayed: true,
-      taskRun: {
-        id: "run-1",
-        taskId: TASK_ID,
-        taskSlug: "hello",
-        taskName: "Hello",
-        status: "PENDING",
-        payload: {
-          message: "hello",
-        },
-        createdAt: "2026-01-01T00:00:00.000Z",
-        idempotentReplay: true,
-        traceparent: "00-11111111111111111111111111111111-2222222222222222-01",
-      },
-    });
+    triggerTaskRun.mockResolvedValue(
+      createTriggerTaskRunSuccess({
+        status: 200,
+        idempotentReplayed: true,
+      }),
+    );
 
     const response = await httpRequest(createApp())
       .post(`/api/tasks/${TASK_ID}/trigger`)
@@ -121,24 +75,13 @@ describe("tasksRouter write routes", () => {
   });
 
   it("passes task slugs to the trigger service", async () => {
-    triggerTaskRun.mockResolvedValue({
-      ok: true,
-      status: 202,
-      idempotentReplayed: false,
-      taskRun: {
-        id: "run-1",
-        taskId: TASK_ID,
-        taskSlug: "hello",
-        taskName: "Hello",
-        status: "PENDING",
+    triggerTaskRun.mockResolvedValue(
+      createTriggerTaskRunSuccess({
         payload: {
           name: "Nibras",
         },
-        createdAt: "2026-01-01T00:00:00.000Z",
-        idempotentReplay: false,
-        traceparent: "00-11111111111111111111111111111111-2222222222222222-01",
-      },
-    });
+      }),
+    );
 
     const response = await httpRequest(createApp())
       .post("/api/tasks/slug/hello/trigger")
@@ -158,17 +101,7 @@ describe("tasksRouter write routes", () => {
   });
 
   it("passes cancel run requests to the cancel service", async () => {
-    cancelTaskRun.mockResolvedValue({
-      ok: true,
-      status: 200,
-      taskRun: {
-        id: RUN_ID,
-        taskId: TASK_ID,
-        status: "CANCELED",
-        canceled: true,
-        alreadyCanceled: false,
-      },
-    });
+    cancelTaskRun.mockResolvedValue(createCancelTaskRunSuccess());
 
     const response = await httpRequest(createApp()).post(`/api/runs/${RUN_ID}/cancel`).send();
 
@@ -181,20 +114,7 @@ describe("tasksRouter write routes", () => {
   });
 
   it("passes replay run requests to the replay service", async () => {
-    replayTaskRun.mockResolvedValue({
-      ok: true,
-      status: 202,
-      taskRun: {
-        id: "33333333-3333-4333-8333-333333333333",
-        taskId: TASK_ID,
-        status: "PENDING",
-        payload: {
-          message: "hello",
-        },
-        createdAt: "2026-01-01T00:00:00.000Z",
-        replayedFromRunId: RUN_ID,
-      },
-    });
+    replayTaskRun.mockResolvedValue(createReplayTaskRunSuccess());
 
     const response = await httpRequest(createApp()).post(`/api/runs/${RUN_ID}/replay`).send();
 
@@ -207,22 +127,7 @@ describe("tasksRouter write routes", () => {
   });
 
   it("passes create schedule requests to the schedule service", async () => {
-    createTaskSchedule.mockResolvedValue({
-      ok: true,
-      status: 201,
-      schedule: {
-        id: "33333333-3333-4333-8333-333333333333",
-        taskId: TASK_ID,
-        name: "Every minute",
-        intervalSeconds: 60,
-        nextRunAt: "2026-01-01T00:01:00.000Z",
-        enabled: true,
-        payload: {
-          message: "scheduled hello",
-        },
-        createdAt: "2026-01-01T00:00:00.000Z",
-      },
-    });
+    createTaskSchedule.mockResolvedValue(createTaskScheduleSuccess());
 
     const body = {
       name: "Every minute",
@@ -247,27 +152,7 @@ describe("tasksRouter write routes", () => {
   });
 
   it("passes task list requests to the task list service", async () => {
-    listTasks.mockResolvedValue({
-      ok: true,
-      status: 200,
-      tasks: [
-        {
-          id: "task-1",
-          slug: "hello",
-          name: "Hello",
-          description: "Greets a user",
-          deployment: {
-            id: "deployment-1",
-            version: "v1",
-            status: "ACTIVE",
-          },
-          runsCount: 3,
-          schedulesCount: 2,
-          createdAt: "2026-01-01T00:00:00.000Z",
-          updatedAt: "2026-01-02T00:00:00.000Z",
-        },
-      ],
-    });
+    listTasks.mockResolvedValue(createListTasksSuccess());
 
     const response = await httpRequest(createApp()).get("/api/tasks");
 
@@ -280,6 +165,27 @@ describe("tasksRouter write routes", () => {
       slug: "hello",
       runsCount: 3,
       schedulesCount: 2,
+    });
+  });
+
+  it("returns 409 when a deployment version already exists", async () => {
+    createDeployment.mockResolvedValue(createDeploymentVersionExistsFailure());
+
+    const response = await httpRequest(createApp())
+      .post("/api/deployments")
+      .send(
+        createDeploymentBody({
+          version: "local-worker-test-001",
+          image: "ghcr.io/cascade/worker:local",
+        }),
+      );
+
+    expect(response.status).toBe(409);
+    expect(response.body).toEqual({
+      error: {
+        code: "DEPLOYMENT_VERSION_EXISTS",
+        message: "A deployment with this version already exists in the environment",
+      },
     });
   });
 });

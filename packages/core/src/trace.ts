@@ -4,7 +4,7 @@ export type TraceContext = {
   traceId: string;
   spanId: string;
   parentSpanId: string | null;
-  traceFlags: "01";
+  traceFlags: "00" | "01";
   traceparent: string;
 };
 
@@ -26,7 +26,11 @@ export function createSpanId() {
   return randomNonZeroHex(8);
 }
 
-export function toTraceparent(input: { traceId: string; spanId: string; traceFlags?: "01" }) {
+export function toTraceparent(input: {
+  traceId: string;
+  spanId: string;
+  traceFlags?: "00" | "01";
+}) {
   return `00-${input.traceId}-${input.spanId}-${input.traceFlags ?? "01"}`;
 }
 

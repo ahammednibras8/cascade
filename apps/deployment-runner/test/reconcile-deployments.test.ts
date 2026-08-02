@@ -22,6 +22,13 @@ const deploymentRunnerConfig = vi.hoisted(() => ({
   s3Bucket: "cascade-payloads",
   s3ForcePathStyle: "true",
   largePayloadThresholdBytes: "1048576",
+
+  otelEnabled: "true",
+  otelExporterMode: "otlp",
+  otelEndpoint: "http://otel-collector.observability.svc.cluster.local:4318",
+  otelDeploymentEnvironment: "production",
+  otelMetricExportIntervalMs: "10000",
+  cascadeVersion: "0.0.0",
 }));
 
 const prisma = vi.hoisted(() => ({
@@ -129,6 +136,12 @@ describe("reconcileDeployments", () => {
         "WORKER_CONCURRENCY=2",
         "--env",
         "S3_FORCE_PATH_STYLE=true",
+        "--env",
+        "OTEL_ENABLED=true",
+        "--env",
+        "OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector.observability.svc.cluster.local:4318",
+        "--env",
+        "OTEL_SERVICE_NAME=cascade-deployment-worker",
       ]),
     );
     expect(dockerArgs).not.toContain("S3_FORCE_PATH_STYLE=cascade-payloads");

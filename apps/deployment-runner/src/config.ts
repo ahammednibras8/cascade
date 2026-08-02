@@ -82,4 +82,11 @@ export const deploymentRunnerConfig = {
   s3Bucket: getOptionalEnv("S3_BUCKET"),
   s3ForcePathStyle: getOptionalEnv("S3_FORCE_PATH_STYLE"),
   largePayloadThresholdBytes: getOptionalEnv("LARGE_PAYLOAD_THRESHOLD_BYTES"),
+
+  otelEnabled: getOptionalEnv("OTEL_ENABLED"),
+  otelExporterMode: getOptionalEnv("OTEL_EXPORTER_MODE"),
+  otelEndpoint: getOptionalEnv("OTEL_EXPORTER_OTLP_ENDPOINT"),
+  otelDeploymentEnvironment: getOptionalEnv("OTEL_DEPLOYMENT_ENVIRONMENT"),
+  otelMetricExportIntervalMs: getOptionalEnv("OTEL_METRIC_EXPORT_INTERVAL_MS"),
+  cascadeVersion: getOptionalEnv("CASCADE_VERSION"),
 };

@@ -7,6 +7,12 @@ apiSecret:
 dashboardSecret:
   existingSecret: ""
 
+telemetry:
+  enabled: false
+  endpoint: ""
+  deploymentEnvironment: production
+  metricExportIntervalMs: 10000
+
 api:
   enabled: true
   replicaCount: 2

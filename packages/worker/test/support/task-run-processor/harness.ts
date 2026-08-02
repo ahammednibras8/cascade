@@ -1,14 +1,27 @@
 import { vi } from "vitest";
+import type { TaskExecutionConfig } from "@cascade/core";
 import type { TaskRunQueueMessage } from "../../../src/queue/task-runs.js";
-import type { LoadedTaskRegistry } from "../../../src/tasks/load-registry.js";
+import {
+  PARENT_SPAN_ID,
+  SPAN_ID,
+  TRACE_ID,
+  createAttempt,
+  createPendingTaskRun,
+  createTaskRegistry,
+  resetTaskExecutionConfig,
+} from "./fixtures.js";
 
-export const RUN_ID = "run-1";
-export const TASK_ID = "task-1";
-export const ENVIRONMENT_ID = "environment-1";
-export const ATTEMPT_ID = "attempt-1";
-export const TRACE_ID = "11111111111111111111111111111111";
-export const SPAN_ID = "2222222222222222";
-export const PARENT_SPAN_ID = "3333333333333333";
+export {
+  ATTEMPT_ID,
+  ENVIRONMENT_ID,
+  PARENT_SPAN_ID,
+  RUN_ID,
+  SPAN_ID,
+  TASK_ID,
+  TRACE_ID,
+  createAttempt,
+  createMessage,
+} from "./fixtures.js";
 
 type TransactionClient = {
   taskRun: {
@@ -25,20 +38,6 @@ type TransactionClient = {
 };
 
 type TransactionCallback<T> = (tx: TransactionClient) => Promise<T>;
-
-type TaskExecutionConfig = {
-  schemaVersion: 1;
-  timeoutMs: number | null;
-  retry: {
-    maxAttempts: number;
-    delayMs: number;
-    exponentialBackoff: boolean;
-  };
-  queue: {
-    name: string;
-    concurrencyLimit: number | null;
-  };
-};
 
 const localTaskRun = vi.hoisted(() => vi.fn<(context: unknown) => Promise<unknown>>());
 
@@ -109,6 +108,12 @@ const tryAcquireQueueConcurrency = vi.hoisted(() => vi.fn<(input: unknown) => Pr
 
 const releaseQueueConcurrency = vi.hoisted(() => vi.fn<(lease: unknown) => Promise<void>>());
 
+const withRemoteParentSpan = vi.hoisted(() =>
+  vi.fn<(_input: unknown, run: (traceContext: unknown) => Promise<unknown>) => Promise<unknown>>(),
+);
+
+const recordTaskRunExecution = vi.hoisted(() => vi.fn<(input: unknown) => void>());
+
 export {
   enqueueTaskRun,
   localTaskRun,
@@ -127,6 +132,8 @@ export {
   txTaskRunUpdateMany,
   taskExecutionConfig,
   tryAcquireQueueConcurrency,
+  withRemoteParentSpan,
+  recordTaskRunExecution,
 };
 
 vi.mock("@cascade/database", () => ({
@@ -139,6 +146,12 @@ vi.mock("@cascade/database", () => ({
 vi.mock("@cascade/core", () => ({
   packageName: "@cascade/core",
   parseTaskExecutionConfig,
+  toTraceparent: vi.fn<
+    (input: { traceId: string; spanId: string; traceFlags?: "00" | "01" }) => string
+  >(
+    (input: { traceId: string; spanId: string; traceFlags?: "00" | "01" }) =>
+      `00-${input.traceId}-${input.spanId}-${input.traceFlags ?? "01"}`,
+  ),
   createRootTraceContext: vi.fn<() => unknown>(() => ({
     traceId: TRACE_ID,
     spanId: SPAN_ID,
@@ -175,81 +188,31 @@ vi.mock("../../../src/timers/task-run-heartbeat.js", () => ({
   startTaskRunHeartbeat,
 }));
 
-export const taskRegistry = {
-  get(id: string) {
-    if (id !== "hello") {
-      return undefined;
-    }
+vi.mock("@cascade/telemetry", () => ({
+  recordTaskRunExecution,
+  withRemoteParentSpan,
+}));
 
-    return {
-      id: "hello",
-      timeoutMs: 30_000,
-      retry: {
-        maxAttempts: 1,
-        delayMs: 0,
-        exponentialBackoff: false,
-      },
-      queue: {
-        name: "hello",
-        concurrencyLimit: null,
-      },
-      run: localTaskRun,
-    };
-  },
-
-  has(id: string) {
-    return id === "hello";
-  },
-
-  list() {
-    const task = this.get("hello");
-    return task ? [task] : [];
-  },
-} as LoadedTaskRegistry;
+export const taskRegistry = createTaskRegistry(localTaskRun);
 
 export const { processTaskRun } = await import("../../../src/task-run-processor.js");
-
-export function createMessage() {
-  return {
-    runId: RUN_ID,
-    taskId: TASK_ID,
-    environmentId: ENVIRONMENT_ID,
-    deploymentId: null,
-  } satisfies TaskRunQueueMessage;
-}
-
-function createPendingTaskRun() {
-  return {
-    id: RUN_ID,
-    taskId: TASK_ID,
-    status: "PENDING",
-    payload: {
-      message: "hello",
-    },
-    delayUntil: null,
-    traceId: TRACE_ID,
-    triggerSpanId: PARENT_SPAN_ID,
-    executionConfig: taskExecutionConfig,
-    task: {
-      slug: "hello",
-      name: "Hello",
-    },
-  };
-}
-
-export function createAttempt(attemptNumber = 1) {
-  return {
-    id: ATTEMPT_ID,
-    attemptNumber,
-  };
-}
 
 export function resetTaskRunProcessorHarness() {
   vi.clearAllMocks();
 
+  withRemoteParentSpan.mockImplementation(async (_input, run) =>
+    run({
+      traceId: TRACE_ID,
+      spanId: SPAN_ID,
+      parentSpanId: PARENT_SPAN_ID,
+      traceFlags: "01",
+      traceparent: `00-${TRACE_ID}-${SPAN_ID}-01`,
+    }),
+  );
+
   mockTransactionClient();
 
-  prisma.taskRun.findFirst.mockResolvedValue(createPendingTaskRun());
+  prisma.taskRun.findFirst.mockResolvedValue(createPendingTaskRun(taskExecutionConfig));
   prisma.taskRun.findUnique.mockResolvedValue({ status: "EXECUTING" });
   prisma.taskRun.updateMany.mockResolvedValue({ count: 1 });
 
@@ -276,12 +239,7 @@ export function resetTaskRunProcessorHarness() {
   releaseQueueConcurrency.mockResolvedValue(undefined);
   enqueueTaskRun.mockResolvedValue(undefined);
 
-  taskExecutionConfig.timeoutMs = 30_000;
-  taskExecutionConfig.retry.maxAttempts = 1;
-  taskExecutionConfig.retry.delayMs = 0;
-  taskExecutionConfig.retry.exponentialBackoff = false;
-  taskExecutionConfig.queue.name = "hello";
-  taskExecutionConfig.queue.concurrencyLimit = null;
+  resetTaskExecutionConfig(taskExecutionConfig);
 }
 
 function mockTransactionClient() {
