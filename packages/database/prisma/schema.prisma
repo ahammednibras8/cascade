@@ -1,7 +1,7 @@
 generator client {
-  provider = "prisma-client"
-  output = "../src/generated/prisma"
-  runtime = "nodejs"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  runtime      = "nodejs"
   moduleFormat = "esm"
 }
 
@@ -52,10 +52,21 @@ enum DeploymentRuntimeStatus {
   FAILED
 }
 
+enum ApiKeyScope {
+  TASKS_READ
+  TASKS_TRIGGER
+  SCHEDULES_WRITE
+  RUNS_READ
+  RUNS_CANCEL
+  RUNS_REPLAY
+  DEPLOYMENTS_WRITE
+  API_KEYS_MANAGE
+}
+
 model Project {
-  id String @id @default(uuid()) @db.Uuid
-  slug String @unique
-  name String
+  id        String   @id @default(uuid()) @db.Uuid
+  slug      String   @unique
+  name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -65,18 +76,18 @@ model Project {
 }
 
 model Environment {
-  id String @id @default(uuid()) @db.Uuid
-  projectId String @db.Uuid
-  slug String
-  name String
-  type EnvironmentType @default(DEVELOPMENT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String          @id @default(uuid()) @db.Uuid
+  projectId String          @db.Uuid
+  slug      String
+  name      String
+  type      EnvironmentType @default(DEVELOPMENT)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  apiKeys ApiKey[]
-  tasks Task[]
+  apiKeys     ApiKey[]
+  tasks       Task[]
   deployments Deployment[]
 
   @@unique([projectId, slug])
@@ -84,37 +95,43 @@ model Environment {
 }
 
 model ApiKey {
-  id String @id @default(uuid()) @db.Uuid
-  environmentId String @db.Uuid
-  name String
-  keyPrefix String
-  keyHash String @unique
-  lastUsedAt DateTime?
-  revokedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String    @id @default(uuid()) @db.Uuid
+  environmentId String    @db.Uuid
+  name          String
+  keyPrefix     String
+  keyHash       String    @unique
+  lastUsedAt    DateTime?
+  revokedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  scopes ApiKeyScope[] @default([TASKS_READ, TASKS_TRIGGER, SCHEDULES_WRITE, RUNS_READ, RUNS_CANCEL, RUNS_REPLAY, DEPLOYMENTS_WRITE, API_KEYS_MANAGE])
 
   environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+
+  rotatedFromId String? @unique @db.Uuid
+  rotatedFrom   ApiKey? @relation("ApiKeyRotation", fields: [rotatedFromId], references: [id])
+  rotatedTo     ApiKey? @relation("ApiKeyRotation")
 
   @@index([environmentId])
   @@index([keyPrefix])
 }
 
 model Task {
-  id String @id @default(uuid()) @db.Uuid
-  environmentId String @db.Uuid
-  deploymentId String? @db.Uuid
-  slug String
-  name String
-  description String?
+  id              String   @id @default(uuid()) @db.Uuid
+  environmentId   String   @db.Uuid
+  deploymentId    String?  @db.Uuid
+  slug            String
+  name            String
+  description     String?
   executionConfig Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
-  deployment Deployment? @relation(fields: [deploymentId], references: [id], onDelete: SetNull)
+  deployment  Deployment? @relation(fields: [deploymentId], references: [id], onDelete: SetNull)
 
-  runs TaskRun[]
+  runs      TaskRun[]
   schedules TaskSchedule[]
 
   @@unique([environmentId, slug])
@@ -123,32 +140,32 @@ model Task {
 }
 
 model TaskRun {
-  id String @id @default(uuid()) @db.Uuid
-  taskId String @db.Uuid
-  deploymentId String? @db.Uuid
-  scheduleId String? @db.Uuid
-  status TaskRunStatus @default(PENDING)
-  traceId String?
-  triggerSpanId String?
-  idempotencyKeyHash String?
+  id                     String        @id @default(uuid()) @db.Uuid
+  taskId                 String        @db.Uuid
+  deploymentId           String?       @db.Uuid
+  scheduleId             String?       @db.Uuid
+  status                 TaskRunStatus @default(PENDING)
+  traceId                String?
+  triggerSpanId          String?
+  idempotencyKeyHash     String?
   idempotencyRequestHash String?
-  payload Json?
-  output Json?
-  error Json?
-  executionConfig Json?
-  delayUntil DateTime?
-  startedAt DateTime?
-  lastHeartbeatAt DateTime?
-  completedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  payload                Json?
+  output                 Json?
+  error                  Json?
+  executionConfig        Json?
+  delayUntil             DateTime?
+  startedAt              DateTime?
+  lastHeartbeatAt        DateTime?
+  completedAt            DateTime?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  deployment Deployment? @relation(fields: [deploymentId], references: [id], onDelete: SetNull)
-  schedule TaskSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  task       Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  deployment Deployment?   @relation(fields: [deploymentId], references: [id], onDelete: SetNull)
+  schedule   TaskSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
 
   attempts TaskAttempt[]
-  events TaskEvent[]
+  events   TaskEvent[]
 
   @@unique([taskId, idempotencyKeyHash])
   @@index([traceId])
@@ -162,15 +179,15 @@ model TaskRun {
 }
 
 model TaskAttempt {
-  id String @id @default(uuid()) @db.Uuid
-  taskRunId String @db.Uuid
+  id            String            @id @default(uuid()) @db.Uuid
+  taskRunId     String            @db.Uuid
   attemptNumber Int
-  status TaskAttemptStatus @default(EXECUTING)
-  error Json?
-  startedAt DateTime?
-  completedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status        TaskAttemptStatus @default(EXECUTING)
+  error         Json?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   taskRun TaskRun @relation(fields: [taskRunId], references: [id], onDelete: Cascade)
 
@@ -181,19 +198,19 @@ model TaskAttempt {
 }
 
 model TaskEvent {
-  id String @id @default(uuid()) @db.Uuid
-  taskRunId String @db.Uuid
-  taskAttemptId String? @db.Uuid
-  traceId String?
-  spanId String?
-  parentSpanId String?
-  type String
-  level TaskEventLevel @default(INFO)
-  message String?
-  data Json?
-  createdAt DateTime @default(now())
+  id            String         @id @default(uuid()) @db.Uuid
+  taskRunId     String         @db.Uuid
+  taskAttemptId String?        @db.Uuid
+  traceId       String?
+  spanId        String?
+  parentSpanId  String?
+  type          String
+  level         TaskEventLevel @default(INFO)
+  message       String?
+  data          Json?
+  createdAt     DateTime       @default(now())
 
-  taskRun TaskRun @relation(fields: [taskRunId], references: [id], onDelete: Cascade)
+  taskRun     TaskRun      @relation(fields: [taskRunId], references: [id], onDelete: Cascade)
   taskAttempt TaskAttempt? @relation(fields: [taskAttemptId], references: [id], onDelete: SetNull)
 
   @@index([taskRunId, createdAt])
@@ -202,17 +219,17 @@ model TaskEvent {
 }
 
 model TaskSchedule {
-  id String @id @default(uuid()) @db.Uuid
-  taskId String @db.Uuid
-  name String
-  payload Json?
+  id              String    @id @default(uuid()) @db.Uuid
+  taskId          String    @db.Uuid
+  name            String
+  payload         Json?
   intervalSeconds Int
-  nextRunAt DateTime
-  lastRunAt DateTime?
-  enabled Boolean @default(true)
-  lockedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  nextRunAt       DateTime
+  lastRunAt       DateTime?
+  enabled         Boolean   @default(true)
+  lockedAt        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
@@ -224,25 +241,25 @@ model TaskSchedule {
 }
 
 model Deployment {
-  id String @id @default(uuid()) @db.Uuid
-  environmentId String @db.Uuid
-  version String
-  image String
-  status DeploymentStatus @default(ACTIVE)
-  
-  runtimeStatus DeploymentRuntimeStatus @default(PENDING)
+  id            String           @id @default(uuid()) @db.Uuid
+  environmentId String           @db.Uuid
+  version       String
+  image         String
+  status        DeploymentStatus @default(ACTIVE)
+
+  runtimeStatus      DeploymentRuntimeStatus @default(PENDING)
   runtimeContainerId String?
-  runtimeError String?
-  runtimeStartedAt DateTime?
-  runtimeStoppedAt DateTime?
-  
+  runtimeError       String?
+  runtimeStartedAt   DateTime?
+  runtimeStoppedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
 
   tasks Task[]
-  runs TaskRun[]
+  runs  TaskRun[]
 
   @@unique([environmentId, version])
   @@index([environmentId, status])

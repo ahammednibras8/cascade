@@ -7,11 +7,14 @@ import { listTasks } from "../services/list-tasks.js";
 import { triggerTaskRun } from "../services/trigger-task-run.js";
 import { getAuthOrRespond } from "./route-auth.js";
 import { withActiveSpan } from "@cascade/telemetry";
+import { ApiKeyScope } from "@cascade/database";
+import { requireApiKeyScope } from "../auth/api-key.js";
 
 export const taskRoutes: ExpressRouter = Router();
 
 taskRoutes.get(
   "/tasks",
+  requireApiKeyScope(ApiKeyScope.TASKS_READ),
   asyncHandler(async (request, response) => {
     const auth = getAuthOrRespond(request, response);
 
@@ -29,6 +32,7 @@ taskRoutes.get(
 
 taskRoutes.post(
   "/tasks/slug/:taskSlug/trigger",
+  requireApiKeyScope(ApiKeyScope.TASKS_TRIGGER),
   asyncHandler(async (request, response) => {
     const auth = getAuthOrRespond(request, response);
 
@@ -63,6 +67,7 @@ taskRoutes.post(
 
 taskRoutes.post(
   "/tasks/:taskId/trigger",
+  requireApiKeyScope(ApiKeyScope.TASKS_TRIGGER),
   asyncHandler(async (request, response) => {
     const auth = getAuthOrRespond(request, response);
 
@@ -97,6 +102,7 @@ taskRoutes.post(
 
 taskRoutes.post(
   "/tasks/:taskId/schedules",
+  requireApiKeyScope(ApiKeyScope.SCHEDULES_WRITE),
   asyncHandler(async (request, response) => {
     const auth = getAuthOrRespond(request, response);
 

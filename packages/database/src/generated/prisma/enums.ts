@@ -68,3 +68,17 @@ export const DeploymentRuntimeStatus = {
 } as const
 
 export type DeploymentRuntimeStatus = (typeof DeploymentRuntimeStatus)[keyof typeof DeploymentRuntimeStatus]
+
+
+export const ApiKeyScope = {
+  TASKS_READ: 'TASKS_READ',
+  TASKS_TRIGGER: 'TASKS_TRIGGER',
+  SCHEDULES_WRITE: 'SCHEDULES_WRITE',
+  RUNS_READ: 'RUNS_READ',
+  RUNS_CANCEL: 'RUNS_CANCEL',
+  RUNS_REPLAY: 'RUNS_REPLAY',
+  DEPLOYMENTS_WRITE: 'DEPLOYMENTS_WRITE',
+  API_KEYS_MANAGE: 'API_KEYS_MANAGE'
+} as const
+
+export type ApiKeyScope = (typeof ApiKeyScope)[keyof typeof ApiKeyScope]

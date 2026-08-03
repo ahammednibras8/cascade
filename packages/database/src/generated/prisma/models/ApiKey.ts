@@ -34,6 +34,7 @@ export type ApiKeyMinAggregateOutputType = {
   revokedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
+  rotatedFromId: string | null
 }
 
 export type ApiKeyMaxAggregateOutputType = {
@@ -46,6 +47,7 @@ export type ApiKeyMaxAggregateOutputType = {
   revokedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
+  rotatedFromId: string | null
 }
 
 export type ApiKeyCountAggregateOutputType = {
@@ -58,6 +60,8 @@ export type ApiKeyCountAggregateOutputType = {
   revokedAt: number
   createdAt: number
   updatedAt: number
+  scopes: number
+  rotatedFromId: number
   _all: number
 }
 
@@ -72,6 +76,7 @@ export type ApiKeyMinAggregateInputType = {
   revokedAt?: true
   createdAt?: true
   updatedAt?: true
+  rotatedFromId?: true
 }
 
 export type ApiKeyMaxAggregateInputType = {
@@ -84,6 +89,7 @@ export type ApiKeyMaxAggregateInputType = {
   revokedAt?: true
   createdAt?: true
   updatedAt?: true
+  rotatedFromId?: true
 }
 
 export type ApiKeyCountAggregateInputType = {
@@ -96,6 +102,8 @@ export type ApiKeyCountAggregateInputType = {
   revokedAt?: true
   createdAt?: true
   updatedAt?: true
+  scopes?: true
+  rotatedFromId?: true
   _all?: true
 }
 
@@ -181,6 +189,8 @@ export type ApiKeyGroupByOutputType = {
   revokedAt: Date | null
   createdAt: Date
   updatedAt: Date
+  scopes: $Enums.ApiKeyScope[]
+  rotatedFromId: string | null
   _count: ApiKeyCountAggregateOutputType | null
   _min: ApiKeyMinAggregateOutputType | null
   _max: ApiKeyMaxAggregateOutputType | null
@@ -214,7 +224,11 @@ export type ApiKeyWhereInput = {
   revokedAt?: Prisma.DateTimeNullableFilter<"ApiKey"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string
+  scopes?: Prisma.EnumApiKeyScopeNullableListFilter<"ApiKey">
+  rotatedFromId?: Prisma.UuidNullableFilter<"ApiKey"> | string | null
   environment?: Prisma.XOR<Prisma.EnvironmentScalarRelationFilter, Prisma.EnvironmentWhereInput>
+  rotatedFrom?: Prisma.XOR<Prisma.ApiKeyNullableScalarRelationFilter, Prisma.ApiKeyWhereInput> | null
+  rotatedTo?: Prisma.XOR<Prisma.ApiKeyNullableScalarRelationFilter, Prisma.ApiKeyWhereInput> | null
 }
 
 export type ApiKeyOrderByWithRelationInput = {
@@ -227,12 +241,17 @@ export type ApiKeyOrderByWithRelationInput = {
   revokedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  scopes?: Prisma.SortOrder
+  rotatedFromId?: Prisma.SortOrderInput | Prisma.SortOrder
   environment?: Prisma.EnvironmentOrderByWithRelationInput
+  rotatedFrom?: Prisma.ApiKeyOrderByWithRelationInput
+  rotatedTo?: Prisma.ApiKeyOrderByWithRelationInput
 }
 
 export type ApiKeyWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   keyHash?: string
+  rotatedFromId?: string
   AND?: Prisma.ApiKeyWhereInput | Prisma.ApiKeyWhereInput[]
   OR?: Prisma.ApiKeyWhereInput[]
   NOT?: Prisma.ApiKeyWhereInput | Prisma.ApiKeyWhereInput[]
@@ -243,8 +262,11 @@ export type ApiKeyWhereUniqueInput = Prisma.AtLeast<{
   revokedAt?: Prisma.DateTimeNullableFilter<"ApiKey"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string
+  scopes?: Prisma.EnumApiKeyScopeNullableListFilter<"ApiKey">
   environment?: Prisma.XOR<Prisma.EnvironmentScalarRelationFilter, Prisma.EnvironmentWhereInput>
-}, "id" | "keyHash">
+  rotatedFrom?: Prisma.XOR<Prisma.ApiKeyNullableScalarRelationFilter, Prisma.ApiKeyWhereInput> | null
+  rotatedTo?: Prisma.XOR<Prisma.ApiKeyNullableScalarRelationFilter, Prisma.ApiKeyWhereInput> | null
+}, "id" | "keyHash" | "rotatedFromId">
 
 export type ApiKeyOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -256,6 +278,8 @@ export type ApiKeyOrderByWithAggregationInput = {
   revokedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  scopes?: Prisma.SortOrder
+  rotatedFromId?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.ApiKeyCountOrderByAggregateInput
   _max?: Prisma.ApiKeyMaxOrderByAggregateInput
   _min?: Prisma.ApiKeyMinOrderByAggregateInput
@@ -274,6 +298,8 @@ export type ApiKeyScalarWhereWithAggregatesInput = {
   revokedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ApiKey"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"ApiKey"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"ApiKey"> | Date | string
+  scopes?: Prisma.EnumApiKeyScopeNullableListFilter<"ApiKey">
+  rotatedFromId?: Prisma.UuidNullableWithAggregatesFilter<"ApiKey"> | string | null
 }
 
 export type ApiKeyCreateInput = {
@@ -285,7 +311,10 @@ export type ApiKeyCreateInput = {
   revokedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  scopes?: Prisma.ApiKeyCreatescopesInput | $Enums.ApiKeyScope[]
   environment: Prisma.EnvironmentCreateNestedOneWithoutApiKeysInput
+  rotatedFrom?: Prisma.ApiKeyCreateNestedOneWithoutRotatedToInput
+  rotatedTo?: Prisma.ApiKeyCreateNestedOneWithoutRotatedFromInput
 }
 
 export type ApiKeyUncheckedCreateInput = {
@@ -298,6 +327,9 @@ export type ApiKeyUncheckedCreateInput = {
   revokedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  scopes?: Prisma.ApiKeyCreatescopesInput | $Enums.ApiKeyScope[]
+  rotatedFromId?: string | null
+  rotatedTo?: Prisma.ApiKeyUncheckedCreateNestedOneWithoutRotatedFromInput
 }
 
 export type ApiKeyUpdateInput = {
@@ -309,7 +341,10 @@ export type ApiKeyUpdateInput = {
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.ApiKeyUpdatescopesInput | $Enums.ApiKeyScope[]
   environment?: Prisma.EnvironmentUpdateOneRequiredWithoutApiKeysNestedInput
+  rotatedFrom?: Prisma.ApiKeyUpdateOneWithoutRotatedToNestedInput
+  rotatedTo?: Prisma.ApiKeyUpdateOneWithoutRotatedFromNestedInput
 }
 
 export type ApiKeyUncheckedUpdateInput = {
@@ -322,6 +357,9 @@ export type ApiKeyUncheckedUpdateInput = {
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.ApiKeyUpdatescopesInput | $Enums.ApiKeyScope[]
+  rotatedFromId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rotatedTo?: Prisma.ApiKeyUncheckedUpdateOneWithoutRotatedFromNestedInput
 }
 
 export type ApiKeyCreateManyInput = {
@@ -334,6 +372,8 @@ export type ApiKeyCreateManyInput = {
   revokedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  scopes?: Prisma.ApiKeyCreatescopesInput | $Enums.ApiKeyScope[]
+  rotatedFromId?: string | null
 }
 
 export type ApiKeyUpdateManyMutationInput = {
@@ -345,6 +385,7 @@ export type ApiKeyUpdateManyMutationInput = {
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.ApiKeyUpdatescopesInput | $Enums.ApiKeyScope[]
 }
 
 export type ApiKeyUncheckedUpdateManyInput = {
@@ -357,6 +398,8 @@ export type ApiKeyUncheckedUpdateManyInput = {
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.ApiKeyUpdatescopesInput | $Enums.ApiKeyScope[]
+  rotatedFromId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type ApiKeyListRelationFilter = {
@@ -369,6 +412,19 @@ export type ApiKeyOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type EnumApiKeyScopeNullableListFilter<$PrismaModel = never> = {
+  equals?: $Enums.ApiKeyScope[] | Prisma.ListEnumApiKeyScopeFieldRefInput<$PrismaModel> | null
+  has?: $Enums.ApiKeyScope | Prisma.EnumApiKeyScopeFieldRefInput<$PrismaModel> | null
+  hasEvery?: $Enums.ApiKeyScope[] | Prisma.ListEnumApiKeyScopeFieldRefInput<$PrismaModel>
+  hasSome?: $Enums.ApiKeyScope[] | Prisma.ListEnumApiKeyScopeFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
+}
+
+export type ApiKeyNullableScalarRelationFilter = {
+  is?: Prisma.ApiKeyWhereInput | null
+  isNot?: Prisma.ApiKeyWhereInput | null
+}
+
 export type ApiKeyCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   environmentId?: Prisma.SortOrder
@@ -379,6 +435,8 @@ export type ApiKeyCountOrderByAggregateInput = {
   revokedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  scopes?: Prisma.SortOrder
+  rotatedFromId?: Prisma.SortOrder
 }
 
 export type ApiKeyMaxOrderByAggregateInput = {
@@ -391,6 +449,7 @@ export type ApiKeyMaxOrderByAggregateInput = {
   revokedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  rotatedFromId?: Prisma.SortOrder
 }
 
 export type ApiKeyMinOrderByAggregateInput = {
@@ -403,6 +462,7 @@ export type ApiKeyMinOrderByAggregateInput = {
   revokedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  rotatedFromId?: Prisma.SortOrder
 }
 
 export type ApiKeyCreateNestedManyWithoutEnvironmentInput = {
@@ -447,8 +507,69 @@ export type ApiKeyUncheckedUpdateManyWithoutEnvironmentNestedInput = {
   deleteMany?: Prisma.ApiKeyScalarWhereInput | Prisma.ApiKeyScalarWhereInput[]
 }
 
+export type ApiKeyCreatescopesInput = {
+  set: $Enums.ApiKeyScope[]
+}
+
+export type ApiKeyCreateNestedOneWithoutRotatedToInput = {
+  create?: Prisma.XOR<Prisma.ApiKeyCreateWithoutRotatedToInput, Prisma.ApiKeyUncheckedCreateWithoutRotatedToInput>
+  connectOrCreate?: Prisma.ApiKeyCreateOrConnectWithoutRotatedToInput
+  connect?: Prisma.ApiKeyWhereUniqueInput
+}
+
+export type ApiKeyCreateNestedOneWithoutRotatedFromInput = {
+  create?: Prisma.XOR<Prisma.ApiKeyCreateWithoutRotatedFromInput, Prisma.ApiKeyUncheckedCreateWithoutRotatedFromInput>
+  connectOrCreate?: Prisma.ApiKeyCreateOrConnectWithoutRotatedFromInput
+  connect?: Prisma.ApiKeyWhereUniqueInput
+}
+
+export type ApiKeyUncheckedCreateNestedOneWithoutRotatedFromInput = {
+  create?: Prisma.XOR<Prisma.ApiKeyCreateWithoutRotatedFromInput, Prisma.ApiKeyUncheckedCreateWithoutRotatedFromInput>
+  connectOrCreate?: Prisma.ApiKeyCreateOrConnectWithoutRotatedFromInput
+  connect?: Prisma.ApiKeyWhereUniqueInput
+}
+
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
+}
+
+export type ApiKeyUpdatescopesInput = {
+  set?: $Enums.ApiKeyScope[]
+  push?: $Enums.ApiKeyScope | $Enums.ApiKeyScope[]
+}
+
+export type ApiKeyUpdateOneWithoutRotatedToNestedInput = {
+  create?: Prisma.XOR<Prisma.ApiKeyCreateWithoutRotatedToInput, Prisma.ApiKeyUncheckedCreateWithoutRotatedToInput>
+  connectOrCreate?: Prisma.ApiKeyCreateOrConnectWithoutRotatedToInput
+  upsert?: Prisma.ApiKeyUpsertWithoutRotatedToInput
+  disconnect?: Prisma.ApiKeyWhereInput | boolean
+  delete?: Prisma.ApiKeyWhereInput | boolean
+  connect?: Prisma.ApiKeyWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ApiKeyUpdateToOneWithWhereWithoutRotatedToInput, Prisma.ApiKeyUpdateWithoutRotatedToInput>, Prisma.ApiKeyUncheckedUpdateWithoutRotatedToInput>
+}
+
+export type ApiKeyUpdateOneWithoutRotatedFromNestedInput = {
+  create?: Prisma.XOR<Prisma.ApiKeyCreateWithoutRotatedFromInput, Prisma.ApiKeyUncheckedCreateWithoutRotatedFromInput>
+  connectOrCreate?: Prisma.ApiKeyCreateOrConnectWithoutRotatedFromInput
+  upsert?: Prisma.ApiKeyUpsertWithoutRotatedFromInput
+  disconnect?: Prisma.ApiKeyWhereInput | boolean
+  delete?: Prisma.ApiKeyWhereInput | boolean
+  connect?: Prisma.ApiKeyWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ApiKeyUpdateToOneWithWhereWithoutRotatedFromInput, Prisma.ApiKeyUpdateWithoutRotatedFromInput>, Prisma.ApiKeyUncheckedUpdateWithoutRotatedFromInput>
+}
+
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
+}
+
+export type ApiKeyUncheckedUpdateOneWithoutRotatedFromNestedInput = {
+  create?: Prisma.XOR<Prisma.ApiKeyCreateWithoutRotatedFromInput, Prisma.ApiKeyUncheckedCreateWithoutRotatedFromInput>
+  connectOrCreate?: Prisma.ApiKeyCreateOrConnectWithoutRotatedFromInput
+  upsert?: Prisma.ApiKeyUpsertWithoutRotatedFromInput
+  disconnect?: Prisma.ApiKeyWhereInput | boolean
+  delete?: Prisma.ApiKeyWhereInput | boolean
+  connect?: Prisma.ApiKeyWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ApiKeyUpdateToOneWithWhereWithoutRotatedFromInput, Prisma.ApiKeyUpdateWithoutRotatedFromInput>, Prisma.ApiKeyUncheckedUpdateWithoutRotatedFromInput>
 }
 
 export type ApiKeyCreateWithoutEnvironmentInput = {
@@ -460,6 +581,9 @@ export type ApiKeyCreateWithoutEnvironmentInput = {
   revokedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  scopes?: Prisma.ApiKeyCreatescopesInput | $Enums.ApiKeyScope[]
+  rotatedFrom?: Prisma.ApiKeyCreateNestedOneWithoutRotatedToInput
+  rotatedTo?: Prisma.ApiKeyCreateNestedOneWithoutRotatedFromInput
 }
 
 export type ApiKeyUncheckedCreateWithoutEnvironmentInput = {
@@ -471,6 +595,9 @@ export type ApiKeyUncheckedCreateWithoutEnvironmentInput = {
   revokedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  scopes?: Prisma.ApiKeyCreatescopesInput | $Enums.ApiKeyScope[]
+  rotatedFromId?: string | null
+  rotatedTo?: Prisma.ApiKeyUncheckedCreateNestedOneWithoutRotatedFromInput
 }
 
 export type ApiKeyCreateOrConnectWithoutEnvironmentInput = {
@@ -512,6 +639,152 @@ export type ApiKeyScalarWhereInput = {
   revokedAt?: Prisma.DateTimeNullableFilter<"ApiKey"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ApiKey"> | Date | string
+  scopes?: Prisma.EnumApiKeyScopeNullableListFilter<"ApiKey">
+  rotatedFromId?: Prisma.UuidNullableFilter<"ApiKey"> | string | null
+}
+
+export type ApiKeyCreateWithoutRotatedToInput = {
+  id?: string
+  name: string
+  keyPrefix: string
+  keyHash: string
+  lastUsedAt?: Date | string | null
+  revokedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  scopes?: Prisma.ApiKeyCreatescopesInput | $Enums.ApiKeyScope[]
+  environment: Prisma.EnvironmentCreateNestedOneWithoutApiKeysInput
+  rotatedFrom?: Prisma.ApiKeyCreateNestedOneWithoutRotatedToInput
+}
+
+export type ApiKeyUncheckedCreateWithoutRotatedToInput = {
+  id?: string
+  environmentId: string
+  name: string
+  keyPrefix: string
+  keyHash: string
+  lastUsedAt?: Date | string | null
+  revokedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  scopes?: Prisma.ApiKeyCreatescopesInput | $Enums.ApiKeyScope[]
+  rotatedFromId?: string | null
+}
+
+export type ApiKeyCreateOrConnectWithoutRotatedToInput = {
+  where: Prisma.ApiKeyWhereUniqueInput
+  create: Prisma.XOR<Prisma.ApiKeyCreateWithoutRotatedToInput, Prisma.ApiKeyUncheckedCreateWithoutRotatedToInput>
+}
+
+export type ApiKeyCreateWithoutRotatedFromInput = {
+  id?: string
+  name: string
+  keyPrefix: string
+  keyHash: string
+  lastUsedAt?: Date | string | null
+  revokedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  scopes?: Prisma.ApiKeyCreatescopesInput | $Enums.ApiKeyScope[]
+  environment: Prisma.EnvironmentCreateNestedOneWithoutApiKeysInput
+  rotatedTo?: Prisma.ApiKeyCreateNestedOneWithoutRotatedFromInput
+}
+
+export type ApiKeyUncheckedCreateWithoutRotatedFromInput = {
+  id?: string
+  environmentId: string
+  name: string
+  keyPrefix: string
+  keyHash: string
+  lastUsedAt?: Date | string | null
+  revokedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  scopes?: Prisma.ApiKeyCreatescopesInput | $Enums.ApiKeyScope[]
+  rotatedTo?: Prisma.ApiKeyUncheckedCreateNestedOneWithoutRotatedFromInput
+}
+
+export type ApiKeyCreateOrConnectWithoutRotatedFromInput = {
+  where: Prisma.ApiKeyWhereUniqueInput
+  create: Prisma.XOR<Prisma.ApiKeyCreateWithoutRotatedFromInput, Prisma.ApiKeyUncheckedCreateWithoutRotatedFromInput>
+}
+
+export type ApiKeyUpsertWithoutRotatedToInput = {
+  update: Prisma.XOR<Prisma.ApiKeyUpdateWithoutRotatedToInput, Prisma.ApiKeyUncheckedUpdateWithoutRotatedToInput>
+  create: Prisma.XOR<Prisma.ApiKeyCreateWithoutRotatedToInput, Prisma.ApiKeyUncheckedCreateWithoutRotatedToInput>
+  where?: Prisma.ApiKeyWhereInput
+}
+
+export type ApiKeyUpdateToOneWithWhereWithoutRotatedToInput = {
+  where?: Prisma.ApiKeyWhereInput
+  data: Prisma.XOR<Prisma.ApiKeyUpdateWithoutRotatedToInput, Prisma.ApiKeyUncheckedUpdateWithoutRotatedToInput>
+}
+
+export type ApiKeyUpdateWithoutRotatedToInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  keyPrefix?: Prisma.StringFieldUpdateOperationsInput | string
+  keyHash?: Prisma.StringFieldUpdateOperationsInput | string
+  lastUsedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.ApiKeyUpdatescopesInput | $Enums.ApiKeyScope[]
+  environment?: Prisma.EnvironmentUpdateOneRequiredWithoutApiKeysNestedInput
+  rotatedFrom?: Prisma.ApiKeyUpdateOneWithoutRotatedToNestedInput
+}
+
+export type ApiKeyUncheckedUpdateWithoutRotatedToInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  environmentId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  keyPrefix?: Prisma.StringFieldUpdateOperationsInput | string
+  keyHash?: Prisma.StringFieldUpdateOperationsInput | string
+  lastUsedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.ApiKeyUpdatescopesInput | $Enums.ApiKeyScope[]
+  rotatedFromId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+export type ApiKeyUpsertWithoutRotatedFromInput = {
+  update: Prisma.XOR<Prisma.ApiKeyUpdateWithoutRotatedFromInput, Prisma.ApiKeyUncheckedUpdateWithoutRotatedFromInput>
+  create: Prisma.XOR<Prisma.ApiKeyCreateWithoutRotatedFromInput, Prisma.ApiKeyUncheckedCreateWithoutRotatedFromInput>
+  where?: Prisma.ApiKeyWhereInput
+}
+
+export type ApiKeyUpdateToOneWithWhereWithoutRotatedFromInput = {
+  where?: Prisma.ApiKeyWhereInput
+  data: Prisma.XOR<Prisma.ApiKeyUpdateWithoutRotatedFromInput, Prisma.ApiKeyUncheckedUpdateWithoutRotatedFromInput>
+}
+
+export type ApiKeyUpdateWithoutRotatedFromInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  keyPrefix?: Prisma.StringFieldUpdateOperationsInput | string
+  keyHash?: Prisma.StringFieldUpdateOperationsInput | string
+  lastUsedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.ApiKeyUpdatescopesInput | $Enums.ApiKeyScope[]
+  environment?: Prisma.EnvironmentUpdateOneRequiredWithoutApiKeysNestedInput
+  rotatedTo?: Prisma.ApiKeyUpdateOneWithoutRotatedFromNestedInput
+}
+
+export type ApiKeyUncheckedUpdateWithoutRotatedFromInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  environmentId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  keyPrefix?: Prisma.StringFieldUpdateOperationsInput | string
+  keyHash?: Prisma.StringFieldUpdateOperationsInput | string
+  lastUsedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.ApiKeyUpdatescopesInput | $Enums.ApiKeyScope[]
+  rotatedTo?: Prisma.ApiKeyUncheckedUpdateOneWithoutRotatedFromNestedInput
 }
 
 export type ApiKeyCreateManyEnvironmentInput = {
@@ -523,6 +796,8 @@ export type ApiKeyCreateManyEnvironmentInput = {
   revokedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  scopes?: Prisma.ApiKeyCreatescopesInput | $Enums.ApiKeyScope[]
+  rotatedFromId?: string | null
 }
 
 export type ApiKeyUpdateWithoutEnvironmentInput = {
@@ -534,6 +809,9 @@ export type ApiKeyUpdateWithoutEnvironmentInput = {
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.ApiKeyUpdatescopesInput | $Enums.ApiKeyScope[]
+  rotatedFrom?: Prisma.ApiKeyUpdateOneWithoutRotatedToNestedInput
+  rotatedTo?: Prisma.ApiKeyUpdateOneWithoutRotatedFromNestedInput
 }
 
 export type ApiKeyUncheckedUpdateWithoutEnvironmentInput = {
@@ -545,6 +823,9 @@ export type ApiKeyUncheckedUpdateWithoutEnvironmentInput = {
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.ApiKeyUpdatescopesInput | $Enums.ApiKeyScope[]
+  rotatedFromId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rotatedTo?: Prisma.ApiKeyUncheckedUpdateOneWithoutRotatedFromNestedInput
 }
 
 export type ApiKeyUncheckedUpdateManyWithoutEnvironmentInput = {
@@ -556,6 +837,8 @@ export type ApiKeyUncheckedUpdateManyWithoutEnvironmentInput = {
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.ApiKeyUpdatescopesInput | $Enums.ApiKeyScope[]
+  rotatedFromId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -570,7 +853,11 @@ export type ApiKeySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   revokedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  scopes?: boolean
+  rotatedFromId?: boolean
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
+  rotatedFrom?: boolean | Prisma.ApiKey$rotatedFromArgs<ExtArgs>
+  rotatedTo?: boolean | Prisma.ApiKey$rotatedToArgs<ExtArgs>
 }, ExtArgs["result"]["apiKey"]>
 
 export type ApiKeySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -583,7 +870,10 @@ export type ApiKeySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   revokedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  scopes?: boolean
+  rotatedFromId?: boolean
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
+  rotatedFrom?: boolean | Prisma.ApiKey$rotatedFromArgs<ExtArgs>
 }, ExtArgs["result"]["apiKey"]>
 
 export type ApiKeySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -596,7 +886,10 @@ export type ApiKeySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   revokedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  scopes?: boolean
+  rotatedFromId?: boolean
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
+  rotatedFrom?: boolean | Prisma.ApiKey$rotatedFromArgs<ExtArgs>
 }, ExtArgs["result"]["apiKey"]>
 
 export type ApiKeySelectScalar = {
@@ -609,23 +902,31 @@ export type ApiKeySelectScalar = {
   revokedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  scopes?: boolean
+  rotatedFromId?: boolean
 }
 
-export type ApiKeyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "environmentId" | "name" | "keyPrefix" | "keyHash" | "lastUsedAt" | "revokedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["apiKey"]>
+export type ApiKeyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "environmentId" | "name" | "keyPrefix" | "keyHash" | "lastUsedAt" | "revokedAt" | "createdAt" | "updatedAt" | "scopes" | "rotatedFromId", ExtArgs["result"]["apiKey"]>
 export type ApiKeyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
+  rotatedFrom?: boolean | Prisma.ApiKey$rotatedFromArgs<ExtArgs>
+  rotatedTo?: boolean | Prisma.ApiKey$rotatedToArgs<ExtArgs>
 }
 export type ApiKeyIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
+  rotatedFrom?: boolean | Prisma.ApiKey$rotatedFromArgs<ExtArgs>
 }
 export type ApiKeyIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
+  rotatedFrom?: boolean | Prisma.ApiKey$rotatedFromArgs<ExtArgs>
 }
 
 export type $ApiKeyPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "ApiKey"
   objects: {
     environment: Prisma.$EnvironmentPayload<ExtArgs>
+    rotatedFrom: Prisma.$ApiKeyPayload<ExtArgs> | null
+    rotatedTo: Prisma.$ApiKeyPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -637,6 +938,8 @@ export type $ApiKeyPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     revokedAt: Date | null
     createdAt: Date
     updatedAt: Date
+    scopes: $Enums.ApiKeyScope[]
+    rotatedFromId: string | null
   }, ExtArgs["result"]["apiKey"]>
   composites: {}
 }
@@ -1032,6 +1335,8 @@ readonly fields: ApiKeyFieldRefs;
 export interface Prisma__ApiKeyClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   environment<T extends Prisma.EnvironmentDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EnvironmentDefaultArgs<ExtArgs>>): Prisma.Prisma__EnvironmentClient<runtime.Types.Result.GetResult<Prisma.$EnvironmentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  rotatedFrom<T extends Prisma.ApiKey$rotatedFromArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ApiKey$rotatedFromArgs<ExtArgs>>): Prisma.Prisma__ApiKeyClient<runtime.Types.Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  rotatedTo<T extends Prisma.ApiKey$rotatedToArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ApiKey$rotatedToArgs<ExtArgs>>): Prisma.Prisma__ApiKeyClient<runtime.Types.Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1070,6 +1375,8 @@ export interface ApiKeyFieldRefs {
   readonly revokedAt: Prisma.FieldRef<"ApiKey", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"ApiKey", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"ApiKey", 'DateTime'>
+  readonly scopes: Prisma.FieldRef<"ApiKey", 'ApiKeyScope[]'>
+  readonly rotatedFromId: Prisma.FieldRef<"ApiKey", 'String'>
 }
     
 
@@ -1468,6 +1775,44 @@ export type ApiKeyDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Limit how many ApiKeys to delete.
    */
   limit?: number
+}
+
+/**
+ * ApiKey.rotatedFrom
+ */
+export type ApiKey$rotatedFromArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ApiKey
+   */
+  select?: Prisma.ApiKeySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ApiKey
+   */
+  omit?: Prisma.ApiKeyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ApiKeyInclude<ExtArgs> | null
+  where?: Prisma.ApiKeyWhereInput
+}
+
+/**
+ * ApiKey.rotatedTo
+ */
+export type ApiKey$rotatedToArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ApiKey
+   */
+  select?: Prisma.ApiKeySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ApiKey
+   */
+  omit?: Prisma.ApiKeyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ApiKeyInclude<ExtArgs> | null
+  where?: Prisma.ApiKeyWhereInput
 }
 
 /**

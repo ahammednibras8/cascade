@@ -52,6 +52,7 @@ const auth = {
   apiKeyId: "api-key-1",
   environmentId: "environment-1",
   projectId: "project-1",
+  scopes: [],
 } satisfies ApiAuthContext;
 
 describe("createDeployment", () => {

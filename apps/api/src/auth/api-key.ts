@@ -1,11 +1,13 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { Request, RequestHandler } from "express";
 import { prisma } from "@cascade/database";
+import type { ApiKeyScope } from "@cascade/database";
 
 export type ApiAuthContext = {
   apiKeyId: string;
   environmentId: string;
   projectId: string;
+  scopes: ApiKeyScope[];
 };
 
 const API_KEY_RANDOM_BYTES = 32;
@@ -68,6 +70,7 @@ async function authenticateApiKey(apiKey: string): Promise<ApiAuthContext | null
       environmentId: true,
       keyHash: true,
       revokedAt: true,
+      scopes: true,
       environment: {
         select: {
           projectId: true,
@@ -97,6 +100,7 @@ async function authenticateApiKey(apiKey: string): Promise<ApiAuthContext | null
     apiKeyId: storedApiKey.id,
     environmentId: storedApiKey.environmentId,
     projectId: storedApiKey.environment.projectId,
+    scopes: storedApiKey.scopes,
   };
 }
 
@@ -132,5 +136,35 @@ export function requireApiKey(): RequestHandler {
     } catch (error) {
       next(error);
     }
+  };
+}
+
+export function requireApiKeyScope(...requireScopes: ApiKeyScope[]): RequestHandler {
+  return (request, response, next) => {
+    const auth = request.auth;
+
+    if (!auth) {
+      response.status(401).json({
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Missing API authentication context",
+        },
+      });
+      return;
+    }
+
+    const hasEveryRequiredScope = requireScopes.every((scope) => auth.scopes.includes(scope));
+
+    if (!hasEveryRequiredScope) {
+      response.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "API key is missing the required permission",
+        },
+      });
+      return;
+    }
+
+    next();
   };
 }

@@ -468,10 +468,6 @@ export type TaskUncheckedUpdateManyWithoutEnvironmentNestedInput = {
   deleteMany?: Prisma.TaskScalarWhereInput | Prisma.TaskScalarWhereInput[]
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type TaskCreateNestedOneWithoutRunsInput = {
   create?: Prisma.XOR<Prisma.TaskCreateWithoutRunsInput, Prisma.TaskUncheckedCreateWithoutRunsInput>
   connectOrCreate?: Prisma.TaskCreateOrConnectWithoutRunsInput

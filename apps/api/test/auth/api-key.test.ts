@@ -112,6 +112,7 @@ describe("API key auth", () => {
       environmentId: "environment-1",
       keyHash,
       revokedAt: null,
+      scopes: ["RUNS_READ"],
       environment: {
         projectId: "project-1",
       },
@@ -127,6 +128,7 @@ describe("API key auth", () => {
         apiKeyId: "api-key-1",
         environmentId: "environment-1",
         projectId: "project-1",
+        scopes: ["RUNS_READ"],
       },
     });
 
@@ -149,6 +151,7 @@ describe("API key auth", () => {
       environmentId: "environment-2",
       keyHash,
       revokedAt: null,
+      scopes: ["RUNS_READ"],
       environment: {
         projectId: "project-2",
       },
@@ -164,6 +167,7 @@ describe("API key auth", () => {
         apiKeyId: "api-key-2",
         environmentId: "environment-2",
         projectId: "project-2",
+        scopes: ["RUNS_READ"],
       },
     });
   });

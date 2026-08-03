@@ -1163,7 +1163,9 @@ export const ApiKeyScalarFieldEnum = {
   lastUsedAt: 'lastUsedAt',
   revokedAt: 'revokedAt',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  scopes: 'scopes',
+  rotatedFromId: 'rotatedFromId'
 } as const
 
 export type ApiKeyScalarFieldEnum = (typeof ApiKeyScalarFieldEnum)[keyof typeof ApiKeyScalarFieldEnum]
@@ -1362,6 +1364,20 @@ export type EnumEnvironmentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$
  * Reference to a field of type 'EnvironmentType[]'
  */
 export type ListEnumEnvironmentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EnvironmentType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'ApiKeyScope[]'
+ */
+export type ListEnumApiKeyScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ApiKeyScope[]'>
+    
+
+
+/**
+ * Reference to a field of type 'ApiKeyScope'
+ */
+export type EnumApiKeyScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ApiKeyScope'>
     
 
 

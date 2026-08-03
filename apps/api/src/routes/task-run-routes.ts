@@ -7,11 +7,14 @@ import { getTaskRun } from "../services/get-task-run.js";
 import { listTaskRunEvents } from "../services/list-task-run-events.js";
 import { replayTaskRun } from "../services/replay-task-run.js";
 import { getAuthOrRespond } from "./route-auth.js";
+import { ApiKeyScope } from "@cascade/database";
+import { requireApiKeyScope } from "../auth/api-key.js";
 
 export const taskRunRoutes: ExpressRouter = Router();
 
 taskRunRoutes.get(
   "/runs/:runId",
+  requireApiKeyScope(ApiKeyScope.RUNS_READ),
   asyncHandler(async (request, response) => {
     const auth = getAuthOrRespond(request, response);
 
@@ -39,6 +42,7 @@ taskRunRoutes.get(
 
 taskRunRoutes.get(
   "/runs/:runId/events",
+  requireApiKeyScope(ApiKeyScope.RUNS_READ),
   asyncHandler(async (request, response) => {
     const auth = getAuthOrRespond(request, response);
 
@@ -66,6 +70,7 @@ taskRunRoutes.get(
 
 taskRunRoutes.get(
   "/runs",
+  requireApiKeyScope(ApiKeyScope.RUNS_READ),
   asyncHandler(async (request, response) => {
     const auth = getAuthOrRespond(request, response);
 
@@ -136,6 +141,7 @@ taskRunRoutes.get(
 
 taskRunRoutes.post(
   "/runs/:runId/cancel",
+  requireApiKeyScope(ApiKeyScope.RUNS_CANCEL),
   asyncHandler(async (request, response) => {
     const auth = getAuthOrRespond(request, response);
 
@@ -163,6 +169,7 @@ taskRunRoutes.post(
 
 taskRunRoutes.post(
   "/runs/:runId/replay",
+  requireApiKeyScope(ApiKeyScope.RUNS_REPLAY),
   asyncHandler(async (request, response) => {
     const auth = getAuthOrRespond(request, response);
 
