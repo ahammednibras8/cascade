@@ -43,8 +43,8 @@ export const apiKeyScopeDefinitions = [
   },
 ] as const;
 
-export const allApiKeyScopes = apiKeyScopeDefinitions.map(({ value }) => value);
+const allApiKeyScopes = new Set(apiKeyScopeDefinitions.map(({ value }) => value));
 
 export function isApiKeyScope(value: unknown): value is ApiKeyScope {
-  return typeof value === "string" && allApiKeyScopes.includes(value as ApiKeyScope);
+  return typeof value === "string" && allApiKeyScopes.has(value as ApiKeyScope);
 }
