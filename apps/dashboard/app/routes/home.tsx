@@ -32,6 +32,14 @@ export default function Home() {
           View task runs
           <ArrowRight size={15} />
         </Link>
+
+        <Link
+          to="/api-keys"
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900"
+        >
+          Manage API keys
+          <ArrowRight size={15} />
+        </Link>
       </div>
     </main>
   );
