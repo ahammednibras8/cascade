@@ -1,5 +1,6 @@
 import type { Route } from "./+types/api-keys";
-import { Link } from "react-router";
+import { Link, useFetcher } from "react-router";
+import { useEffect, useRef, useState } from "react";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
 
 type ApiKey = {
@@ -17,6 +18,25 @@ type ApiKeyScopeDefinition = {
   value: string;
   label: string;
   description: string;
+};
+
+type CreateApiKeyActionData =
+  | {
+      ok: true;
+      apiKey: ApiKey;
+      token: string;
+    }
+  | {
+      ok: false;
+      error: {
+        code: string;
+        message: string;
+      };
+    };
+
+type RevealedApiKey = {
+  name: string;
+  token: string;
 };
 
 export function meta() {
@@ -168,6 +188,38 @@ function formatDate(value: string | null) {
 }
 
 export default function ApiKeys({ loaderData }: Route.ComponentProps) {
+  const fetcher = useFetcher<CreateApiKeyActionData>();
+  const [revealedApiKey, setRevealedApiKey] = useState<RevealedApiKey | null>(null);
+  const processedActionData = useRef<CreateApiKeyActionData | undefined>(undefined);
+
+  useEffect(() => {
+    const actionData = fetcher.data;
+
+    if (!actionData || actionData === processedActionData.current) {
+      return;
+    }
+
+    processedActionData.current = actionData;
+
+    if (actionData.ok) {
+      setRevealedApiKey({
+        name: actionData.apiKey.name,
+        token: actionData.token,
+      });
+    }
+  }, [fetcher.data]);
+
+  const isCreating = fetcher.state !== "idle";
+  const createError = fetcher.data && !fetcher.data.ok ? fetcher.data.error : null;
+
+  async function copyRevealedToken() {
+    if (!revealedApiKey) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(revealedApiKey.token);
+  }
+
   return (
     <main className="mx-auto max-w-7xl p-6">
       <div className="mb-6">
@@ -182,6 +234,100 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
           creation or rotation.
         </p>
       </div>
+
+      {revealedApiKey ? (
+        <section
+          className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4"
+          aria-labelledby="new-api-key-heading"
+        >
+          <h2 id="new-api-key-heading" className="font-semibold text-amber-950">
+            Copy this API key now
+          </h2>
+
+          <p className="mt-1 text-sm text-amber-900">
+            This is the only time Cascade will show the secret for {revealedApiKey.name}.
+          </p>
+
+          <code className="mt-3 block break-all rounded bg-white p-3 font-mono text-sm text-gray-950">
+            {revealedApiKey.token}
+          </code>
+
+          <div className="mt-3 flex gap-3">
+            <button
+              type="button"
+              onClick={() => void copyRevealedToken()}
+              className="rounded-md bg-black px-3 py-2 text-sm font-medium text-white"
+            >
+              Copy API key
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRevealedApiKey(null)}
+              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900"
+            >
+              I copied it
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="mb-6 rounded-lg border border-gray-200 bg-white p-5">
+        <h2 className="text-lg font-semibold text-gray-950">Create API key</h2>
+
+        <p className="mt-1 text-sm text-gray-600">
+          Give the key only the permissions its workload needs.
+        </p>
+
+        <fetcher.Form method="post" className="mt-4 space-y-4">
+          <input type="hidden" name="intent" value="create" />
+
+          <label className="block">
+            <span className="text-sm font-medium text-gray-800">Name</span>
+            <input
+              name="name"
+              required
+              maxLength={120}
+              placeholder="GitHub deployment workflow"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+          </label>
+
+          <fieldset>
+            <legend className="text-sm font-medium text-gray-800">Permissions</legend>
+
+            <div className="mt-2 grid gap-3 md:grid-cols-2">
+              {loaderData.availableScopes.map((scope) => (
+                <label
+                  key={scope.value}
+                  className="flex gap-3 rounded-md border border-gray-200 p-3"
+                >
+                  <input type="checkbox" name="scope" value={scope.value} className="mt-1" />
+
+                  <span>
+                    <span className="block text-sm font-medium text-gray-900">{scope.label}</span>
+                    <span className="mt-1 block text-xs text-gray-600">{scope.description}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          {createError ? (
+            <p role="alert" className="text-sm text-red-700">
+              {createError.message}
+            </p>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={isCreating}
+            className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isCreating ? "Creating API key…" : "Create API key"}
+          </button>
+        </fetcher.Form>
+      </section>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
