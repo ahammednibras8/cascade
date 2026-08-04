@@ -20,11 +20,17 @@ type ApiKeyScopeDefinition = {
   description: string;
 };
 
-type CreateApiKeyActionData =
+type ApiKeyActionData =
   | {
       ok: true;
+      intent: "create";
       apiKey: ApiKey;
       token: string;
+    }
+  | {
+      ok: true;
+      intent: "revoke";
+      apiKey: ApiKey;
     }
   | {
       ok: false;
@@ -81,12 +87,12 @@ function getActionFailure(error: unknown) {
   const code =
     apiError && "code" in apiError && typeof apiError.code === "string"
       ? apiError.code
-      : "API_KEY_CREATE_FAILED";
+      : "API_KEY_ACTION_FAILED";
 
   const message =
     apiError && "message" in apiError && typeof apiError.message === "string"
       ? apiError.message
-      : "Could not create API key";
+      : "Could not update API key";
 
   return {
     status,
@@ -100,6 +106,51 @@ function getActionFailure(error: unknown) {
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
+
+  if (intent === "revoke") {
+    const apiKeyId = formData.get("apiKeyId");
+
+    if (typeof apiKeyId !== "string") {
+      return Response.json(
+        {
+          ok: false,
+          error: {
+            code: "INVALID_FORM",
+            message: "API key id is required",
+          },
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    try {
+      const result = await cascadeApiRequest<{
+        apiKey: ApiKey;
+      }>(`/api/api-keys/${encodeURIComponent(apiKeyId)}/revoke`, {
+        method: "POST",
+      });
+
+      return Response.json({
+        ok: true,
+        intent: "revoke",
+        apiKey: result.apiKey,
+      });
+    } catch (error) {
+      const failure = getActionFailure(error);
+
+      return Response.json(
+        {
+          ok: false,
+          error: failure.error,
+        },
+        {
+          status: failure.status,
+        },
+      );
+    }
+  }
 
   if (intent !== "create") {
     return Response.json(
@@ -152,6 +203,7 @@ export async function action({ request }: Route.ActionArgs) {
     return Response.json(
       {
         ok: true,
+        intent: "create",
         apiKey: result.apiKey,
         token: result.token,
       },
@@ -188,9 +240,9 @@ function formatDate(value: string | null) {
 }
 
 export default function ApiKeys({ loaderData }: Route.ComponentProps) {
-  const fetcher = useFetcher<CreateApiKeyActionData>();
+  const fetcher = useFetcher<ApiKeyActionData>();
   const [revealedApiKey, setRevealedApiKey] = useState<RevealedApiKey | null>(null);
-  const processedActionData = useRef<CreateApiKeyActionData | undefined>(undefined);
+  const processedActionData = useRef<ApiKeyActionData | undefined>(undefined);
 
   useEffect(() => {
     const actionData = fetcher.data;
@@ -201,7 +253,7 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
 
     processedActionData.current = actionData;
 
-    if (actionData.ok) {
+    if (actionData.ok && actionData.intent === "create") {
       setRevealedApiKey({
         name: actionData.apiKey.name,
         token: actionData.token,

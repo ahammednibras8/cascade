@@ -109,6 +109,7 @@ describe("API keys loader", () => {
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     await expect(response.json()).resolves.toEqual({
       ok: true,
+      intent: "create",
       apiKey: {
         id: "key-1",
         name: "GitHub deploy",
@@ -176,6 +177,53 @@ describe("API keys loader", () => {
       error: {
         code: "INVALID_API_KEY_SCOPES",
         message: "scopes must be a non-empty array",
+      },
+    });
+  });
+
+  it("revokes an API key through the dashboard server action", async () => {
+    cascadeApiRequest.mockResolvedValue({
+      apiKey: {
+        id: "key-1",
+        name: "GitHub deploy",
+        keyPrefix: "csc_dev_abc123",
+        scopes: ["DEPLOYMENTS_WRITE"],
+        lastUsedAt: null,
+        revokedAt: "2026-08-04T10:00:00.000Z",
+        createdAt: "2026-08-04T00:00:00.000Z",
+        rotatedFromId: null,
+      },
+    });
+
+    const response = await action({
+      request: new Request("http://dashboard.test/api-keys", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams([
+          ["intent", "revoke"],
+          ["apiKeyId", "key-1"],
+        ]),
+      }),
+    } as never);
+
+    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/api-keys/key-1/revoke", {
+      method: "POST",
+    });
+
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      intent: "revoke",
+      apiKey: {
+        id: "key-1",
+        name: "GitHub deploy",
+        keyPrefix: "csc_dev_abc123",
+        scopes: ["DEPLOYMENTS_WRITE"],
+        lastUsedAt: null,
+        revokedAt: "2026-08-04T10:00:00.000Z",
+        createdAt: "2026-08-04T00:00:00.000Z",
+        rotatedFromId: null,
       },
     });
   });
