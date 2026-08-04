@@ -144,4 +144,39 @@ describe("API keys loader", () => {
     });
     expect(cascadeApiRequest).not.toHaveBeenCalled();
   });
+
+  it("returns API validation errors without throwing to the dashboard error boundary", async () => {
+    cascadeApiRequest.mockRejectedValue({
+      status: 400,
+      responseBody: {
+        error: {
+          code: "INVALID_API_KEY_SCOPES",
+          message: "scopes must be a non-empty array",
+        },
+      },
+    });
+
+    const response = await action({
+      request: new Request("http://dashboard.test/api-keys", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams([
+          ["intent", "create"],
+          ["name", "No permissions"],
+        ]),
+      }),
+    } as never);
+
+    expect(response.status).toBe(400);
+
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "INVALID_API_KEY_SCOPES",
+        message: "scopes must be a non-empty array",
+      },
+    });
+  });
 });

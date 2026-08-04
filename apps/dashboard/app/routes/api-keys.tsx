@@ -35,6 +35,48 @@ export async function loader() {
   };
 }
 
+function getActionFailure(error: unknown) {
+  const status =
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof error.status === "number"
+      ? error.status
+      : 500;
+
+  const responseBody =
+    typeof error === "object" && error !== null && "responseBody" in error
+      ? error.responseBody
+      : null;
+
+  const apiError =
+    typeof responseBody === "object" &&
+    responseBody !== null &&
+    "error" in responseBody &&
+    typeof responseBody.error === "object" &&
+    responseBody.error !== null
+      ? responseBody.error
+      : null;
+
+  const code =
+    apiError && "code" in apiError && typeof apiError.code === "string"
+      ? apiError.code
+      : "API_KEY_CREATE_FAILED";
+
+  const message =
+    apiError && "message" in apiError && typeof apiError.message === "string"
+      ? apiError.message
+      : "Could not create API key";
+
+  return {
+    status,
+    error: {
+      code,
+      message,
+    },
+  };
+}
+
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
@@ -72,32 +114,46 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  const result = await cascadeApiRequest<{
-    apiKey: ApiKey;
-    token: string;
-  }>("/api/api-keys", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      name,
-      scopes,
-    }),
-  });
-
-  return Response.json(
-    {
-      ok: true,
-      apiKey: result.apiKey,
-      token: result.token,
-    },
-    {
+  try {
+    const result = await cascadeApiRequest<{
+      apiKey: ApiKey;
+      token: string;
+    }>("/api/api-keys", {
+      method: "POST",
       headers: {
-        "Cache-Control": "no-store",
+        "Content-Type": "application/json",
       },
-    },
-  );
+      body: JSON.stringify({
+        name,
+        scopes,
+      }),
+    });
+
+    return Response.json(
+      {
+        ok: true,
+        apiKey: result.apiKey,
+        token: result.token,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      },
+    );
+  } catch (error) {
+    const failure = getActionFailure(error);
+
+    return Response.json(
+      {
+        ok: false,
+        error: failure.error,
+      },
+      {
+        status: failure.status,
+      },
+    );
+  }
 }
 
 function formatDate(value: string | null) {
