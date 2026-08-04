@@ -35,6 +35,71 @@ export async function loader() {
   };
 }
 
+export async function action({ request }: Route.ActionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (intent !== "create") {
+    return Response.json(
+      {
+        ok: false,
+        error: {
+          code: "INVALID_ACTION",
+          message: "Unsupported API key action",
+        },
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const name = formData.get("name");
+  const scopes = formData.getAll("scope");
+
+  if (typeof name !== "string" || !scopes.every((scope) => typeof scope === "string")) {
+    return Response.json(
+      {
+        ok: false,
+        error: {
+          code: "INVALID_FORM",
+          message: "API key name and permissions are required",
+        },
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const result = await cascadeApiRequest<{
+    apiKey: ApiKey;
+    token: string;
+  }>("/api/api-keys", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name,
+      scopes,
+    }),
+  });
+
+  return Response.json(
+    {
+      ok: true,
+      apiKey: result.apiKey,
+      token: result.token,
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    },
+  );
+}
+
 function formatDate(value: string | null) {
   if (!value) {
     return "Never";
