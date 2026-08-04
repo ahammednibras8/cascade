@@ -6,23 +6,22 @@ import {
   TASK_ID,
   cancelTaskRun,
   createApp,
-  createApiKey,
-  createCancelTaskRunSuccess,
   createDeployment,
+  createTaskSchedule,
+  listTasks,
+  replayTaskRun,
+  triggerTaskRun,
+} from "./tasks-router-harness.js";
+import {
+  createCancelTaskRunSuccess,
   createDeploymentBody,
   createDeploymentSuccess,
   createDeploymentVersionExistsFailure,
   createListTasksSuccess,
   createReplayTaskRunSuccess,
-  createTaskSchedule,
   createTaskScheduleSuccess,
   createTriggerTaskRunSuccess,
-  listApiKeys,
-  listTasks,
-  replayTaskRun,
-  triggerTaskRun,
-  revokeApiKey,
-} from "./tasks-router-harness.js";
+} from "./tasks-router-fixtures.js";
 
 describe("tasksRouter write routes", () => {
   beforeEach(() => {
@@ -205,185 +204,5 @@ describe("tasksRouter write routes", () => {
       },
     });
     expect(createDeployment).not.toHaveBeenCalled();
-  });
-
-  it("lists API keys for an API-key manager", async () => {
-    listApiKeys.mockResolvedValue({
-      status: 200,
-      apiKeys: [
-        {
-          id: "key-1",
-          name: "GitHub deploy",
-          keyPrefix: "csc_dev_abc123",
-          scopes: ["DEPLOYMENTS_WRITE"],
-          lastUsedAt: null,
-          revokedAt: null,
-          createdAt: "2026-08-03T00:00:00.000Z",
-          rotatedFromId: null,
-        },
-      ],
-    });
-
-    const response = await httpRequest(createApp()).get("/api/api-keys");
-
-    expect(response.status).toBe(200);
-    expect(listApiKeys).toHaveBeenCalledWith({
-      auth: AUTH_CONTEXT,
-    });
-    expect(response.body.apiKeys).toEqual([
-      {
-        id: "key-1",
-        name: "GitHub deploy",
-        keyPrefix: "csc_dev_abc123",
-        scopes: ["DEPLOYMENTS_WRITE"],
-        lastUsedAt: null,
-        revokedAt: null,
-        createdAt: "2026-08-03T00:00:00.000Z",
-        rotatedFromId: null,
-      },
-    ]);
-    expect(response.body.availableScopes).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          value: "API_KEYS_MANAGE",
-        }),
-      ]),
-    );
-  });
-
-  it("rejects API-key listing when the key lacks API_KEYS_MANAGE", async () => {
-    const response = await httpRequest(createApp({ scopes: ["RUNS_READ"] })).get("/api/api-keys");
-
-    expect(response.status).toBe(403);
-    expect(response.body).toEqual({
-      error: {
-        code: "FORBIDDEN",
-        message: "API key is missing the required permission",
-      },
-    });
-    expect(listApiKeys).not.toHaveBeenCalled();
-  });
-
-  it("creates an API key for an API-key manager", async () => {
-    createApiKey.mockResolvedValue({
-      ok: true,
-      status: 201,
-      apiKey: {
-        id: "key-1",
-        name: "GitHub deploy",
-        keyPrefix: "csc_dev_abc123",
-        scopes: ["DEPLOYMENTS_WRITE"],
-        lastUsedAt: null,
-        revokedAt: null,
-        createdAt: "2026-08-03T00:00:00.000Z",
-        rotatedFromId: null,
-      },
-      token: "csc_dev_test_token_not_a_real_secret",
-    });
-
-    const body = {
-      name: "GitHub deploy",
-      scopes: ["DEPLOYMENTS_WRITE"],
-    };
-
-    const response = await httpRequest(createApp()).post("/api/api-keys").send(body);
-
-    expect(response.status).toBe(201);
-    expect(response.headers["cache-control"]).toContain("no-store");
-    expect(createApiKey).toHaveBeenCalledWith({
-      auth: AUTH_CONTEXT,
-      body,
-    });
-    expect(response.body).toEqual({
-      apiKey: {
-        id: "key-1",
-        name: "GitHub deploy",
-        keyPrefix: "csc_dev_abc123",
-        scopes: ["DEPLOYMENTS_WRITE"],
-        lastUsedAt: null,
-        revokedAt: null,
-        createdAt: "2026-08-03T00:00:00.000Z",
-        rotatedFromId: null,
-      },
-      token: "csc_dev_test_token_not_a_real_secret",
-    });
-  });
-
-  it("returns validation errors from API key creation", async () => {
-    createApiKey.mockResolvedValue({
-      ok: false,
-      status: 400,
-      error: {
-        code: "INVALID_API_KEY_SCOPES",
-        message: "scopes must be a non-empty array",
-      },
-    });
-
-    const response = await httpRequest(createApp()).post("/api/api-keys").send({
-      name: "Empty scopes",
-      scopes: [],
-    });
-
-    expect(response.status).toBe(400);
-    expect(response.body).toEqual({
-      error: {
-        code: "INVALID_API_KEY_SCOPES",
-        message: "scopes must be a non-empty array",
-      },
-    });
-  });
-
-  it("revokes an API key for an API-key manager", async () => {
-    const apiKeyId = "33333333-3333-4333-8333-333333333333";
-
-    revokeApiKey.mockResolvedValue({
-      ok: true,
-      status: 200,
-      apiKey: {
-        id: apiKeyId,
-        name: "GitHub deploy",
-        keyPrefix: "csc_dev_abc123",
-        scopes: ["DEPLOYMENTS_WRITE"],
-        lastUsedAt: null,
-        revokedAt: "2026-08-03T01:00:00.000Z",
-        createdAt: "2026-08-03T00:00:00.000Z",
-        rotatedFromId: null,
-      },
-    });
-
-    const response = await httpRequest(createApp()).post(`/api/api-keys/${apiKeyId}/revoke`);
-
-    expect(response.status).toBe(200);
-    expect(revokeApiKey).toHaveBeenCalledWith({
-      auth: AUTH_CONTEXT,
-      apiKeyId,
-    });
-    expect(response.body.apiKey).toMatchObject({
-      id: apiKeyId,
-      revokedAt: "2026-08-03T01:00:00.000Z",
-    });
-  });
-
-  it("returns revoke errors from the API-key service", async () => {
-    const apiKeyId = "33333333-3333-4333-8333-333333333333";
-
-    revokeApiKey.mockResolvedValue({
-      ok: false,
-      status: 409,
-      error: {
-        code: "CANNOT_REVOKE_CURRENT_API_KEY",
-        message: "An API key cannot revoke itself",
-      },
-    });
-
-    const response = await httpRequest(createApp()).post(`/api/api-keys/${apiKeyId}/revoke`);
-
-    expect(response.status).toBe(409);
-    expect(response.body).toEqual({
-      error: {
-        code: "CANNOT_REVOKE_CURRENT_API_KEY",
-        message: "An API key cannot revoke itself",
-      },
-    });
   });
 });
