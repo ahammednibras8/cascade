@@ -261,8 +261,10 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
     }
   }, [fetcher.data]);
 
-  const isCreating = fetcher.state !== "idle";
-  const createError = fetcher.data && !fetcher.data.ok ? fetcher.data.error : null;
+  const isSubmitting = fetcher.state !== "idle";
+  const submittedIntent = fetcher.formData?.get("intent");
+  const isCreating = isSubmitting && submittedIntent === "create";
+  const actionError = fetcher.data && !fetcher.data.ok ? fetcher.data.error : null;
 
   async function copyRevealedToken() {
     if (!revealedApiKey) {
@@ -365,9 +367,9 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
             </div>
           </fieldset>
 
-          {createError ? (
+          {actionError ? (
             <p role="alert" className="text-sm text-red-700">
-              {createError.message}
+              {actionError.message}
             </p>
           ) : null}
 
@@ -391,6 +393,7 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
               <th className="px-4 py-3 text-left font-medium text-gray-600">Last used</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Status</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Created</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">Actions</th>
             </tr>
           </thead>
 
@@ -414,12 +417,40 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
                 </td>
 
                 <td className="px-4 py-3 text-gray-700">{formatDate(apiKey.createdAt)}</td>
+
+                <td className="px-4 py-3">
+                  {apiKey.revokedAt ? (
+                    <span className="text-gray-500">---</span>
+                  ) : (
+                    <fetcher.Form
+                      method="post"
+                      onSubmit={(event) => {
+                        if (
+                          !window.confirm(`Revoke API key "${apiKey.name}"? This cannot be undone.`)
+                        ) {
+                          event.preventDefault();
+                        }
+                      }}
+                    >
+                      <input type="hidden" name="intent" value="revoke" />
+                      <input type="hidden" name="apiKeyId" value={apiKey.id} />
+
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSubmitting && submittedIntent === "revoke" ? "Revoking..." : "Revoke"}
+                      </button>
+                    </fetcher.Form>
+                  )}
+                </td>
               </tr>
             ))}
 
             {loaderData.apiKeys.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                   No API keys exist in this environment.
                 </td>
               </tr>
