@@ -33,6 +33,12 @@ type ApiKeyActionData =
       apiKey: ApiKey;
     }
   | {
+      ok: true;
+      intent: "rotate";
+      apiKey: ApiKey;
+      token: string;
+    }
+  | {
       ok: false;
       error: {
         code: string;
@@ -106,6 +112,60 @@ function getActionFailure(error: unknown) {
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
+
+  if (intent === "rotate") {
+    const apiKeyId = formData.get("apiKeyId");
+
+    if (typeof apiKeyId !== "string") {
+      return Response.json(
+        {
+          ok: false,
+          error: {
+            code: "INVALID_FORM",
+            message: "API key id is required",
+          },
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    try {
+      const result = await cascadeApiRequest<{
+        apiKey: ApiKey;
+        token: string;
+      }>(`/api/api-keys/${encodeURIComponent(apiKeyId)}/rotate`, {
+        method: "POST",
+      });
+
+      return Response.json(
+        {
+          ok: true,
+          intent: "rotate",
+          apiKey: result.apiKey,
+          token: result.token,
+        },
+        {
+          headers: {
+            "Cache-Control": "no-store",
+          },
+        },
+      );
+    } catch (error) {
+      const failure = getActionFailure(error);
+
+      return Response.json(
+        {
+          ok: false,
+          error: failure.error,
+        },
+        {
+          status: failure.status,
+        },
+      );
+    }
+  }
 
   if (intent === "revoke") {
     const apiKeyId = formData.get("apiKeyId");
@@ -253,7 +313,7 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
 
     processedActionData.current = actionData;
 
-    if (actionData.ok && actionData.intent === "create") {
+    if (actionData.ok && (actionData.intent === "create" || actionData.intent === "rotate")) {
       setRevealedApiKey({
         name: actionData.apiKey.name,
         token: actionData.token,

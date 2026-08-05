@@ -227,4 +227,55 @@ describe("API keys loader", () => {
       },
     });
   });
+
+  it("rotates an API key through the dashboard server action", async () => {
+    cascadeApiRequest.mockResolvedValue({
+      apiKey: {
+        id: "replacement-key-1",
+        name: "GitHub deploy",
+        keyPrefix: "csc_dev_new_key",
+        scopes: ["DEPLOYMENTS_WRITE"],
+        lastUsedAt: null,
+        revokedAt: null,
+        createdAt: "2026-08-05T00:00:00.000Z",
+        rotatedFromId: "key-1",
+      },
+      token: "csc_dev_test_rotation_token_not_a_real_secret",
+    });
+
+    const response = await action({
+      request: new Request("http://dashboard.test/api-keys", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams([
+          ["intent", "rotate"],
+          ["apiKeyId", "key-1"],
+        ]),
+      }),
+    } as never);
+
+    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/api-keys/key-1/rotate", {
+      method: "POST",
+    });
+
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      intent: "rotate",
+      apiKey: {
+        id: "replacement-key-1",
+        name: "GitHub deploy",
+        keyPrefix: "csc_dev_new_key",
+        scopes: ["DEPLOYMENTS_WRITE"],
+        lastUsedAt: null,
+        revokedAt: null,
+        createdAt: "2026-08-05T00:00:00.000Z",
+        rotatedFromId: "key-1",
+      },
+      token: "csc_dev_test_rotation_token_not_a_real_secret",
+    });
+  });
 });
