@@ -470,15 +470,25 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
 
                 <td className="px-4 py-3">
                   {apiKey.revokedAt ? (
-                    <span className="text-gray-500">-</span>
+                    <span className="text-red-700">Revoked</span>
                   ) : (
-                    <div className="flexflex gap-2">
+                    <span className="text-green-700">Active</span>
+                  )}
+                </td>
+
+                <td className="px-4 py-3 text-gray-700">{formatDate(apiKey.createdAt)}</td>
+
+                <td className="px-4 py-3">
+                  {apiKey.revokedAt ? (
+                    <span className="text-gray-500">—</span>
+                  ) : (
+                    <div className="flex gap-2">
                       <fetcher.Form
                         method="post"
                         onSubmit={(event) => {
                           if (
                             !window.confirm(
-                              `Rotate API key "${apiKey.name}"? The old key will stop working immediately`,
+                              `Rotate API key "${apiKey.name}"? The old key will stop working immediately.`,
                             )
                           ) {
                             event.preventDefault();
@@ -493,7 +503,7 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
                           disabled={isSubmitting}
                           className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {isSubmitting && submittedIntent === "rotate" ? "Rotating..." : "Rotate"}
+                          {isSubmitting && submittedIntent === "rotate" ? "Rotating…" : "Rotate"}
                         </button>
                       </fetcher.Form>
 
@@ -502,7 +512,7 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
                         onSubmit={(event) => {
                           if (
                             !window.confirm(
-                              `Revoke API key "${apiKey.name}"? This cannot be undone`,
+                              `Revoke API key "${apiKey.name}"? This cannot be undone.`,
                             )
                           ) {
                             event.preventDefault();
@@ -517,40 +527,10 @@ export default function ApiKeys({ loaderData }: Route.ComponentProps) {
                           disabled={isSubmitting}
                           className="rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {isSubmitting && submittedIntent === "revoke" ? "Revoking..." : "Revoke"}
+                          {isSubmitting && submittedIntent === "revoke" ? "Revoking…" : "Revoke"}
                         </button>
                       </fetcher.Form>
                     </div>
-                  )}
-                </td>
-
-                <td className="px-4 py-3 text-gray-700">{formatDate(apiKey.createdAt)}</td>
-
-                <td className="px-4 py-3">
-                  {apiKey.revokedAt ? (
-                    <span className="text-gray-500">---</span>
-                  ) : (
-                    <fetcher.Form
-                      method="post"
-                      onSubmit={(event) => {
-                        if (
-                          !window.confirm(`Revoke API key "${apiKey.name}"? This cannot be undone.`)
-                        ) {
-                          event.preventDefault();
-                        }
-                      }}
-                    >
-                      <input type="hidden" name="intent" value="revoke" />
-                      <input type="hidden" name="apiKeyId" value={apiKey.id} />
-
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isSubmitting && submittedIntent === "revoke" ? "Revoking..." : "Revoke"}
-                      </button>
-                    </fetcher.Form>
                   )}
                 </td>
               </tr>
