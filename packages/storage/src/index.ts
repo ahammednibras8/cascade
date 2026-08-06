@@ -109,7 +109,7 @@ function getBucket() {
   return getRequiredEnv("S3_BUCKET");
 }
 
-function getLargePayloadThresholdBytes() {
+export function getLargePayloadThresholdBytes() {
   return getPositiveIntegerEnv(
     "LARGE_PAYLOAD_THRESHOLD_BYTES",
     DEFAULT_LARGE_PAYLOAD_THRESHOLD_BYTES,

@@ -72,6 +72,7 @@ services:
     environment:
       NODE_ENV: production
       API_PORT: 3001
+      API_JSON_BODY_LIMIT_BYTES: ${API_JSON_BODY_LIMIT_BYTES:-5242880}
       DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:-cascade}@postgres:5432/${POSTGRES_DB:-cascade}
       QUEUE_REDIS_URL: redis://redis:6379
       API_KEY_PEPPER: ${API_KEY_PEPPER:-secret}
@@ -82,6 +83,13 @@ services:
       S3_BUCKET: ${S3_BUCKET:-cascade-task-payloads}
       S3_FORCE_PATH_STYLE: "true"
       LARGE_PAYLOAD_THRESHOLD_BYTES: ${LARGE_PAYLOAD_THRESHOLD_BYTES:-262144}
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_MODE: ${OTEL_EXPORTER_MODE:-otlp}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_SERVICE_NAME: cascade-api
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${OTEL_DEPLOYMENT_ENVIRONMENT:-local}
+      OTEL_METRIC_EXPORT_INTERVAL_MS: ${OTEL_METRIC_EXPORT_INTERVAL_MS:-1000}
+      CASCADE_VERSION: ${CASCADE_VERSION:-development}
     ports:
       - "${API_PORT:-3001}:3001"
     healthcheck:
@@ -155,6 +163,13 @@ services:
       S3_BUCKET: ${S3_BUCKET:-cascade-task-payloads}
       S3_FORCE_PATH_STYLE: "true"
       LARGE_PAYLOAD_THRESHOLD_BYTES: ${LARGE_PAYLOAD_THRESHOLD_BYTES:-262144}
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_MODE: ${OTEL_EXPORTER_MODE:-otlp}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_SERVICE_NAME: cascade-worker
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${OTEL_DEPLOYMENT_ENVIRONMENT:-local}
+      OTEL_METRIC_EXPORT_INTERVAL_MS: ${OTEL_METRIC_EXPORT_INTERVAL_MS:-1000}
+      CASCADE_VERSION: ${CASCADE_VERSION:-development}
 
   worker-control:
     profiles:
@@ -177,6 +192,13 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:-cascade}@postgres:5432/${POSTGRES_DB:-cascade}
       QUEUE_REDIS_URL: redis://redis:6379
       CASCADE_WORKER_ROLE: control
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_MODE: ${OTEL_EXPORTER_MODE:-otlp}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_SERVICE_NAME: cascade-worker-control
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${OTEL_DEPLOYMENT_ENVIRONMENT:-local}
+      OTEL_METRIC_EXPORT_INTERVAL_MS: ${OTEL_METRIC_EXPORT_INTERVAL_MS:-1000}
+      CASCADE_VERSION: ${CASCADE_VERSION:-development}
 
   deployment-runner:
     profiles:
@@ -198,13 +220,14 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
+      DEPLOYMENT_RUNTIME: ${DEPLOYMENT_RUNTIME:-docker}
       DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:-cascade}@postgres:5432/${POSTGRES_DB:-cascade}
       DEPLOYMENT_DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:-cascade}@postgres:5432/${POSTGRES_DB:-cascade}
       DEPLOYMENT_QUEUE_REDIS_URL: redis://redis:6379
-      DEPLOYMENT_DOCKER_NETWORK: cascade_default
+      DEPLOYMENT_DOCKER_NETWORK: ${DEPLOYMENT_DOCKER_NETWORK:-cascade_default}
       DEPLOYMENT_WORKER_CONCURRENCY: ${DEPLOYMENT_WORKER_CONCURRENCY:-2}
       DEPLOYMENT_RUNNER_POLL_MS: ${DEPLOYMENT_RUNNER_POLL_MS:-5000}
-      DEPLOYMENT_PULL_IMAGES: "false"
+      DEPLOYMENT_PULL_IMAGES: ${DEPLOYMENT_PULL_IMAGES:-false}
       S3_ENDPOINT: http://rustfs:9000
       S3_REGION: ${RUSTFS_REGION:-us-east-1}
       S3_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:-cascade}
@@ -212,6 +235,13 @@ services:
       S3_BUCKET: ${S3_BUCKET:-cascade-task-payloads}
       S3_FORCE_PATH_STYLE: "true"
       LARGE_PAYLOAD_THRESHOLD_BYTES: ${LARGE_PAYLOAD_THRESHOLD_BYTES:-262144}
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_MODE: ${OTEL_EXPORTER_MODE:-otlp}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_SERVICE_NAME: cascade-deployment-runner
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${OTEL_DEPLOYMENT_ENVIRONMENT:-local}
+      OTEL_METRIC_EXPORT_INTERVAL_MS: ${OTEL_METRIC_EXPORT_INTERVAL_MS:-1000}
+      CASCADE_VERSION: ${CASCADE_VERSION:-development}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
