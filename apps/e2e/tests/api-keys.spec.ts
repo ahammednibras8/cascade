@@ -193,3 +193,53 @@ test("dashboard revocation immediately invalidates an API key", async ({ page, r
 
   expect(response.status()).toBe(401);
 });
+
+test("a key can use only its selected permission", async ({ page, request }) => {
+  await getDashboardTestEnvironment();
+
+  const name = `E2E runs-read key ${randomUUID().slice(0, 8)}`;
+  createdApiKeyNames.push(name);
+
+  await page.goto("/api-keys");
+
+  await page.getByRole("textbox", { name: "Name" }).fill(name);
+
+  await page.locator('input[name="scope"][value="RUNS_READ"]').check();
+
+  await page.getByRole("button", { name: "Create API key" }).click();
+
+  const token = await page
+    .locator("section[aria-labelledby='new-api-key-heading'] code")
+    .innerText();
+
+  const row = page.getByRole("row").filter({
+    hasText: name,
+  });
+
+  await expect(row).toBeVisible();
+  await expect(row).toContainText("RUNS_READ");
+
+  const apiUrl = process.env.CASCADE_API_URL ?? "http://localhost:3001";
+
+  const runsResponse = await request.get(`${apiUrl}/api/runs`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  expect(runsResponse.status()).toBe(200);
+
+  const apiKeysResponse = await request.get(`${apiUrl}/api/api-keys`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  expect(apiKeysResponse.status()).toBe(403);
+
+  await expect(apiKeysResponse.json()).resolves.toMatchObject({
+    error: {
+      code: "FORBIDDEN",
+    },
+  });
+});
