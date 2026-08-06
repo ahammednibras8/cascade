@@ -76,7 +76,7 @@ export default defineConfig({
       command: "node --env-file=../../.env --conditions=development --import tsx src/index.ts",
       cwd: workerDir,
       wait: {
-        stdout: /Starting worker with @cascade\/core/,
+        stdout: /Starting (?:local |control )?worker with @cascade\/core/,
       },
       timeout: 120_000,
       env: serverEnv,
