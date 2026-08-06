@@ -1,10 +1,11 @@
-import express, { type ErrorRequestHandler } from "express";
+import express from "express";
 import { packageName } from "@cascade/core";
 import { requireApiKey } from "./auth/api-key.js";
 import { tasksRouter } from "./routes/tasks.js";
 import { taskRunQueueRedis } from "./queue/task-runs.js";
 import { prisma } from "@cascade/database";
 import { shutdownTelemetry } from "@cascade/telemetry";
+import { errorHandler } from "./http/error-handler.js";
 
 const app = express();
 const port = Number(process.env.API_PORT ?? 3001);
@@ -26,17 +27,6 @@ app.get("/me", (request, response) => {
 });
 
 app.use("/api", requireApiKey(), tasksRouter);
-
-const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
-  process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`);
-
-  response.status(500).json({
-    error: {
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Internal server error",
-    },
-  });
-};
 
 app.use(errorHandler);
 
