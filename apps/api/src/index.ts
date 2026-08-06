@@ -8,12 +8,14 @@ import { shutdownTelemetry } from "@cascade/telemetry";
 import { errorHandler } from "./http/error-handler.js";
 import { jsonBodyParser } from "./http/json-body.js";
 import { securityHeaders } from "./http/security-headers.js";
+import { corsPolicy } from "./http/cors-policy.js";
 
 const app = express();
 const port = Number(process.env.API_PORT ?? 3001);
 
 app.disable("x-powered-by");
 app.use(securityHeaders());
+app.use(corsPolicy());
 app.use(jsonBodyParser());
 
 app.get("/healthz", (_request, response) => {
