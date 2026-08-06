@@ -25,7 +25,7 @@ function validateOrigin(value: string) {
   return value;
 }
 
-export function getAllowedCorsOrigins() {
+function getAllowedCorsOrigins() {
   const rawValue = process.env.API_CORS_ALLOWED_ORIGINS;
 
   if (!rawValue) {
