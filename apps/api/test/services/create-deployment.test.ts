@@ -14,25 +14,24 @@ type TransactionClient = {
 
 type TransactionCallback = (tx: TransactionClient) => Promise<unknown>;
 
-const prisma = vi.hoisted(() => ({
-  $transaction: vi.fn<(callback: TransactionCallback) => Promise<unknown>>(),
+const mocks = vi.hoisted(() => ({
+  prisma: {
+    $transaction: vi.fn<(callback: TransactionCallback) => Promise<unknown>>(),
+  },
+  deploymentUpdateMany: vi.fn<(args: unknown) => Promise<unknown>>(),
+  deploymentCreate: vi.fn<(args: unknown) => Promise<unknown>>(),
+  deploymentFindUniqueOrThrow: vi.fn<(args: unknown) => Promise<unknown>>(),
+  taskUpsert: vi.fn<(args: unknown) => Promise<unknown>>(),
 }));
 
-const txDeploymentUpdateMany = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
-
-const txDeploymentCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
-
-const txDeploymentFindUniqueOrThrow = vi.hoisted(() =>
-  vi.fn<(args: unknown) => Promise<unknown>>(),
-);
-
-const txTaskUpsert = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
-
 vi.mock("@cascade/database", () => ({
-  prisma,
+  prisma: mocks.prisma,
 }));
 
 const { createDeployment } = await import("../../src/services/create-deployment.js");
+
+const ENVIRONMENT_ID = "environment-1";
+const IMAGE = "ghcr.io/cascade/worker:v1";
 
 const EXECUTION_CONFIG = {
   schemaVersion: 1,
@@ -50,43 +49,64 @@ const EXECUTION_CONFIG = {
 
 const auth = {
   apiKeyId: "api-key-1",
-  environmentId: "environment-1",
+  environmentId: ENVIRONMENT_ID,
   projectId: "project-1",
   scopes: [],
 } satisfies ApiAuthContext;
+
+function task(overrides: Record<string, unknown> = {}) {
+  return {
+    slug: "hello",
+    executionConfig: EXECUTION_CONFIG,
+    ...overrides,
+  };
+}
+
+function body(overrides: Record<string, unknown> = {}) {
+  return {
+    version: "v1",
+    image: IMAGE,
+    tasks: [task()],
+    ...overrides,
+  };
+}
+
+async function createDeploymentWithBody(deploymentBody: unknown) {
+  return createDeployment({
+    auth,
+    body: deploymentBody,
+  });
+}
+
+function expectNoTransaction() {
+  expect(mocks.prisma.$transaction).not.toHaveBeenCalled();
+}
 
 describe("createDeployment", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    prisma.$transaction.mockImplementation(async (callback) =>
+    mocks.prisma.$transaction.mockImplementation(async (callback) =>
       callback({
         deployment: {
-          updateMany: txDeploymentUpdateMany,
-          create: txDeploymentCreate,
-          findUniqueOrThrow: txDeploymentFindUniqueOrThrow,
+          updateMany: mocks.deploymentUpdateMany,
+          create: mocks.deploymentCreate,
+          findUniqueOrThrow: mocks.deploymentFindUniqueOrThrow,
         },
         task: {
-          upsert: txTaskUpsert,
+          upsert: mocks.taskUpsert,
         },
       }),
     );
 
-    txDeploymentUpdateMany.mockResolvedValue({
-      count: 1,
-    });
-
-    txDeploymentCreate.mockResolvedValue({
+    mocks.deploymentUpdateMany.mockResolvedValue({ count: 1 });
+    mocks.deploymentCreate.mockResolvedValue({ id: "deployment-1" });
+    mocks.taskUpsert.mockResolvedValue({});
+    mocks.deploymentFindUniqueOrThrow.mockResolvedValue({
       id: "deployment-1",
-    });
-
-    txTaskUpsert.mockResolvedValue({});
-
-    txDeploymentFindUniqueOrThrow.mockResolvedValue({
-      id: "deployment-1",
-      environmentId: "environment-1",
+      environmentId: ENVIRONMENT_ID,
       version: "v1",
-      image: "ghcr.io/cascade/worker:v1",
+      image: IMAGE,
       status: "ACTIVE",
       tasks: [
         {
@@ -100,56 +120,40 @@ describe("createDeployment", () => {
   });
 
   it("creates an active deployment and attaches declared tasks to it", async () => {
-    const result = await createDeployment({
-      auth,
-      body: {
+    const result = await createDeploymentWithBody(
+      body({
         version: " v1 ",
-        image: " ghcr.io/cascade/worker:v1 ",
+        image: ` ${IMAGE} `,
         tasks: [
-          {
+          task({
             slug: " hello ",
             name: " Hello ",
             description: "Greets the user",
-            executionConfig: EXECUTION_CONFIG,
-          },
+          }),
         ],
-      },
+      }),
+    );
+
+    expect(mocks.deploymentUpdateMany).toHaveBeenCalledWith({
+      where: { environmentId: ENVIRONMENT_ID, status: "ACTIVE" },
+      data: { status: "INACTIVE" },
     });
 
-    expect(result.ok).toBe(true);
-
-    if (!result.ok) {
-      throw new Error("Expected createDeployment to succeed");
-    }
-
-    expect(txDeploymentUpdateMany).toHaveBeenCalledWith({
-      where: {
-        environmentId: "environment-1",
-        status: "ACTIVE",
-      },
+    expect(mocks.deploymentCreate).toHaveBeenCalledWith({
       data: {
-        status: "INACTIVE",
-      },
-    });
-
-    expect(txDeploymentCreate).toHaveBeenCalledWith({
-      data: {
-        environmentId: "environment-1",
+        environmentId: ENVIRONMENT_ID,
         version: "v1",
-        image: "ghcr.io/cascade/worker:v1",
+        image: IMAGE,
         status: "ACTIVE",
       },
     });
 
-    expect(txTaskUpsert).toHaveBeenCalledWith({
+    expect(mocks.taskUpsert).toHaveBeenCalledWith({
       where: {
-        environmentId_slug: {
-          environmentId: "environment-1",
-          slug: "hello",
-        },
+        environmentId_slug: { environmentId: ENVIRONMENT_ID, slug: "hello" },
       },
       create: {
-        environmentId: "environment-1",
+        environmentId: ENVIRONMENT_ID,
         deploymentId: "deployment-1",
         slug: "hello",
         name: "Hello",
@@ -164,114 +168,118 @@ describe("createDeployment", () => {
       },
     });
 
-    expect(txDeploymentFindUniqueOrThrow).toHaveBeenCalledWith({
-      where: {
-        id: "deployment-1",
-      },
+    expect(mocks.deploymentFindUniqueOrThrow).toHaveBeenCalledWith({
+      where: { id: "deployment-1" },
       include: {
         tasks: {
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-          },
-          orderBy: {
-            slug: "asc",
-          },
+          select: { id: true, slug: true, name: true },
+          orderBy: { slug: "asc" },
         },
-      },
-    });
-
-    expect(result.status).toBe(201);
-    expect(result.deployment).toEqual({
-      id: "deployment-1",
-      environmentId: "environment-1",
-      version: "v1",
-      image: "ghcr.io/cascade/worker:v1",
-      status: "ACTIVE",
-      tasks: [
-        {
-          id: "task-1",
-          slug: "hello",
-          name: "Hello",
-        },
-      ],
-      createdAt: "2026-01-01T00:00:00.000Z",
-    });
-  });
-
-  it("rejects invalid deployment bodies before opening a transaction", async () => {
-    const result = await createDeployment({
-      auth,
-      body: {
-        version: "v1",
-        image: "ghcr.io/cascade/worker:v1",
-        tasks: [],
       },
     });
 
     expect(result).toEqual({
-      ok: false,
-      status: 400,
+      ok: true,
+      status: 201,
+      deployment: {
+        id: "deployment-1",
+        environmentId: ENVIRONMENT_ID,
+        version: "v1",
+        image: IMAGE,
+        status: "ACTIVE",
+        tasks: [{ id: "task-1", slug: "hello", name: "Hello" }],
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+    });
+  });
+
+  it.each([
+    {
+      name: "empty task list",
+      body: body({ tasks: [] }),
       error: {
         code: "INVALID_TASKS",
         message: "tasks must be a non-empty array",
       },
-    });
-
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-  });
-
-  it("rejects deployment tasks without complete execution config", async () => {
-    const result = await createDeployment({
-      auth,
-      body: {
-        version: "v1",
-        image: "ghcr.io/cascade/worker:v1",
+    },
+    {
+      name: "task without complete execution config",
+      body: body({
         tasks: [
           {
             slug: "hello",
           },
         ],
-      },
-    });
-
-    expect(result).toEqual({
-      ok: false,
-      status: 400,
+      }),
       error: {
         code: "INVALID_TASK_EXECUTION_CONFIG",
         message:
           "task.executionConfig must contain schemaVersion, timeoutMs, retry, and queue settings",
       },
+    },
+    {
+      name: "more than 100 tasks",
+      body: body({
+        tasks: Array.from({ length: 101 }, (_, index) =>
+          task({
+            slug: `task-${index}`,
+          }),
+        ),
+      }),
+      error: {
+        code: "INVALID_TASKS",
+        message: "tasks must contain at most 100 items",
+      },
+    },
+    {
+      name: "duplicate task slugs",
+      body: body({
+        tasks: [task(), task()],
+      }),
+      error: {
+        code: "DUPLICATE_TASK_SLUG",
+        message: "tasks must not contain duplicate task.slug values",
+      },
+    },
+    {
+      name: "oversized deployment version",
+      body: body({
+        version: "v".repeat(121),
+      }),
+      error: {
+        code: "INVALID_VERSION",
+        message: "version must be a non-empty string with at most 120 characters",
+      },
+    },
+    {
+      name: "blank task name",
+      body: body({
+        tasks: [task({ name: " " })],
+      }),
+      error: {
+        code: "INVALID_TASK_NAME",
+        message: "task.name must be a non-empty string with at most 200 characters",
+      },
+    },
+  ])("rejects $name before opening a transaction", async ({ body: invalidBody, error }) => {
+    await expect(createDeploymentWithBody(invalidBody)).resolves.toEqual({
+      ok: false,
+      status: 400,
+      error,
     });
 
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expectNoTransaction();
   });
 
   it("returns 409 when the deployment version already exists in the environment", async () => {
-    prisma.$transaction.mockRejectedValueOnce({
+    mocks.prisma.$transaction.mockRejectedValueOnce({
       code: "P2002",
       meta: {
         target: ["environmentId", "version"],
       },
     });
 
-    await expect(
-      createDeployment({
-        auth,
-        body: {
-          version: "v1",
-          image: "ghcr.io/cascade/worker:v1",
-          tasks: [
-            {
-              slug: "hello",
-              executionConfig: EXECUTION_CONFIG,
-            },
-          ],
-        },
-      }),
-    ).resolves.toEqual({
+    await expect(createDeploymentWithBody(body())).resolves.toEqual({
       ok: false,
       status: 409,
       error: {

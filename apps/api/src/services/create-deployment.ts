@@ -14,100 +14,144 @@ type DeploymentTaskInput = {
   executionConfig: TaskExecutionConfig;
 };
 
+const MAX_DEPLOYMENT_VERSION_LENGTH = 120;
+const MAX_DEPLOYMENT_IMAGE_LENGTH = 512;
+const MAX_DEPLOYMENT_TASKS = 100;
+const MAX_TASK_SLUG_LENGTH = 120;
+const MAX_TASK_NAME_LENGTH = 200;
+const MAX_TASK_DESCRIPTION_LENGTH = 4_000;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function invalidDepoloymentBody(code: string, message: string) {
+  return {
+    ok: false as const,
+    status: 400,
+    error: {
+      code,
+      message,
+    },
+  };
+}
+
+function getTrimmedString(value: unknown) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  return trimmed || null;
+}
+
 function parseDeploymentBody(body: unknown) {
   if (!isRecord(body)) {
-    return {
-      ok: false as const,
-      status: 400,
-      error: {
-        code: "INVALID_BODY",
-        message: "Body must be an object",
-      },
-    };
+    return invalidDepoloymentBody("INVALID_BODY", "Body must be an object");
   }
 
-  const { version, image, tasks } = body;
+  const version = getTrimmedString(body.version);
 
-  if (typeof version !== "string" || version.trim().length === 0) {
-    return {
-      ok: false as const,
-      status: 400,
-      error: {
-        code: "INVALID_VERSION",
-        message: "version must be a non-empty string",
-      },
-    };
+  if (!version || version.length > MAX_DEPLOYMENT_VERSION_LENGTH) {
+    return invalidDepoloymentBody(
+      "INVALID_VERSION",
+      `version must be a non-empty string with at most ${MAX_DEPLOYMENT_VERSION_LENGTH} characters`,
+    );
   }
 
-  if (typeof image !== "string" || image.trim().length === 0) {
-    return {
-      ok: false as const,
-      status: 400,
-      error: {
-        code: "INVALID_IMAGE",
-        message: "image must be a non-empty string",
-      },
-    };
+  const image = getTrimmedString(body.image);
+
+  if (!image || image.length > MAX_DEPLOYMENT_IMAGE_LENGTH || /\s/.test(image)) {
+    return invalidDepoloymentBody(
+      "INVALID_IMAGE",
+      `image must be a whitespace-free string with at most ${MAX_DEPLOYMENT_IMAGE_LENGTH} characters`,
+    );
   }
+
+  const { tasks } = body;
 
   if (!Array.isArray(tasks) || tasks.length === 0) {
-    return {
-      ok: false as const,
-      status: 400,
-      error: {
-        code: "INVALID_TASKS",
-        message: "tasks must be a non-empty array",
-      },
-    };
+    return invalidDepoloymentBody("INVALID_TASKS", "tasks must be a non-empty array");
   }
 
-  const parsedTasks: DeploymentTaskInput[] = [];
+  if (tasks.length > MAX_DEPLOYMENT_TASKS) {
+    return invalidDepoloymentBody(
+      "INVALID_TASKS",
+      `tasks must contain at most ${MAX_DEPLOYMENT_TASKS} items`,
+    );
+  }
+
+  const parsedTaks: DeploymentTaskInput[] = [];
+  const tasksSlug = new Set<string>();
 
   for (const task of tasks) {
     if (!isRecord(task)) {
-      return {
-        ok: false as const,
-        status: 400,
-        error: {
-          code: "INVALID_TASK",
-          message: "Each task must be an object",
-        },
-      };
+      return invalidDepoloymentBody("INVALID_TASK", "Each task must be an object");
     }
 
-    if (typeof task.slug !== "string" || task.slug.trim().length === 0) {
-      return {
-        ok: false as const,
-        status: 400,
-        error: {
-          code: "INVALID_TASK_SLUG",
-          message: "task.slug must be a non-empty string",
-        },
-      };
+    const slug = getTrimmedString(task.slug);
+
+    if (!slug || slug.length > MAX_TASK_SLUG_LENGTH) {
+      return invalidDepoloymentBody(
+        "INVALID_TASK",
+        `task.slug must be a non-empty string with at most ${MAX_TASK_SLUG_LENGTH} characters`,
+      );
+    }
+
+    if (tasksSlug.has(slug)) {
+      return invalidDepoloymentBody(
+        "DUPLICATE_TASK_SLUG",
+        "tasks must not contain duplicate task.slug values",
+      );
+    }
+
+    tasksSlug.add(slug);
+
+    let name = slug;
+
+    if (task.name !== undefined) {
+      const explicitName = getTrimmedString(task.name);
+
+      if (!explicitName || explicitName.length > MAX_TASK_NAME_LENGTH) {
+        return invalidDepoloymentBody(
+          "INVALID_TASK_NAME",
+          `task.name must be a non-empty string with at most ${MAX_TASK_NAME_LENGTH} characters`,
+        );
+      }
+
+      name = explicitName;
+    }
+
+    let description: string | null = null;
+
+    if (task.description !== undefined && task.description !== null) {
+      if (
+        typeof task.description !== "string" ||
+        task.description.length > MAX_TASK_DESCRIPTION_LENGTH
+      ) {
+        return invalidDepoloymentBody(
+          "INVALID_TASK_DESCRIPTION",
+          `task.description must be a string with at most ${MAX_TASK_DESCRIPTION_LENGTH} characters`,
+        );
+      }
+
+      description = task.description;
     }
 
     const executionConfig = parseTaskExecutionConfig(task.executionConfig);
 
     if (!executionConfig) {
-      return {
-        ok: false as const,
-        status: 400,
-        error: {
-          code: "INVALID_TASK_EXECUTION_CONFIG",
-          message:
-            "task.executionConfig must contain schemaVersion, timeoutMs, retry, and queue settings",
-        },
-      };
+      return invalidDepoloymentBody(
+        "INVALID_TASK_EXECUTION_CONFIG",
+        "task.executionConfig must contain schemaVersion, timeoutMs, retry, and queue settings",
+      );
     }
 
-    parsedTasks.push({
-      slug: task.slug.trim(),
-      name: typeof task.name === "string" && task.name.trim() ? task.name.trim() : task.slug.trim(),
-      description: typeof task.description === "string" ? task.description : null,
+    parsedTaks.push({
+      slug,
+      name,
+      description,
       executionConfig,
     });
   }
@@ -115,9 +159,9 @@ function parseDeploymentBody(body: unknown) {
   return {
     ok: true as const,
     deployment: {
-      version: version.trim(),
-      image: image.trim(),
-      tasks: parsedTasks,
+      version,
+      image,
+      tasks: parsedTaks,
     },
   };
 }
