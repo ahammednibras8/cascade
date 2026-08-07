@@ -14,143 +14,164 @@ type CreatedSchedule = {
 
 const TASK_ID = "11111111-1111-4111-8111-111111111111";
 const SCHEDULE_ID = "22222222-2222-4222-8222-222222222222";
+const ENVIRONMENT_ID = "environment-1";
 const CREATED_AT = new Date("2026-01-01T00:00:00.000Z");
+const NEXT_RUN_AT = new Date("2026-01-01T00:01:00.000Z");
+const PAYLOAD = { message: "scheduled hello" };
 
 const auth = {
   apiKeyId: "api-key-1",
-  environmentId: "environment-1",
+  environmentId: ENVIRONMENT_ID,
   projectId: "project-1",
   scopes: [],
 } satisfies ApiAuthContext;
 
-const prisma = vi.hoisted(() => ({
-  task: {
-    findFirst: vi.fn<(args: unknown) => Promise<unknown>>(),
+const mocks = vi.hoisted(() => ({
+  prisma: {
+    task: {
+      findFirst: vi.fn<(args: unknown) => Promise<unknown>>(),
+    },
+    taskSchedule: {
+      create: vi.fn<(args: unknown) => Promise<CreatedSchedule>>(),
+    },
   },
-  taskSchedule: {
-    create: vi.fn<(args: unknown) => Promise<CreatedSchedule>>(),
-  },
+  maybeStoreJsonValue: vi.fn<(input: { value: unknown }) => Promise<unknown>>(),
 }));
-
-const maybeStoreJsonValue = vi.hoisted(() =>
-  vi.fn<(input: { value: unknown }) => Promise<unknown>>(),
-);
 
 vi.mock("@cascade/database", () => ({
   Prisma: {},
-  prisma,
+  prisma: mocks.prisma,
 }));
 
 vi.mock("@cascade/storage", () => ({
-  maybeStoreJsonValue,
+  maybeStoreJsonValue: mocks.maybeStoreJsonValue,
 }));
 
 const { createTaskSchedule } = await import("../../src/services/create-task-schedule.js");
+
+function scheduleBody(overrides: Record<string, unknown> = {}) {
+  return {
+    intervalSeconds: 60,
+    ...overrides,
+  };
+}
+
+function createSchedule(input: { taskId?: string; body?: unknown } = {}) {
+  return createTaskSchedule({
+    auth,
+    taskId: input.taskId ?? TASK_ID,
+    body: input.body ?? scheduleBody(),
+  });
+}
+
+function expectNoWrites() {
+  expect(mocks.prisma.task.findFirst).not.toHaveBeenCalled();
+  expect(mocks.prisma.taskSchedule.create).not.toHaveBeenCalled();
+}
+
+const SCHEDULE_SELECT = {
+  id: true,
+  taskId: true,
+  name: true,
+  intervalSeconds: true,
+  nextRunAt: true,
+  enabled: true,
+  payload: true,
+  createdAt: true,
+};
 
 describe("createTaskSchedule", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    maybeStoreJsonValue.mockImplementation(async (input) => input.value);
-
-    prisma.task.findFirst.mockResolvedValue({
+    mocks.maybeStoreJsonValue.mockImplementation(async (input) => input.value);
+    mocks.prisma.task.findFirst.mockResolvedValue({
       id: TASK_ID,
       name: "Hello",
     });
-
-    prisma.taskSchedule.create.mockResolvedValue({
+    mocks.prisma.taskSchedule.create.mockResolvedValue({
       id: SCHEDULE_ID,
       taskId: TASK_ID,
       name: "Every minute",
       intervalSeconds: 60,
-      nextRunAt: new Date("2026-01-01T00:01:00.000Z"),
+      nextRunAt: NEXT_RUN_AT,
       enabled: true,
-      payload: {
-        message: "scheduled hello",
-      },
+      payload: PAYLOAD,
       createdAt: CREATED_AT,
     });
   });
 
-  it("rejects invalid task ids", async () => {
-    const result = await createTaskSchedule({
-      auth,
-      taskId: "not-a-uuid",
-      body: {
-        intervalSeconds: 60,
-      },
-    });
-
-    expect(result).toEqual({
-      ok: false,
-      status: 400,
+  it.each([
+    {
+      name: "invalid task ids",
+      input: { taskId: "not-a-uuid", body: scheduleBody() },
       error: {
         code: "INVALID_TASK_ID",
         message: "taskId must be a valid UUID",
       },
-    });
-
-    expect(prisma.task.findFirst).not.toHaveBeenCalled();
-    expect(prisma.taskSchedule.create).not.toHaveBeenCalled();
-  });
-
-  it("rejects intervalSeconds below 60", async () => {
-    const result = await createTaskSchedule({
-      auth,
-      taskId: TASK_ID,
-      body: {
-        intervalSeconds: 30,
+    },
+    {
+      name: "non-object schedule bodies",
+      input: { body: ["not", "an", "object"] },
+      error: {
+        code: "INVALID_BODY",
+        message: "Body must be an object",
       },
-    });
-
-    expect(result).toEqual({
-      ok: false,
-      status: 400,
+    },
+    {
+      name: "intervalSeconds below 60",
+      input: { body: scheduleBody({ intervalSeconds: 30 }) },
       error: {
         code: "INVALID_INTERVAL_SECONDS",
-        message: "intervalSeconds must be an integer greater than or equal to 60",
+        message: "intervalSeconds must be an integer between 60 and 31536000",
       },
-    });
-
-    expect(prisma.task.findFirst).not.toHaveBeenCalled();
-    expect(prisma.taskSchedule.create).not.toHaveBeenCalled();
-  });
-
-  it("rejects invalid startAt values", async () => {
-    const result = await createTaskSchedule({
-      auth,
-      taskId: TASK_ID,
-      body: {
-        intervalSeconds: 60,
-        startAt: "not-a-date",
+    },
+    {
+      name: "intervals longer than one year",
+      input: { body: scheduleBody({ intervalSeconds: 31_536_001 }) },
+      error: {
+        code: "INVALID_INTERVAL_SECONDS",
+        message: "intervalSeconds must be an integer between 60 and 31536000",
       },
-    });
-
-    expect(result).toEqual({
-      ok: false,
-      status: 400,
+    },
+    {
+      name: "invalid startAt values",
+      input: { body: scheduleBody({ startAt: "not-a-date" }) },
       error: {
         code: "INVALID_START_AT",
-        message: "startAt must be a valid ISO date string",
+        message: "startAt must be a valid UTC ISO 8601 timestamp",
       },
+    },
+    {
+      name: "impossible UTC startAt dates",
+      input: { body: scheduleBody({ startAt: "2026-02-30T00:00:00.000Z" }) },
+      error: {
+        code: "INVALID_START_AT",
+        message: "startAt must be a valid UTC ISO 8601 timestamp",
+      },
+    },
+    {
+      name: "schedule names longer than 200 characters",
+      input: { body: scheduleBody({ name: "x".repeat(201) }) },
+      error: {
+        code: "INVALID_SCHEDULE_NAME",
+        message: "name must be a non-empty string with at most 200 characters",
+      },
+    },
+  ])("rejects $name before opening a transaction", async ({ input, error }) => {
+    await expect(createSchedule(input)).resolves.toEqual({
+      ok: false,
+      status: 400,
+      error,
     });
 
-    expect(prisma.task.findFirst).not.toHaveBeenCalled();
-    expect(prisma.taskSchedule.create).not.toHaveBeenCalled();
+    expectNoWrites();
   });
 
   it("rejects tasks outside the authenticated environment", async () => {
-    prisma.task.findFirst.mockResolvedValue(null);
+    mocks.prisma.task.findFirst.mockResolvedValue(null);
 
-    const result = await createTaskSchedule({
-      auth,
-      taskId: TASK_ID,
-      body: {
-        intervalSeconds: 60,
-      },
-    });
-
-    expect(result).toEqual({
+    await expect(createSchedule()).resolves.toEqual({
       ok: false,
       status: 404,
       error: {
@@ -159,34 +180,26 @@ describe("createTaskSchedule", () => {
       },
     });
 
-    expect(prisma.task.findFirst).toHaveBeenCalledWith({
+    expect(mocks.prisma.task.findFirst).toHaveBeenCalledWith({
       where: {
         id: TASK_ID,
-        environmentId: auth.environmentId,
+        environmentId: ENVIRONMENT_ID,
       },
       select: {
         id: true,
         name: true,
       },
     });
-
-    expect(prisma.taskSchedule.create).not.toHaveBeenCalled();
+    expect(mocks.prisma.taskSchedule.create).not.toHaveBeenCalled();
   });
 
   it("creates a schedule with payload and explicit startAt", async () => {
-    const startAt = "2026-01-01T00:01:00.000Z";
-
-    const result = await createTaskSchedule({
-      auth,
-      taskId: TASK_ID,
-      body: {
+    const result = await createSchedule({
+      body: scheduleBody({
         name: " Every minute ",
-        intervalSeconds: 60,
-        startAt,
-        payload: {
-          message: "scheduled hello",
-        },
-      },
+        startAt: NEXT_RUN_AT.toISOString(),
+        payload: PAYLOAD,
+      }),
     });
 
     expect(result).toEqual({
@@ -197,45 +210,29 @@ describe("createTaskSchedule", () => {
         taskId: TASK_ID,
         name: "Every minute",
         intervalSeconds: 60,
-        nextRunAt: "2026-01-01T00:01:00.000Z",
+        nextRunAt: NEXT_RUN_AT.toISOString(),
         enabled: true,
-        payload: {
-          message: "scheduled hello",
-        },
-        createdAt: "2026-01-01T00:00:00.000Z",
+        payload: PAYLOAD,
+        createdAt: CREATED_AT.toISOString(),
       },
     });
 
-    expect(maybeStoreJsonValue).toHaveBeenCalledWith({
+    expect(mocks.maybeStoreJsonValue).toHaveBeenCalledWith({
       kind: "PAYLOAD",
-      environmentId: auth.environmentId,
+      environmentId: ENVIRONMENT_ID,
       taskId: TASK_ID,
       runId: TASK_ID,
-      value: {
-        message: "scheduled hello",
-      },
+      value: PAYLOAD,
     });
-
-    expect(prisma.taskSchedule.create).toHaveBeenCalledWith({
+    expect(mocks.prisma.taskSchedule.create).toHaveBeenCalledWith({
       data: {
         taskId: TASK_ID,
         name: "Every minute",
         intervalSeconds: 60,
-        nextRunAt: new Date(startAt),
-        payload: {
-          message: "scheduled hello",
-        },
+        nextRunAt: NEXT_RUN_AT,
+        payload: PAYLOAD,
       },
-      select: {
-        id: true,
-        taskId: true,
-        name: true,
-        intervalSeconds: true,
-        nextRunAt: true,
-        enabled: true,
-        payload: true,
-        createdAt: true,
-      },
+      select: SCHEDULE_SELECT,
     });
   });
 });
