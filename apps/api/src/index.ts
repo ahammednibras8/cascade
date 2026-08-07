@@ -9,6 +9,7 @@ import { errorHandler } from "./http/error-handler.js";
 import { jsonBodyParser } from "./http/json-body.js";
 import { securityHeaders } from "./http/security-headers.js";
 import { corsPolicy } from "./http/cors-policy.js";
+import { apiRateLimit } from "./http/rate-limit.js";
 
 const app = express();
 const port = Number(process.env.API_PORT ?? 3001);
@@ -31,7 +32,7 @@ app.get("/me", (request, response) => {
   });
 });
 
-app.use("/api", requireApiKey(), tasksRouter);
+app.use("/api", requireApiKey(), apiRateLimit(), tasksRouter);
 
 app.use(errorHandler);
 

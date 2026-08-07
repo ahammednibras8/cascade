@@ -1,15 +1,29 @@
-import { readFileSync } from "node:fs";
 import type { Redis } from "ioredis";
 
-const acquireQueueConcurrencyLeaseLua = readFileSync(
-  new URL("./lua/acquire-queue-concurrency-lease.lua", import.meta.url),
-  "utf8",
-);
+const acquireQueueConcurrencyLeaseLua = `
+redis.call("ZREMRANGEBYSCORE", KEYS[1], "-inf", ARGV[1])
 
-const refreshQueueConcurrencyLeaseLua = readFileSync(
-  new URL("./lua/refresh-queue-concurrency-lease.lua", import.meta.url),
-  "utf8",
-);
+local count = redis.call("ZCARD", KEYS[1])
+if count >= tonumber(ARGV[2]) then
+	return 0
+end
+
+redis.call("ZADD", KEYS[1], ARGV[3], ARGV[4])
+redis.call("PEXPIRE", KEYS[1], ARGV[5])
+
+return 1
+`;
+
+const refreshQueueConcurrencyLeaseLua = `
+if redis.call("ZSCORE", KEYS[1], ARGV[1]) then
+	redis.call("ZADD", KEYS[1], ARGV[2], ARGV[1])
+	redis.call("PEXPIRE", KEYS[1], ARGV[3])
+
+	return 1
+end
+
+return 0
+`;
 
 const registeredClients = new WeakSet<Redis>();
 

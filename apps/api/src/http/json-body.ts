@@ -1,5 +1,5 @@
 import { getLargePayloadThresholdBytes } from "@cascade/storage";
-import express from "express";
+import express, { type RequestHandler } from "express";
 
 export const DEFAULT_JSON_BODY_LIMIT_BYTES = 5 * 1024 * 1024;
 
@@ -27,7 +27,7 @@ export function getJsonBodyLimitBytes() {
   return value;
 }
 
-export function jsonBodyParser() {
+export function jsonBodyParser(): RequestHandler {
   return express.json({
     limit: getJsonBodyLimitBytes(),
     strict: true,
