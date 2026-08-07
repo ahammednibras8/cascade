@@ -1,5 +1,7 @@
 import { getLargePayloadThresholdBytes } from "@cascade/storage";
-import express, { type RequestHandler } from "express";
+import express from "express";
+import type { Request, RequestHandler } from "express";
+import { ApiError } from "./api-error.js";
 
 export const DEFAULT_JSON_BODY_LIMIT_BYTES = 5 * 1024 * 1024;
 
@@ -27,9 +29,60 @@ export function getJsonBodyLimitBytes() {
   return value;
 }
 
+function requestHasBody(request: Request) {
+  const contentLength = request.get("content-length");
+
+  if (contentLength && Number(contentLength) > 0) {
+    return true;
+  }
+
+  return request.get("transfer-encoding") !== undefined;
+}
+
+export function requireJsonContentType(): RequestHandler {
+  return (request, _response, next) => {
+    if (!requestHasBody(request)) {
+      next();
+      return;
+    }
+
+    const isJson =
+      request.is("application/json") !== false || request.is("application/*+json") !== false;
+
+    if (!isJson) {
+      next(
+        new ApiError({
+          status: 415,
+          code: "UNSUPPORTED_MEDIA_TYPE",
+          message: "Content-Type must be application/json",
+        }),
+      );
+      return;
+    }
+
+    next();
+  };
+}
+
 export function jsonBodyParser(): RequestHandler {
-  return express.json({
+  const parseJson = express.json({
     limit: getJsonBodyLimitBytes(),
     strict: true,
+    type: ["application/json", "application/*+json"],
   });
+
+  return (request, response, next) => {
+    parseJson(request, response, (error) => {
+      if (error) {
+        next(error);
+        return;
+      }
+
+      if (request.body === undefined && !requestHasBody(request)) {
+        request.body = {};
+      }
+
+      next();
+    });
+  };
 }

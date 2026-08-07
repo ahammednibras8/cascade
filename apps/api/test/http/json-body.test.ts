@@ -6,6 +6,7 @@ import {
   DEFAULT_JSON_BODY_LIMIT_BYTES,
   getJsonBodyLimitBytes,
   jsonBodyParser,
+  requireJsonContentType,
 } from "../../src/http/json-body.js";
 import { getLargePayloadThresholdBytes } from "@cascade/storage";
 
@@ -14,6 +15,7 @@ const originalJsonBodyLimit = process.env.API_JSON_BODY_LIMIT_BYTES;
 function createApp() {
   const app = express();
 
+  app.use(requireJsonContentType());
   app.use(jsonBodyParser());
 
   app.post("/test", (request, response) => {
@@ -102,5 +104,49 @@ describe("jsonBodyParser", () => {
     expect(() => getJsonBodyLimitBytes()).toThrow(
       "API_JSON_BODY_LIMIT_BYTES must be greater than or equal to LARGE_PAYLOAD_THRESHOLD_BYTES",
     );
+  });
+
+  it("returns 415 for a non-JSON request body", async () => {
+    process.env.API_JSON_BODY_LIMIT_BYTES = "5242880";
+
+    const response = await httpRequest(createApp())
+      .post("/test")
+      .set("Content-Type", "text/plain")
+      .send("not json");
+
+    expect(response.status).toBe(415);
+    expect(response.body).toEqual({
+      error: {
+        code: "UNSUPPORTED_MEDIA_TYPE",
+        message: "Content-Type must be application/json",
+      },
+    });
+  });
+
+  it("accepts vendor JSON content types", async () => {
+    process.env.API_JSON_BODY_LIMIT_BYTES = "5242880";
+
+    const response = await httpRequest(createApp())
+      .post("/test")
+      .set("Content-Type", "application/vnd.cascade+json")
+      .send({
+        payload: "hello",
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      payloadLength: 5,
+    });
+  });
+
+  it("allows an empty POST request without a Content-Type header", async () => {
+    process.env.API_JSON_BODY_LIMIT_BYTES = "5242880";
+
+    const response = await httpRequest(createApp()).post("/test");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      payloadLength: 0,
+    });
   });
 });
