@@ -231,7 +231,7 @@ model TaskSchedule {
   name            String
   payload         Json?
   scheduleType    TaskScheduleType @default(INTERVAL)
-  intervalSeconds Int
+  intervalSeconds Int?
   cronExpression  String?
   timezone        String           @default("UTC")
   revision        Int              @default(1)

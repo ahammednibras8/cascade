@@ -245,7 +245,7 @@ export type TaskScheduleGroupByOutputType = {
   name: string
   payload: runtime.JsonValue | null
   scheduleType: $Enums.TaskScheduleType
-  intervalSeconds: number
+  intervalSeconds: number | null
   cronExpression: string | null
   timezone: string
   revision: number
@@ -286,7 +286,7 @@ export type TaskScheduleWhereInput = {
   name?: Prisma.StringFilter<"TaskSchedule"> | string
   payload?: Prisma.JsonNullableFilter<"TaskSchedule">
   scheduleType?: Prisma.EnumTaskScheduleTypeFilter<"TaskSchedule"> | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntFilter<"TaskSchedule"> | number
+  intervalSeconds?: Prisma.IntNullableFilter<"TaskSchedule"> | number | null
   cronExpression?: Prisma.StringNullableFilter<"TaskSchedule"> | string | null
   timezone?: Prisma.StringFilter<"TaskSchedule"> | string
   revision?: Prisma.IntFilter<"TaskSchedule"> | number
@@ -306,7 +306,7 @@ export type TaskScheduleOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   payload?: Prisma.SortOrderInput | Prisma.SortOrder
   scheduleType?: Prisma.SortOrder
-  intervalSeconds?: Prisma.SortOrder
+  intervalSeconds?: Prisma.SortOrderInput | Prisma.SortOrder
   cronExpression?: Prisma.SortOrderInput | Prisma.SortOrder
   timezone?: Prisma.SortOrder
   revision?: Prisma.SortOrder
@@ -329,7 +329,7 @@ export type TaskScheduleWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"TaskSchedule"> | string
   payload?: Prisma.JsonNullableFilter<"TaskSchedule">
   scheduleType?: Prisma.EnumTaskScheduleTypeFilter<"TaskSchedule"> | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntFilter<"TaskSchedule"> | number
+  intervalSeconds?: Prisma.IntNullableFilter<"TaskSchedule"> | number | null
   cronExpression?: Prisma.StringNullableFilter<"TaskSchedule"> | string | null
   timezone?: Prisma.StringFilter<"TaskSchedule"> | string
   revision?: Prisma.IntFilter<"TaskSchedule"> | number
@@ -349,7 +349,7 @@ export type TaskScheduleOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   payload?: Prisma.SortOrderInput | Prisma.SortOrder
   scheduleType?: Prisma.SortOrder
-  intervalSeconds?: Prisma.SortOrder
+  intervalSeconds?: Prisma.SortOrderInput | Prisma.SortOrder
   cronExpression?: Prisma.SortOrderInput | Prisma.SortOrder
   timezone?: Prisma.SortOrder
   revision?: Prisma.SortOrder
@@ -375,7 +375,7 @@ export type TaskScheduleScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"TaskSchedule"> | string
   payload?: Prisma.JsonNullableWithAggregatesFilter<"TaskSchedule">
   scheduleType?: Prisma.EnumTaskScheduleTypeWithAggregatesFilter<"TaskSchedule"> | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntWithAggregatesFilter<"TaskSchedule"> | number
+  intervalSeconds?: Prisma.IntNullableWithAggregatesFilter<"TaskSchedule"> | number | null
   cronExpression?: Prisma.StringNullableWithAggregatesFilter<"TaskSchedule"> | string | null
   timezone?: Prisma.StringWithAggregatesFilter<"TaskSchedule"> | string
   revision?: Prisma.IntWithAggregatesFilter<"TaskSchedule"> | number
@@ -392,7 +392,7 @@ export type TaskScheduleCreateInput = {
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: $Enums.TaskScheduleType
-  intervalSeconds: number
+  intervalSeconds?: number | null
   cronExpression?: string | null
   timezone?: string
   revision?: number
@@ -412,7 +412,7 @@ export type TaskScheduleUncheckedCreateInput = {
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: $Enums.TaskScheduleType
-  intervalSeconds: number
+  intervalSeconds?: number | null
   cronExpression?: string | null
   timezone?: string
   revision?: number
@@ -430,7 +430,7 @@ export type TaskScheduleUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  intervalSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   revision?: Prisma.IntFieldUpdateOperationsInput | number
@@ -450,7 +450,7 @@ export type TaskScheduleUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  intervalSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   revision?: Prisma.IntFieldUpdateOperationsInput | number
@@ -469,7 +469,7 @@ export type TaskScheduleCreateManyInput = {
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: $Enums.TaskScheduleType
-  intervalSeconds: number
+  intervalSeconds?: number | null
   cronExpression?: string | null
   timezone?: string
   revision?: number
@@ -486,7 +486,7 @@ export type TaskScheduleUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  intervalSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   revision?: Prisma.IntFieldUpdateOperationsInput | number
@@ -504,7 +504,7 @@ export type TaskScheduleUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  intervalSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   revision?: Prisma.IntFieldUpdateOperationsInput | number
@@ -655,6 +655,14 @@ export type EnumTaskScheduleTypeFieldUpdateOperationsInput = {
   set?: $Enums.TaskScheduleType
 }
 
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
 }
@@ -664,7 +672,7 @@ export type TaskScheduleCreateWithoutTaskInput = {
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: $Enums.TaskScheduleType
-  intervalSeconds: number
+  intervalSeconds?: number | null
   cronExpression?: string | null
   timezone?: string
   revision?: number
@@ -682,7 +690,7 @@ export type TaskScheduleUncheckedCreateWithoutTaskInput = {
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: $Enums.TaskScheduleType
-  intervalSeconds: number
+  intervalSeconds?: number | null
   cronExpression?: string | null
   timezone?: string
   revision?: number
@@ -730,7 +738,7 @@ export type TaskScheduleScalarWhereInput = {
   name?: Prisma.StringFilter<"TaskSchedule"> | string
   payload?: Prisma.JsonNullableFilter<"TaskSchedule">
   scheduleType?: Prisma.EnumTaskScheduleTypeFilter<"TaskSchedule"> | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntFilter<"TaskSchedule"> | number
+  intervalSeconds?: Prisma.IntNullableFilter<"TaskSchedule"> | number | null
   cronExpression?: Prisma.StringNullableFilter<"TaskSchedule"> | string | null
   timezone?: Prisma.StringFilter<"TaskSchedule"> | string
   revision?: Prisma.IntFilter<"TaskSchedule"> | number
@@ -747,7 +755,7 @@ export type TaskScheduleCreateWithoutRunsInput = {
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: $Enums.TaskScheduleType
-  intervalSeconds: number
+  intervalSeconds?: number | null
   cronExpression?: string | null
   timezone?: string
   revision?: number
@@ -766,7 +774,7 @@ export type TaskScheduleUncheckedCreateWithoutRunsInput = {
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: $Enums.TaskScheduleType
-  intervalSeconds: number
+  intervalSeconds?: number | null
   cronExpression?: string | null
   timezone?: string
   revision?: number
@@ -799,7 +807,7 @@ export type TaskScheduleUpdateWithoutRunsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  intervalSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   revision?: Prisma.IntFieldUpdateOperationsInput | number
@@ -818,7 +826,7 @@ export type TaskScheduleUncheckedUpdateWithoutRunsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  intervalSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   revision?: Prisma.IntFieldUpdateOperationsInput | number
@@ -835,7 +843,7 @@ export type TaskScheduleCreateManyTaskInput = {
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: $Enums.TaskScheduleType
-  intervalSeconds: number
+  intervalSeconds?: number | null
   cronExpression?: string | null
   timezone?: string
   revision?: number
@@ -852,7 +860,7 @@ export type TaskScheduleUpdateWithoutTaskInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  intervalSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   revision?: Prisma.IntFieldUpdateOperationsInput | number
@@ -870,7 +878,7 @@ export type TaskScheduleUncheckedUpdateWithoutTaskInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  intervalSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   revision?: Prisma.IntFieldUpdateOperationsInput | number
@@ -888,7 +896,7 @@ export type TaskScheduleUncheckedUpdateManyWithoutTaskInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
-  intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  intervalSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   revision?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1033,7 +1041,7 @@ export type $TaskSchedulePayload<ExtArgs extends runtime.Types.Extensions.Intern
     name: string
     payload: runtime.JsonValue | null
     scheduleType: $Enums.TaskScheduleType
-    intervalSeconds: number
+    intervalSeconds: number | null
     cronExpression: string | null
     timezone: string
     revision: number

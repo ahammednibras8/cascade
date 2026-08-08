@@ -2,12 +2,42 @@
 
 import { prisma, type Prisma } from "@cascade/database";
 import { enqueueTaskRun } from "../queue/task-runs.js";
+import { getNextCronRunAt } from "@cascade/core";
 
 const SCHEDULE_BATCH_SIZE = 50;
 const SCHEDULE_LOCK_TIMEOUT_MS = 30_000;
 
-function getNextRunAt(now: Date, intervalSeconds: number) {
-  return new Date(now.getTime() + intervalSeconds * 1000);
+type ScheduleTiming = {
+  scheduleType: "INTERVAL" | "CRON";
+  intervalSeconds: number | null;
+  cronExpression: string | null;
+  timezone: string;
+};
+
+function getNextRunAt(now: Date, schedule: ScheduleTiming): Date | null {
+  if (schedule.scheduleType === "INTERVAL") {
+    if (schedule.intervalSeconds === null) {
+      return null;
+    }
+
+    return new Date(now.getTime() + schedule.intervalSeconds * 1000);
+  }
+
+  if (schedule.scheduleType === "CRON" && schedule.cronExpression !== null) {
+    try {
+      return getNextCronRunAt(
+        {
+          expression: schedule.cronExpression,
+          timezone: schedule.timezone,
+        },
+        now,
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
 }
 
 export async function sweepDueTaskSchedules(now = new Date()) {
@@ -35,7 +65,10 @@ export async function sweepDueTaskSchedules(now = new Date()) {
       revision: true,
       taskId: true,
       payload: true,
+      scheduleType: true,
       intervalSeconds: true,
+      cronExpression: true,
+      timezone: true,
       nextRunAt: true,
       task: {
         select: {
@@ -76,6 +109,26 @@ export async function sweepDueTaskSchedules(now = new Date()) {
       });
 
       if (claimed.count !== 1) {
+        return null;
+      }
+
+      const nextRunAt = getNextRunAt(now, schedule);
+
+      if (!nextRunAt) {
+        await tx.taskSchedule.update({
+          where: {
+            id: schedule.id,
+          },
+          data: {
+            enabled: false,
+            lockedAt: null,
+          },
+        });
+
+        process.stderr.write(
+          `Disabled schedule ${schedule.id}: invalid ${schedule.scheduleType.toLowerCase()} schedule rule.\n`,
+        );
+
         return null;
       }
 
@@ -130,7 +183,10 @@ export async function sweepDueTaskSchedules(now = new Date()) {
             scheduleId: schedule.id,
             scheduleRevision: schedule.revision,
             scheduledFor: schedule.nextRunAt.toISOString(),
+            scheduleType: schedule.scheduleType,
+            cronExpression: schedule.cronExpression,
             intervalSeconds: schedule.intervalSeconds,
+            timezone: schedule.timezone,
           },
         },
       });
@@ -141,7 +197,7 @@ export async function sweepDueTaskSchedules(now = new Date()) {
         },
         data: {
           lastRunAt: now,
-          nextRunAt: getNextRunAt(now, schedule.intervalSeconds),
+          nextRunAt,
           lockedAt: null,
         },
       });

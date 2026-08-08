@@ -1,11 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+type ScheduleType = "INTERVAL" | "CRON";
+
 type DueSchedule = {
   id: string;
   revision: number;
   taskId: string;
   payload: unknown;
-  intervalSeconds: number;
+  scheduleType: ScheduleType;
+  intervalSeconds: number | null;
+  cronExpression: string | null;
+  timezone: string;
   nextRunAt: Date;
   task: {
     environmentId: string;
@@ -14,11 +19,7 @@ type DueSchedule = {
   };
 };
 
-type CreatedRun = {
-  id: string;
-  taskId: string;
-  delayUntil: Date | null;
-};
+type CreatedRun = { id: string; taskId: string; delayUntil: Date | null };
 
 type TransactionClient = {
   taskSchedule: {
@@ -37,11 +38,15 @@ type TransactionCallback = (tx: TransactionClient) => Promise<unknown>;
 
 const NOW = new Date("2026-01-01T00:00:00.000Z");
 const NEXT_RUN_AT = new Date("2026-01-01T00:00:00.000Z");
+const NEXT_INTERVAL_RUN_AT = new Date("2026-01-01T00:01:00.000Z");
+const NEXT_CRON_RUN_AT = new Date("2026-01-01T00:05:00.000Z");
+const STALE_LOCK_CUTOFF = new Date("2025-12-31T23:59:30.000Z");
 const SCHEDULE_ID = "schedule-1";
 const RUN_ID = "run-1";
 const TASK_ID = "task-1";
 const ENVIRONMENT_ID = "environment-1";
 const DEPLOYMENT_ID = "deployment-1";
+const PAYLOAD = { message: "scheduled hello" };
 const EXECUTION_CONFIG = {
   schemaVersion: 1,
   timeoutMs: 30_000,
@@ -56,137 +61,147 @@ const EXECUTION_CONFIG = {
   },
 };
 
-const prisma = vi.hoisted(() => ({
-  taskSchedule: {
-    findMany: vi.fn<(args: unknown) => Promise<DueSchedule[]>>(),
+const mocks = vi.hoisted(() => ({
+  prisma: {
+    taskSchedule: {
+      findMany: vi.fn<(args: unknown) => Promise<DueSchedule[]>>(),
+    },
+    $transaction: vi.fn<(callback: TransactionCallback) => Promise<unknown>>(),
   },
-  $transaction: vi.fn<(callback: TransactionCallback) => Promise<unknown>>(),
+  txTaskScheduleUpdateMany: vi.fn<(args: unknown) => Promise<{ count: number }>>(),
+  txTaskScheduleUpdate: vi.fn<(args: unknown) => Promise<unknown>>(),
+  txTaskRunCreate: vi.fn<(args: unknown) => Promise<CreatedRun>>(),
+  txTaskEventCreate: vi.fn<(args: unknown) => Promise<unknown>>(),
+  enqueueTaskRun: vi.fn<(message: unknown, options?: unknown) => Promise<void>>(),
 }));
-
-const txTaskScheduleUpdateMany = vi.hoisted(() =>
-  vi.fn<(args: unknown) => Promise<{ count: number }>>(),
-);
-
-const txTaskScheduleUpdate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
-
-const txTaskRunCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<CreatedRun>>());
-
-const txTaskEventCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
-
-const enqueueTaskRun = vi.hoisted(() =>
-  vi.fn<(message: unknown, options?: unknown) => Promise<void>>(),
-);
 
 vi.mock("@cascade/database", () => ({
   Prisma: {},
-  prisma,
+  prisma: mocks.prisma,
 }));
 
 vi.mock("../../src/queue/task-runs.js", () => ({
-  enqueueTaskRun,
+  enqueueTaskRun: mocks.enqueueTaskRun,
 }));
 
 const { sweepDueTaskSchedules } = await import("../../src/scheduler/task-schedules.js");
 
-function createSchedule(): DueSchedule {
+function createSchedule(overrides: Partial<DueSchedule> = {}): DueSchedule {
   return {
     id: SCHEDULE_ID,
     revision: 1,
     taskId: TASK_ID,
-    payload: {
-      message: "scheduled hello",
-    },
+    payload: PAYLOAD,
+    scheduleType: "INTERVAL",
     intervalSeconds: 60,
+    cronExpression: null,
+    timezone: "UTC",
     nextRunAt: NEXT_RUN_AT,
     task: {
       environmentId: ENVIRONMENT_ID,
       deploymentId: DEPLOYMENT_ID,
       executionConfig: EXECUTION_CONFIG,
     },
+    ...overrides,
   };
+}
+
+async function sweepOne(schedule = createSchedule()) {
+  mocks.prisma.taskSchedule.findMany.mockResolvedValue([schedule]);
+  return sweepDueTaskSchedules(NOW);
+}
+
+function expectScheduleDisabled() {
+  expect(mocks.txTaskScheduleUpdate).toHaveBeenCalledWith({
+    where: { id: SCHEDULE_ID },
+    data: { enabled: false, lockedAt: null },
+  });
+  expect(mocks.txTaskRunCreate).not.toHaveBeenCalled();
+  expect(mocks.enqueueTaskRun).not.toHaveBeenCalled();
+}
+
+function expectScheduleAdvanced(nextRunAt: Date) {
+  expect(mocks.txTaskScheduleUpdate).toHaveBeenCalledWith({
+    where: { id: SCHEDULE_ID },
+    data: { lastRunAt: NOW, nextRunAt, lockedAt: null },
+  });
+}
+
+function expectTriggeredEvent(rule: {
+  scheduleType: ScheduleType;
+  intervalSeconds: number | null;
+  cronExpression: string | null;
+}) {
+  expect(mocks.txTaskEventCreate).toHaveBeenCalledWith({
+    data: {
+      taskRunId: RUN_ID,
+      type: "task.schedule.triggered",
+      level: "INFO",
+      message: "Scheduled task run created",
+      data: {
+        scheduleId: SCHEDULE_ID,
+        scheduleRevision: 1,
+        scheduledFor: NEXT_RUN_AT.toISOString(),
+        timezone: "UTC",
+        ...rule,
+      },
+    },
+  });
 }
 
 describe("sweepDueTaskSchedules", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    txTaskScheduleUpdateMany.mockResolvedValue({
-      count: 1,
-    });
-
-    txTaskRunCreate.mockResolvedValue({
+    mocks.txTaskScheduleUpdateMany.mockResolvedValue({ count: 1 });
+    mocks.txTaskRunCreate.mockResolvedValue({
       id: RUN_ID,
       taskId: TASK_ID,
       delayUntil: NEXT_RUN_AT,
     });
-
-    txTaskEventCreate.mockResolvedValue({});
-    txTaskScheduleUpdate.mockResolvedValue({});
-    enqueueTaskRun.mockResolvedValue(undefined);
-
-    prisma.$transaction.mockImplementation(async (callback) =>
+    mocks.txTaskEventCreate.mockResolvedValue({});
+    mocks.txTaskScheduleUpdate.mockResolvedValue({});
+    mocks.enqueueTaskRun.mockResolvedValue(undefined);
+    mocks.prisma.$transaction.mockImplementation(async (callback) =>
       callback({
         taskSchedule: {
-          updateMany: txTaskScheduleUpdateMany,
-          update: txTaskScheduleUpdate,
+          updateMany: mocks.txTaskScheduleUpdateMany,
+          update: mocks.txTaskScheduleUpdate,
         },
         taskRun: {
-          create: txTaskRunCreate,
+          create: mocks.txTaskRunCreate,
         },
         taskEvent: {
-          create: txTaskEventCreate,
+          create: mocks.txTaskEventCreate,
         },
       }),
     );
   });
 
-  it("creates task runs for due schedules and advances nextRunAt", async () => {
-    prisma.taskSchedule.findMany.mockResolvedValue([createSchedule()]);
+  it("creates task runs for due interval schedules and advances nextRunAt", async () => {
+    await expect(sweepOne()).resolves.toBe(1);
 
-    const count = await sweepDueTaskSchedules(NOW);
-
-    expect(count).toBe(1);
-
-    expect(prisma.taskSchedule.findMany).toHaveBeenCalledWith(
+    expect(mocks.prisma.taskSchedule.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           enabled: true,
-          nextRunAt: {
-            lte: NOW,
-          },
+          nextRunAt: { lte: NOW },
         }),
-        orderBy: {
-          nextRunAt: "asc",
-        },
+        orderBy: { nextRunAt: "asc" },
         take: 50,
       }),
     );
-
-    expect(txTaskScheduleUpdateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          id: SCHEDULE_ID,
-          revision: 1,
-          enabled: true,
-          nextRunAt: NEXT_RUN_AT,
-          OR: [
-            {
-              lockedAt: null,
-            },
-            {
-              lockedAt: {
-                lt: new Date("2025-12-31T23:59:30.000Z"),
-              },
-            },
-          ],
-        }),
-        data: {
-          lockedAt: NOW,
-        },
-      }),
-    );
-
-    expect(txTaskRunCreate).toHaveBeenCalledWith({
+    expect(mocks.txTaskScheduleUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: SCHEDULE_ID,
+        revision: 1,
+        enabled: true,
+        nextRunAt: NEXT_RUN_AT,
+        OR: [{ lockedAt: null }, { lockedAt: { lt: STALE_LOCK_CUTOFF } }],
+      },
+      data: { lockedAt: NOW },
+    });
+    expect(mocks.txTaskRunCreate).toHaveBeenCalledWith({
       data: {
         taskId: TASK_ID,
         deploymentId: DEPLOYMENT_ID,
@@ -195,9 +210,7 @@ describe("sweepDueTaskSchedules", () => {
         status: "PENDING",
         delayUntil: NEXT_RUN_AT,
         executionConfig: EXECUTION_CONFIG,
-        payload: {
-          message: "scheduled hello",
-        },
+        payload: PAYLOAD,
       },
       select: {
         id: true,
@@ -205,86 +218,76 @@ describe("sweepDueTaskSchedules", () => {
         delayUntil: true,
       },
     });
-
-    expect(txTaskEventCreate).toHaveBeenCalledWith({
-      data: {
-        taskRunId: RUN_ID,
-        type: "task.schedule.triggered",
-        level: "INFO",
-        message: "Scheduled task run created",
-        data: {
-          scheduleId: SCHEDULE_ID,
-          scheduleRevision: 1,
-          scheduledFor: "2026-01-01T00:00:00.000Z",
-          intervalSeconds: 60,
-        },
-      },
+    expectTriggeredEvent({
+      scheduleType: "INTERVAL",
+      intervalSeconds: 60,
+      cronExpression: null,
     });
-
-    expect(txTaskScheduleUpdate).toHaveBeenCalledWith({
-      where: {
-        id: SCHEDULE_ID,
-      },
-      data: {
-        lastRunAt: NOW,
-        nextRunAt: new Date("2026-01-01T00:01:00.000Z"),
-        lockedAt: null,
-      },
-    });
-
-    expect(enqueueTaskRun).toHaveBeenCalledWith(
+    expectScheduleAdvanced(NEXT_INTERVAL_RUN_AT);
+    expect(mocks.enqueueTaskRun).toHaveBeenCalledWith(
       {
         runId: RUN_ID,
         taskId: TASK_ID,
         environmentId: ENVIRONMENT_ID,
         deploymentId: DEPLOYMENT_ID,
       },
-      {
-        delayMs: 0,
-      },
+      { delayMs: 0 },
     );
   });
 
   it("does not create or enqueue a run when schedule claim fails", async () => {
-    prisma.taskSchedule.findMany.mockResolvedValue([createSchedule()]);
+    mocks.txTaskScheduleUpdateMany.mockResolvedValue({ count: 0 });
 
-    txTaskScheduleUpdateMany.mockResolvedValue({
-      count: 0,
-    });
+    await expect(sweepOne()).resolves.toBe(1);
 
-    const count = await sweepDueTaskSchedules(NOW);
-
-    expect(count).toBe(1);
-    expect(txTaskRunCreate).not.toHaveBeenCalled();
-    expect(txTaskEventCreate).not.toHaveBeenCalled();
-    expect(txTaskScheduleUpdate).not.toHaveBeenCalled();
-    expect(enqueueTaskRun).not.toHaveBeenCalled();
+    expect(mocks.txTaskRunCreate).not.toHaveBeenCalled();
+    expect(mocks.txTaskEventCreate).not.toHaveBeenCalled();
+    expect(mocks.txTaskScheduleUpdate).not.toHaveBeenCalled();
+    expect(mocks.enqueueTaskRun).not.toHaveBeenCalled();
   });
 
   it("disables a due schedule when its task has no execution config", async () => {
-    prisma.taskSchedule.findMany.mockResolvedValue([
-      {
-        ...createSchedule(),
+    await sweepOne(
+      createSchedule({
         task: {
           ...createSchedule().task,
           executionConfig: null,
         },
-      },
-    ]);
+      }),
+    );
 
-    const count = await sweepDueTaskSchedules(NOW);
+    expect(mocks.txTaskScheduleUpdate).toHaveBeenCalledOnce();
+    expectScheduleDisabled();
+  });
 
-    expect(count).toBe(1);
-    expect(txTaskScheduleUpdate).toHaveBeenCalledWith({
-      where: {
-        id: SCHEDULE_ID,
-      },
-      data: {
-        enabled: false,
-        lockedAt: null,
-      },
+  it("creates a run and advances a cron schedule in its timezone", async () => {
+    await sweepOne(
+      createSchedule({
+        scheduleType: "CRON",
+        intervalSeconds: null,
+        cronExpression: "*/5 * * * *",
+      }),
+    );
+
+    expect(mocks.txTaskEventCreate).toHaveBeenCalledOnce();
+    expectTriggeredEvent({
+      scheduleType: "CRON",
+      intervalSeconds: null,
+      cronExpression: "*/5 * * * *",
     });
-    expect(txTaskRunCreate).not.toHaveBeenCalled();
-    expect(enqueueTaskRun).not.toHaveBeenCalled();
+    expectScheduleAdvanced(NEXT_CRON_RUN_AT);
+  });
+
+  it("disables a cron schedule with an invalid expression", async () => {
+    await sweepOne(
+      createSchedule({
+        scheduleType: "CRON",
+        intervalSeconds: null,
+        cronExpression: "not a cron expression",
+      }),
+    );
+
+    expect(mocks.txTaskScheduleUpdate).toHaveBeenCalledOnce();
+    expectScheduleDisabled();
   });
 });
