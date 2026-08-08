@@ -1,12 +1,24 @@
 import { shutdownTelemetry } from "@cascade/telemetry";
 import { createShutdownSignal } from "./lifecycle/shutdown.js";
 import { runWorker } from "./worker.js";
-
-const shutdownSignal = createShutdownSignal();
+import { createWorkerHealthState } from "./health/state.js";
+import { startWorkerHealthServer, stopWorkerHealthServer } from "./health/server.js";
 
 async function main() {
   try {
-    await runWorker(shutdownSignal);
+    const healthState = createWorkerHealthState();
+    const shutdownSignal = createShutdownSignal(() => {
+      healthState.markShuttingDown();
+    });
+
+    const healthServer = await startWorkerHealthServer(healthState);
+
+    try {
+      await runWorker(shutdownSignal, healthState);
+    } finally {
+      healthState.markShuttingDown();
+      await stopWorkerHealthServer(healthServer);
+    }
   } finally {
     await shutdownTelemetry();
   }

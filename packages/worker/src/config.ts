@@ -16,6 +16,15 @@ function getPositiveIntegerEnv(name: string, fallback: number) {
 
 export const WORKER_CONCURRENCY = getPositiveIntegerEnv("WORKER_CONCURRENCY", 4);
 
+export const WORKER_HEALTH_PORT = getPositiveIntegerEnv("WORKER_HEALTH_PORT", 3002);
+
+export const HEALTHCHECK_DEPENDENCY_TIMEOUT_MS = getPositiveIntegerEnv(
+  "HEALTHCHECK_DEPENDENCY_TIMEOUT_MS",
+  2_000,
+);
+
+export const WORKER_HEALTH_HOST = process.env.WORKER_HEALTH_HOST ?? "0.0.0.0";
+
 export const QUEUE_CONCURRENCY_RETRY_MS = getPositiveIntegerEnv("QUEUE_CONCURRENCY_RETRY_MS", 1000);
 
 export const PENDING_RUN_RECOVERY_MS = getPositiveIntegerEnv("PENDING_RUN_RECOVERY_MS", 30_000);

@@ -10,6 +10,7 @@ import { startTaskScheduleScheduler } from "./timers/task-schedule-scheduler.js"
 import { startStuckRunSweeper } from "./timers/stuck-run-sweeper.js";
 import { startPendingRunSweeper } from "./timers/pending-run-sweeper.js";
 import { loadTaskRegistry } from "./tasks/load-registry.js";
+import type { WorkerHealthState } from "./health/state.js";
 
 const inFlight = new Set<Promise<void>>();
 
@@ -37,7 +38,7 @@ async function waitForShutdown(shutdownSignal: ShutdownSignal) {
   }
 }
 
-export async function runWorker(shutdownSignal: ShutdownSignal) {
+export async function runWorker(shutdownSignal: ShutdownSignal, healthState?: WorkerHealthState) {
   process.stdout.write(`Starting ${WORKER_ROLE} worker with ${packageName}\n`);
 
   const isControlWorker = WORKER_ROLE === "control";
@@ -49,11 +50,14 @@ export async function runWorker(shutdownSignal: ShutdownSignal) {
 
   try {
     if (!isQueueWorker) {
+      healthState?.markReady();
       await waitForShutdown(shutdownSignal);
       return;
     }
 
     const taskRegistry = await loadTaskRegistry();
+
+    healthState?.markReady();
 
     while (!shutdownSignal.isShuttingDown()) {
       await waitForAvailableWorkerSlot();
@@ -72,6 +76,8 @@ export async function runWorker(shutdownSignal: ShutdownSignal) {
 
     await Promise.allSettled(inFlight);
   } finally {
+    healthState?.markShuttingDown();
+
     stopStuckRunSweeper();
     stopPendingRunSweeper();
     stopTaskScheduleScheduler();
