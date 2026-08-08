@@ -265,7 +265,7 @@ export async function createTaskSchedule(
       id: schedule.id,
       taskId: schedule.taskId,
       name: schedule.name,
-      intervalSeconds: schedule.intervalSeconds,
+      intervalSeconds: parsedBody.intervalSeconds,
       nextRunAt: schedule.nextRunAt.toISOString(),
       enabled: schedule.enabled,
       payload: schedule.payload,
