@@ -28,6 +28,9 @@
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "prepack": "pnpm run build"
   },
+  "dependencies": {
+    "cron-parser": "5.7.0"
+  },
   "devDependencies": {
     "@types/node": "24.13.3",
     "tshy": "4.1.3",
