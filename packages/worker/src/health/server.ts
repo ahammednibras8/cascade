@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { packageName } from "@cascade/core";
 import { WORKER_HEALTH_HOST, WORKER_HEALTH_PORT } from "../config.js";
-import { checkWorkerReadiness } from "./readiness.js";
+import { checkWorkerReadiness, stopWorkerReadinessChecks } from "./readiness.js";
 import type { WorkerHealthState } from "./state.js";
 
 function writeJson(response: ServerResponse, status: number, body: unknown) {
@@ -92,4 +92,6 @@ export async function stopWorkerHealthServer(server: Server) {
       resolve();
     });
   });
+
+  stopWorkerReadinessChecks();
 }

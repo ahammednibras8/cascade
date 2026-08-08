@@ -3,6 +3,11 @@ import { HEALTHCHECK_DEPENDENCY_TIMEOUT_MS } from "../config.js";
 import type { WorkerHealthState } from "./state.js";
 import { taskRunQueueRedis } from "../queue/task-runs.js";
 
+const healthRedis = taskRunQueueRedis.duplicate({
+  lazyConnect: true,
+  maxRetriesPerRequest: null,
+});
+
 type DependencyStatus = "ok" | "unavailable";
 
 type WorkerStatus = "ready" | "starting" | "shutting_down";
@@ -60,7 +65,7 @@ export async function checkWorkerReadiness(
 
   const [database, redis] = await Promise.all([
     withTimeout(prisma.$queryRaw`SELECT 1`),
-    withTimeout(taskRunQueueRedis.ping()),
+    withTimeout(healthRedis.ping()),
   ]);
 
   return {
@@ -71,4 +76,8 @@ export async function checkWorkerReadiness(
       redis,
     },
   };
+}
+
+export function stopWorkerReadinessChecks() {
+  healthRedis.disconnect();
 }
