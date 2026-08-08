@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type DueSchedule = {
   id: string;
+  revision: number;
   taskId: string;
   payload: unknown;
   intervalSeconds: number;
@@ -90,6 +91,7 @@ const { sweepDueTaskSchedules } = await import("../../src/scheduler/task-schedul
 function createSchedule(): DueSchedule {
   return {
     id: SCHEDULE_ID,
+    revision: 1,
     taskId: TASK_ID,
     payload: {
       message: "scheduled hello",
@@ -164,10 +166,21 @@ describe("sweepDueTaskSchedules", () => {
       expect.objectContaining({
         where: expect.objectContaining({
           id: SCHEDULE_ID,
+          revision: 1,
           enabled: true,
           nextRunAt: {
             lte: NOW,
           },
+          OR: [
+            {
+              lockedAt: null,
+            },
+            {
+              lockedAt: {
+                lt: new Date("2025-12-31T23:59:30.000Z"),
+              },
+            },
+          ],
         }),
         data: {
           lockedAt: NOW,
@@ -180,6 +193,7 @@ describe("sweepDueTaskSchedules", () => {
         taskId: TASK_ID,
         deploymentId: DEPLOYMENT_ID,
         scheduleId: SCHEDULE_ID,
+        scheduledFor: NEXT_RUN_AT,
         status: "PENDING",
         delayUntil: NEXT_RUN_AT,
         executionConfig: EXECUTION_CONFIG,
@@ -202,6 +216,7 @@ describe("sweepDueTaskSchedules", () => {
         message: "Scheduled task run created",
         data: {
           scheduleId: SCHEDULE_ID,
+          scheduleRevision: 1,
           scheduledFor: "2026-01-01T00:00:00.000Z",
           intervalSeconds: 60,
         },

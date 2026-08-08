@@ -32,6 +32,7 @@ export async function sweepDueTaskSchedules(now = new Date()) {
     },
     select: {
       id: true,
+      revision: true,
       taskId: true,
       payload: true,
       intervalSeconds: true,
@@ -55,6 +56,7 @@ export async function sweepDueTaskSchedules(now = new Date()) {
       const claimed = await tx.taskSchedule.updateMany({
         where: {
           id: schedule.id,
+          revision: schedule.revision,
           enabled: true,
           nextRunAt: {
             lte: now,
@@ -101,6 +103,7 @@ export async function sweepDueTaskSchedules(now = new Date()) {
         taskId: schedule.taskId,
         deploymentId: schedule.task.deploymentId,
         scheduleId: schedule.id,
+        scheduledFor: schedule.nextRunAt,
         status: "PENDING",
         delayUntil: schedule.nextRunAt,
         executionConfig: schedule.task.executionConfig as Prisma.InputJsonValue,
@@ -127,6 +130,7 @@ export async function sweepDueTaskSchedules(now = new Date()) {
           message: "Scheduled task run created",
           data: {
             scheduleId: schedule.id,
+            scheduleRevision: schedule.revision,
             scheduledFor: schedule.nextRunAt.toISOString(),
             intervalSeconds: schedule.intervalSeconds,
           },
