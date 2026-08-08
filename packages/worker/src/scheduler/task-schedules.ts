@@ -58,9 +58,7 @@ export async function sweepDueTaskSchedules(now = new Date()) {
           id: schedule.id,
           revision: schedule.revision,
           enabled: true,
-          nextRunAt: {
-            lte: now,
-          },
+          nextRunAt: schedule.nextRunAt,
           OR: [
             {
               lockedAt: null,

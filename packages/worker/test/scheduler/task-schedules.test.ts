@@ -168,9 +168,7 @@ describe("sweepDueTaskSchedules", () => {
           id: SCHEDULE_ID,
           revision: 1,
           enabled: true,
-          nextRunAt: {
-            lte: NOW,
-          },
+          nextRunAt: NEXT_RUN_AT,
           OR: [
             {
               lockedAt: null,
