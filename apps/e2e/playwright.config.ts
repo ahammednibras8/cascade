@@ -31,6 +31,7 @@ const serverEnv = {
   NODE_OPTIONS: "--conditions=development",
   DATABASE_URL: databaseURL,
   QUEUE_REDIS_URL: queueRedisURL,
+  WORKER_HEALTH_PORT: process.env.PLAYWRIGHT_WORKER_HEALTH_PORT ?? "3003",
   API_KEY_PEPPER: apiKeyPepper,
   CASCADE_API_URL: apiURL,
   CASCADE_DASHBOARD_API_KEY: dashboardApiKey,

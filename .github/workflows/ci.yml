@@ -90,7 +90,7 @@ jobs:
         run: pnpm run db:deploy
 
       - name: Render Helm chart
-        run: helm template cascade hosting/k8s/helm --set image.tag=${{ github.sha }}
+        run: pnpm run hosting:template
 
       - name: Install Playwright browser
         run: pnpm --filter @cascade/e2e exec playwright install chromium --with-deps

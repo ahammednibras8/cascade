@@ -24,6 +24,9 @@ spec:
         - name: worker
           image: "{{ .Values.workers.image.repository }}:{{ required "workers.image.tag is required" .Values.workers.image.tag }}"
           imagePullPolicy: {{ .Values.workers.image.pullPolicy }}
+          ports:
+            - name: health
+              containerPort: 3002
           envFrom:
             - secretRef:
                 name: {{ include "cascade.runtimeSecretName" . }}
@@ -38,7 +41,25 @@ spec:
               value: file:///app/packages/worker/dist/tasks/local.js
             - name: WORKER_CONCURRENCY
               value: {{ .Values.workers.local.concurrency | quote }}
+            - name: WORKER_HEALTH_PORT
+              value: "3002"
           {{- include "cascade.telemetryEnv" (dict "root" . "serviceName" "cascade-worker-local") | nindent 12 }}
+
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
 
           resources:
             {{- toYaml .Values.workers.local.resources | nindent 12 }}
@@ -70,6 +91,9 @@ spec:
         - name: worker
           image: "{{ .Values.workers.image.repository }}:{{ required "workers.image.tag is required" .Values.workers.image.tag }}"
           imagePullPolicy: {{ .Values.workers.image.pullPolicy }}
+          ports:
+            - name: health
+              containerPort: 3002
           envFrom:
             - secretRef:
                 name: {{ include "cascade.runtimeSecretName" . }}
@@ -78,8 +102,25 @@ spec:
               value: production
             - name: CASCADE_WORKER_ROLE
               value: control
+            - name: WORKER_HEALTH_PORT
+              value: "3002"
           {{- include "cascade.telemetryEnv" (dict "root" . "serviceName" "cascade-worker-control") | nindent 12 }}
 
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
 
           resources:
             {{- toYaml .Values.workers.control.resources | nindent 12 }}

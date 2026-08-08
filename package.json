@@ -52,7 +52,7 @@
     "compose:logs": "docker compose --env-file docker/.env -f docker/compose.yml --profile app --profile storage logs -f",
     "compose:ps": "docker compose --env-file docker/.env -f docker/compose.yml --profile app --profile storage ps",
     "hosting:lint": "helm lint hosting/k8s/helm -f hosting/k8s/helm/values.lint.yaml",
-    "hosting:template": "helm template cascade hosting/k8s/helm",
+    "hosting:template": "helm template cascade hosting/k8s/helm -f hosting/k8s/helm/values.lint.yaml",
     "hosting:template:local": "helm template cascade hosting/k8s/helm -f hosting/k8s/helm/values.local.yaml",
     "hosting:install:local": "helm upgrade --install cascade hosting/k8s/helm --namespace cascade --create-namespace -f hosting/k8s/helm/values.local.yaml",
     "hosting:uninstall:local": "helm uninstall cascade --namespace cascade",
