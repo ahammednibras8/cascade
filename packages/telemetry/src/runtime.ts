@@ -68,7 +68,8 @@ export function startTelemetry() {
     }),
     instrumentations: [
       new HttpInstrumentation({
-        ignoreIncomingRequestHook: (request) => request.url === "/healthz",
+        ignoreIncomingRequestHook: (request) =>
+          request.url === "/healthz" || request.url === "/readyz" || request.url === "/livez",
       }),
       new ExpressInstrumentation(),
       new IORedisInstrumentation(),

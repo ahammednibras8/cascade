@@ -10,9 +10,12 @@ import { jsonBodyParser, requireJsonContentType } from "./http/json-body.js";
 import { securityHeaders } from "./http/security-headers.js";
 import { corsPolicy } from "./http/cors-policy.js";
 import { apiRateLimit } from "./http/rate-limit.js";
+import { asyncHandler } from "./http/async-handler.js";
+import { checkApiReadiness } from "./health/api-readiness.js";
 
 const app = express();
 const port = Number(process.env.API_PORT ?? 3001);
+let shuttingDown = false;
 
 app.disable("x-powered-by");
 app.use(securityHeaders());
@@ -20,12 +23,31 @@ app.use(corsPolicy());
 app.use(requireJsonContentType());
 app.use(jsonBodyParser());
 
-app.get("/healthz", (_request, response) => {
-  response.json({
-    ok: true,
-    service: packageName,
-  });
+const readinessHandler = asyncHandler(async (_request, response) => {
+  const readiness = await checkApiReadiness();
+
+  response
+    .set("Cache-Control", "no-store")
+    .status(readiness.ok ? 200 : 503)
+    .json({
+      ok: readiness.ok,
+      service: packageName,
+      dependencies: readiness.dependencies,
+    });
 });
+
+app.get("/livez", (_request, response) => {
+  response
+    .set("Cache-Control", "no-store")
+    .status(shuttingDown ? 503 : 200)
+    .json({
+      ok: !shuttingDown,
+      service: packageName,
+    });
+});
+
+app.get("/readyz", readinessHandler);
+app.get("healthz", readinessHandler);
 
 app.get("/me", (request, response) => {
   response.json({
@@ -40,8 +62,6 @@ app.use(errorHandler);
 const server = app.listen(port, () => {
   process.stdout.write(`API listening on http://localhost:${port}\n`);
 });
-
-let shuttingDown = false;
 
 async function shutdown(signal: "SIGINT" | "SIGTERM") {
   if (shuttingDown) {

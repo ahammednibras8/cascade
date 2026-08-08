@@ -60,7 +60,7 @@ export default defineConfig({
       name: "api",
       command: "node --env-file=../../.env --conditions=development --import tsx src/index.ts",
       cwd: apiDir,
-      url: `${apiURL}/healthz`,
+      url: `${apiURL}/readyz`,
       reuseExistingServer,
       timeout: 120_000,
       env: serverEnv,
