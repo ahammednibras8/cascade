@@ -82,3 +82,11 @@ export const ApiKeyScope = {
 } as const
 
 export type ApiKeyScope = (typeof ApiKeyScope)[keyof typeof ApiKeyScope]
+
+
+export const TaskScheduleType = {
+  INTERVAL: 'INTERVAL',
+  CRON: 'CRON'
+} as const
+
+export type TaskScheduleType = (typeof TaskScheduleType)[keyof typeof TaskScheduleType]

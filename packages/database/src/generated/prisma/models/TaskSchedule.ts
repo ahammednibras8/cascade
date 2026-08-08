@@ -28,17 +28,23 @@ export type AggregateTaskSchedule = {
 
 export type TaskScheduleAvgAggregateOutputType = {
   intervalSeconds: number | null
+  revision: number | null
 }
 
 export type TaskScheduleSumAggregateOutputType = {
   intervalSeconds: number | null
+  revision: number | null
 }
 
 export type TaskScheduleMinAggregateOutputType = {
   id: string | null
   taskId: string | null
   name: string | null
+  scheduleType: $Enums.TaskScheduleType | null
   intervalSeconds: number | null
+  cronExpression: string | null
+  timezone: string | null
+  revision: number | null
   nextRunAt: Date | null
   lastRunAt: Date | null
   enabled: boolean | null
@@ -51,7 +57,11 @@ export type TaskScheduleMaxAggregateOutputType = {
   id: string | null
   taskId: string | null
   name: string | null
+  scheduleType: $Enums.TaskScheduleType | null
   intervalSeconds: number | null
+  cronExpression: string | null
+  timezone: string | null
+  revision: number | null
   nextRunAt: Date | null
   lastRunAt: Date | null
   enabled: boolean | null
@@ -65,7 +75,11 @@ export type TaskScheduleCountAggregateOutputType = {
   taskId: number
   name: number
   payload: number
+  scheduleType: number
   intervalSeconds: number
+  cronExpression: number
+  timezone: number
+  revision: number
   nextRunAt: number
   lastRunAt: number
   enabled: number
@@ -78,17 +92,23 @@ export type TaskScheduleCountAggregateOutputType = {
 
 export type TaskScheduleAvgAggregateInputType = {
   intervalSeconds?: true
+  revision?: true
 }
 
 export type TaskScheduleSumAggregateInputType = {
   intervalSeconds?: true
+  revision?: true
 }
 
 export type TaskScheduleMinAggregateInputType = {
   id?: true
   taskId?: true
   name?: true
+  scheduleType?: true
   intervalSeconds?: true
+  cronExpression?: true
+  timezone?: true
+  revision?: true
   nextRunAt?: true
   lastRunAt?: true
   enabled?: true
@@ -101,7 +121,11 @@ export type TaskScheduleMaxAggregateInputType = {
   id?: true
   taskId?: true
   name?: true
+  scheduleType?: true
   intervalSeconds?: true
+  cronExpression?: true
+  timezone?: true
+  revision?: true
   nextRunAt?: true
   lastRunAt?: true
   enabled?: true
@@ -115,7 +139,11 @@ export type TaskScheduleCountAggregateInputType = {
   taskId?: true
   name?: true
   payload?: true
+  scheduleType?: true
   intervalSeconds?: true
+  cronExpression?: true
+  timezone?: true
+  revision?: true
   nextRunAt?: true
   lastRunAt?: true
   enabled?: true
@@ -216,7 +244,11 @@ export type TaskScheduleGroupByOutputType = {
   taskId: string
   name: string
   payload: runtime.JsonValue | null
+  scheduleType: $Enums.TaskScheduleType
   intervalSeconds: number
+  cronExpression: string | null
+  timezone: string
+  revision: number
   nextRunAt: Date
   lastRunAt: Date | null
   enabled: boolean
@@ -253,7 +285,11 @@ export type TaskScheduleWhereInput = {
   taskId?: Prisma.UuidFilter<"TaskSchedule"> | string
   name?: Prisma.StringFilter<"TaskSchedule"> | string
   payload?: Prisma.JsonNullableFilter<"TaskSchedule">
+  scheduleType?: Prisma.EnumTaskScheduleTypeFilter<"TaskSchedule"> | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntFilter<"TaskSchedule"> | number
+  cronExpression?: Prisma.StringNullableFilter<"TaskSchedule"> | string | null
+  timezone?: Prisma.StringFilter<"TaskSchedule"> | string
+  revision?: Prisma.IntFilter<"TaskSchedule"> | number
   nextRunAt?: Prisma.DateTimeFilter<"TaskSchedule"> | Date | string
   lastRunAt?: Prisma.DateTimeNullableFilter<"TaskSchedule"> | Date | string | null
   enabled?: Prisma.BoolFilter<"TaskSchedule"> | boolean
@@ -269,7 +305,11 @@ export type TaskScheduleOrderByWithRelationInput = {
   taskId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   payload?: Prisma.SortOrderInput | Prisma.SortOrder
+  scheduleType?: Prisma.SortOrder
   intervalSeconds?: Prisma.SortOrder
+  cronExpression?: Prisma.SortOrderInput | Prisma.SortOrder
+  timezone?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   nextRunAt?: Prisma.SortOrder
   lastRunAt?: Prisma.SortOrderInput | Prisma.SortOrder
   enabled?: Prisma.SortOrder
@@ -288,7 +328,11 @@ export type TaskScheduleWhereUniqueInput = Prisma.AtLeast<{
   taskId?: Prisma.UuidFilter<"TaskSchedule"> | string
   name?: Prisma.StringFilter<"TaskSchedule"> | string
   payload?: Prisma.JsonNullableFilter<"TaskSchedule">
+  scheduleType?: Prisma.EnumTaskScheduleTypeFilter<"TaskSchedule"> | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntFilter<"TaskSchedule"> | number
+  cronExpression?: Prisma.StringNullableFilter<"TaskSchedule"> | string | null
+  timezone?: Prisma.StringFilter<"TaskSchedule"> | string
+  revision?: Prisma.IntFilter<"TaskSchedule"> | number
   nextRunAt?: Prisma.DateTimeFilter<"TaskSchedule"> | Date | string
   lastRunAt?: Prisma.DateTimeNullableFilter<"TaskSchedule"> | Date | string | null
   enabled?: Prisma.BoolFilter<"TaskSchedule"> | boolean
@@ -304,7 +348,11 @@ export type TaskScheduleOrderByWithAggregationInput = {
   taskId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   payload?: Prisma.SortOrderInput | Prisma.SortOrder
+  scheduleType?: Prisma.SortOrder
   intervalSeconds?: Prisma.SortOrder
+  cronExpression?: Prisma.SortOrderInput | Prisma.SortOrder
+  timezone?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   nextRunAt?: Prisma.SortOrder
   lastRunAt?: Prisma.SortOrderInput | Prisma.SortOrder
   enabled?: Prisma.SortOrder
@@ -326,7 +374,11 @@ export type TaskScheduleScalarWhereWithAggregatesInput = {
   taskId?: Prisma.UuidWithAggregatesFilter<"TaskSchedule"> | string
   name?: Prisma.StringWithAggregatesFilter<"TaskSchedule"> | string
   payload?: Prisma.JsonNullableWithAggregatesFilter<"TaskSchedule">
+  scheduleType?: Prisma.EnumTaskScheduleTypeWithAggregatesFilter<"TaskSchedule"> | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntWithAggregatesFilter<"TaskSchedule"> | number
+  cronExpression?: Prisma.StringNullableWithAggregatesFilter<"TaskSchedule"> | string | null
+  timezone?: Prisma.StringWithAggregatesFilter<"TaskSchedule"> | string
+  revision?: Prisma.IntWithAggregatesFilter<"TaskSchedule"> | number
   nextRunAt?: Prisma.DateTimeWithAggregatesFilter<"TaskSchedule"> | Date | string
   lastRunAt?: Prisma.DateTimeNullableWithAggregatesFilter<"TaskSchedule"> | Date | string | null
   enabled?: Prisma.BoolWithAggregatesFilter<"TaskSchedule"> | boolean
@@ -339,7 +391,11 @@ export type TaskScheduleCreateInput = {
   id?: string
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: $Enums.TaskScheduleType
   intervalSeconds: number
+  cronExpression?: string | null
+  timezone?: string
+  revision?: number
   nextRunAt: Date | string
   lastRunAt?: Date | string | null
   enabled?: boolean
@@ -355,7 +411,11 @@ export type TaskScheduleUncheckedCreateInput = {
   taskId: string
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: $Enums.TaskScheduleType
   intervalSeconds: number
+  cronExpression?: string | null
+  timezone?: string
+  revision?: number
   nextRunAt: Date | string
   lastRunAt?: Date | string | null
   enabled?: boolean
@@ -369,7 +429,11 @@ export type TaskScheduleUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   nextRunAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -385,7 +449,11 @@ export type TaskScheduleUncheckedUpdateInput = {
   taskId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   nextRunAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -400,7 +468,11 @@ export type TaskScheduleCreateManyInput = {
   taskId: string
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: $Enums.TaskScheduleType
   intervalSeconds: number
+  cronExpression?: string | null
+  timezone?: string
+  revision?: number
   nextRunAt: Date | string
   lastRunAt?: Date | string | null
   enabled?: boolean
@@ -413,7 +485,11 @@ export type TaskScheduleUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   nextRunAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -427,7 +503,11 @@ export type TaskScheduleUncheckedUpdateManyInput = {
   taskId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   nextRunAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -456,7 +536,11 @@ export type TaskScheduleCountOrderByAggregateInput = {
   taskId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   payload?: Prisma.SortOrder
+  scheduleType?: Prisma.SortOrder
   intervalSeconds?: Prisma.SortOrder
+  cronExpression?: Prisma.SortOrder
+  timezone?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   nextRunAt?: Prisma.SortOrder
   lastRunAt?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
@@ -467,13 +551,18 @@ export type TaskScheduleCountOrderByAggregateInput = {
 
 export type TaskScheduleAvgOrderByAggregateInput = {
   intervalSeconds?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
 }
 
 export type TaskScheduleMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   taskId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  scheduleType?: Prisma.SortOrder
   intervalSeconds?: Prisma.SortOrder
+  cronExpression?: Prisma.SortOrder
+  timezone?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   nextRunAt?: Prisma.SortOrder
   lastRunAt?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
@@ -486,7 +575,11 @@ export type TaskScheduleMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   taskId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  scheduleType?: Prisma.SortOrder
   intervalSeconds?: Prisma.SortOrder
+  cronExpression?: Prisma.SortOrder
+  timezone?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   nextRunAt?: Prisma.SortOrder
   lastRunAt?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
@@ -497,6 +590,7 @@ export type TaskScheduleMinOrderByAggregateInput = {
 
 export type TaskScheduleSumOrderByAggregateInput = {
   intervalSeconds?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
 }
 
 export type TaskScheduleCreateNestedManyWithoutTaskInput = {
@@ -557,6 +651,10 @@ export type TaskScheduleUpdateOneWithoutRunsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.TaskScheduleUpdateToOneWithWhereWithoutRunsInput, Prisma.TaskScheduleUpdateWithoutRunsInput>, Prisma.TaskScheduleUncheckedUpdateWithoutRunsInput>
 }
 
+export type EnumTaskScheduleTypeFieldUpdateOperationsInput = {
+  set?: $Enums.TaskScheduleType
+}
+
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
 }
@@ -565,7 +663,11 @@ export type TaskScheduleCreateWithoutTaskInput = {
   id?: string
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: $Enums.TaskScheduleType
   intervalSeconds: number
+  cronExpression?: string | null
+  timezone?: string
+  revision?: number
   nextRunAt: Date | string
   lastRunAt?: Date | string | null
   enabled?: boolean
@@ -579,7 +681,11 @@ export type TaskScheduleUncheckedCreateWithoutTaskInput = {
   id?: string
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: $Enums.TaskScheduleType
   intervalSeconds: number
+  cronExpression?: string | null
+  timezone?: string
+  revision?: number
   nextRunAt: Date | string
   lastRunAt?: Date | string | null
   enabled?: boolean
@@ -623,7 +729,11 @@ export type TaskScheduleScalarWhereInput = {
   taskId?: Prisma.UuidFilter<"TaskSchedule"> | string
   name?: Prisma.StringFilter<"TaskSchedule"> | string
   payload?: Prisma.JsonNullableFilter<"TaskSchedule">
+  scheduleType?: Prisma.EnumTaskScheduleTypeFilter<"TaskSchedule"> | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntFilter<"TaskSchedule"> | number
+  cronExpression?: Prisma.StringNullableFilter<"TaskSchedule"> | string | null
+  timezone?: Prisma.StringFilter<"TaskSchedule"> | string
+  revision?: Prisma.IntFilter<"TaskSchedule"> | number
   nextRunAt?: Prisma.DateTimeFilter<"TaskSchedule"> | Date | string
   lastRunAt?: Prisma.DateTimeNullableFilter<"TaskSchedule"> | Date | string | null
   enabled?: Prisma.BoolFilter<"TaskSchedule"> | boolean
@@ -636,7 +746,11 @@ export type TaskScheduleCreateWithoutRunsInput = {
   id?: string
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: $Enums.TaskScheduleType
   intervalSeconds: number
+  cronExpression?: string | null
+  timezone?: string
+  revision?: number
   nextRunAt: Date | string
   lastRunAt?: Date | string | null
   enabled?: boolean
@@ -651,7 +765,11 @@ export type TaskScheduleUncheckedCreateWithoutRunsInput = {
   taskId: string
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: $Enums.TaskScheduleType
   intervalSeconds: number
+  cronExpression?: string | null
+  timezone?: string
+  revision?: number
   nextRunAt: Date | string
   lastRunAt?: Date | string | null
   enabled?: boolean
@@ -680,7 +798,11 @@ export type TaskScheduleUpdateWithoutRunsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   nextRunAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -695,7 +817,11 @@ export type TaskScheduleUncheckedUpdateWithoutRunsInput = {
   taskId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   nextRunAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -708,7 +834,11 @@ export type TaskScheduleCreateManyTaskInput = {
   id?: string
   name: string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: $Enums.TaskScheduleType
   intervalSeconds: number
+  cronExpression?: string | null
+  timezone?: string
+  revision?: number
   nextRunAt: Date | string
   lastRunAt?: Date | string | null
   enabled?: boolean
@@ -721,7 +851,11 @@ export type TaskScheduleUpdateWithoutTaskInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   nextRunAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -735,7 +869,11 @@ export type TaskScheduleUncheckedUpdateWithoutTaskInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   nextRunAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -749,7 +887,11 @@ export type TaskScheduleUncheckedUpdateManyWithoutTaskInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  scheduleType?: Prisma.EnumTaskScheduleTypeFieldUpdateOperationsInput | $Enums.TaskScheduleType
   intervalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
+  cronExpression?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   nextRunAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -794,7 +936,11 @@ export type TaskScheduleSelect<ExtArgs extends runtime.Types.Extensions.Internal
   taskId?: boolean
   name?: boolean
   payload?: boolean
+  scheduleType?: boolean
   intervalSeconds?: boolean
+  cronExpression?: boolean
+  timezone?: boolean
+  revision?: boolean
   nextRunAt?: boolean
   lastRunAt?: boolean
   enabled?: boolean
@@ -811,7 +957,11 @@ export type TaskScheduleSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   taskId?: boolean
   name?: boolean
   payload?: boolean
+  scheduleType?: boolean
   intervalSeconds?: boolean
+  cronExpression?: boolean
+  timezone?: boolean
+  revision?: boolean
   nextRunAt?: boolean
   lastRunAt?: boolean
   enabled?: boolean
@@ -826,7 +976,11 @@ export type TaskScheduleSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   taskId?: boolean
   name?: boolean
   payload?: boolean
+  scheduleType?: boolean
   intervalSeconds?: boolean
+  cronExpression?: boolean
+  timezone?: boolean
+  revision?: boolean
   nextRunAt?: boolean
   lastRunAt?: boolean
   enabled?: boolean
@@ -841,7 +995,11 @@ export type TaskScheduleSelectScalar = {
   taskId?: boolean
   name?: boolean
   payload?: boolean
+  scheduleType?: boolean
   intervalSeconds?: boolean
+  cronExpression?: boolean
+  timezone?: boolean
+  revision?: boolean
   nextRunAt?: boolean
   lastRunAt?: boolean
   enabled?: boolean
@@ -850,7 +1008,7 @@ export type TaskScheduleSelectScalar = {
   updatedAt?: boolean
 }
 
-export type TaskScheduleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taskId" | "name" | "payload" | "intervalSeconds" | "nextRunAt" | "lastRunAt" | "enabled" | "lockedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["taskSchedule"]>
+export type TaskScheduleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taskId" | "name" | "payload" | "scheduleType" | "intervalSeconds" | "cronExpression" | "timezone" | "revision" | "nextRunAt" | "lastRunAt" | "enabled" | "lockedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["taskSchedule"]>
 export type TaskScheduleInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   task?: boolean | Prisma.TaskDefaultArgs<ExtArgs>
   runs?: boolean | Prisma.TaskSchedule$runsArgs<ExtArgs>
@@ -874,7 +1032,11 @@ export type $TaskSchedulePayload<ExtArgs extends runtime.Types.Extensions.Intern
     taskId: string
     name: string
     payload: runtime.JsonValue | null
+    scheduleType: $Enums.TaskScheduleType
     intervalSeconds: number
+    cronExpression: string | null
+    timezone: string
+    revision: number
     nextRunAt: Date
     lastRunAt: Date | null
     enabled: boolean
@@ -1310,7 +1472,11 @@ export interface TaskScheduleFieldRefs {
   readonly taskId: Prisma.FieldRef<"TaskSchedule", 'String'>
   readonly name: Prisma.FieldRef<"TaskSchedule", 'String'>
   readonly payload: Prisma.FieldRef<"TaskSchedule", 'Json'>
+  readonly scheduleType: Prisma.FieldRef<"TaskSchedule", 'TaskScheduleType'>
   readonly intervalSeconds: Prisma.FieldRef<"TaskSchedule", 'Int'>
+  readonly cronExpression: Prisma.FieldRef<"TaskSchedule", 'String'>
+  readonly timezone: Prisma.FieldRef<"TaskSchedule", 'String'>
+  readonly revision: Prisma.FieldRef<"TaskSchedule", 'Int'>
   readonly nextRunAt: Prisma.FieldRef<"TaskSchedule", 'DateTime'>
   readonly lastRunAt: Prisma.FieldRef<"TaskSchedule", 'DateTime'>
   readonly enabled: Prisma.FieldRef<"TaskSchedule", 'Boolean'>

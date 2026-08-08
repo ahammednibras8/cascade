@@ -63,6 +63,11 @@ enum ApiKeyScope {
   API_KEYS_MANAGE
 }
 
+enum TaskScheduleType {
+  INTERVAL
+  CRON
+}
+
 model Project {
   id        String   @id @default(uuid()) @db.Uuid
   slug      String   @unique
@@ -144,6 +149,7 @@ model TaskRun {
   taskId                 String        @db.Uuid
   deploymentId           String?       @db.Uuid
   scheduleId             String?       @db.Uuid
+  scheduledFor           DateTime?
   status                 TaskRunStatus @default(PENDING)
   traceId                String?
   triggerSpanId          String?
@@ -168,6 +174,7 @@ model TaskRun {
   events   TaskEvent[]
 
   @@unique([taskId, idempotencyKeyHash])
+  @@unique([scheduleId, scheduledFor])
   @@index([traceId])
   @@index([deploymentId])
   @@index([taskId, createdAt])
@@ -219,17 +226,21 @@ model TaskEvent {
 }
 
 model TaskSchedule {
-  id              String    @id @default(uuid()) @db.Uuid
-  taskId          String    @db.Uuid
+  id              String           @id @default(uuid()) @db.Uuid
+  taskId          String           @db.Uuid
   name            String
   payload         Json?
+  scheduleType    TaskScheduleType @default(INTERVAL)
   intervalSeconds Int
+  cronExpression  String?
+  timezone        String           @default("UTC")
+  revision        Int              @default(1)
   nextRunAt       DateTime
   lastRunAt       DateTime?
-  enabled         Boolean   @default(true)
+  enabled         Boolean          @default(true)
   lockedAt        DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 

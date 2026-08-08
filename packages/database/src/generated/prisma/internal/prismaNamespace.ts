@@ -1191,6 +1191,7 @@ export const TaskRunScalarFieldEnum = {
   taskId: 'taskId',
   deploymentId: 'deploymentId',
   scheduleId: 'scheduleId',
+  scheduledFor: 'scheduledFor',
   status: 'status',
   traceId: 'traceId',
   triggerSpanId: 'triggerSpanId',
@@ -1248,7 +1249,11 @@ export const TaskScheduleScalarFieldEnum = {
   taskId: 'taskId',
   name: 'name',
   payload: 'payload',
+  scheduleType: 'scheduleType',
   intervalSeconds: 'intervalSeconds',
+  cronExpression: 'cronExpression',
+  timezone: 'timezone',
+  revision: 'revision',
   nextRunAt: 'nextRunAt',
   lastRunAt: 'lastRunAt',
   enabled: 'enabled',
@@ -1448,6 +1453,20 @@ export type EnumTaskEventLevelFieldRefInput<$PrismaModel> = FieldRefInputType<$P
  * Reference to a field of type 'TaskEventLevel[]'
  */
 export type ListEnumTaskEventLevelFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TaskEventLevel[]'>
+    
+
+
+/**
+ * Reference to a field of type 'TaskScheduleType'
+ */
+export type EnumTaskScheduleTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TaskScheduleType'>
+    
+
+
+/**
+ * Reference to a field of type 'TaskScheduleType[]'
+ */
+export type ListEnumTaskScheduleTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TaskScheduleType[]'>
     
 
 

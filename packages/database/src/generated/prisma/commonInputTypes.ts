@@ -335,9 +335,26 @@ export type EnumTaskEventLevelWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumTaskEventLevelFilter<$PrismaModel>
 }
 
+export type EnumTaskScheduleTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.TaskScheduleType | Prisma.EnumTaskScheduleTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.TaskScheduleType[] | Prisma.ListEnumTaskScheduleTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TaskScheduleType[] | Prisma.ListEnumTaskScheduleTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTaskScheduleTypeFilter<$PrismaModel> | $Enums.TaskScheduleType
+}
+
 export type BoolFilter<$PrismaModel = never> = {
   equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
   not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
+}
+
+export type EnumTaskScheduleTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.TaskScheduleType | Prisma.EnumTaskScheduleTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.TaskScheduleType[] | Prisma.ListEnumTaskScheduleTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TaskScheduleType[] | Prisma.ListEnumTaskScheduleTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTaskScheduleTypeWithAggregatesFilter<$PrismaModel> | $Enums.TaskScheduleType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumTaskScheduleTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumTaskScheduleTypeFilter<$PrismaModel>
 }
 
 export type BoolWithAggregatesFilter<$PrismaModel = never> = {
@@ -685,9 +702,26 @@ export type NestedEnumTaskEventLevelWithAggregatesFilter<$PrismaModel = never> =
   _max?: Prisma.NestedEnumTaskEventLevelFilter<$PrismaModel>
 }
 
+export type NestedEnumTaskScheduleTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.TaskScheduleType | Prisma.EnumTaskScheduleTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.TaskScheduleType[] | Prisma.ListEnumTaskScheduleTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TaskScheduleType[] | Prisma.ListEnumTaskScheduleTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTaskScheduleTypeFilter<$PrismaModel> | $Enums.TaskScheduleType
+}
+
 export type NestedBoolFilter<$PrismaModel = never> = {
   equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
   not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
+}
+
+export type NestedEnumTaskScheduleTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.TaskScheduleType | Prisma.EnumTaskScheduleTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.TaskScheduleType[] | Prisma.ListEnumTaskScheduleTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TaskScheduleType[] | Prisma.ListEnumTaskScheduleTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTaskScheduleTypeWithAggregatesFilter<$PrismaModel> | $Enums.TaskScheduleType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumTaskScheduleTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumTaskScheduleTypeFilter<$PrismaModel>
 }
 
 export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
