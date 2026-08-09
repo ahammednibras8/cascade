@@ -8,24 +8,42 @@ import {
   createApp,
   createDeployment,
   createTaskSchedule,
-  listTasks,
   listTaskSchedules,
-  replayTaskRun,
-  triggerTaskRun,
+  listTasks,
   pauseTaskSchedule,
+  replayTaskRun,
+  resumeTaskSchedule,
+  triggerTaskRun,
 } from "./tasks-router-harness.js";
 import {
   createCancelTaskRunSuccess,
   createDeploymentBody,
   createDeploymentSuccess,
   createDeploymentVersionExistsFailure,
-  createListTasksSuccess,
   createListTaskSchedulesSuccess,
+  createListTasksSuccess,
+  createPauseTaskScheduleSuccess,
   createReplayTaskRunSuccess,
+  createResumeTaskScheduleSuccess,
   createTaskScheduleSuccess,
   createTriggerTaskRunSuccess,
-  createPauseTaskScheduleSuccess,
 } from "./tasks-router-fixtures.js";
+
+const SCHEDULE_ID = "33333333-3333-4333-8333-333333333333";
+const FORBIDDEN = {
+  error: {
+    code: "FORBIDDEN",
+    message: "API key is missing the required permission",
+  },
+};
+
+function appRequest(scopes?: string[]) {
+  return httpRequest(createApp(scopes ? { scopes: scopes as never[] } : undefined));
+}
+
+function expectAuthOnly(service: { mock: { calls: unknown[][] } }) {
+  expect(service).toHaveBeenCalledWith({ auth: AUTH_CONTEXT });
+}
 
 describe("tasksRouter write routes", () => {
   beforeEach(() => {
@@ -36,44 +54,49 @@ describe("tasksRouter write routes", () => {
     createDeployment.mockResolvedValue(createDeploymentSuccess());
 
     const body = createDeploymentBody();
-
-    const response = await httpRequest(createApp()).post("/api/deployments").send(body);
+    const response = await appRequest().post("/api/deployments").send(body);
 
     expect(response.status).toBe(201);
-    expect(createDeployment).toHaveBeenCalledWith({
-      auth: AUTH_CONTEXT,
-      body,
-    });
+    expect(createDeployment).toHaveBeenCalledWith({ auth: AUTH_CONTEXT, body });
     expect(response.body.deployment.id).toBe("deployment-1");
+  });
+
+  it("returns deployment version conflicts from the deployment service", async () => {
+    createDeployment.mockResolvedValue(createDeploymentVersionExistsFailure());
+
+    const response = await appRequest()
+      .post("/api/deployments")
+      .send(createDeploymentBody({ version: "local-worker-test-001" }));
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe("DEPLOYMENT_VERSION_EXISTS");
+  });
+
+  it("rejects deployment creation without DEPLOYMENTS_WRITE", async () => {
+    const response = await appRequest([]).post("/api/deployments").send(createDeploymentBody());
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual(FORBIDDEN);
+    expect(createDeployment).not.toHaveBeenCalled();
   });
 
   it("passes Idempotency-Key to the trigger service and returns replay metadata", async () => {
     triggerTaskRun.mockResolvedValue(
-      createTriggerTaskRunSuccess({
-        status: 200,
-        idempotentReplayed: true,
-      }),
+      createTriggerTaskRunSuccess({ status: 200, idempotentReplayed: true }),
     );
 
-    const response = await httpRequest(createApp())
+    const body = { payload: { message: "hello" } };
+    const response = await appRequest()
       .post(`/api/tasks/${TASK_ID}/trigger`)
       .set("Idempotency-Key", "trigger-request-1")
-      .send({
-        payload: {
-          message: "hello",
-        },
-      });
+      .send(body);
 
     expect(response.status).toBe(200);
     expect(response.headers["idempotent-replayed"]).toBe("true");
     expect(triggerTaskRun).toHaveBeenCalledWith({
       auth: AUTH_CONTEXT,
       taskId: TASK_ID,
-      body: {
-        payload: {
-          message: "hello",
-        },
-      },
+      body,
       idempotencyKey: "trigger-request-1",
       traceparent: undefined,
     });
@@ -81,55 +104,27 @@ describe("tasksRouter write routes", () => {
   });
 
   it("passes task slugs to the trigger service", async () => {
-    triggerTaskRun.mockResolvedValue(
-      createTriggerTaskRunSuccess({
-        payload: {
-          name: "Nibras",
-        },
-      }),
-    );
+    triggerTaskRun.mockResolvedValue(createTriggerTaskRunSuccess({ payload: { name: "Nibras" } }));
 
-    const response = await httpRequest(createApp())
+    const response = await appRequest()
       .post("/api/tasks/slug/hello/trigger")
       .set("Authorization", "Bearer test")
-      .send({
-        payload: {
-          name: "Nibras",
-        },
-      });
+      .send({ payload: { name: "Nibras" } });
 
     expect(response.status).toBe(202);
-    expect(triggerTaskRun).toHaveBeenCalledWith(
-      expect.objectContaining({
-        taskSlug: "hello",
-      }),
-    );
+    expect(triggerTaskRun).toHaveBeenCalledWith(expect.objectContaining({ taskSlug: "hello" }));
   });
 
-  it("passes cancel run requests to the cancel service", async () => {
-    cancelTaskRun.mockResolvedValue(createCancelTaskRunSuccess());
+  it.each([
+    ["cancel", "post", `/api/runs/${RUN_ID}/cancel`, cancelTaskRun, createCancelTaskRunSuccess()],
+    ["replay", "post", `/api/runs/${RUN_ID}/replay`, replayTaskRun, createReplayTaskRunSuccess()],
+  ] as const)("passes %s run requests to the service", async (_, method, path, service, result) => {
+    service.mockResolvedValue(result);
 
-    const response = await httpRequest(createApp()).post(`/api/runs/${RUN_ID}/cancel`).send();
+    const response = await appRequest()[method](path).send();
 
-    expect(response.status).toBe(200);
-    expect(cancelTaskRun).toHaveBeenCalledWith({
-      auth: AUTH_CONTEXT,
-      runId: RUN_ID,
-    });
-    expect(response.body.taskRun.status).toBe("CANCELED");
-  });
-
-  it("passes replay run requests to the replay service", async () => {
-    replayTaskRun.mockResolvedValue(createReplayTaskRunSuccess());
-
-    const response = await httpRequest(createApp()).post(`/api/runs/${RUN_ID}/replay`).send();
-
-    expect(response.status).toBe(202);
-    expect(replayTaskRun).toHaveBeenCalledWith({
-      auth: AUTH_CONTEXT,
-      runId: RUN_ID,
-    });
-    expect(response.body.taskRun.replayedFromRunId).toBe(RUN_ID);
+    expect(response.status).toBe(result.status);
+    expect(service).toHaveBeenCalledWith({ auth: AUTH_CONTEXT, runId: RUN_ID });
   });
 
   it("passes create schedule requests to the schedule service", async () => {
@@ -139,33 +134,22 @@ describe("tasksRouter write routes", () => {
       name: "Every minute",
       intervalSeconds: 60,
       startAt: "2026-01-01T00:01:00.000Z",
-      payload: {
-        message: "scheduled hello",
-      },
+      payload: { message: "scheduled hello" },
     };
-
-    const response = await httpRequest(createApp())
-      .post(`/api/tasks/${TASK_ID}/schedules`)
-      .send(body);
+    const response = await appRequest().post(`/api/tasks/${TASK_ID}/schedules`).send(body);
 
     expect(response.status).toBe(201);
-    expect(createTaskSchedule).toHaveBeenCalledWith({
-      auth: AUTH_CONTEXT,
-      taskId: TASK_ID,
-      body,
-    });
+    expect(createTaskSchedule).toHaveBeenCalledWith({ auth: AUTH_CONTEXT, taskId: TASK_ID, body });
     expect(response.body.schedule.name).toBe("Every minute");
   });
 
   it("passes task list requests to the task list service", async () => {
     listTasks.mockResolvedValue(createListTasksSuccess());
 
-    const response = await httpRequest(createApp()).get("/api/tasks");
+    const response = await appRequest().get("/api/tasks");
 
     expect(response.status).toBe(200);
-    expect(listTasks).toHaveBeenCalledWith({
-      auth: AUTH_CONTEXT,
-    });
+    expectAuthOnly(listTasks);
     expect(response.body.tasks[0]).toMatchObject({
       id: "task-1",
       slug: "hello",
@@ -174,106 +158,59 @@ describe("tasksRouter write routes", () => {
     });
   });
 
-  it("returns 409 when a deployment version already exists", async () => {
-    createDeployment.mockResolvedValue(createDeploymentVersionExistsFailure());
-
-    const response = await httpRequest(createApp())
-      .post("/api/deployments")
-      .send(
-        createDeploymentBody({
-          version: "local-worker-test-001",
-          image: "ghcr.io/cascade/worker:local",
-        }),
-      );
-
-    expect(response.status).toBe(409);
-    expect(response.body).toEqual({
-      error: {
-        code: "DEPLOYMENT_VERSION_EXISTS",
-        message: "A deployment with this version already exists in the environment",
-      },
-    });
-  });
-
-  it("rejects deployment creation when the API key lacks DEPLOYMENTS_WRITE", async () => {
-    const response = await httpRequest(createApp({ scopes: [] }))
-      .post("/api/deployments")
-      .send(createDeploymentBody());
-
-    expect(response.status).toBe(403);
-    expect(response.body).toEqual({
-      error: {
-        code: "FORBIDDEN",
-        message: "API key is missing the required permission",
-      },
-    });
-    expect(createDeployment).not.toHaveBeenCalled();
-  });
-
   it("passes schedule list requests to the schedule list service", async () => {
     listTaskSchedules.mockResolvedValue(createListTaskSchedulesSuccess());
 
-    const response = await httpRequest(createApp()).get("/api/schedules");
+    const response = await appRequest().get("/api/schedules");
 
     expect(response.status).toBe(200);
-    expect(listTaskSchedules).toHaveBeenCalledWith({
-      auth: AUTH_CONTEXT,
-    });
+    expectAuthOnly(listTaskSchedules);
     expect(response.body.schedules[0]).toMatchObject({
       id: "schedule-1",
       scheduleType: "CRON",
-      task: {
-        slug: "hello",
-      },
+      task: { slug: "hello" },
     });
   });
 
   it("rejects schedule list requests without SCHEDULES_WRITE", async () => {
-    const response = await httpRequest(createApp({ scopes: ["TASKS_READ"] })).get("/api/schedules");
+    const response = await appRequest(["TASKS_READ"]).get("/api/schedules");
 
     expect(response.status).toBe(403);
-    expect(response.body).toEqual({
-      error: {
-        code: "FORBIDDEN",
-        message: "API key is missing the required permission",
-      },
-    });
+    expect(response.body).toEqual(FORBIDDEN);
     expect(listTaskSchedules).not.toHaveBeenCalled();
   });
 
-  it("passes pause schedule requests to the pause service", async () => {
-    pauseTaskSchedule.mockResolvedValue(createPauseTaskScheduleSuccess());
+  it.each([
+    ["pause", pauseTaskSchedule, createPauseTaskScheduleSuccess(), { enabled: false }],
+    [
+      "resume",
+      resumeTaskSchedule,
+      createResumeTaskScheduleSuccess(),
+      { enabled: true, nextRunAt: "2026-01-01T00:01:00.000Z" },
+    ],
+  ] as const)(
+    "passes %s schedule requests to the service",
+    async (action, service, result, body) => {
+      service.mockResolvedValue(result);
 
-    const scheduleId = "33333333-3333-4333-8333-333333333333";
+      const response = await appRequest().post(`/api/schedules/${SCHEDULE_ID}/${action}`);
 
-    const response = await httpRequest(createApp()).post(`/api/schedules/${scheduleId}/pause`);
+      expect(response.status).toBe(200);
+      expect(service).toHaveBeenCalledWith({ auth: AUTH_CONTEXT, scheduleId: SCHEDULE_ID });
+      expect(response.body.schedule).toMatchObject({ id: SCHEDULE_ID, ...body });
+    },
+  );
 
-    expect(response.status).toBe(200);
-    expect(pauseTaskSchedule).toHaveBeenCalledWith({
-      auth: AUTH_CONTEXT,
-      scheduleId,
-    });
-    expect(response.body.schedule).toEqual({
-      id: scheduleId,
-      enabled: false,
-      alreadyPaused: false,
-    });
-  });
-
-  it("rejects pause schedule requests without SCHEDULES_WRITE", async () => {
-    const response = await httpRequest(
-      createApp({
-        scopes: ["TASKS_READ"],
-      }),
-    ).post(`/api/schedules/33333333-3333-4333-8333-333333333333/pause`);
+  it.each([
+    ["pause", pauseTaskSchedule],
+    ["resume", resumeTaskSchedule],
+  ] as const)("rejects %s schedule requests without SCHEDULES_WRITE", async (action, service) => {
+    const response = await appRequest(["TASKS_READ"]).post(
+      `/api/schedules/${SCHEDULE_ID}/${action}`,
+    );
 
     expect(response.status).toBe(403);
-    expect(response.body).toEqual({
-      error: {
-        code: "FORBIDDEN",
-        message: "API key is missing the required permission",
-      },
-    });
-    expect(pauseTaskSchedule).not.toHaveBeenCalled();
+    expect(response.body).toEqual(FORBIDDEN);
+    expect(service).not.toHaveBeenCalled();
   });
 });

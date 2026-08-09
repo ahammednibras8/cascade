@@ -37,6 +37,7 @@ const routeMocks = vi.hoisted(() => ({
   listTaskSchedules: vi.fn<(input: unknown) => Promise<unknown>>(),
   revokeApiKey: vi.fn<(input: unknown) => Promise<unknown>>(),
   rotateApiKey: vi.fn<(input: unknown) => Promise<unknown>>(),
+  resumeTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
   pauseTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
   prisma: {
     taskRun: {
@@ -61,6 +62,7 @@ export const {
   triggerTaskRun,
   revokeApiKey,
   rotateApiKey,
+  resumeTaskSchedule,
 } = routeMocks;
 
 vi.mock("../../src/services/trigger-task-run.js", () => ({
@@ -131,6 +133,10 @@ vi.mock("../../src/services/list-task-schedules.js", () => ({
 
 vi.mock("../../src/services/pause-task-schedule.js", () => ({
   pauseTaskSchedule: routeMocks.pauseTaskSchedule,
+}));
+
+vi.mock("../../src/services/resume-task-schedule.js", () => ({
+  resumeTaskSchedule: routeMocks.resumeTaskSchedule,
 }));
 
 const { tasksRouter } = await import("../../src/routes/tasks.js");

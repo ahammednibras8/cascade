@@ -218,3 +218,16 @@ export function createPauseTaskScheduleSuccess() {
     },
   };
 }
+
+export function createResumeTaskScheduleSuccess() {
+  return {
+    ok: true,
+    status: 200,
+    schedule: {
+      id: "33333333-3333-4333-8333-333333333333",
+      enabled: true,
+      alreadyResumed: false,
+      nextRunAt: "2026-01-01T00:01:00.000Z",
+    },
+  };
+}
