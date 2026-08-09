@@ -215,7 +215,7 @@ export async function createDeployment(input: CreateDeploymentInput) {
         },
       });
 
-      await Promise.all(
+      const deployedTasks = await Promise.all(
         parsed.deployment.tasks.map((task) =>
           tx.task.upsert({
             where: {
@@ -238,9 +238,26 @@ export async function createDeployment(input: CreateDeploymentInput) {
               description: task.description,
               executionConfig: task.executionConfig as Prisma.InputJsonValue,
             },
+            select: {
+              id: true,
+            },
           }),
         ),
       );
+
+      await tx.taskSchedule.updateMany({
+        where: {
+          taskId: {
+            in: deployedTasks.map((task) => task.id),
+          },
+        },
+        data: {
+          revision: {
+            increment: 1,
+          },
+          lockedAt: null,
+        },
+      });
 
       return tx.deployment.findUniqueOrThrow({
         where: {
