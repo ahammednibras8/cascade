@@ -8,6 +8,7 @@ import {
   createApp,
   createDeployment,
   createTaskSchedule,
+  deleteTaskSchedule,
   listTaskSchedules,
   listTasks,
   pauseTaskSchedule,
@@ -17,6 +18,7 @@ import {
 } from "./tasks-router-harness.js";
 import {
   createCancelTaskRunSuccess,
+  createDeleteTaskScheduleSuccess,
   createDeploymentBody,
   createDeploymentSuccess,
   createDeploymentVersionExistsFailure,
@@ -212,5 +214,37 @@ describe("tasksRouter write routes", () => {
     expect(response.status).toBe(403);
     expect(response.body).toEqual(FORBIDDEN);
     expect(service).not.toHaveBeenCalled();
+  });
+
+  it("passes delete schedule requests to the delete service", async () => {
+    deleteTaskSchedule.mockResolvedValue(createDeleteTaskScheduleSuccess());
+
+    const scheduleId = "33333333-3333-4333-8333-333333333333";
+
+    const response = await httpRequest(createApp()).delete(`/api/schedules/${scheduleId}`);
+
+    expect(response.status).toBe(204);
+    expect(response.text).toBe("");
+    expect(deleteTaskSchedule).toHaveBeenCalledWith({
+      auth: AUTH_CONTEXT,
+      scheduleId,
+    });
+  });
+
+  it("rejects delete schedule requests without SCHEDULES_WRITE", async () => {
+    const response = await httpRequest(
+      createApp({
+        scopes: ["TASKS_READ"],
+      }),
+    ).delete(`/api/schedules/33333333-3333-4333-8333-333333333333`);
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "API key is missing the required permission",
+      },
+    });
+    expect(deleteTaskSchedule).not.toHaveBeenCalled();
   });
 });

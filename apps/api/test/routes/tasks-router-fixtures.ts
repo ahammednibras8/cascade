@@ -231,3 +231,10 @@ export function createResumeTaskScheduleSuccess() {
     },
   };
 }
+
+export function createDeleteTaskScheduleSuccess() {
+  return {
+    ok: true,
+    status: 204,
+  };
+}
