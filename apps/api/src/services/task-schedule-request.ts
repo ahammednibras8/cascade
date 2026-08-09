@@ -8,7 +8,7 @@ const INVALID_CRON_MESSAGE =
 const UTC_ISO_TIMESTAMP_PATTERN =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?Z$/;
 
-export type ParsedScheduleRule =
+type ParsedScheduleRule =
   | {
       scheduleType: "INTERVAL";
       intervalSeconds: number;
