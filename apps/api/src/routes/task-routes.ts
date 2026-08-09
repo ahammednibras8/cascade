@@ -13,6 +13,7 @@ import { listTaskSchedules } from "../services/list-task-schedules.js";
 import { pauseTaskSchedule } from "../services/pause-task-schedule.js";
 import { resumeTaskSchedule } from "../services/resume-task-schedule.js";
 import { deleteTaskSchedule } from "../services/delete-task-schedule.js";
+import { updateTaskSchedule } from "../services/update-task-schedule.js";
 
 export const taskRoutes: ExpressRouter = Router();
 
@@ -131,6 +132,35 @@ taskRoutes.delete(
     }
 
     response.status(204).send();
+  }),
+);
+
+taskRoutes.put(
+  "/schedules/:scheduleId",
+  requireApiKeyScope(ApiKeyScope.SCHEDULES_WRITE),
+  asyncHandler(async (request, response) => {
+    const auth = getAuthOrRespond(request, response);
+
+    if (!auth) {
+      return;
+    }
+
+    const result = await updateTaskSchedule({
+      auth,
+      scheduleId: getSingleParam(request.params.scheduleId),
+      body: request.body,
+    });
+
+    if (!result.ok) {
+      response.status(result.status).json({
+        error: result.error,
+      });
+      return;
+    }
+
+    response.status(result.status).json({
+      schedule: result.schedule,
+    });
   }),
 );
 

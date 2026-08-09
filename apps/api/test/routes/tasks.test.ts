@@ -15,6 +15,7 @@ import {
   replayTaskRun,
   resumeTaskSchedule,
   triggerTaskRun,
+  updateTaskSchedule,
 } from "./tasks-router-harness.js";
 import {
   createCancelTaskRunSuccess,
@@ -29,6 +30,7 @@ import {
   createResumeTaskScheduleSuccess,
   createTaskScheduleSuccess,
   createTriggerTaskRunSuccess,
+  createUpdateTaskScheduleSuccess,
 } from "./tasks-router-fixtures.js";
 
 const SCHEDULE_ID = "33333333-3333-4333-8333-333333333333";
@@ -246,5 +248,50 @@ describe("tasksRouter write routes", () => {
       },
     });
     expect(deleteTaskSchedule).not.toHaveBeenCalled();
+  });
+
+  it("passes update schedule requests to the update service", async () => {
+    updateTaskSchedule.mockResolvedValue(createUpdateTaskScheduleSuccess());
+
+    const scheduleId = "33333333-3333-4333-8333-333333333333";
+    const body = {
+      name: "Every two minutes",
+      intervalSeconds: 120,
+    };
+
+    const response = await httpRequest(createApp()).put(`/api/schedules/${scheduleId}`).send(body);
+
+    expect(response.status).toBe(200);
+    expect(updateTaskSchedule).toHaveBeenCalledWith({
+      auth: AUTH_CONTEXT,
+      scheduleId,
+      body,
+    });
+    expect(response.body.schedule).toMatchObject({
+      id: scheduleId,
+      intervalSeconds: 120,
+      revision: 2,
+    });
+  });
+
+  it("rejects update schedule requests without SCHEDULES_WRITE", async () => {
+    const response = await httpRequest(
+      createApp({
+        scopes: ["TASKS_READ"],
+      }),
+    )
+      .put("/api/schedules/33333333-3333-4333-8333-333333333333")
+      .send({
+        intervalSeconds: 120,
+      });
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "API key is missing the required permission",
+      },
+    });
+    expect(updateTaskSchedule).not.toHaveBeenCalled();
   });
 });

@@ -238,3 +238,22 @@ export function createDeleteTaskScheduleSuccess() {
     status: 204,
   };
 }
+
+export function createUpdateTaskScheduleSuccess() {
+  return {
+    ok: true,
+    status: 200,
+    schedule: {
+      id: "33333333-3333-4333-8333-333333333333",
+      name: "Every two minutes",
+      scheduleType: "INTERVAL",
+      intervalSeconds: 120,
+      cronExpression: null,
+      timezone: "UTC",
+      nextRunAt: "2026-01-01T00:02:00.000Z",
+      enabled: true,
+      hasPayload: false,
+      revision: 2,
+    },
+  };
+}
