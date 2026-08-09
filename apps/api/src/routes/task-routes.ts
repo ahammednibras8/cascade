@@ -10,6 +10,7 @@ import { withActiveSpan } from "@cascade/telemetry";
 import { ApiKeyScope } from "@cascade/database";
 import { requireApiKeyScope } from "../auth/api-key.js";
 import { listTaskSchedules } from "../services/list-task-schedules.js";
+import { pauseTaskSchedule } from "../services/pause-task-schedule.js";
 
 export const taskRoutes: ExpressRouter = Router();
 
@@ -45,6 +46,34 @@ taskRoutes.get(
 
     response.status(result.status).json({
       schedules: result.schedules,
+    });
+  }),
+);
+
+taskRoutes.post(
+  "/schedules/:scheduleId/pause",
+  requireApiKeyScope(ApiKeyScope.SCHEDULES_WRITE),
+  asyncHandler(async (request, response) => {
+    const auth = getAuthOrRespond(request, response);
+
+    if (!auth) {
+      return;
+    }
+
+    const result = await pauseTaskSchedule({
+      auth,
+      scheduleId: getSingleParam(request.params.scheduleId),
+    });
+
+    if (!result.ok) {
+      response.status(result.status).json({
+        error: result.error,
+      });
+      return;
+    }
+
+    response.status(result.status).json({
+      schedule: result.schedule,
     });
   }),
 );

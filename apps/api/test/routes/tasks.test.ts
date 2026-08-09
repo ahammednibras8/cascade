@@ -12,6 +12,7 @@ import {
   listTaskSchedules,
   replayTaskRun,
   triggerTaskRun,
+  pauseTaskSchedule,
 } from "./tasks-router-harness.js";
 import {
   createCancelTaskRunSuccess,
@@ -23,6 +24,7 @@ import {
   createReplayTaskRunSuccess,
   createTaskScheduleSuccess,
   createTriggerTaskRunSuccess,
+  createPauseTaskScheduleSuccess,
 } from "./tasks-router-fixtures.js";
 
 describe("tasksRouter write routes", () => {
@@ -237,5 +239,41 @@ describe("tasksRouter write routes", () => {
       },
     });
     expect(listTaskSchedules).not.toHaveBeenCalled();
+  });
+
+  it("passes pause schedule requests to the pause service", async () => {
+    pauseTaskSchedule.mockResolvedValue(createPauseTaskScheduleSuccess());
+
+    const scheduleId = "33333333-3333-4333-8333-333333333333";
+
+    const response = await httpRequest(createApp()).post(`/api/schedules/${scheduleId}/pause`);
+
+    expect(response.status).toBe(200);
+    expect(pauseTaskSchedule).toHaveBeenCalledWith({
+      auth: AUTH_CONTEXT,
+      scheduleId,
+    });
+    expect(response.body.schedule).toEqual({
+      id: scheduleId,
+      enabled: false,
+      alreadyPaused: false,
+    });
+  });
+
+  it("rejects pause schedule requests without SCHEDULES_WRITE", async () => {
+    const response = await httpRequest(
+      createApp({
+        scopes: ["TASKS_READ"],
+      }),
+    ).post(`/api/schedules/33333333-3333-4333-8333-333333333333/pause`);
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "API key is missing the required permission",
+      },
+    });
+    expect(pauseTaskSchedule).not.toHaveBeenCalled();
   });
 });

@@ -206,3 +206,15 @@ export function createListTaskSchedulesSuccess() {
     ],
   };
 }
+
+export function createPauseTaskScheduleSuccess() {
+  return {
+    ok: true,
+    status: 200,
+    schedule: {
+      id: "33333333-3333-4333-8333-333333333333",
+      enabled: false,
+      alreadyPaused: false,
+    },
+  };
+}
