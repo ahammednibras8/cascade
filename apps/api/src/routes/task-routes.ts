@@ -9,6 +9,7 @@ import { getAuthOrRespond } from "./route-auth.js";
 import { withActiveSpan } from "@cascade/telemetry";
 import { ApiKeyScope } from "@cascade/database";
 import { requireApiKeyScope } from "../auth/api-key.js";
+import { listTaskSchedules } from "../services/list-task-schedules.js";
 
 export const taskRoutes: ExpressRouter = Router();
 
@@ -26,6 +27,24 @@ taskRoutes.get(
 
     response.status(result.status).json({
       tasks: result.tasks,
+    });
+  }),
+);
+
+taskRoutes.get(
+  "/schedules",
+  requireApiKeyScope(ApiKeyScope.SCHEDULES_WRITE),
+  asyncHandler(async (request, response) => {
+    const auth = getAuthOrRespond(request, response);
+
+    if (!auth) {
+      return;
+    }
+
+    const result = await listTaskSchedules({ auth });
+
+    response.status(result.status).json({
+      schedules: result.schedules,
     });
   }),
 );

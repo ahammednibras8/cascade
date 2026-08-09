@@ -9,6 +9,7 @@ import {
   createDeployment,
   createTaskSchedule,
   listTasks,
+  listTaskSchedules,
   replayTaskRun,
   triggerTaskRun,
 } from "./tasks-router-harness.js";
@@ -18,6 +19,7 @@ import {
   createDeploymentSuccess,
   createDeploymentVersionExistsFailure,
   createListTasksSuccess,
+  createListTaskSchedulesSuccess,
   createReplayTaskRunSuccess,
   createTaskScheduleSuccess,
   createTriggerTaskRunSuccess,
@@ -204,5 +206,36 @@ describe("tasksRouter write routes", () => {
       },
     });
     expect(createDeployment).not.toHaveBeenCalled();
+  });
+
+  it("passes schedule list requests to the schedule list service", async () => {
+    listTaskSchedules.mockResolvedValue(createListTaskSchedulesSuccess());
+
+    const response = await httpRequest(createApp()).get("/api/schedules");
+
+    expect(response.status).toBe(200);
+    expect(listTaskSchedules).toHaveBeenCalledWith({
+      auth: AUTH_CONTEXT,
+    });
+    expect(response.body.schedules[0]).toMatchObject({
+      id: "schedule-1",
+      scheduleType: "CRON",
+      task: {
+        slug: "hello",
+      },
+    });
+  });
+
+  it("rejects schedule list requests without SCHEDULES_WRITE", async () => {
+    const response = await httpRequest(createApp({ scopes: ["TASKS_READ"] })).get("/api/schedules");
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "API key is missing the required permission",
+      },
+    });
+    expect(listTaskSchedules).not.toHaveBeenCalled();
   });
 });

@@ -171,3 +171,38 @@ export function createDeploymentVersionExistsFailure() {
     },
   };
 }
+
+export function createListTaskSchedulesSuccess() {
+  return {
+    ok: true,
+    status: 200,
+    schedules: [
+      {
+        id: "schedule-1",
+        taskId: "task-1",
+        name: "Weekday morning",
+        scheduleType: "CRON",
+        intervalSeconds: null,
+        cronExpression: "0 9 * * 1-5",
+        timezone: "Asia/Kolkata",
+        nextRunAt: "2026-01-03T09:00:00.000Z",
+        lastRunAt: null,
+        enabled: true,
+        hasPayload: true,
+        revision: 3,
+        createdAt: CREATED_AT,
+        updatedAt: "2026-01-02T00:00:00.000Z",
+        task: {
+          id: "task-1",
+          slug: "hello",
+          name: "Hello",
+          deployment: {
+            id: "deployment-1",
+            version: "v3",
+            status: "ACTIVE",
+          },
+        },
+      },
+    ],
+  };
+}
