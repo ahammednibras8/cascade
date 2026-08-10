@@ -257,3 +257,33 @@ export function createUpdateTaskScheduleSuccess() {
     },
   };
 }
+
+export function createGetTaskScheduleSuccess() {
+  return {
+    ok: true,
+    status: 200,
+    schedule: {
+      id: "33333333-3333-4333-8333-333333333333",
+      taskId: "task-1",
+      name: "Every minute",
+      scheduleType: "INTERVAL",
+      intervalSeconds: 60,
+      cronExpression: null,
+      timezone: "UTC",
+      nextRunAt: CREATED_AT,
+      lastRunAt: null,
+      enabled: true,
+      payload: {
+        message: "hello",
+      },
+      revision: 1,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+      task: {
+        id: "task-1",
+        slug: "hello",
+        name: "Hello",
+      },
+    },
+  };
+}

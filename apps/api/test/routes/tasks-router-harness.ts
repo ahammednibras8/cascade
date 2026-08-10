@@ -32,6 +32,7 @@ const routeMocks = vi.hoisted(() => ({
   createApiKey: vi.fn<(input: unknown) => Promise<unknown>>(),
   deleteTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
   getTaskRun: vi.fn<(input: unknown) => Promise<unknown>>(),
+  getTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
   listTaskRunEvents: vi.fn<(input: unknown) => Promise<unknown>>(),
   listTasks: vi.fn<(input: unknown) => Promise<unknown>>(),
   listApiKeys: vi.fn<(input: unknown) => Promise<unknown>>(),
@@ -55,6 +56,7 @@ export const {
   createApiKey,
   deleteTaskSchedule,
   getTaskRun,
+  getTaskSchedule,
   listTaskRunEvents,
   listTasks,
   listApiKeys,
@@ -149,6 +151,10 @@ vi.mock("../../src/services/delete-task-schedule.js", () => ({
 
 vi.mock("../../src/services/update-task-schedule.js", () => ({
   updateTaskSchedule: routeMocks.updateTaskSchedule,
+}));
+
+vi.mock("../../src/services/get-task-schedule.js", () => ({
+  getTaskSchedule: routeMocks.getTaskSchedule,
 }));
 
 const { tasksRouter } = await import("../../src/routes/tasks.js");
