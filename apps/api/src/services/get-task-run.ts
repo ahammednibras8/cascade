@@ -77,7 +77,7 @@ export async function getTaskRun(input: { auth: ApiAuthContext; runId: string | 
     return {
       ok: false as const,
       status: 404 as const,
-      error: { code: "RUN_NOT_FOUND", message: "Task run was not found is this environment" },
+      error: { code: "RUN_NOT_FOUND", message: "Task run was not found in this environment" },
     };
   }
 
@@ -106,7 +106,7 @@ export async function getTaskRun(input: { auth: ApiAuthContext; runId: string | 
       attempts: run.attempts.map((attempt) => ({
         id: attempt.id,
         attemptNumber: attempt.attemptNumber,
-        starus: attempt.status,
+        status: attempt.status,
         error: attempt.error,
         startedAt: attempt.startedAt?.toISOString() ?? null,
         completedAt: attempt.completedAt?.toISOString() ?? null,

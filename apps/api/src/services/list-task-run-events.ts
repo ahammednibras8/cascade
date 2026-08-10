@@ -59,7 +59,7 @@ export async function listTaskRunEvents(input: {
       message: event.message,
       data: event.data,
       traceId: event.traceId,
-      spanId: event.traceId,
+      spanId: event.spanId,
       parentSpanId: event.parentSpanId,
       createdAt: event.createdAt.toISOString(),
     })),

@@ -11,8 +11,8 @@ export function meta() {
 export async function loader({ params }: Route.LoaderArgs) {
   const runId = params.runId;
 
-  const [runResponse, eventsResponse] = await Promise.all([
-    cascadeApiRequest<{
+  try {
+    const runResponse = await cascadeApiRequest<{
       taskRun: {
         id: string;
         status: string;
@@ -51,8 +51,8 @@ export async function loader({ params }: Route.LoaderArgs) {
           createdAt: string;
         }>;
       };
-    }>(`/api/runs/${encodeURIComponent(runId)}`),
-    cascadeApiRequest<{
+    }>(`/api/runs/${encodeURIComponent(runId)}`);
+    const eventsResponse = await cascadeApiRequest<{
       events: Array<{
         id: string;
         taskAttemptId: string | null;
@@ -65,15 +65,24 @@ export async function loader({ params }: Route.LoaderArgs) {
         spanId: string | null;
         parentSpanId: string | null;
       }>;
-    }>(`/api/runs/${encodeURIComponent(runId)}/events`),
-  ]);
+    }>(`/api/runs/${encodeURIComponent(runId)}/events`);
 
-  return {
-    run: {
-      ...runResponse.taskRun,
-      events: eventsResponse.events,
-    },
-  };
+    return {
+      run: {
+        ...runResponse.taskRun,
+        events: eventsResponse.events,
+      },
+    };
+  } catch (error) {
+    if (isRunNotFoundError(error)) {
+      return {
+        run: null,
+        runId,
+      };
+    }
+
+    throw error;
+  }
 }
 
 export async function action({ params, request }: Route.ActionArgs) {
@@ -123,6 +132,23 @@ function formatDate(value: string | null) {
     dateStyle: "medium",
     timeStyle: "medium",
   }).format(new Date(value));
+}
+
+function isRunNotFoundError(error: unknown) {
+  if (typeof error !== "object" || error === null || !("status" in error)) {
+    return false;
+  }
+
+  const candidate = error as {
+    status?: unknown;
+    responseBody?: {
+      error?: {
+        code?: unknown;
+      };
+    };
+  };
+
+  return candidate.status === 404 && candidate.responseBody?.error?.code === "RUN_NOT_FOUND";
 }
 
 function isObjectStorageRef(value: unknown) {
@@ -195,12 +221,12 @@ export default function RunDetail({ loaderData }: Route.ComponentProps) {
   const { run } = loaderData;
   const revalidator = useRevalidator();
   const navigation = useNavigation();
-  const isSubmitting = navigation.state === "submitting";
-  const canCancel = run.status === "PENDING" || run.status === "EXECUTING";
-  const canReplay =
-    run.status === "COMPLETED" || run.status === "FAILED" || run.status === "CANCELED";
 
   useEffect(() => {
+    if (!run) {
+      return;
+    }
+
     const interval = window.setInterval(() => {
       void revalidator.revalidate();
     }, 2_000);
@@ -208,7 +234,30 @@ export default function RunDetail({ loaderData }: Route.ComponentProps) {
     return () => {
       window.clearInterval(interval);
     };
-  }, [revalidator]);
+  }, [revalidator, run]);
+
+  if (!run) {
+    return (
+      <main className="mx-auto max-w-3xl p-6">
+        <Link to="/runs" className="text-sm text-blue-700 hover:text-blue-900 hover:underline">
+          Back to runs
+        </Link>
+
+        <section className="mt-6 rounded-lg border border-gray-200 bg-white p-8">
+          <h1 className="text-2xl font-semibold tracking-tight">Run not found</h1>
+          <p className="mt-3 text-gray-600">
+            Task run <span className="font-mono text-sm">{loaderData.runId}</span> was not found in
+            the current dashboard environment.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
+  const isSubmitting = navigation.state === "submitting";
+  const canCancel = run.status === "PENDING" || run.status === "EXECUTING";
+  const canReplay =
+    run.status === "COMPLETED" || run.status === "FAILED" || run.status === "CANCELED";
 
   return (
     <main className="mx-auto max-w-7xl p-6">

@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { action } from "../../app/routes/run-detail.js";
 
-const cascadeApiRequest = vi.hoisted(() => vi.fn<(path: string) => Promise<unknown>>());
+const cascadeApiRequest = vi.hoisted(() =>
+  vi.fn<(path: string, init?: RequestInit) => Promise<unknown>>(),
+);
 
 vi.mock("../../app/lib/cascade-api.server.js", () => ({
   cascadeApiRequest,
@@ -114,9 +116,15 @@ describe("run detail loader", () => {
     });
   });
 
-  it("passes through a missing-run error from the API", async () => {
+  it("returns a not-found state when the API cannot find the run", async () => {
     cascadeApiRequest.mockRejectedValueOnce({
       status: 404,
+      responseBody: {
+        error: {
+          code: "RUN_NOT_FOUND",
+          message: "Task run was not found in this environment",
+        },
+      },
     });
 
     await expect(
@@ -125,9 +133,13 @@ describe("run detail loader", () => {
           runId: "missing-run",
         },
       } as never),
-    ).rejects.toMatchObject({
-      status: 404,
+    ).resolves.toEqual({
+      run: null,
+      runId: "missing-run",
     });
+
+    expect(cascadeApiRequest).toHaveBeenCalledTimes(1);
+    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/runs/missing-run");
   });
 
   it("sends a cancel request to the API", async () => {
