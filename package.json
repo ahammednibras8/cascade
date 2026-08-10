@@ -62,7 +62,7 @@
     "@vitest/coverage-v8": "4.1.10",
     "knip": "6.31.0",
     "lefthook": "2.1.10",
-    "oxfmt": "0.61.0",
+    "oxfmt": "0.62.0",
     "oxlint": "1.77.0",
     "turbo": "2.10.8",
     "typescript": "6.0.3",
