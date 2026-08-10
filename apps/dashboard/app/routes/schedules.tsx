@@ -123,7 +123,16 @@ export default function Schedules({ loaderData }: Route.ComponentProps) {
           Back to dashboard
         </Link>
 
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight">Schedules</h1>
+        <div className="mt-3 flex items-center justify-between gap-4">
+          <h1 className="text-3xl font-semibold tracking-tight">Schedules</h1>
+
+          <Link
+            to="/schedules/new"
+            className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white"
+          >
+            New schedule
+          </Link>
+        </div>
 
         <p className="mt-2 text-gray-600">Task schedules in the current environment.</p>
       </div>

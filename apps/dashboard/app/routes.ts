@@ -4,6 +4,7 @@ export default [
   index("routes/home.tsx"),
   route("tasks", "routes/tasks.tsx"),
   route("schedules", "routes/schedules.tsx"),
+  route("schedules/new", "routes/new-schedule.tsx"),
   route("api-keys", "routes/api-keys.tsx"),
   route("runs", "routes/runs.tsx"),
   route("runs/:runId", "routes/run-detail.tsx"),
