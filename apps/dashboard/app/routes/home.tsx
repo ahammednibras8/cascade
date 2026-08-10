@@ -26,6 +26,14 @@ export default function Home() {
         </Link>
 
         <Link
+          to="/schedules"
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900"
+        >
+          View schedules
+          <ArrowRight size={15} />
+        </Link>
+
+        <Link
           to="/runs"
           className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900"
         >
