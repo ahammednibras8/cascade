@@ -189,6 +189,12 @@ export default function Schedules({ loaderData }: Route.ComponentProps) {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-2">
+                    <Link
+                      to={`/schedules/${schedule.id}/edit`}
+                      className="rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-900"
+                    >
+                      Edit schedule
+                    </Link>
                     {schedule.enabled ? (
                       <Form method="post">
                         <input type="hidden" name="scheduleId" value={schedule.id} />
