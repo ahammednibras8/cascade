@@ -12,7 +12,7 @@
     "test:coverage": "vitest run --coverage --passWithNoTests"
   },
   "dependencies": {
-    "@react-router/node": "8.2.0",
+    "@react-router/node": "8.3.0",
     "@react-router/serve": "8.2.0",
     "isbot": "^5.2.1",
     "react": "^19.2.7",
