@@ -76,6 +76,8 @@ describe("task run read routes", () => {
           createdAt: "2026-01-01T00:00:05.000Z",
         },
       ],
+      nextCursor: "event-1",
+      hasMore: false,
     });
 
     const response = await httpRequest(createApp()).get(`/api/runs/${RUN_ID}/events`);
@@ -101,6 +103,36 @@ describe("task run read routes", () => {
         createdAt: "2026-01-01T00:00:05.000Z",
       },
     ]);
+    expect(response.body.nextCursor).toBe("event-1");
+    expect(response.body.hasMore).toBe(false);
+  });
+
+  it("passes an event cursor to the run event service", async () => {
+    const eventId = "33333333-3333-4333-8333-333333333333";
+
+    listTaskRunEvents.mockResolvedValue({
+      ok: true,
+      status: 200,
+      events: [],
+      nextCursor: eventId,
+      hasMore: false,
+    });
+
+    const response = await httpRequest(createApp()).get(
+      `/api/runs/${RUN_ID}/events?after=${eventId}`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(listTaskRunEvents).toHaveBeenCalledWith({
+      auth: AUTH_CONTEXT,
+      runId: RUN_ID,
+      afterEventId: eventId,
+    });
+    expect(response.body).toMatchObject({
+      events: [],
+      nextCursor: eventId,
+      hasMore: false,
+    });
   });
 
   it("lists task runs for the authenticated environment", async () => {

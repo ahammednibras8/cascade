@@ -5,6 +5,7 @@ import { isUuid } from "../lib/route-params.js";
 export async function listTaskRunEvents(input: {
   auth: ApiAuthContext;
   runId: string | undefined;
+  afterEventId?: string;
 }) {
   if (!isUuid(input.runId)) {
     return {
@@ -30,10 +31,69 @@ export async function listTaskRunEvents(input: {
     };
   }
 
-  const events = await prisma.taskEvent.findMany({
-    where: { taskRunId: run.id },
+  let cursor: {
+    id: string;
+    createdAt: Date;
+  } | null = null;
+
+  if (input.afterEventId) {
+    if (!isUuid(input.afterEventId)) {
+      return {
+        ok: false as const,
+        status: 400 as const,
+        error: {
+          code: "INVALID_EVENT_CURSOR",
+          message: "after must be a valid event UUID",
+        },
+      };
+    }
+
+    cursor = await prisma.taskEvent.findFirst({
+      where: {
+        id: input.afterEventId,
+        taskRunId: run.id,
+      },
+      select: {
+        id: true,
+        createdAt: true,
+      },
+    });
+
+    if (!cursor) {
+      return {
+        ok: false as const,
+        status: 400 as const,
+        error: {
+          code: "INVALID_EVENT_CURSOR",
+          message: "after must identity an event in this task run",
+        },
+      };
+    }
+  }
+
+  const eventPage = await prisma.taskEvent.findMany({
+    where: {
+      taskRunId: run.id,
+      ...(cursor
+        ? {
+            OR: [
+              {
+                createdAt: {
+                  gt: cursor.createdAt,
+                },
+              },
+              {
+                createdAt: cursor.createdAt,
+                id: {
+                  gt: cursor.id,
+                },
+              },
+            ],
+          }
+        : {}),
+    },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    take: 100,
+    take: 101,
     select: {
       id: true,
       taskAttemptId: true,
@@ -47,6 +107,9 @@ export async function listTaskRunEvents(input: {
       createdAt: true,
     },
   });
+
+  const hasMore = eventPage.length > 100;
+  const events = eventPage.slice(0, 100);
 
   return {
     ok: true as const,
@@ -63,5 +126,7 @@ export async function listTaskRunEvents(input: {
       parentSpanId: event.parentSpanId,
       createdAt: event.createdAt.toISOString(),
     })),
+    nextCursor: events.at(-1)?.id ?? input.afterEventId ?? null,
+    hasMore,
   };
 }

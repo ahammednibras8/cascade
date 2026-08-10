@@ -12,12 +12,14 @@ const auth = {
 
 const taskRunFindFirst = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
 const taskEventFindMany = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown[]>>());
+const taskEventFindFirst = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
 
 const prisma = vi.hoisted(() => ({
   taskRun: {
     findFirst: taskRunFindFirst,
   },
   taskEvent: {
+    findFirst: taskEventFindFirst,
     findMany: taskEventFindMany,
   },
 }));
@@ -161,6 +163,74 @@ describe("task run read services", () => {
           createdAt: "2026-01-01T00:00:00.000Z",
         },
       ],
+      nextCursor: "event-1",
+      hasMore: false,
     });
+  });
+
+  it("returns only events after a valid cursor", async () => {
+    const cursorId = "33333333-3333-4333-8333-333333333333";
+    const eventId = "44444444-4444-4444-8444-444444444444";
+    const cursorTime = new Date("2026-01-01T00:00:00.000Z");
+
+    taskRunFindFirst.mockResolvedValue({
+      id: RUN_ID,
+    });
+
+    taskEventFindFirst.mockResolvedValue({
+      id: cursorId,
+      createdAt: cursorTime,
+    });
+
+    taskEventFindMany.mockResolvedValue([
+      {
+        id: eventId,
+        taskAttemptId: null,
+        type: "task.log",
+        level: "INFO",
+        message: "new event",
+        data: null,
+        traceId: null,
+        spanId: null,
+        parentSpanId: null,
+        createdAt: new Date("2026-01-01T00:00:01.000Z"),
+      },
+    ]);
+
+    await expect(
+      listTaskRunEvents({
+        auth,
+        runId: RUN_ID,
+        afterEventId: cursorId,
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      events: [{ id: eventId }],
+      nextCursor: eventId,
+      hasMore: false,
+    });
+
+    expect(taskEventFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          taskRunId: RUN_ID,
+          OR: [
+            {
+              createdAt: {
+                gt: cursorTime,
+              },
+            },
+            {
+              createdAt: cursorTime,
+              id: {
+                gt: cursorId,
+              },
+            },
+          ],
+        },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: 101,
+      }),
+    );
   });
 });

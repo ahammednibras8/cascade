@@ -220,7 +220,7 @@ model TaskEvent {
   taskRun     TaskRun      @relation(fields: [taskRunId], references: [id], onDelete: Cascade)
   taskAttempt TaskAttempt? @relation(fields: [taskAttemptId], references: [id], onDelete: SetNull)
 
-  @@index([taskRunId, createdAt])
+  @@index([taskRunId, createdAt, id])
   @@index([taskAttemptId, createdAt])
   @@index([type, createdAt])
 }

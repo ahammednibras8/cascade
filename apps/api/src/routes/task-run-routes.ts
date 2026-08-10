@@ -50,9 +50,19 @@ taskRunRoutes.get(
       return;
     }
 
+    const afterQuery = request.query.after;
+
+    const afterEventId =
+      typeof afterQuery === "string"
+        ? afterQuery
+        : Array.isArray(afterQuery) && typeof afterQuery[0] === "string"
+          ? afterQuery[0]
+          : undefined;
+
     const result = await listTaskRunEvents({
       auth,
       runId: getSingleParam(request.params.runId),
+      ...(afterEventId ? { afterEventId } : {}),
     });
 
     if (!result.ok) {
@@ -64,6 +74,8 @@ taskRunRoutes.get(
 
     response.json({
       events: result.events,
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
     });
   }),
 );
