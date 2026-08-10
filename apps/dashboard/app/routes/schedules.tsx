@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/schedules";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
 
@@ -54,6 +54,56 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
+export async function action({ request }: Route.ActionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+  const scheduleId = formData.get("scheduleId");
+
+  if (
+    typeof scheduleId !== "string" ||
+    (intent !== "pause" && intent !== "resume" && intent !== "delete")
+  ) {
+    throw new Response("Invalid schedule action", {
+      status: 400,
+    });
+  }
+
+  const encodedScheduleId = encodeURIComponent(scheduleId);
+
+  const path =
+    intent === "pause"
+      ? `/api/schedules/${encodedScheduleId}/pause`
+      : intent === "resume"
+        ? `/api/schedules/${encodedScheduleId}/resume`
+        : `/api/schedules/${encodedScheduleId}`;
+
+  const method = intent === "delete" ? "DELETE" : "POST";
+
+  try {
+    await cascadeApiRequest(path, {
+      method,
+    });
+
+    return {
+      ok: true,
+      intent,
+      scheduleId,
+    };
+  } catch (error) {
+    const status =
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      typeof error.status === "number"
+        ? error.status
+        : 500;
+
+    throw new Response("Could not update schedule", {
+      status,
+    });
+  }
+}
+
 function formatRule(schedule: Schedule) {
   if (schedule.scheduleType === "INTERVAL") {
     return `Every ${schedule.intervalSeconds} seconds`;
@@ -63,6 +113,9 @@ function formatRule(schedule: Schedule) {
 }
 
 export default function Schedules({ loaderData }: Route.ComponentProps) {
+  const navigation = useNavigation();
+  const submittingScheduleId = navigation.formData?.get("scheduleId");
+
   return (
     <main className="mx-auto max-w-7xl p-6">
       <div className="mb-6">
@@ -85,6 +138,7 @@ export default function Schedules({ loaderData }: Route.ComponentProps) {
               <th className="px-4 py-3 text-left font-medium text-gray-600">Next run</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Last run</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">State</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">Actions</th>
             </tr>
           </thead>
 
@@ -124,12 +178,61 @@ export default function Schedules({ loaderData }: Route.ComponentProps) {
                     {schedule.enabled ? "Enabled" : "Paused"}
                   </span>
                 </td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap gap-2">
+                    {schedule.enabled ? (
+                      <Form method="post">
+                        <input type="hidden" name="scheduleId" value={schedule.id} />
+                        <button
+                          type="submit"
+                          name="intent"
+                          value="pause"
+                          disabled={submittingScheduleId === schedule.id}
+                          className="rounded-md bg-amber-600 px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {submittingScheduleId === schedule.id ? "Updating..." : "Pause schedule"}
+                        </button>
+                      </Form>
+                    ) : (
+                      <Form method="post">
+                        <input type="hidden" name="scheduleId" value={schedule.id} />
+                        <button
+                          type="submit"
+                          name="intent"
+                          value="resume"
+                          disabled={submittingScheduleId === schedule.id}
+                          className="rounded-md bg-emerald-700 px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {submittingScheduleId === schedule.id ? "Updating..." : "Resume schedule"}
+                        </button>
+                      </Form>
+                    )}
+
+                    <Form method="post">
+                      <input type="hidden" name="scheduleId" value={schedule.id} />
+                      <button
+                        type="submit"
+                        name="intent"
+                        value="delete"
+                        disabled={submittingScheduleId === schedule.id}
+                        onClick={(event) => {
+                          if (!window.confirm(`Delete schedule "${schedule.name}"?`)) {
+                            event.preventDefault();
+                          }
+                        }}
+                        className="rounded-md border border-red-300 bg-white px-3 py-2 text-xs font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {submittingScheduleId === schedule.id ? "Updating..." : "Delete schedule"}
+                      </button>
+                    </Form>
+                  </div>
+                </td>
               </tr>
             ))}
 
             {loaderData.schedules.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                   No schedules in this environment.
                 </td>
               </tr>
