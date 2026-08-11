@@ -1,5 +1,5 @@
 import { packageName, type TraceContext } from "@cascade/core";
-import { Prisma, prisma } from "@cascade/database";
+import { createTaskRunEvent, Prisma, prisma } from "@cascade/database";
 import type { ProcessableTaskRun, TaskRunAttempt } from "./state.js";
 
 type NullableJsonValue = Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput;
@@ -40,19 +40,17 @@ export async function failTaskRunForMissingLocalTask(input: {
       completedAt,
     });
 
-    await tx.taskEvent.create({
+    await createTaskRunEvent(tx, {
+      taskRunId: input.taskRun.id,
+      taskAttemptId: input.attempt.id,
+      type: "task.run.failed",
+      level: "ERROR",
+      message: "No local task registered for slug",
+      traceId: input.trace.traceId,
+      spanId: input.trace.spanId,
+      parentSpanId: input.trace.parentSpanId,
       data: {
-        taskRunId: input.taskRun.id,
-        taskAttemptId: input.attempt.id,
-        type: "task.run.failed",
-        level: "ERROR",
-        message: "No local task registered for task slug",
-        traceId: input.trace.traceId,
-        spanId: input.trace.spanId,
-        parentSpanId: input.trace.parentSpanId,
-        data: {
-          taskSlug: input.taskRun.task.slug,
-        },
+        taskSlug: input.taskRun.task.slug,
       },
     });
   });
@@ -96,20 +94,18 @@ export async function completeTaskRun(input: {
       },
     });
 
-    await tx.taskEvent.create({
+    await createTaskRunEvent(tx, {
+      taskRunId: input.taskRunId,
+      taskAttemptId: input.attemptId,
+      type: "task.run.completed",
+      level: "INFO",
+      message: "Task run completed successfully",
+      traceId: input.trace.traceId,
+      spanId: input.trace.spanId,
+      parentSpanId: input.trace.parentSpanId,
       data: {
-        taskRunId: input.taskRunId,
-        taskAttemptId: input.attemptId,
-        type: "task.run.completed",
-        level: "INFO",
-        message: "Task run completed successfully",
-        traceId: input.trace.traceId,
-        spanId: input.trace.spanId,
-        parentSpanId: input.trace.parentSpanId,
-        data: {
-          worker: packageName,
-          taskId: input.localTaskId,
-        },
+        worker: packageName,
+        taskId: input.localTaskId,
       },
     });
 
@@ -154,23 +150,21 @@ export async function scheduleTaskRunRetry(input: {
       completedAt: failedAt,
     });
 
-    await tx.taskEvent.create({
+    await createTaskRunEvent(tx, {
+      taskRunId: input.taskRunId,
+      taskAttemptId: input.attempt.id,
+      type: "task.run.retry.scheduled",
+      level: "WARN",
+      message: "Task run failed and retry was scheduled",
+      traceId: input.trace.traceId,
+      spanId: input.trace.spanId,
+      parentSpanId: input.trace.parentSpanId,
       data: {
-        taskRunId: input.taskRunId,
-        taskAttemptId: input.attempt.id,
-        type: "task.run.retry.scheduled",
-        level: "WARN",
-        message: "Task run failed and retry was scheduled",
-        traceId: input.trace.traceId,
-        spanId: input.trace.spanId,
-        parentSpanId: input.trace.parentSpanId,
-        data: {
-          attemptNumber: input.attempt.attemptNumber,
-          nextAttemptNumber: input.attempt.attemptNumber + 1,
-          maxAttempts: input.maxAttempts,
-          delayMs: input.retryDelayMs,
-          error: input.error,
-        },
+        attemptNumber: input.attempt.attemptNumber,
+        nextAttemptNumber: input.attempt.attemptNumber + 1,
+        maxAttempts: input.maxAttempts,
+        delayMs: input.retryDelayMs,
+        error: input.error,
       },
     });
 
@@ -211,18 +205,16 @@ export async function failTaskRunPermanently(input: {
       completedAt,
     });
 
-    await tx.taskEvent.create({
-      data: {
-        taskRunId: input.taskRunId,
-        taskAttemptId: input.attempt.id,
-        type: "task.run.failed",
-        level: "ERROR",
-        message: "Task run failed",
-        traceId: input.trace.traceId,
-        spanId: input.trace.spanId,
-        parentSpanId: input.trace.parentSpanId,
-        data: input.error,
-      },
+    await createTaskRunEvent(tx, {
+      taskRunId: input.taskRunId,
+      taskAttemptId: input.attempt.id,
+      type: "task.run.failed",
+      level: "ERROR",
+      message: "Task run failed",
+      traceId: input.trace.traceId,
+      spanId: input.trace.spanId,
+      parentSpanId: input.trace.parentSpanId,
+      data: input.error,
     });
 
     return true;

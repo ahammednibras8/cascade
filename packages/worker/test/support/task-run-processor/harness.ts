@@ -85,6 +85,9 @@ const txTaskAttemptCreate = vi.hoisted(() =>
 const txTaskAttemptUpdate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
 
 const txTaskEventCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
+const createTaskRunEvent = vi.hoisted(() =>
+  vi.fn<(tx: unknown, data: unknown) => Promise<unknown>>(),
+);
 
 const enqueueTaskRun = vi.hoisted(() =>
   vi.fn<(message: TaskRunQueueMessage, options?: unknown) => Promise<void>>(),
@@ -115,6 +118,7 @@ const withRemoteParentSpan = vi.hoisted(() =>
 const recordTaskRunExecution = vi.hoisted(() => vi.fn<(input: unknown) => void>());
 
 export {
+  createTaskRunEvent,
   enqueueTaskRun,
   localTaskRun,
   parseTaskExecutionConfig,
@@ -141,6 +145,7 @@ vi.mock("@cascade/database", () => ({
     DbNull: "DB_NULL",
   },
   prisma,
+  createTaskRunEvent,
 }));
 
 vi.mock("@cascade/core", () => ({
@@ -221,6 +226,18 @@ export function resetTaskRunProcessorHarness() {
   txTaskAttemptCreate.mockResolvedValue(createAttempt());
   txTaskAttemptUpdate.mockResolvedValue({});
   txTaskEventCreate.mockResolvedValue({});
+
+  createTaskRunEvent.mockImplementation(async (tx, data) =>
+    (
+      tx as {
+        taskEvent: {
+          create: (input: unknown) => Promise<unknown>;
+        };
+      }
+    ).taskEvent.create({
+      data,
+    }),
+  );
 
   resolveJsonValue.mockResolvedValue({
     message: "hello",

@@ -6,9 +6,14 @@ const prisma = vi.hoisted(() => ({
   },
 }));
 
+const createTaskRunEvent = vi.hoisted(() =>
+  vi.fn<(tx: unknown, data: unknown) => Promise<{ id: string }>>(),
+);
+
 vi.mock("@cascade/database", () => ({
   Prisma: {},
   prisma,
+  createTaskRunEvent,
 }));
 
 const { createTaskLogger } = await import("../src/task-run-logger.js");
@@ -17,7 +22,7 @@ describe("createTaskLogger", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    prisma.taskEvent.create.mockResolvedValue({
+    createTaskRunEvent.mockResolvedValue({
       id: "event-1",
     });
   });
@@ -39,22 +44,20 @@ describe("createTaskLogger", () => {
       },
     });
 
-    expect(prisma.taskEvent.create).toHaveBeenCalledWith({
+    expect(createTaskRunEvent).toHaveBeenCalledWith(prisma, {
+      taskRunId: "run-1",
+      taskAttemptId: "attempt-1",
+      traceId: "11111111111111111111111111111111",
+      spanId: "2222222222222222",
+      parentSpanId: "3333333333333333",
+      type: "task.log",
+      level: "INFO",
+      message: "Task started",
       data: {
-        taskRunId: "run-1",
-        taskAttemptId: "attempt-1",
-        traceId: "11111111111111111111111111111111",
-        spanId: "2222222222222222",
-        parentSpanId: "3333333333333333",
-        type: "task.log",
-        level: "INFO",
-        message: "Task started",
-        data: {
-          customerId: "customer-1",
-          attempt: 1,
-          nested: {
-            ok: true,
-          },
+        customerId: "customer-1",
+        attempt: 1,
+        nested: {
+          ok: true,
         },
       },
     });
@@ -74,47 +77,43 @@ describe("createTaskLogger", () => {
     await logger.warn("warn message");
     await logger.error("error message");
 
-    expect(prisma.taskEvent.create).toHaveBeenNthCalledWith(
+    expect(createTaskRunEvent).toHaveBeenNthCalledWith(
       1,
+      prisma,
       expect.objectContaining({
-        data: expect.objectContaining({
-          type: "task.log",
-          level: "DEBUG",
-          message: "debug message",
-        }),
+        type: "task.log",
+        level: "DEBUG",
+        message: "debug message",
       }),
     );
 
-    expect(prisma.taskEvent.create).toHaveBeenNthCalledWith(
+    expect(createTaskRunEvent).toHaveBeenNthCalledWith(
       2,
+      prisma,
       expect.objectContaining({
-        data: expect.objectContaining({
-          type: "task.log",
-          level: "INFO",
-          message: "info message",
-        }),
+        type: "task.log",
+        level: "INFO",
+        message: "info message",
       }),
     );
 
-    expect(prisma.taskEvent.create).toHaveBeenNthCalledWith(
+    expect(createTaskRunEvent).toHaveBeenNthCalledWith(
       3,
+      prisma,
       expect.objectContaining({
-        data: expect.objectContaining({
-          type: "task.log",
-          level: "WARN",
-          message: "warn message",
-        }),
+        type: "task.log",
+        level: "WARN",
+        message: "warn message",
       }),
     );
 
-    expect(prisma.taskEvent.create).toHaveBeenNthCalledWith(
+    expect(createTaskRunEvent).toHaveBeenNthCalledWith(
       4,
+      prisma,
       expect.objectContaining({
-        data: expect.objectContaining({
-          type: "task.log",
-          level: "ERROR",
-          message: "error message",
-        }),
+        type: "task.log",
+        level: "ERROR",
+        message: "error message",
       }),
     );
   });
@@ -130,17 +129,15 @@ describe("createTaskLogger", () => {
 
     await logger.info("No extra data");
 
-    expect(prisma.taskEvent.create).toHaveBeenCalledWith({
-      data: {
-        taskRunId: "run-1",
-        taskAttemptId: "attempt-1",
-        traceId: "11111111111111111111111111111111",
-        spanId: "2222222222222222",
-        parentSpanId: null,
-        type: "task.log",
-        level: "INFO",
-        message: "No extra data",
-      },
+    expect(createTaskRunEvent).toHaveBeenCalledWith(prisma, {
+      taskRunId: "run-1",
+      taskAttemptId: "attempt-1",
+      traceId: "11111111111111111111111111111111",
+      spanId: "2222222222222222",
+      parentSpanId: null,
+      type: "task.log",
+      level: "INFO",
+      message: "No extra data",
     });
   });
 });

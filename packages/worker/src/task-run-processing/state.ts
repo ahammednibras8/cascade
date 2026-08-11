@@ -1,5 +1,5 @@
 import type { TraceContext } from "@cascade/core";
-import { Prisma, prisma } from "@cascade/database";
+import { createTaskRunEvent, Prisma, prisma } from "@cascade/database";
 import type { TaskRunQueueMessage } from "../queue/task-runs.js";
 
 export type ProcessableTaskRun = {
@@ -119,17 +119,15 @@ export async function claimTaskRunForExecution(input: {
       },
     });
 
-    await tx.taskEvent.create({
-      data: {
-        taskRunId: input.taskRun.id,
-        taskAttemptId: attempt.id,
-        type: "task.run.started",
-        level: "INFO",
-        message: "Task run started by worker",
-        traceId: input.trace.traceId,
-        spanId: input.trace.spanId,
-        parentSpanId: input.trace.parentSpanId,
-      },
+    await createTaskRunEvent(tx, {
+      taskRunId: input.taskRun.id,
+      taskAttemptId: attempt.id,
+      type: "task.run.started",
+      level: "INFO",
+      message: "Task run started by worker",
+      traceId: input.trace.traceId,
+      spanId: input.trace.spanId,
+      parentSpanId: input.trace.parentSpanId,
     });
 
     return attempt;
