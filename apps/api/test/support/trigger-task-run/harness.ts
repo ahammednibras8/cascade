@@ -5,9 +5,6 @@ type TransactionClient = {
   taskRun: {
     create: (args: unknown) => Promise<unknown>;
   };
-  taskEvent: {
-    create: (args: unknown) => Promise<unknown>;
-  };
 };
 
 type TransactionCallback = (tx: TransactionClient) => Promise<unknown>;
@@ -51,7 +48,9 @@ const prisma = vi.hoisted(() => ({
 
 const txTaskRunCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
 
-const txTaskEventCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
+const createTaskRunEvent = vi.hoisted(() =>
+  vi.fn<(tx: unknown, data: unknown) => Promise<{ id: string }>>(),
+);
 
 const enqueueTaskRun = vi.hoisted(() =>
   vi.fn<(message: unknown, options?: unknown) => Promise<void>>(),
@@ -109,13 +108,14 @@ export {
   parseTraceparent,
   prisma,
   recordTaskRunTriggered,
-  txTaskEventCreate,
+  createTaskRunEvent,
   txTaskRunCreate,
 };
 
 vi.mock("@cascade/database", () => ({
   Prisma: {},
   prisma,
+  createTaskRunEvent,
 }));
 
 vi.mock("@cascade/telemetry", () => ({
@@ -225,7 +225,7 @@ export function resetTriggerTaskRunHarness() {
   prisma.taskRun.findFirst.mockReset();
   prisma.$transaction.mockReset();
   txTaskRunCreate.mockReset();
-  txTaskEventCreate.mockReset();
+  createTaskRunEvent.mockReset();
   enqueueTaskRun.mockReset();
   maybeStoreJsonValue.mockReset();
   randomUUID.mockReset();
@@ -250,12 +250,9 @@ export function resetTriggerTaskRunHarness() {
       taskRun: {
         create: txTaskRunCreate,
       },
-      taskEvent: {
-        create: txTaskEventCreate,
-      },
     }),
   );
-  txTaskEventCreate.mockResolvedValue({
+  createTaskRunEvent.mockResolvedValue({
     id: "event-1",
   });
 }

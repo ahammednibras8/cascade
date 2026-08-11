@@ -1,4 +1,4 @@
-import { Prisma, prisma } from "@cascade/database";
+import { createTaskRunEvent, Prisma, prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../auth/api-key.js";
 import { isUuid } from "../lib/route-params.js";
 
@@ -158,18 +158,16 @@ export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTa
       });
     }
 
-    await tx.taskEvent.create({
+    await createTaskRunEvent(tx, {
+      taskRunId: run.id,
+      ...(latestAttempt ? { taskAttemptId: latestAttempt.id } : {}),
+      type: "task.run.canceled",
+      level: "WARN",
+      message: "Task run canceled by API request",
       data: {
-        taskRunId: run.id,
-        ...(latestAttempt ? { taskAttemptId: latestAttempt.id } : {}),
-        type: "task.run.canceled",
-        level: "WARN",
-        message: "Task run canceled by API request",
-        data: {
-          apiKeyId: auth.apiKeyId,
-          previousStatus: run.status,
-          attemptNumber: latestAttempt?.attemptNumber ?? null,
-        },
+        apiKeyId: auth.apiKeyId,
+        previousStatus: run.status,
+        attemptNumber: latestAttempt?.attemptNumber ?? null,
       },
     });
 

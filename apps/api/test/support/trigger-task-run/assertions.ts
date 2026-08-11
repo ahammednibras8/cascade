@@ -11,7 +11,7 @@ import {
   SPAN_ID,
   TASK_ID,
   TRACE_ID,
-  txTaskEventCreate,
+  createTaskRunEvent,
   txTaskRunCreate,
 } from "./harness.js";
 
@@ -123,15 +123,14 @@ export function expectTaskRunCreated(data: Record<string, unknown> = {}) {
 }
 
 export function expectTriggerEventWritten(data: Record<string, unknown> = {}) {
-  expect(txTaskEventCreate).toHaveBeenCalledWith(
+  expect(createTaskRunEvent).toHaveBeenCalledWith(
+    expect.anything(),
     expect.objectContaining({
-      data: expect.objectContaining({
-        taskRunId: RUN_ID,
-        type: "task.triggered",
-        level: "INFO",
-        message: "Task trigger accepted and run is pending",
-        ...data,
-      }),
+      taskRunId: RUN_ID,
+      type: "task.triggered",
+      level: "INFO",
+      message: "Task trigger accepted and run is pending",
+      ...data,
     }),
   );
 }

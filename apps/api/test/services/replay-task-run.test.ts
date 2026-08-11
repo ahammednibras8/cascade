@@ -25,9 +25,6 @@ type TransactionClient = {
   taskRun: {
     create: (args: unknown) => Promise<ReplayedRun>;
   };
-  taskEvent: {
-    create: (args: unknown) => Promise<unknown>;
-  };
 };
 
 type TransactionCallback = (tx: TransactionClient) => Promise<ReplayedRun>;
@@ -66,13 +63,16 @@ const prisma = vi.hoisted(() => ({
 
 const txTaskRunCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<ReplayedRun>>());
 
-const txTaskEventCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
+const createTaskRunEvent = vi.hoisted(() =>
+  vi.fn<(tx: unknown, data: unknown) => Promise<{ id: string }>>(),
+);
 
 const enqueueTaskRun = vi.hoisted(() => vi.fn<(message: unknown) => Promise<void>>());
 
 vi.mock("@cascade/database", () => ({
   Prisma: {},
   prisma,
+  createTaskRunEvent,
 }));
 
 vi.mock("../../src/queue/task-runs.js", () => ({
@@ -114,16 +114,15 @@ describe("replayTaskRun", () => {
     vi.clearAllMocks();
 
     txTaskRunCreate.mockResolvedValue(createReplayedRun());
-    txTaskEventCreate.mockResolvedValue({});
+    createTaskRunEvent.mockResolvedValue({
+      id: "44444444-4444-4444-8444-444444444444",
+    });
     enqueueTaskRun.mockResolvedValue(undefined);
 
     prisma.$transaction.mockImplementation(async (callback) =>
       callback({
         taskRun: {
           create: txTaskRunCreate,
-        },
-        taskEvent: {
-          create: txTaskEventCreate,
         },
       }),
     );
@@ -278,30 +277,26 @@ describe("replayTaskRun", () => {
       },
     });
 
-    expect(txTaskEventCreate).toHaveBeenNthCalledWith(1, {
+    expect(createTaskRunEvent).toHaveBeenNthCalledWith(1, expect.anything(), {
+      taskRunId: REPLAYED_RUN_ID,
+      type: "task.run.replayed",
+      level: "INFO",
+      message: "Task run manually replayed",
       data: {
-        taskRunId: REPLAYED_RUN_ID,
-        type: "task.run.replayed",
-        level: "INFO",
-        message: "Task run manually replayed",
-        data: {
-          apiKeyId: auth.apiKeyId,
-          sourceRunId: SOURCE_RUN_ID,
-          sourceStatus: "FAILED",
-        },
+        apiKeyId: auth.apiKeyId,
+        sourceRunId: SOURCE_RUN_ID,
+        sourceStatus: "FAILED",
       },
     });
 
-    expect(txTaskEventCreate).toHaveBeenNthCalledWith(2, {
+    expect(createTaskRunEvent).toHaveBeenNthCalledWith(2, expect.anything(), {
+      taskRunId: SOURCE_RUN_ID,
+      type: "task.run.replay.created",
+      level: "INFO",
+      message: "Manual replay created a new task run",
       data: {
-        taskRunId: SOURCE_RUN_ID,
-        type: "task.run.replay.created",
-        level: "INFO",
-        message: "Manual replay created a new task run",
-        data: {
-          apiKeyId: auth.apiKeyId,
-          replayedRunId: REPLAYED_RUN_ID,
-        },
+        apiKeyId: auth.apiKeyId,
+        replayedRunId: REPLAYED_RUN_ID,
       },
     });
 

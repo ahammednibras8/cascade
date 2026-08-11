@@ -22,9 +22,6 @@ type TransactionClient = {
   taskAttempt: {
     update: (args: unknown) => Promise<unknown>;
   };
-  taskEvent: {
-    create: (args: unknown) => Promise<unknown>;
-  };
 };
 
 type TransactionCallback = (tx: TransactionClient) => Promise<unknown>;
@@ -53,13 +50,16 @@ const txTaskRunUpdateMany = vi.hoisted(() =>
 
 const txTaskAttemptUpdate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
 
-const txTaskEventCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
+const createTaskRunEvent = vi.hoisted(() =>
+  vi.fn<(tx: unknown, data: unknown) => Promise<{ id: string }>>(),
+);
 
 vi.mock("@cascade/database", () => ({
   Prisma: {
     DbNull: "DB_NULL",
   },
   prisma,
+  createTaskRunEvent,
 }));
 
 const { cancelTaskRun } = await import("../../src/services/cancel-task-run.js");
@@ -83,7 +83,9 @@ describe("cancelTaskRun", () => {
     });
 
     txTaskAttemptUpdate.mockResolvedValue({});
-    txTaskEventCreate.mockResolvedValue({});
+    createTaskRunEvent.mockResolvedValue({
+      id: "44444444-4444-4444-8444-444444444444",
+    });
 
     prisma.$transaction.mockImplementation(async (callback) =>
       callback({
@@ -92,9 +94,6 @@ describe("cancelTaskRun", () => {
         },
         taskAttempt: {
           update: txTaskAttemptUpdate,
-        },
-        taskEvent: {
-          create: txTaskEventCreate,
         },
       }),
     );
@@ -250,17 +249,15 @@ describe("cancelTaskRun", () => {
 
     expect(txTaskAttemptUpdate).not.toHaveBeenCalled();
 
-    expect(txTaskEventCreate).toHaveBeenCalledWith({
+    expect(createTaskRunEvent).toHaveBeenCalledWith(expect.anything(), {
+      taskRunId: RUN_ID,
+      type: "task.run.canceled",
+      level: "WARN",
+      message: "Task run canceled by API request",
       data: {
-        taskRunId: RUN_ID,
-        type: "task.run.canceled",
-        level: "WARN",
-        message: "Task run canceled by API request",
-        data: {
-          apiKeyId: auth.apiKeyId,
-          previousStatus: "PENDING",
-          attemptNumber: null,
-        },
+        apiKeyId: auth.apiKeyId,
+        previousStatus: "PENDING",
+        attemptNumber: null,
       },
     });
   });
@@ -302,18 +299,16 @@ describe("cancelTaskRun", () => {
       }),
     });
 
-    expect(txTaskEventCreate).toHaveBeenCalledWith({
+    expect(createTaskRunEvent).toHaveBeenCalledWith(expect.anything(), {
+      taskRunId: RUN_ID,
+      taskAttemptId: ATTEMPT_ID,
+      type: "task.run.canceled",
+      level: "WARN",
+      message: "Task run canceled by API request",
       data: {
-        taskRunId: RUN_ID,
-        taskAttemptId: ATTEMPT_ID,
-        type: "task.run.canceled",
-        level: "WARN",
-        message: "Task run canceled by API request",
-        data: {
-          apiKeyId: auth.apiKeyId,
-          previousStatus: "EXECUTING",
-          attemptNumber: 2,
-        },
+        apiKeyId: auth.apiKeyId,
+        previousStatus: "EXECUTING",
+        attemptNumber: 2,
       },
     });
   });
@@ -343,6 +338,6 @@ describe("cancelTaskRun", () => {
       },
     });
 
-    expect(txTaskEventCreate).not.toHaveBeenCalled();
+    expect(createTaskRunEvent).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 import type { ApiAuthContext } from "../auth/api-key.js";
 import { isUuid } from "../lib/route-params.js";
-import { prisma, type Prisma } from "@cascade/database";
+import { createTaskRunEvent, prisma, type Prisma } from "@cascade/database";
 import { enqueueTaskRun } from "../queue/task-runs.js";
 
 type ReplayTaskRunInput = {
@@ -124,30 +124,26 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
       },
     });
 
-    await tx.taskEvent.create({
+    await createTaskRunEvent(tx, {
+      taskRunId: run.id,
+      type: "task.run.replayed",
+      level: "INFO",
+      message: "Task run manually replayed",
       data: {
-        taskRunId: run.id,
-        type: "task.run.replayed",
-        level: "INFO",
-        message: "Task run manually replayed",
-        data: {
-          apiKeyId: auth.apiKeyId,
-          sourceRunId: sourceRun.id,
-          sourceStatus: sourceRun.status,
-        },
+        apiKeyId: auth.apiKeyId,
+        sourceRunId: sourceRun.id,
+        sourceStatus: sourceRun.status,
       },
     });
 
-    await tx.taskEvent.create({
+    await createTaskRunEvent(tx, {
+      taskRunId: sourceRun.id,
+      type: "task.run.replay.created",
+      level: "INFO",
+      message: "Manual replay created a new task run",
       data: {
-        taskRunId: sourceRun.id,
-        type: "task.run.replay.created",
-        level: "INFO",
-        message: "Manual replay created a new task run",
-        data: {
-          apiKeyId: auth.apiKeyId,
-          replayedRunId: run.id,
-        },
+        apiKeyId: auth.apiKeyId,
+        replayedRunId: run.id,
       },
     });
 

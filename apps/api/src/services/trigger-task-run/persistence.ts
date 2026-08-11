@@ -1,6 +1,6 @@
 import { maybeStoreJsonValue } from "@cascade/storage";
 import type { TraceContext } from "@cascade/core";
-import { prisma, type Prisma } from "@cascade/database";
+import { createTaskRunEvent, prisma, type Prisma } from "@cascade/database";
 import { randomUUID } from "node:crypto";
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { taskRunSelect, type TriggerTask, type TriggeredTaskRun } from "./types.js";
@@ -112,17 +112,15 @@ export async function createTriggeredTaskRun(
       select: taskRunSelect,
     });
 
-    await tx.taskEvent.create({
-      data: {
-        taskRunId: run.id,
-        type: "task.triggered",
-        level: "INFO",
-        message: "Task trigger accepted and run is pending",
-        traceId: input.triggerTrace.traceId,
-        spanId: input.triggerTrace.spanId,
-        parentSpanId: input.triggerTrace.parentSpanId,
-        data: buildTriggerEventData(input),
-      },
+    await createTaskRunEvent(tx, {
+      taskRunId: run.id,
+      type: "task.triggered",
+      level: "INFO",
+      message: "Task trigger accepted and run is pending",
+      traceId: input.triggerTrace.traceId,
+      spanId: input.triggerTrace.spanId,
+      parentSpanId: input.triggerTrace.parentSpanId,
+      data: buildTriggerEventData(input),
     });
 
     return run;
