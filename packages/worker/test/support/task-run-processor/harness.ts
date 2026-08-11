@@ -118,7 +118,6 @@ const withRemoteParentSpan = vi.hoisted(() =>
 const recordTaskRunExecution = vi.hoisted(() => vi.fn<(input: unknown) => void>());
 
 export {
-  createTaskRunEvent,
   enqueueTaskRun,
   localTaskRun,
   parseTaskExecutionConfig,
