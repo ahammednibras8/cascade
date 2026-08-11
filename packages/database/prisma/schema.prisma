@@ -219,10 +219,24 @@ model TaskEvent {
 
   taskRun     TaskRun      @relation(fields: [taskRunId], references: [id], onDelete: Cascade)
   taskAttempt TaskAttempt? @relation(fields: [taskAttemptId], references: [id], onDelete: SetNull)
+  
+  outboxEntry RunEventOutbox?
 
   @@index([taskRunId, createdAt, id])
   @@index([taskAttemptId, createdAt])
   @@index([type, createdAt])
+}
+
+model RunEventOutbox {
+  id              BigInt      @id @default(autoincrement())
+  taskEventId     String      @unique @db.Uuid
+  createdAt       DateTime    @default(now())
+  publishedAt     DateTime?
+  publishAttempts Int         @default(0)
+  
+  taskEvent      TaskEvent @relation(fields: [taskEventId], references: [id], onDelete: Cascade)
+
+  @@index([publishedAt, id])
 }
 
 model TaskSchedule {

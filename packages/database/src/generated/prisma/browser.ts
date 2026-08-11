@@ -53,6 +53,11 @@ export type TaskAttempt = Prisma.TaskAttemptModel
  */
 export type TaskEvent = Prisma.TaskEventModel
 /**
+ * Model RunEventOutbox
+ * 
+ */
+export type RunEventOutbox = Prisma.RunEventOutboxModel
+/**
  * Model TaskSchedule
  * 
  */

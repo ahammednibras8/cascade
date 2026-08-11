@@ -228,6 +228,7 @@ export type TaskEventWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"TaskEvent"> | Date | string
   taskRun?: Prisma.XOR<Prisma.TaskRunScalarRelationFilter, Prisma.TaskRunWhereInput>
   taskAttempt?: Prisma.XOR<Prisma.TaskAttemptNullableScalarRelationFilter, Prisma.TaskAttemptWhereInput> | null
+  outboxEntry?: Prisma.XOR<Prisma.RunEventOutboxNullableScalarRelationFilter, Prisma.RunEventOutboxWhereInput> | null
 }
 
 export type TaskEventOrderByWithRelationInput = {
@@ -244,6 +245,7 @@ export type TaskEventOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   taskRun?: Prisma.TaskRunOrderByWithRelationInput
   taskAttempt?: Prisma.TaskAttemptOrderByWithRelationInput
+  outboxEntry?: Prisma.RunEventOutboxOrderByWithRelationInput
 }
 
 export type TaskEventWhereUniqueInput = Prisma.AtLeast<{
@@ -263,6 +265,7 @@ export type TaskEventWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"TaskEvent"> | Date | string
   taskRun?: Prisma.XOR<Prisma.TaskRunScalarRelationFilter, Prisma.TaskRunWhereInput>
   taskAttempt?: Prisma.XOR<Prisma.TaskAttemptNullableScalarRelationFilter, Prisma.TaskAttemptWhereInput> | null
+  outboxEntry?: Prisma.XOR<Prisma.RunEventOutboxNullableScalarRelationFilter, Prisma.RunEventOutboxWhereInput> | null
 }, "id">
 
 export type TaskEventOrderByWithAggregationInput = {
@@ -311,6 +314,7 @@ export type TaskEventCreateInput = {
   createdAt?: Date | string
   taskRun: Prisma.TaskRunCreateNestedOneWithoutEventsInput
   taskAttempt?: Prisma.TaskAttemptCreateNestedOneWithoutEventsInput
+  outboxEntry?: Prisma.RunEventOutboxCreateNestedOneWithoutTaskEventInput
 }
 
 export type TaskEventUncheckedCreateInput = {
@@ -325,6 +329,7 @@ export type TaskEventUncheckedCreateInput = {
   message?: string | null
   data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  outboxEntry?: Prisma.RunEventOutboxUncheckedCreateNestedOneWithoutTaskEventInput
 }
 
 export type TaskEventUpdateInput = {
@@ -339,6 +344,7 @@ export type TaskEventUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   taskRun?: Prisma.TaskRunUpdateOneRequiredWithoutEventsNestedInput
   taskAttempt?: Prisma.TaskAttemptUpdateOneWithoutEventsNestedInput
+  outboxEntry?: Prisma.RunEventOutboxUpdateOneWithoutTaskEventNestedInput
 }
 
 export type TaskEventUncheckedUpdateInput = {
@@ -353,6 +359,7 @@ export type TaskEventUncheckedUpdateInput = {
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  outboxEntry?: Prisma.RunEventOutboxUncheckedUpdateOneWithoutTaskEventNestedInput
 }
 
 export type TaskEventCreateManyInput = {
@@ -445,6 +452,11 @@ export type TaskEventMinOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
 }
 
+export type TaskEventScalarRelationFilter = {
+  is?: Prisma.TaskEventWhereInput
+  isNot?: Prisma.TaskEventWhereInput
+}
+
 export type TaskEventCreateNestedManyWithoutTaskRunInput = {
   create?: Prisma.XOR<Prisma.TaskEventCreateWithoutTaskRunInput, Prisma.TaskEventUncheckedCreateWithoutTaskRunInput> | Prisma.TaskEventCreateWithoutTaskRunInput[] | Prisma.TaskEventUncheckedCreateWithoutTaskRunInput[]
   connectOrCreate?: Prisma.TaskEventCreateOrConnectWithoutTaskRunInput | Prisma.TaskEventCreateOrConnectWithoutTaskRunInput[]
@@ -533,6 +545,20 @@ export type EnumTaskEventLevelFieldUpdateOperationsInput = {
   set?: $Enums.TaskEventLevel
 }
 
+export type TaskEventCreateNestedOneWithoutOutboxEntryInput = {
+  create?: Prisma.XOR<Prisma.TaskEventCreateWithoutOutboxEntryInput, Prisma.TaskEventUncheckedCreateWithoutOutboxEntryInput>
+  connectOrCreate?: Prisma.TaskEventCreateOrConnectWithoutOutboxEntryInput
+  connect?: Prisma.TaskEventWhereUniqueInput
+}
+
+export type TaskEventUpdateOneRequiredWithoutOutboxEntryNestedInput = {
+  create?: Prisma.XOR<Prisma.TaskEventCreateWithoutOutboxEntryInput, Prisma.TaskEventUncheckedCreateWithoutOutboxEntryInput>
+  connectOrCreate?: Prisma.TaskEventCreateOrConnectWithoutOutboxEntryInput
+  upsert?: Prisma.TaskEventUpsertWithoutOutboxEntryInput
+  connect?: Prisma.TaskEventWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TaskEventUpdateToOneWithWhereWithoutOutboxEntryInput, Prisma.TaskEventUpdateWithoutOutboxEntryInput>, Prisma.TaskEventUncheckedUpdateWithoutOutboxEntryInput>
+}
+
 export type TaskEventCreateWithoutTaskRunInput = {
   id?: string
   traceId?: string | null
@@ -544,6 +570,7 @@ export type TaskEventCreateWithoutTaskRunInput = {
   data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   taskAttempt?: Prisma.TaskAttemptCreateNestedOneWithoutEventsInput
+  outboxEntry?: Prisma.RunEventOutboxCreateNestedOneWithoutTaskEventInput
 }
 
 export type TaskEventUncheckedCreateWithoutTaskRunInput = {
@@ -557,6 +584,7 @@ export type TaskEventUncheckedCreateWithoutTaskRunInput = {
   message?: string | null
   data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  outboxEntry?: Prisma.RunEventOutboxUncheckedCreateNestedOneWithoutTaskEventInput
 }
 
 export type TaskEventCreateOrConnectWithoutTaskRunInput = {
@@ -613,6 +641,7 @@ export type TaskEventCreateWithoutTaskAttemptInput = {
   data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   taskRun: Prisma.TaskRunCreateNestedOneWithoutEventsInput
+  outboxEntry?: Prisma.RunEventOutboxCreateNestedOneWithoutTaskEventInput
 }
 
 export type TaskEventUncheckedCreateWithoutTaskAttemptInput = {
@@ -626,6 +655,7 @@ export type TaskEventUncheckedCreateWithoutTaskAttemptInput = {
   message?: string | null
   data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  outboxEntry?: Prisma.RunEventOutboxUncheckedCreateNestedOneWithoutTaskEventInput
 }
 
 export type TaskEventCreateOrConnectWithoutTaskAttemptInput = {
@@ -654,6 +684,78 @@ export type TaskEventUpdateManyWithWhereWithoutTaskAttemptInput = {
   data: Prisma.XOR<Prisma.TaskEventUpdateManyMutationInput, Prisma.TaskEventUncheckedUpdateManyWithoutTaskAttemptInput>
 }
 
+export type TaskEventCreateWithoutOutboxEntryInput = {
+  id?: string
+  traceId?: string | null
+  spanId?: string | null
+  parentSpanId?: string | null
+  type: string
+  level?: $Enums.TaskEventLevel
+  message?: string | null
+  data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  taskRun: Prisma.TaskRunCreateNestedOneWithoutEventsInput
+  taskAttempt?: Prisma.TaskAttemptCreateNestedOneWithoutEventsInput
+}
+
+export type TaskEventUncheckedCreateWithoutOutboxEntryInput = {
+  id?: string
+  taskRunId: string
+  taskAttemptId?: string | null
+  traceId?: string | null
+  spanId?: string | null
+  parentSpanId?: string | null
+  type: string
+  level?: $Enums.TaskEventLevel
+  message?: string | null
+  data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+}
+
+export type TaskEventCreateOrConnectWithoutOutboxEntryInput = {
+  where: Prisma.TaskEventWhereUniqueInput
+  create: Prisma.XOR<Prisma.TaskEventCreateWithoutOutboxEntryInput, Prisma.TaskEventUncheckedCreateWithoutOutboxEntryInput>
+}
+
+export type TaskEventUpsertWithoutOutboxEntryInput = {
+  update: Prisma.XOR<Prisma.TaskEventUpdateWithoutOutboxEntryInput, Prisma.TaskEventUncheckedUpdateWithoutOutboxEntryInput>
+  create: Prisma.XOR<Prisma.TaskEventCreateWithoutOutboxEntryInput, Prisma.TaskEventUncheckedCreateWithoutOutboxEntryInput>
+  where?: Prisma.TaskEventWhereInput
+}
+
+export type TaskEventUpdateToOneWithWhereWithoutOutboxEntryInput = {
+  where?: Prisma.TaskEventWhereInput
+  data: Prisma.XOR<Prisma.TaskEventUpdateWithoutOutboxEntryInput, Prisma.TaskEventUncheckedUpdateWithoutOutboxEntryInput>
+}
+
+export type TaskEventUpdateWithoutOutboxEntryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  spanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  level?: Prisma.EnumTaskEventLevelFieldUpdateOperationsInput | $Enums.TaskEventLevel
+  message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  taskRun?: Prisma.TaskRunUpdateOneRequiredWithoutEventsNestedInput
+  taskAttempt?: Prisma.TaskAttemptUpdateOneWithoutEventsNestedInput
+}
+
+export type TaskEventUncheckedUpdateWithoutOutboxEntryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  taskRunId?: Prisma.StringFieldUpdateOperationsInput | string
+  taskAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  spanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentSpanId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  level?: Prisma.EnumTaskEventLevelFieldUpdateOperationsInput | $Enums.TaskEventLevel
+  message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type TaskEventCreateManyTaskRunInput = {
   id?: string
   taskAttemptId?: string | null
@@ -678,6 +780,7 @@ export type TaskEventUpdateWithoutTaskRunInput = {
   data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   taskAttempt?: Prisma.TaskAttemptUpdateOneWithoutEventsNestedInput
+  outboxEntry?: Prisma.RunEventOutboxUpdateOneWithoutTaskEventNestedInput
 }
 
 export type TaskEventUncheckedUpdateWithoutTaskRunInput = {
@@ -691,6 +794,7 @@ export type TaskEventUncheckedUpdateWithoutTaskRunInput = {
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  outboxEntry?: Prisma.RunEventOutboxUncheckedUpdateOneWithoutTaskEventNestedInput
 }
 
 export type TaskEventUncheckedUpdateManyWithoutTaskRunInput = {
@@ -730,6 +834,7 @@ export type TaskEventUpdateWithoutTaskAttemptInput = {
   data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   taskRun?: Prisma.TaskRunUpdateOneRequiredWithoutEventsNestedInput
+  outboxEntry?: Prisma.RunEventOutboxUpdateOneWithoutTaskEventNestedInput
 }
 
 export type TaskEventUncheckedUpdateWithoutTaskAttemptInput = {
@@ -743,6 +848,7 @@ export type TaskEventUncheckedUpdateWithoutTaskAttemptInput = {
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  outboxEntry?: Prisma.RunEventOutboxUncheckedUpdateOneWithoutTaskEventNestedInput
 }
 
 export type TaskEventUncheckedUpdateManyWithoutTaskAttemptInput = {
@@ -774,6 +880,7 @@ export type TaskEventSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   createdAt?: boolean
   taskRun?: boolean | Prisma.TaskRunDefaultArgs<ExtArgs>
   taskAttempt?: boolean | Prisma.TaskEvent$taskAttemptArgs<ExtArgs>
+  outboxEntry?: boolean | Prisma.TaskEvent$outboxEntryArgs<ExtArgs>
 }, ExtArgs["result"]["taskEvent"]>
 
 export type TaskEventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -826,6 +933,7 @@ export type TaskEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs 
 export type TaskEventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taskRun?: boolean | Prisma.TaskRunDefaultArgs<ExtArgs>
   taskAttempt?: boolean | Prisma.TaskEvent$taskAttemptArgs<ExtArgs>
+  outboxEntry?: boolean | Prisma.TaskEvent$outboxEntryArgs<ExtArgs>
 }
 export type TaskEventIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taskRun?: boolean | Prisma.TaskRunDefaultArgs<ExtArgs>
@@ -841,6 +949,7 @@ export type $TaskEventPayload<ExtArgs extends runtime.Types.Extensions.InternalA
   objects: {
     taskRun: Prisma.$TaskRunPayload<ExtArgs>
     taskAttempt: Prisma.$TaskAttemptPayload<ExtArgs> | null
+    outboxEntry: Prisma.$RunEventOutboxPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1250,6 +1359,7 @@ export interface Prisma__TaskEventClient<T, Null = never, ExtArgs extends runtim
   readonly [Symbol.toStringTag]: "PrismaPromise"
   taskRun<T extends Prisma.TaskRunDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaskRunDefaultArgs<ExtArgs>>): Prisma.Prisma__TaskRunClient<runtime.Types.Result.GetResult<Prisma.$TaskRunPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   taskAttempt<T extends Prisma.TaskEvent$taskAttemptArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaskEvent$taskAttemptArgs<ExtArgs>>): Prisma.Prisma__TaskAttemptClient<runtime.Types.Result.GetResult<Prisma.$TaskAttemptPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  outboxEntry<T extends Prisma.TaskEvent$outboxEntryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaskEvent$outboxEntryArgs<ExtArgs>>): Prisma.Prisma__RunEventOutboxClient<runtime.Types.Result.GetResult<Prisma.$RunEventOutboxPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1707,6 +1817,25 @@ export type TaskEvent$taskAttemptArgs<ExtArgs extends runtime.Types.Extensions.I
    */
   include?: Prisma.TaskAttemptInclude<ExtArgs> | null
   where?: Prisma.TaskAttemptWhereInput
+}
+
+/**
+ * TaskEvent.outboxEntry
+ */
+export type TaskEvent$outboxEntryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RunEventOutbox
+   */
+  select?: Prisma.RunEventOutboxSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RunEventOutbox
+   */
+  omit?: Prisma.RunEventOutboxOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RunEventOutboxInclude<ExtArgs> | null
+  where?: Prisma.RunEventOutboxWhereInput
 }
 
 /**

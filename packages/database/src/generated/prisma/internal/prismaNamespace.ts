@@ -404,6 +404,7 @@ export const ModelName = {
   TaskRun: 'TaskRun',
   TaskAttempt: 'TaskAttempt',
   TaskEvent: 'TaskEvent',
+  RunEventOutbox: 'RunEventOutbox',
   TaskSchedule: 'TaskSchedule',
   Deployment: 'Deployment'
 } as const
@@ -421,7 +422,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "project" | "environment" | "apiKey" | "task" | "taskRun" | "taskAttempt" | "taskEvent" | "taskSchedule" | "deployment"
+    modelProps: "project" | "environment" | "apiKey" | "task" | "taskRun" | "taskAttempt" | "taskEvent" | "runEventOutbox" | "taskSchedule" | "deployment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -943,6 +944,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    RunEventOutbox: {
+      payload: Prisma.$RunEventOutboxPayload<ExtArgs>
+      fields: Prisma.RunEventOutboxFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RunEventOutboxFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RunEventOutboxPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RunEventOutboxFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RunEventOutboxPayload>
+        }
+        findFirst: {
+          args: Prisma.RunEventOutboxFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RunEventOutboxPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RunEventOutboxFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RunEventOutboxPayload>
+        }
+        findMany: {
+          args: Prisma.RunEventOutboxFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RunEventOutboxPayload>[]
+        }
+        create: {
+          args: Prisma.RunEventOutboxCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RunEventOutboxPayload>
+        }
+        createMany: {
+          args: Prisma.RunEventOutboxCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RunEventOutboxCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RunEventOutboxPayload>[]
+        }
+        delete: {
+          args: Prisma.RunEventOutboxDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RunEventOutboxPayload>
+        }
+        update: {
+          args: Prisma.RunEventOutboxUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RunEventOutboxPayload>
+        }
+        deleteMany: {
+          args: Prisma.RunEventOutboxDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RunEventOutboxUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RunEventOutboxUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RunEventOutboxPayload>[]
+        }
+        upsert: {
+          args: Prisma.RunEventOutboxUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RunEventOutboxPayload>
+        }
+        aggregate: {
+          args: Prisma.RunEventOutboxAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRunEventOutbox>
+        }
+        groupBy: {
+          args: Prisma.RunEventOutboxGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RunEventOutboxGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RunEventOutboxCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RunEventOutboxCountAggregateOutputType> | number
+        }
+      }
+    }
     TaskSchedule: {
       payload: Prisma.$TaskSchedulePayload<ExtArgs>
       fields: Prisma.TaskScheduleFieldRefs
@@ -1244,6 +1319,17 @@ export const TaskEventScalarFieldEnum = {
 export type TaskEventScalarFieldEnum = (typeof TaskEventScalarFieldEnum)[keyof typeof TaskEventScalarFieldEnum]
 
 
+export const RunEventOutboxScalarFieldEnum = {
+  id: 'id',
+  taskEventId: 'taskEventId',
+  createdAt: 'createdAt',
+  publishedAt: 'publishedAt',
+  publishAttempts: 'publishAttempts'
+} as const
+
+export type RunEventOutboxScalarFieldEnum = (typeof RunEventOutboxScalarFieldEnum)[keyof typeof RunEventOutboxScalarFieldEnum]
+
+
 export const TaskScheduleScalarFieldEnum = {
   id: 'id',
   taskId: 'taskId',
@@ -1453,6 +1539,20 @@ export type EnumTaskEventLevelFieldRefInput<$PrismaModel> = FieldRefInputType<$P
  * Reference to a field of type 'TaskEventLevel[]'
  */
 export type ListEnumTaskEventLevelFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TaskEventLevel[]'>
+    
+
+
+/**
+ * Reference to a field of type 'BigInt'
+ */
+export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt'>
+    
+
+
+/**
+ * Reference to a field of type 'BigInt[]'
+ */
+export type ListBigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt[]'>
     
 
 
@@ -1676,6 +1776,7 @@ export type GlobalOmitConfig = {
   taskRun?: Prisma.TaskRunOmit
   taskAttempt?: Prisma.TaskAttemptOmit
   taskEvent?: Prisma.TaskEventOmit
+  runEventOutbox?: Prisma.RunEventOutboxOmit
   taskSchedule?: Prisma.TaskScheduleOmit
   deployment?: Prisma.DeploymentOmit
 }

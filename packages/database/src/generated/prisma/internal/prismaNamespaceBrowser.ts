@@ -58,6 +58,7 @@ export const ModelName = {
   TaskRun: 'TaskRun',
   TaskAttempt: 'TaskAttempt',
   TaskEvent: 'TaskEvent',
+  RunEventOutbox: 'RunEventOutbox',
   TaskSchedule: 'TaskSchedule',
   Deployment: 'Deployment'
 } as const
@@ -190,6 +191,17 @@ export const TaskEventScalarFieldEnum = {
 } as const
 
 export type TaskEventScalarFieldEnum = (typeof TaskEventScalarFieldEnum)[keyof typeof TaskEventScalarFieldEnum]
+
+
+export const RunEventOutboxScalarFieldEnum = {
+  id: 'id',
+  taskEventId: 'taskEventId',
+  createdAt: 'createdAt',
+  publishedAt: 'publishedAt',
+  publishAttempts: 'publishAttempts'
+} as const
+
+export type RunEventOutboxScalarFieldEnum = (typeof RunEventOutboxScalarFieldEnum)[keyof typeof RunEventOutboxScalarFieldEnum]
 
 
 export const TaskScheduleScalarFieldEnum = {
