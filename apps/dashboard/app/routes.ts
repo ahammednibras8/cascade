@@ -8,5 +8,6 @@ export default [
   route("schedules/:scheduleId/edit", "routes/edit-schedule.tsx"),
   route("api-keys", "routes/api-keys.tsx"),
   route("runs", "routes/runs.tsx"),
+  route("runs/:runId/events/stream", "routes/run-event-stream.ts"),
   route("runs/:runId", "routes/run-detail.tsx"),
 ] satisfies RouteConfig;
