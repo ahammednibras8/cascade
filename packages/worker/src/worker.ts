@@ -11,6 +11,7 @@ import { startStuckRunSweeper } from "./timers/stuck-run-sweeper.js";
 import { startPendingRunSweeper } from "./timers/pending-run-sweeper.js";
 import { loadTaskRegistry } from "./tasks/load-registry.js";
 import type { WorkerHealthState } from "./health/state.js";
+import { startRunEventOutboxDispatcher } from "./timers/run-event-outbox-dispatcher.js";
 
 const inFlight = new Set<Promise<void>>();
 
@@ -47,6 +48,7 @@ export async function runWorker(shutdownSignal: ShutdownSignal, healthState?: Wo
   const stopStuckRunSweeper = isControlWorker ? startStuckRunSweeper() : () => {};
   const stopPendingRunSweeper = isControlWorker ? startPendingRunSweeper() : () => {};
   const stopTaskScheduleScheduler = isControlWorker ? startTaskScheduleScheduler() : () => {};
+  const stopRunEventOutboxDispatcher = isControlWorker ? startRunEventOutboxDispatcher() : () => {};
 
   try {
     if (!isQueueWorker) {
@@ -81,6 +83,7 @@ export async function runWorker(shutdownSignal: ShutdownSignal, healthState?: Wo
     stopStuckRunSweeper();
     stopPendingRunSweeper();
     stopTaskScheduleScheduler();
+    stopRunEventOutboxDispatcher();
 
     await taskRunQueueRedis.quit();
     await prisma.$disconnect();

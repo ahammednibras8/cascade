@@ -34,6 +34,16 @@ export const PENDING_RUN_SWEEP_INTERVAL_MS = getPositiveIntegerEnv(
   10_000,
 );
 
+export const RUN_EVENT_OUTBOX_DISPATCH_INTERVAL_MS = getPositiveIntegerEnv(
+  "RUN_EVENT_OUTBOX_DISPATCH_INTERVAL_MS",
+  1_000,
+);
+
+export const RUN_EVENT_OUTBOX_LOCK_TIMEOUT_MS = getPositiveIntegerEnv(
+  "RUN_EVENT_OUTBOX_LOCK_TIMEOUT_MS",
+  30_000,
+);
+
 export const TASK_RUN_CANCELLATION_POLL_INTERVAL_MS = getPositiveIntegerEnv(
   "TASK_RUN_CANCELLATION_POLL_INTERVAL_MS",
   500,

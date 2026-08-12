@@ -41,6 +41,9 @@ const stopPendingRunSweeper = vi.hoisted(() => vi.fn<() => void>());
 const startTaskScheduleScheduler = vi.hoisted(() => vi.fn<() => () => void>());
 const stopTaskScheduleScheduler = vi.hoisted(() => vi.fn<() => void>());
 
+const startRunEventOutboxDispatcher = vi.hoisted(() => vi.fn<() => () => void>());
+const stopRunEventOutboxDispatcher = vi.hoisted(() => vi.fn<() => void>());
+
 vi.mock("@cascade/core", () => ({
   packageName: "@cascade/core",
 }));
@@ -81,6 +84,10 @@ vi.mock("../src/timers/task-schedule-scheduler.js", () => ({
   startTaskScheduleScheduler,
 }));
 
+vi.mock("../src/timers/run-event-outbox-dispatcher.js", () => ({
+  startRunEventOutboxDispatcher,
+}));
+
 const { runWorker } = await import("../src/worker.js");
 
 function createShutdownSignal() {
@@ -112,6 +119,9 @@ describe("runWorker", () => {
     loadTaskRegistry.mockResolvedValue(taskRegistry);
     taskRunQueueRedis.quit.mockResolvedValue(undefined);
     prisma.$disconnect.mockResolvedValue(undefined);
+
+    stopRunEventOutboxDispatcher.mockReturnValue(undefined);
+    startRunEventOutboxDispatcher.mockReturnValue(stopRunEventOutboxDispatcher);
   });
 
   it("polls Redis and processes a task run message", async () => {
@@ -129,6 +139,7 @@ describe("runWorker", () => {
     expect(startStuckRunSweeper).not.toHaveBeenCalled();
     expect(startPendingRunSweeper).not.toHaveBeenCalled();
     expect(startTaskScheduleScheduler).not.toHaveBeenCalled();
+    expect(startRunEventOutboxDispatcher).not.toHaveBeenCalled();
 
     expect(loadTaskRegistry).toHaveBeenCalledOnce();
     expect(popTaskRunMessage).toHaveBeenCalledTimes(2);
@@ -137,6 +148,7 @@ describe("runWorker", () => {
     expect(stopStuckRunSweeper).not.toHaveBeenCalled();
     expect(stopPendingRunSweeper).not.toHaveBeenCalled();
     expect(stopTaskScheduleScheduler).not.toHaveBeenCalled();
+    expect(stopRunEventOutboxDispatcher).not.toHaveBeenCalled();
 
     expect(taskRunQueueRedis.quit).toHaveBeenCalledOnce();
     expect(prisma.$disconnect).toHaveBeenCalledOnce();
@@ -162,6 +174,7 @@ describe("runWorker", () => {
     expect(startStuckRunSweeper).toHaveBeenCalledOnce();
     expect(startPendingRunSweeper).toHaveBeenCalledOnce();
     expect(startTaskScheduleScheduler).toHaveBeenCalledOnce();
+    expect(startRunEventOutboxDispatcher).toHaveBeenCalledOnce();
 
     expect(loadTaskRegistry).not.toHaveBeenCalled();
     expect(popTaskRunMessage).not.toHaveBeenCalled();
@@ -170,5 +183,6 @@ describe("runWorker", () => {
     expect(stopStuckRunSweeper).toHaveBeenCalledOnce();
     expect(stopPendingRunSweeper).toHaveBeenCalledOnce();
     expect(stopTaskScheduleScheduler).toHaveBeenCalledOnce();
+    expect(stopRunEventOutboxDispatcher).toHaveBeenCalledOnce();
   });
 });
