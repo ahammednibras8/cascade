@@ -42,6 +42,8 @@ export type RunEventOutboxMinAggregateOutputType = {
   createdAt: Date | null
   publishedAt: Date | null
   publishAttempts: number | null
+  lockedAt: Date | null
+  lockOwner: string | null
 }
 
 export type RunEventOutboxMaxAggregateOutputType = {
@@ -50,6 +52,8 @@ export type RunEventOutboxMaxAggregateOutputType = {
   createdAt: Date | null
   publishedAt: Date | null
   publishAttempts: number | null
+  lockedAt: Date | null
+  lockOwner: string | null
 }
 
 export type RunEventOutboxCountAggregateOutputType = {
@@ -58,6 +62,8 @@ export type RunEventOutboxCountAggregateOutputType = {
   createdAt: number
   publishedAt: number
   publishAttempts: number
+  lockedAt: number
+  lockOwner: number
   _all: number
 }
 
@@ -78,6 +84,8 @@ export type RunEventOutboxMinAggregateInputType = {
   createdAt?: true
   publishedAt?: true
   publishAttempts?: true
+  lockedAt?: true
+  lockOwner?: true
 }
 
 export type RunEventOutboxMaxAggregateInputType = {
@@ -86,6 +94,8 @@ export type RunEventOutboxMaxAggregateInputType = {
   createdAt?: true
   publishedAt?: true
   publishAttempts?: true
+  lockedAt?: true
+  lockOwner?: true
 }
 
 export type RunEventOutboxCountAggregateInputType = {
@@ -94,6 +104,8 @@ export type RunEventOutboxCountAggregateInputType = {
   createdAt?: true
   publishedAt?: true
   publishAttempts?: true
+  lockedAt?: true
+  lockOwner?: true
   _all?: true
 }
 
@@ -189,6 +201,8 @@ export type RunEventOutboxGroupByOutputType = {
   createdAt: Date
   publishedAt: Date | null
   publishAttempts: number
+  lockedAt: Date | null
+  lockOwner: string | null
   _count: RunEventOutboxCountAggregateOutputType | null
   _avg: RunEventOutboxAvgAggregateOutputType | null
   _sum: RunEventOutboxSumAggregateOutputType | null
@@ -220,6 +234,8 @@ export type RunEventOutboxWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"RunEventOutbox"> | Date | string
   publishedAt?: Prisma.DateTimeNullableFilter<"RunEventOutbox"> | Date | string | null
   publishAttempts?: Prisma.IntFilter<"RunEventOutbox"> | number
+  lockedAt?: Prisma.DateTimeNullableFilter<"RunEventOutbox"> | Date | string | null
+  lockOwner?: Prisma.StringNullableFilter<"RunEventOutbox"> | string | null
   taskEvent?: Prisma.XOR<Prisma.TaskEventScalarRelationFilter, Prisma.TaskEventWhereInput>
 }
 
@@ -229,6 +245,8 @@ export type RunEventOutboxOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   publishedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   publishAttempts?: Prisma.SortOrder
+  lockedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  lockOwner?: Prisma.SortOrderInput | Prisma.SortOrder
   taskEvent?: Prisma.TaskEventOrderByWithRelationInput
 }
 
@@ -241,6 +259,8 @@ export type RunEventOutboxWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"RunEventOutbox"> | Date | string
   publishedAt?: Prisma.DateTimeNullableFilter<"RunEventOutbox"> | Date | string | null
   publishAttempts?: Prisma.IntFilter<"RunEventOutbox"> | number
+  lockedAt?: Prisma.DateTimeNullableFilter<"RunEventOutbox"> | Date | string | null
+  lockOwner?: Prisma.StringNullableFilter<"RunEventOutbox"> | string | null
   taskEvent?: Prisma.XOR<Prisma.TaskEventScalarRelationFilter, Prisma.TaskEventWhereInput>
 }, "id" | "taskEventId">
 
@@ -250,6 +270,8 @@ export type RunEventOutboxOrderByWithAggregationInput = {
   createdAt?: Prisma.SortOrder
   publishedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   publishAttempts?: Prisma.SortOrder
+  lockedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  lockOwner?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.RunEventOutboxCountOrderByAggregateInput
   _avg?: Prisma.RunEventOutboxAvgOrderByAggregateInput
   _max?: Prisma.RunEventOutboxMaxOrderByAggregateInput
@@ -266,6 +288,8 @@ export type RunEventOutboxScalarWhereWithAggregatesInput = {
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"RunEventOutbox"> | Date | string
   publishedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"RunEventOutbox"> | Date | string | null
   publishAttempts?: Prisma.IntWithAggregatesFilter<"RunEventOutbox"> | number
+  lockedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"RunEventOutbox"> | Date | string | null
+  lockOwner?: Prisma.StringNullableWithAggregatesFilter<"RunEventOutbox"> | string | null
 }
 
 export type RunEventOutboxCreateInput = {
@@ -273,6 +297,8 @@ export type RunEventOutboxCreateInput = {
   createdAt?: Date | string
   publishedAt?: Date | string | null
   publishAttempts?: number
+  lockedAt?: Date | string | null
+  lockOwner?: string | null
   taskEvent: Prisma.TaskEventCreateNestedOneWithoutOutboxEntryInput
 }
 
@@ -282,6 +308,8 @@ export type RunEventOutboxUncheckedCreateInput = {
   createdAt?: Date | string
   publishedAt?: Date | string | null
   publishAttempts?: number
+  lockedAt?: Date | string | null
+  lockOwner?: string | null
 }
 
 export type RunEventOutboxUpdateInput = {
@@ -289,6 +317,8 @@ export type RunEventOutboxUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   publishAttempts?: Prisma.IntFieldUpdateOperationsInput | number
+  lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lockOwner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taskEvent?: Prisma.TaskEventUpdateOneRequiredWithoutOutboxEntryNestedInput
 }
 
@@ -298,6 +328,8 @@ export type RunEventOutboxUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   publishAttempts?: Prisma.IntFieldUpdateOperationsInput | number
+  lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lockOwner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type RunEventOutboxCreateManyInput = {
@@ -306,6 +338,8 @@ export type RunEventOutboxCreateManyInput = {
   createdAt?: Date | string
   publishedAt?: Date | string | null
   publishAttempts?: number
+  lockedAt?: Date | string | null
+  lockOwner?: string | null
 }
 
 export type RunEventOutboxUpdateManyMutationInput = {
@@ -313,6 +347,8 @@ export type RunEventOutboxUpdateManyMutationInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   publishAttempts?: Prisma.IntFieldUpdateOperationsInput | number
+  lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lockOwner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type RunEventOutboxUncheckedUpdateManyInput = {
@@ -321,6 +357,8 @@ export type RunEventOutboxUncheckedUpdateManyInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   publishAttempts?: Prisma.IntFieldUpdateOperationsInput | number
+  lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lockOwner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type RunEventOutboxNullableScalarRelationFilter = {
@@ -334,6 +372,8 @@ export type RunEventOutboxCountOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   publishedAt?: Prisma.SortOrder
   publishAttempts?: Prisma.SortOrder
+  lockedAt?: Prisma.SortOrder
+  lockOwner?: Prisma.SortOrder
 }
 
 export type RunEventOutboxAvgOrderByAggregateInput = {
@@ -347,6 +387,8 @@ export type RunEventOutboxMaxOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   publishedAt?: Prisma.SortOrder
   publishAttempts?: Prisma.SortOrder
+  lockedAt?: Prisma.SortOrder
+  lockOwner?: Prisma.SortOrder
 }
 
 export type RunEventOutboxMinOrderByAggregateInput = {
@@ -355,6 +397,8 @@ export type RunEventOutboxMinOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   publishedAt?: Prisma.SortOrder
   publishAttempts?: Prisma.SortOrder
+  lockedAt?: Prisma.SortOrder
+  lockOwner?: Prisma.SortOrder
 }
 
 export type RunEventOutboxSumOrderByAggregateInput = {
@@ -407,6 +451,8 @@ export type RunEventOutboxCreateWithoutTaskEventInput = {
   createdAt?: Date | string
   publishedAt?: Date | string | null
   publishAttempts?: number
+  lockedAt?: Date | string | null
+  lockOwner?: string | null
 }
 
 export type RunEventOutboxUncheckedCreateWithoutTaskEventInput = {
@@ -414,6 +460,8 @@ export type RunEventOutboxUncheckedCreateWithoutTaskEventInput = {
   createdAt?: Date | string
   publishedAt?: Date | string | null
   publishAttempts?: number
+  lockedAt?: Date | string | null
+  lockOwner?: string | null
 }
 
 export type RunEventOutboxCreateOrConnectWithoutTaskEventInput = {
@@ -437,6 +485,8 @@ export type RunEventOutboxUpdateWithoutTaskEventInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   publishAttempts?: Prisma.IntFieldUpdateOperationsInput | number
+  lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lockOwner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type RunEventOutboxUncheckedUpdateWithoutTaskEventInput = {
@@ -444,6 +494,8 @@ export type RunEventOutboxUncheckedUpdateWithoutTaskEventInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   publishedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   publishAttempts?: Prisma.IntFieldUpdateOperationsInput | number
+  lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lockOwner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -454,6 +506,8 @@ export type RunEventOutboxSelect<ExtArgs extends runtime.Types.Extensions.Intern
   createdAt?: boolean
   publishedAt?: boolean
   publishAttempts?: boolean
+  lockedAt?: boolean
+  lockOwner?: boolean
   taskEvent?: boolean | Prisma.TaskEventDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["runEventOutbox"]>
 
@@ -463,6 +517,8 @@ export type RunEventOutboxSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   createdAt?: boolean
   publishedAt?: boolean
   publishAttempts?: boolean
+  lockedAt?: boolean
+  lockOwner?: boolean
   taskEvent?: boolean | Prisma.TaskEventDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["runEventOutbox"]>
 
@@ -472,6 +528,8 @@ export type RunEventOutboxSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   createdAt?: boolean
   publishedAt?: boolean
   publishAttempts?: boolean
+  lockedAt?: boolean
+  lockOwner?: boolean
   taskEvent?: boolean | Prisma.TaskEventDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["runEventOutbox"]>
 
@@ -481,9 +539,11 @@ export type RunEventOutboxSelectScalar = {
   createdAt?: boolean
   publishedAt?: boolean
   publishAttempts?: boolean
+  lockedAt?: boolean
+  lockOwner?: boolean
 }
 
-export type RunEventOutboxOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taskEventId" | "createdAt" | "publishedAt" | "publishAttempts", ExtArgs["result"]["runEventOutbox"]>
+export type RunEventOutboxOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taskEventId" | "createdAt" | "publishedAt" | "publishAttempts" | "lockedAt" | "lockOwner", ExtArgs["result"]["runEventOutbox"]>
 export type RunEventOutboxInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taskEvent?: boolean | Prisma.TaskEventDefaultArgs<ExtArgs>
 }
@@ -505,6 +565,8 @@ export type $RunEventOutboxPayload<ExtArgs extends runtime.Types.Extensions.Inte
     createdAt: Date
     publishedAt: Date | null
     publishAttempts: number
+    lockedAt: Date | null
+    lockOwner: string | null
   }, ExtArgs["result"]["runEventOutbox"]>
   composites: {}
 }
@@ -934,6 +996,8 @@ export interface RunEventOutboxFieldRefs {
   readonly createdAt: Prisma.FieldRef<"RunEventOutbox", 'DateTime'>
   readonly publishedAt: Prisma.FieldRef<"RunEventOutbox", 'DateTime'>
   readonly publishAttempts: Prisma.FieldRef<"RunEventOutbox", 'Int'>
+  readonly lockedAt: Prisma.FieldRef<"RunEventOutbox", 'DateTime'>
+  readonly lockOwner: Prisma.FieldRef<"RunEventOutbox", 'String'>
 }
     
 

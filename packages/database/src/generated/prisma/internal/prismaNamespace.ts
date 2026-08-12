@@ -1324,7 +1324,9 @@ export const RunEventOutboxScalarFieldEnum = {
   taskEventId: 'taskEventId',
   createdAt: 'createdAt',
   publishedAt: 'publishedAt',
-  publishAttempts: 'publishAttempts'
+  publishAttempts: 'publishAttempts',
+  lockedAt: 'lockedAt',
+  lockOwner: 'lockOwner'
 } as const
 
 export type RunEventOutboxScalarFieldEnum = (typeof RunEventOutboxScalarFieldEnum)[keyof typeof RunEventOutboxScalarFieldEnum]
