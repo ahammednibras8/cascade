@@ -8,6 +8,7 @@ import {
   getTaskRun,
   listTaskRunEvents,
   prisma,
+  streamTaskRunEvents,
 } from "./tasks-router-harness.js";
 
 describe("task run read routes", () => {
@@ -207,5 +208,60 @@ describe("task run read routes", () => {
         eventsCount: 4,
       },
     ]);
+  });
+
+  it("opens an authenticated event stream and forwards Last-Event-ID", async () => {
+    const eventId = "33333333-3333-4333-8333-333333333333";
+
+    streamTaskRunEvents.mockImplementation(async (input) => {
+      (
+        input as {
+          response: {
+            status: (status: number) => {
+              end: () => void;
+            };
+          };
+        }
+      ).response
+        .status(200)
+        .end();
+
+      return {
+        ok: true,
+      };
+    });
+
+    const response = await httpRequest(createApp())
+      .get(`/api/runs/${RUN_ID}/events/stream`)
+      .set("Last-Event-ID", eventId);
+
+    expect(response.status).toBe(200);
+    expect(streamTaskRunEvents).toHaveBeenCalledWith(
+      expect.objectContaining({
+        auth: AUTH_CONTEXT,
+        runId: RUN_ID,
+      }),
+    );
+  });
+
+  it("returns a stream validation error before opening the connection", async () => {
+    streamTaskRunEvents.mockResolvedValue({
+      ok: false,
+      status: 400,
+      error: {
+        code: "INVALID_EVENT_CURSOR",
+        message: "after must be a valid event UUID",
+      },
+    });
+
+    const response = await httpRequest(createApp()).get(`/api/runs/${RUN_ID}/events/stream`);
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      error: {
+        code: "INVALID_EVENT_CURSOR",
+        message: "after must be a valid event UUID",
+      },
+    });
   });
 });

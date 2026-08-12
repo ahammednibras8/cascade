@@ -9,6 +9,7 @@ import { replayTaskRun } from "../services/replay-task-run.js";
 import { getAuthOrRespond } from "./route-auth.js";
 import { ApiKeyScope } from "@cascade/database";
 import { requireApiKeyScope } from "../auth/api-key.js";
+import { streamTaskRunEvents } from "../realtime/run-event-stream.js";
 
 export const taskRunRoutes: ExpressRouter = Router();
 
@@ -77,6 +78,31 @@ taskRunRoutes.get(
       nextCursor: result.nextCursor,
       hasMore: result.hasMore,
     });
+  }),
+);
+
+taskRunRoutes.get(
+  "/runs/:runId/events/stream",
+  requireApiKeyScope(ApiKeyScope.RUNS_READ),
+  asyncHandler(async (request, response) => {
+    const auth = getAuthOrRespond(request, response);
+
+    if (!auth) {
+      return;
+    }
+
+    const result = await streamTaskRunEvents({
+      request,
+      response,
+      auth,
+      runId: getSingleParam(request.params.runId),
+    });
+
+    if (!result.ok) {
+      response.status(result.status).json({
+        error: result.error,
+      });
+    }
   }),
 );
 
