@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 
-import { prisma, type Prisma } from "@cascade/database";
+import { createTaskRunEvent, prisma, type Prisma } from "@cascade/database";
 import { enqueueTaskRun } from "../queue/task-runs.js";
 import { getNextCronRunAt } from "@cascade/core";
 
@@ -173,21 +173,19 @@ export async function sweepDueTaskSchedules(now = new Date()) {
         },
       });
 
-      await tx.taskEvent.create({
+      await createTaskRunEvent(tx, {
+        taskRunId: run.id,
+        type: "task.schedule.triggered",
+        level: "INFO",
+        message: "Scheduled task run created",
         data: {
-          taskRunId: run.id,
-          type: "task.schedule.triggered",
-          level: "INFO",
-          message: "Scheduled task run created",
-          data: {
-            scheduleId: schedule.id,
-            scheduleRevision: schedule.revision,
-            scheduledFor: schedule.nextRunAt.toISOString(),
-            scheduleType: schedule.scheduleType,
-            cronExpression: schedule.cronExpression,
-            intervalSeconds: schedule.intervalSeconds,
-            timezone: schedule.timezone,
-          },
+          scheduleId: schedule.id,
+          scheduleRevision: schedule.revision,
+          scheduledFor: schedule.nextRunAt.toISOString(),
+          scheduleType: schedule.scheduleType,
+          cronExpression: schedule.cronExpression,
+          intervalSeconds: schedule.intervalSeconds,
+          timezone: schedule.timezone,
         },
       });
 

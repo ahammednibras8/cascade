@@ -15,9 +15,6 @@ type TransactionClient = {
   taskAttempt: {
     update: (args: unknown) => Promise<unknown>;
   };
-  taskEvent: {
-    create: (args: unknown) => Promise<unknown>;
-  };
 };
 
 type TransactionCallback<T> = (tx: TransactionClient) => Promise<T>;
@@ -35,7 +32,9 @@ const txTaskRunUpdateMany = vi.hoisted(() =>
 
 const txTaskAttemptUpdate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
 
-const txTaskEventCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
+const createTaskRunEvent = vi.hoisted(() =>
+  vi.fn<(tx: unknown, data: unknown) => Promise<{ id: string }>>(),
+);
 
 const enqueueTaskRun = vi.hoisted(() =>
   vi.fn<(message: unknown, options: unknown) => Promise<void>>(),
@@ -46,6 +45,7 @@ vi.mock("@cascade/database", () => ({
     DbNull: "DB_NULL",
   },
   prisma,
+  createTaskRunEvent,
 }));
 
 vi.mock("../../src/queue/task-runs.js", () => ({
@@ -98,9 +98,6 @@ function mockTransactionClient() {
       taskAttempt: {
         update: txTaskAttemptUpdate,
       },
-      taskEvent: {
-        create: txTaskEventCreate,
-      },
     }),
   );
 }
@@ -116,7 +113,9 @@ describe("sweepStuckTaskRuns", () => {
     });
 
     txTaskAttemptUpdate.mockResolvedValue({});
-    txTaskEventCreate.mockResolvedValue({});
+    createTaskRunEvent.mockResolvedValue({
+      id: "event-1",
+    });
     enqueueTaskRun.mockResolvedValue(undefined);
   });
 
@@ -181,21 +180,20 @@ describe("sweepStuckTaskRuns", () => {
       }),
     );
 
-    expect(txTaskEventCreate).toHaveBeenCalledWith(
+    expect(createTaskRunEvent).toHaveBeenCalledWith(
+      expect.anything(),
       expect.objectContaining({
+        taskRunId: RUN_ID,
+        taskAttemptId: ATTEMPT_ID,
+        type: "task.run.failed",
+        level: "ERROR",
+        message: "Task run stopped heartbeating and was marked failed",
         data: expect.objectContaining({
-          taskRunId: RUN_ID,
-          taskAttemptId: ATTEMPT_ID,
-          type: "task.run.failed",
-          level: "ERROR",
-          message: "Task run stopped heartbeating and was marked failed",
-          data: expect.objectContaining({
-            reason: "STUCK_RUN",
-            attemptNumber: 1,
-            nextAttemptNumber: null,
-            maxAttempts: 1,
-            delayMs: 0,
-          }),
+          reason: "STUCK_RUN",
+          attemptNumber: 1,
+          nextAttemptNumber: null,
+          maxAttempts: 1,
+          delayMs: 0,
         }),
       }),
     );
@@ -243,21 +241,20 @@ describe("sweepStuckTaskRuns", () => {
       }),
     );
 
-    expect(txTaskEventCreate).toHaveBeenCalledWith(
+    expect(createTaskRunEvent).toHaveBeenCalledWith(
+      expect.anything(),
       expect.objectContaining({
+        taskRunId: RUN_ID,
+        taskAttemptId: ATTEMPT_ID,
+        type: "task.run.retry.scheduled",
+        level: "WARN",
+        message: "Task run stopped heartbeating and retry was scheduled",
         data: expect.objectContaining({
-          taskRunId: RUN_ID,
-          taskAttemptId: ATTEMPT_ID,
-          type: "task.run.retry.scheduled",
-          level: "WARN",
-          message: "Task run stopped heartbeating and retry was scheduled",
-          data: expect.objectContaining({
-            reason: "STUCK_RUN",
-            attemptNumber: 2,
-            nextAttemptNumber: 3,
-            maxAttempts: 3,
-            delayMs: 2000,
-          }),
+          reason: "STUCK_RUN",
+          attemptNumber: 2,
+          nextAttemptNumber: 3,
+          maxAttempts: 3,
+          delayMs: 2000,
         }),
       }),
     );

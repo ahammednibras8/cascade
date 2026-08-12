@@ -19,9 +19,6 @@ type TransactionClient = {
   taskRun: {
     updateMany: (args: unknown) => Promise<{ count: number }>;
   };
-  taskEvent: {
-    create: (args: unknown) => Promise<unknown>;
-  };
 };
 
 type TransactionCallback<T> = (tx: TransactionClient) => Promise<T>;
@@ -37,7 +34,9 @@ const txTaskRunUpdateMany = vi.hoisted(() =>
   vi.fn<(args: unknown) => Promise<{ count: number }>>(),
 );
 
-const txTaskEventCreate = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown>>());
+const createTaskRunEvent = vi.hoisted(() =>
+  vi.fn<(tx: unknown, data: unknown) => Promise<{ id: string }>>(),
+);
 
 const enqueueTaskRun = vi.hoisted(() =>
   vi.fn<(message: unknown, options?: unknown) => Promise<void>>(),
@@ -45,6 +44,7 @@ const enqueueTaskRun = vi.hoisted(() =>
 
 vi.mock("@cascade/database", () => ({
   prisma,
+  createTaskRunEvent,
 }));
 
 vi.mock("../../src/queue/task-runs.js", () => ({
@@ -70,9 +70,6 @@ function mockTransactionClient() {
       taskRun: {
         updateMany: txTaskRunUpdateMany,
       },
-      taskEvent: {
-        create: txTaskEventCreate,
-      },
     }),
   );
 }
@@ -87,7 +84,9 @@ describe("sweepPendingTaskRuns", () => {
       count: 1,
     });
 
-    txTaskEventCreate.mockResolvedValue({});
+    createTaskRunEvent.mockResolvedValue({
+      id: "event-1",
+    });
     enqueueTaskRun.mockResolvedValue(undefined);
   });
 
@@ -138,18 +137,17 @@ describe("sweepPendingTaskRuns", () => {
       }),
     );
 
-    expect(txTaskEventCreate).toHaveBeenCalledWith(
+    expect(createTaskRunEvent).toHaveBeenCalledWith(
+      expect.anything(),
       expect.objectContaining({
-        data: expect.objectContaining({
-          taskRunId: RUN_ID,
-          type: "task.run.requeued",
-          level: "WARN",
-          message: "Pending task run was re-enqueued by recovery sweeper",
-          data: {
-            reason: "PENDING_RUN_RECOVERY",
-            recoveryAfterMs: 30_000,
-          },
-        }),
+        taskRunId: RUN_ID,
+        type: "task.run.requeued",
+        level: "WARN",
+        message: "Pending task run was re-enqueued by recovery sweeper",
+        data: {
+          reason: "PENDING_RUN_RECOVERY",
+          recoveryAfterMs: 30_000,
+        },
       }),
     );
 
@@ -171,7 +169,7 @@ describe("sweepPendingTaskRuns", () => {
     const sweptCount = await sweepPendingTaskRuns(NOW);
 
     expect(sweptCount).toBe(1);
-    expect(txTaskEventCreate).not.toHaveBeenCalled();
+    expect(createTaskRunEvent).not.toHaveBeenCalled();
     expect(enqueueTaskRun).not.toHaveBeenCalled();
   });
 });

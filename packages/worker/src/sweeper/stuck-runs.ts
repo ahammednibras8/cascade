@@ -1,7 +1,7 @@
 /* eslint-disable no-await-in-loop */
 
 import { parseTaskExecutionConfig } from "@cascade/core";
-import { prisma, Prisma } from "@cascade/database";
+import { createTaskRunEvent, prisma, Prisma } from "@cascade/database";
 import { getRetryDelayMs } from "../retry.js";
 import { enqueueTaskRun } from "../queue/task-runs.js";
 
@@ -133,23 +133,21 @@ export async function sweepStuckTaskRuns(now = new Date()) {
         });
       }
 
-      await tx.taskEvent.create({
+      await createTaskRunEvent(tx, {
+        taskRunId: stuckRun.id,
+        ...(latestAttempt ? { taskAttemptId: latestAttempt.id } : {}),
+        type: shouldRetry ? "task.run.retry.scheduled" : "task.run.failed",
+        level: shouldRetry ? "WARN" : "ERROR",
+        message: shouldRetry
+          ? "Task run stopped heartbeating and retry was scheduled"
+          : "Task run stopped heartbeating and was marked failed",
         data: {
-          taskRunId: stuckRun.id,
-          ...(latestAttempt ? { taskAttemptId: latestAttempt.id } : {}),
-          type: shouldRetry ? "task.run.retry.scheduled" : "task.run.failed",
-          level: shouldRetry ? "WARN" : "ERROR",
-          message: shouldRetry
-            ? "Task run stopped heartbeating and retry was scheduled"
-            : "Task run stopped heartbeating and was marked failed",
-          data: {
-            reason: "STUCK_RUN",
-            attemptNumber,
-            nextAttemptNumber: shouldRetry ? attemptNumber + 1 : null,
-            maxAttempts: executionConfig?.retry.maxAttempts ?? null,
-            delayMs: retryDelayMs,
-            error,
-          },
+          reason: "STUCK_RUN",
+          attemptNumber,
+          nextAttemptNumber: shouldRetry ? attemptNumber + 1 : null,
+          maxAttempts: executionConfig?.retry.maxAttempts ?? null,
+          delayMs: retryDelayMs,
+          error,
         },
       });
 

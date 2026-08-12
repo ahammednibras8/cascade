@@ -1,4 +1,4 @@
-import { prisma } from "@cascade/database";
+import { createTaskRunEvent, prisma } from "@cascade/database";
 import { PENDING_RUN_RECOVERY_MS } from "../config.js";
 import { enqueueTaskRun } from "../queue/task-runs.js";
 
@@ -96,16 +96,14 @@ async function reenqueuePendingTaskRun({
       return false;
     }
 
-    await tx.taskEvent.create({
+    await createTaskRunEvent(tx, {
+      taskRunId: pendingRun.id,
+      type: "task.run.requeued",
+      level: "WARN",
+      message: "Pending task run was re-enqueued by recovery sweeper",
       data: {
-        taskRunId: pendingRun.id,
-        type: "task.run.requeued",
-        level: "WARN",
-        message: "Pending task run was re-enqueued by recovery sweeper",
-        data: {
-          reason: "PENDING_RUN_RECOVERY",
-          recoveryAfterMs: PENDING_RUN_RECOVERY_MS,
-        },
+        reason: "PENDING_RUN_RECOVERY",
+        recoveryAfterMs: PENDING_RUN_RECOVERY_MS,
       },
     });
 

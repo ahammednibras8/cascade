@@ -29,9 +29,6 @@ type TransactionClient = {
   taskRun: {
     create: (args: unknown) => Promise<CreatedRun>;
   };
-  taskEvent: {
-    create: (args: unknown) => Promise<unknown>;
-  };
 };
 
 type TransactionCallback = (tx: TransactionClient) => Promise<unknown>;
@@ -71,13 +68,14 @@ const mocks = vi.hoisted(() => ({
   txTaskScheduleUpdateMany: vi.fn<(args: unknown) => Promise<{ count: number }>>(),
   txTaskScheduleUpdate: vi.fn<(args: unknown) => Promise<unknown>>(),
   txTaskRunCreate: vi.fn<(args: unknown) => Promise<CreatedRun>>(),
-  txTaskEventCreate: vi.fn<(args: unknown) => Promise<unknown>>(),
+  createTaskRunEvent: vi.fn<(tx: unknown, data: unknown) => Promise<{ id: string }>>(),
   enqueueTaskRun: vi.fn<(message: unknown, options?: unknown) => Promise<void>>(),
 }));
 
 vi.mock("@cascade/database", () => ({
   Prisma: {},
   prisma: mocks.prisma,
+  createTaskRunEvent: mocks.createTaskRunEvent,
 }));
 
 vi.mock("../../src/queue/task-runs.js", () => ({
@@ -132,19 +130,17 @@ function expectTriggeredEvent(rule: {
   intervalSeconds: number | null;
   cronExpression: string | null;
 }) {
-  expect(mocks.txTaskEventCreate).toHaveBeenCalledWith({
+  expect(mocks.createTaskRunEvent).toHaveBeenCalledWith(expect.anything(), {
+    taskRunId: RUN_ID,
+    type: "task.schedule.triggered",
+    level: "INFO",
+    message: "Scheduled task run created",
     data: {
-      taskRunId: RUN_ID,
-      type: "task.schedule.triggered",
-      level: "INFO",
-      message: "Scheduled task run created",
-      data: {
-        scheduleId: SCHEDULE_ID,
-        scheduleRevision: 1,
-        scheduledFor: NEXT_RUN_AT.toISOString(),
-        timezone: "UTC",
-        ...rule,
-      },
+      scheduleId: SCHEDULE_ID,
+      scheduleRevision: 1,
+      scheduledFor: NEXT_RUN_AT.toISOString(),
+      timezone: "UTC",
+      ...rule,
     },
   });
 }
@@ -159,7 +155,9 @@ describe("sweepDueTaskSchedules", () => {
       taskId: TASK_ID,
       delayUntil: NEXT_RUN_AT,
     });
-    mocks.txTaskEventCreate.mockResolvedValue({});
+    mocks.createTaskRunEvent.mockResolvedValue({
+      id: "event-1",
+    });
     mocks.txTaskScheduleUpdate.mockResolvedValue({});
     mocks.enqueueTaskRun.mockResolvedValue(undefined);
     mocks.prisma.$transaction.mockImplementation(async (callback) =>
@@ -170,9 +168,6 @@ describe("sweepDueTaskSchedules", () => {
         },
         taskRun: {
           create: mocks.txTaskRunCreate,
-        },
-        taskEvent: {
-          create: mocks.txTaskEventCreate,
         },
       }),
     );
@@ -241,7 +236,7 @@ describe("sweepDueTaskSchedules", () => {
     await expect(sweepOne()).resolves.toBe(1);
 
     expect(mocks.txTaskRunCreate).not.toHaveBeenCalled();
-    expect(mocks.txTaskEventCreate).not.toHaveBeenCalled();
+    expect(mocks.createTaskRunEvent).not.toHaveBeenCalled();
     expect(mocks.txTaskScheduleUpdate).not.toHaveBeenCalled();
     expect(mocks.enqueueTaskRun).not.toHaveBeenCalled();
   });
@@ -269,7 +264,7 @@ describe("sweepDueTaskSchedules", () => {
       }),
     );
 
-    expect(mocks.txTaskEventCreate).toHaveBeenCalledOnce();
+    expect(mocks.createTaskRunEvent).toHaveBeenCalledOnce();
     expectTriggeredEvent({
       scheduleType: "CRON",
       intervalSeconds: null,
