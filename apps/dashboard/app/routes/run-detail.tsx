@@ -1,8 +1,9 @@
 import type { Route } from "./+types/run-detail";
 import { Form, Link, useNavigation, useRevalidator } from "react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { StatusBadge } from "~/components/status-badge";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { connectRunEventStream, type RunEventStreamState } from "~/lib/run-event-stream.client";
 
 export function meta() {
   return [{ title: "Run detail | Cascade" }];
@@ -221,20 +222,22 @@ export default function RunDetail({ loaderData }: Route.ComponentProps) {
   const { run } = loaderData;
   const revalidator = useRevalidator();
   const navigation = useNavigation();
+  const [streamState, setStreamState] = useState<RunEventStreamState>("connecting");
+  const revalidate = revalidator.revalidate;
 
   useEffect(() => {
     if (!run) {
       return;
     }
 
-    const interval = window.setInterval(() => {
-      void revalidator.revalidate();
-    }, 2_000);
-
-    return () => {
-      window.clearInterval(interval);
-    };
-  }, [revalidator, run]);
+    return connectRunEventStream({
+      runId: run.id,
+      onRunEvent() {
+        void revalidate();
+      },
+      onStateChange: setStreamState,
+    });
+  }, [revalidate, run?.id]);
 
   if (!run) {
     return (
@@ -302,7 +305,13 @@ export default function RunDetail({ loaderData }: Route.ComponentProps) {
           ) : null}
         </div>
         <p className="mt-1 text-xs text-gray-500">
-          {revalidator.state === "loading" ? "Refreshing..." : "Live updates enabled"}
+          {revalidator.state === "loading"
+            ? "Refreshing..."
+            : streamState === "connected"
+              ? "Live updates connected"
+              : streamState === "reconnecting"
+                ? "Reconnecting live updates..."
+                : "Connecting live updates..."}
         </p>
       </div>
 
