@@ -29,5 +29,3 @@ if (process.env.NODE_ENV !== "production") {
   globalForEnvironmentRunsNotifications.environmentRunsNotificationSubscriber =
     environmentRunsNotificationSubscriber;
 }
-
-export { createEnvironmentRunsNotificationSubscriber };

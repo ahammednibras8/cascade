@@ -10,8 +10,27 @@ import { getAuthOrRespond } from "./route-auth.js";
 import { ApiKeyScope } from "@cascade/database";
 import { requireApiKeyScope } from "../auth/api-key.js";
 import { streamTaskRunEvents } from "../realtime/run-event-stream.js";
+import { streamEnvironmentRuns } from "../realtime/environment-runs-stream.js";
 
 export const taskRunRoutes: ExpressRouter = Router();
+
+taskRunRoutes.get(
+  "/runs/stream",
+  requireApiKeyScope(ApiKeyScope.RUNS_READ),
+  asyncHandler(async (request, response) => {
+    const auth = getAuthOrRespond(request, response);
+
+    if (!auth) {
+      return;
+    }
+
+    await streamEnvironmentRuns({
+      request,
+      response,
+      auth,
+    });
+  }),
+);
 
 taskRunRoutes.get(
   "/runs/:runId",

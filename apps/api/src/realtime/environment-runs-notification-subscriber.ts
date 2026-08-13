@@ -54,6 +54,7 @@ export function createEnvironmentRunsNotificationSubscriber(redis: RedisSubscrip
         .subscribe(getEnvironmentRunsChannel(environmentId))
         .then(() => {
           subscription!.subscribed = true;
+          return undefined;
         })
         .catch((error: unknown) => {
           subscriptions.delete(environmentId);

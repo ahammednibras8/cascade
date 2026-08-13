@@ -9,6 +9,7 @@ import {
   listTaskRunEvents,
   prisma,
   streamTaskRunEvents,
+  streamEnvironmentRuns,
 } from "./tasks-router-harness.js";
 
 describe("task run read routes", () => {
@@ -263,5 +264,32 @@ describe("task run read routes", () => {
         message: "after must be a valid event UUID",
       },
     });
+  });
+
+  it("opens an authenticated environment runs stream", async () => {
+    streamEnvironmentRuns.mockImplementation(async (input) => {
+      (
+        input as {
+          response: {
+            status: (status: number) => {
+              end: () => void;
+            };
+          };
+        }
+      ).response
+        .status(200)
+        .end();
+
+      return undefined;
+    });
+
+    const response = await httpRequest(createApp()).get("/api/runs/stream");
+
+    expect(response.status).toBe(200);
+    expect(streamEnvironmentRuns).toHaveBeenCalledWith(
+      expect.objectContaining({
+        auth: AUTH_CONTEXT,
+      }),
+    );
   });
 });
