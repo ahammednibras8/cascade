@@ -23,6 +23,8 @@ vi.mock("@cascade/core", () => ({
   getRunEventChannel: (runId: string) => `cascade:realtime:run:${runId}`,
   serializeRunEventNotification: (notification: { eventId: string }) =>
     JSON.stringify(notification),
+  getEnvironmentRunsChannel: (environmentId: string) =>
+    `cascade:realtime:environment-runs:${environmentId}`,
 }));
 
 vi.mock("../../src/queue/task-runs.js", () => ({
@@ -37,6 +39,7 @@ const LOCK_OWNER = "dispatcher-test-owner";
 const OUTBOX_ID = 1n;
 const EVENT_ID = "33333333-3333-4333-8333-333333333333";
 const RUN_ID = "22222222-2222-4222-8222-222222222222";
+const ENVIRONMENT_ID = "11111111-1111-4111-8111-111111111111";
 
 describe("dispatchRunEventOutbox", () => {
   beforeEach(() => {
@@ -48,6 +51,11 @@ describe("dispatchRunEventOutbox", () => {
         taskEvent: {
           id: EVENT_ID,
           taskRunId: RUN_ID,
+          taskRun: {
+            task: {
+              environmentId: ENVIRONMENT_ID,
+            },
+          },
         },
       },
     ]);
@@ -91,6 +99,15 @@ describe("dispatchRunEventOutbox", () => {
           select: {
             id: true,
             taskRunId: true,
+            taskRun: {
+              select: {
+                task: {
+                  select: {
+                    environmentId: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -117,8 +134,17 @@ describe("dispatchRunEventOutbox", () => {
       },
     });
 
-    expect(publish).toHaveBeenCalledWith(
+    expect(publish).toHaveBeenCalledTimes(2);
+
+    expect(publish).toHaveBeenNthCalledWith(
+      1,
       "cascade:realtime:run:22222222-2222-4222-8222-222222222222",
+      '{"eventId":"33333333-3333-4333-8333-333333333333"}',
+    );
+
+    expect(publish).toHaveBeenNthCalledWith(
+      2,
+      "cascade:realtime:environment-runs:11111111-1111-4111-8111-111111111111",
       '{"eventId":"33333333-3333-4333-8333-333333333333"}',
     );
 

@@ -1,4 +1,8 @@
-import { getRunEventChannel, serializeRunEventNotification } from "@cascade/core";
+import {
+  getEnvironmentRunsChannel,
+  getRunEventChannel,
+  serializeRunEventNotification,
+} from "@cascade/core";
 import { randomUUID } from "node:crypto";
 import { RUN_EVENT_OUTBOX_LOCK_TIMEOUT_MS } from "../config.js";
 import { prisma } from "@cascade/database";
@@ -16,6 +20,11 @@ type DispatchableRunEventOutboxEntry = {
   taskEvent: {
     id: string;
     taskRunId: string;
+    taskRun: {
+      task: {
+        environmentId: string;
+      };
+    };
   };
 };
 
@@ -57,12 +66,17 @@ async function dispatchRunEventOutboxEntry(input: {
   }
 
   try {
-    await taskRunQueueRedis.publish(
-      getRunEventChannel(input.entry.taskEvent.taskRunId),
-      serializeRunEventNotification({
-        eventId: input.entry.taskEvent.id,
-      }),
-    );
+    const notification = serializeRunEventNotification({
+      eventId: input.entry.taskEvent.id,
+    });
+
+    await Promise.all([
+      taskRunQueueRedis.publish(getRunEventChannel(input.entry.taskEvent.taskRunId), notification),
+      taskRunQueueRedis.publish(
+        getEnvironmentRunsChannel(input.entry.taskEvent.taskRun.task.environmentId),
+        notification,
+      ),
+    ]);
 
     await prisma.runEventOutbox.updateMany({
       where: {
@@ -118,6 +132,15 @@ export async function dispatchRunEventOutbox(input: DispatchRunEventOutboxInput 
         select: {
           id: true,
           taskRunId: true,
+          taskRun: {
+            select: {
+              task: {
+                select: {
+                  environmentId: true,
+                },
+              },
+            },
+          },
         },
       },
     },

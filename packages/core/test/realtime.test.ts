@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getRunEventChannel,
+  getEnvironmentRunsChannel,
   parseRunEventNotification,
   serializeRunEventNotification,
 } from "../src/realtime.js";
@@ -32,5 +33,11 @@ describe("run event realtime contract", () => {
     '{"eventId":"event-1","extra":true}',
   ])("rejects invalid notification payload %j", (value) => {
     expect(parseRunEventNotification(value)).toBeNull();
+  });
+
+  it("creates a per-environment runs-list Redis channel", () => {
+    expect(getEnvironmentRunsChannel("environment-123")).toBe(
+      "cascade:realtime:environment-runs:environment-123",
+    );
   });
 });

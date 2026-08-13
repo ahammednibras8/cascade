@@ -1,4 +1,5 @@
 export const RUN_EVENT_CHANNEL_PREFIX = "cascade:realtime:run";
+export const ENVIRONMENT_RUNS_CHANNEL_PREFIX = "cascade:realtime:environment-runs";
 
 export type RunEventNotification = {
   eventId: string;
@@ -6,6 +7,10 @@ export type RunEventNotification = {
 
 export function getRunEventChannel(runId: string) {
   return `${RUN_EVENT_CHANNEL_PREFIX}:${runId}`;
+}
+
+export function getEnvironmentRunsChannel(environmentId: string) {
+  return `${ENVIRONMENT_RUNS_CHANNEL_PREFIX}:${environmentId}`;
 }
 
 export function serializeRunEventNotification(notification: RunEventNotification) {
