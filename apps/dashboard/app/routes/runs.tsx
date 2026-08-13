@@ -1,7 +1,12 @@
 import type { Route } from "./+types/runs";
-import { Link } from "react-router";
 import { StatusBadge } from "~/components/status-badge";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { useEffect, useState } from "react";
+import { Link, useRevalidator } from "react-router";
+import {
+  connectEnvironmentRunsStream,
+  type EnvironmentRunsStreamState,
+} from "~/lib/environment-runs-stream.client";
 
 export function meta() {
   return [{ title: "Runs | Cascade" }];
@@ -63,12 +68,34 @@ function formatDate(value: string | null) {
 }
 
 export default function Runs({ loaderData }: Route.ComponentProps) {
+  const revalidator = useRevalidator();
+  const [streamState, setStreamState] = useState<EnvironmentRunsStreamState>("connecting");
+  const revalidate = revalidator.revalidate;
+
+  useEffect(() => {
+    return connectEnvironmentRunsStream({
+      onRunsChanged() {
+        void revalidate();
+      },
+      onStateChange: setStreamState,
+    });
+  }, [revalidate]);
+
   return (
     <main className="mx-auto max-w-7xl p-6">
       <div className="mb-6">
         <p className="text-sm text-gray-500">Cascade</p>
         <h1 className="text-3xl font-semibold tracking-tight">Task runs</h1>
         <p className="mt-2 text-gray-600">Latest durable task runs from Postgres</p>
+        <p className="mt-1 text-xs text-gray-500">
+          {revalidator.state === "loading"
+            ? "Refreshing runs..."
+            : streamState === "connected"
+              ? "Live updates connected"
+              : streamState === "reconnecting"
+                ? "Reconnecting live updates..."
+                : "Connecting live updates..."}
+        </p>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
