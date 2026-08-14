@@ -87,9 +87,10 @@ async function authenticateApiKey(apiKey: string): Promise<ApiAuthContext | null
     return null;
   }
 
-  await prisma.apiKey.update({
+  await prisma.apiKey.updateMany({
     where: {
       id: storedApiKey.id,
+      revokedAt: null,
     },
     data: {
       lastUsedAt: new Date(),

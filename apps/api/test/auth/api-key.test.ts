@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const prisma = vi.hoisted(() => ({
   apiKey: {
     findUnique: vi.fn<(args: unknown) => Promise<unknown>>(),
-    update: vi.fn<(args: unknown) => Promise<unknown>>(),
+    updateMany: vi.fn<(args: unknown) => Promise<unknown>>(),
   },
 }));
 
@@ -35,7 +35,7 @@ describe("API key auth", () => {
 
     process.env.API_KEY_PEPPER = "test-api-key-pepper";
 
-    prisma.apiKey.update.mockResolvedValue({});
+    prisma.apiKey.updateMany.mockResolvedValue({ count: 1 });
   });
 
   it("rejects requests without an API key", async () => {
@@ -71,7 +71,7 @@ describe("API key auth", () => {
       },
     });
 
-    expect(prisma.apiKey.update).not.toHaveBeenCalled();
+    expect(prisma.apiKey.updateMany).not.toHaveBeenCalled();
   });
 
   it("rejects revoked API keys", async () => {
@@ -100,7 +100,7 @@ describe("API key auth", () => {
       },
     });
 
-    expect(prisma.apiKey.update).not.toHaveBeenCalled();
+    expect(prisma.apiKey.updateMany).not.toHaveBeenCalled();
   });
 
   it("accepts a valid bearer API key and sets auth context", async () => {
@@ -132,9 +132,10 @@ describe("API key auth", () => {
       },
     });
 
-    expect(prisma.apiKey.update).toHaveBeenCalledWith({
+    expect(prisma.apiKey.updateMany).toHaveBeenCalledWith({
       where: {
         id: "api-key-1",
+        revokedAt: null,
       },
       data: {
         lastUsedAt: expect.any(Date),

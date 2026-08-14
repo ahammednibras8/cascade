@@ -1,6 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignore": [
+    "apps/dashboard/app/lib/environment-runs-stream.client.ts",
+    "apps/dashboard/app/lib/run-event-stream.client.ts",
     "packages/database/src/generated/prisma/browser.ts",
     "packages/database/src/generated/prisma/internal/prismaNamespaceBrowser.ts"
   ],

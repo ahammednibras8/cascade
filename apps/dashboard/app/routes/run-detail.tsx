@@ -3,7 +3,7 @@ import { Form, Link, useNavigation, useRevalidator } from "react-router";
 import { useEffect, useState } from "react";
 import { StatusBadge } from "~/components/status-badge";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
-import { connectRunEventStream, type RunEventStreamState } from "~/lib/run-event-stream.client";
+import type { RunEventStreamState } from "~/lib/run-event-stream";
 
 export function meta() {
   return [{ title: "Run detail | Cascade" }];
@@ -230,13 +230,29 @@ export default function RunDetail({ loaderData }: Route.ComponentProps) {
       return;
     }
 
-    return connectRunEventStream({
-      runId: run.id,
-      onRunEvent() {
-        void revalidate();
-      },
-      onStateChange: setStreamState,
+    let stop: (() => void) | undefined;
+    let canceled = false;
+
+    void import("~/lib/run-event-stream").then(({ connectRunEventStream }) => {
+      if (canceled) {
+        return undefined;
+      }
+
+      stop = connectRunEventStream({
+        runId: run.id,
+        onRunEvent() {
+          void revalidate();
+        },
+        onStateChange: setStreamState,
+      });
+
+      return undefined;
     });
+
+    return () => {
+      canceled = true;
+      stop?.();
+    };
   }, [revalidate, run?.id]);
 
   if (!run) {

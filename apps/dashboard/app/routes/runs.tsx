@@ -3,10 +3,7 @@ import { StatusBadge } from "~/components/status-badge";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
 import { useEffect, useState } from "react";
 import { Link, useRevalidator } from "react-router";
-import {
-  connectEnvironmentRunsStream,
-  type EnvironmentRunsStreamState,
-} from "~/lib/environment-runs-stream.client";
+import type { EnvironmentRunsStreamState } from "~/lib/environment-runs-stream";
 
 export function meta() {
   return [{ title: "Runs | Cascade" }];
@@ -73,12 +70,28 @@ export default function Runs({ loaderData }: Route.ComponentProps) {
   const revalidate = revalidator.revalidate;
 
   useEffect(() => {
-    return connectEnvironmentRunsStream({
-      onRunsChanged() {
-        void revalidate();
-      },
-      onStateChange: setStreamState,
+    let stop: (() => void) | undefined;
+    let canceled = false;
+
+    void import("~/lib/environment-runs-stream").then(({ connectEnvironmentRunsStream }) => {
+      if (canceled) {
+        return undefined;
+      }
+
+      stop = connectEnvironmentRunsStream({
+        onRunsChanged() {
+          void revalidate();
+        },
+        onStateChange: setStreamState,
+      });
+
+      return undefined;
     });
+
+    return () => {
+      canceled = true;
+      stop?.();
+    };
   }, [revalidate]);
 
   return (
