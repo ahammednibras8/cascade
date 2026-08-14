@@ -4,6 +4,8 @@ import { packageName } from "@cascade/core";
 import { requireApiKey } from "./auth/api-key.js";
 import { tasksRouter } from "./routes/tasks.js";
 import { disconnectTaskRunQueueRedis } from "./queue/task-runs.js";
+import { disconnectEnvironmentRunsNotificationSubscriber } from "./realtime/environment-runs-notifications.js";
+import { disconnectRunEventNotificationSubscriber } from "./realtime/run-event-notifications.js";
 import { prisma } from "@cascade/database";
 import { shutdownTelemetry } from "@cascade/telemetry";
 import { errorHandler } from "./http/error-handler.js";
@@ -109,6 +111,8 @@ async function shutdown(signal: "SIGINT" | "SIGTERM") {
     });
 
     disconnectTaskRunQueueRedis();
+    disconnectRunEventNotificationSubscriber();
+    disconnectEnvironmentRunsNotificationSubscriber();
     await prisma.$disconnect();
     await shutdownTelemetry();
 

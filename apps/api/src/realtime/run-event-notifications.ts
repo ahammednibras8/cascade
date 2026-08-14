@@ -1,10 +1,6 @@
 import { taskRunQueueRedis } from "../queue/task-runs.js";
 import { createRunEventNotificationSubscriber } from "./run-event-notification-subscriber.js";
 
-const globalForRunEventNotifications = globalThis as unknown as {
-  runEventNotificationSubscriber?: ReturnType<typeof createRunEventNotificationSubscriber>;
-};
-
 function createRedisSubscriber() {
   const subscriber = taskRunQueueRedis.duplicate();
 
@@ -13,10 +9,33 @@ function createRedisSubscriber() {
   return subscriber;
 }
 
-export const runEventNotificationSubscriber =
-  globalForRunEventNotifications.runEventNotificationSubscriber ??
-  createRunEventNotificationSubscriber(createRedisSubscriber());
+type RunEventNotifications = {
+  redisSubscriber: ReturnType<typeof createRedisSubscriber>;
+  notificationSubscriber: ReturnType<typeof createRunEventNotificationSubscriber>;
+};
+
+const globalForRunEventNotifications = globalThis as unknown as {
+  runEventNotifications?: RunEventNotifications;
+};
+
+function createRunEventNotifications(): RunEventNotifications {
+  const redisSubscriber = createRedisSubscriber();
+
+  return {
+    redisSubscriber,
+    notificationSubscriber: createRunEventNotificationSubscriber(redisSubscriber),
+  };
+}
+
+const runEventNotifications =
+  globalForRunEventNotifications.runEventNotifications ?? createRunEventNotifications();
+
+export const runEventNotificationSubscriber = runEventNotifications.notificationSubscriber;
 
 if (process.env.NODE_ENV !== "production") {
-  globalForRunEventNotifications.runEventNotificationSubscriber = runEventNotificationSubscriber;
+  globalForRunEventNotifications.runEventNotifications = runEventNotifications;
+}
+
+export function disconnectRunEventNotificationSubscriber() {
+  runEventNotifications.redisSubscriber.disconnect();
 }
