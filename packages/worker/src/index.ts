@@ -3,12 +3,14 @@ import { createShutdownSignal } from "./lifecycle/shutdown.js";
 import { runWorker } from "./worker.js";
 import { createWorkerHealthState } from "./health/state.js";
 import { startWorkerHealthServer, stopWorkerHealthServer } from "./health/server.js";
+import { disconnectTaskRunQueueRedis } from "./queue/task-runs.js";
 
 async function main() {
   try {
     const healthState = createWorkerHealthState();
     const shutdownSignal = createShutdownSignal(() => {
       healthState.markShuttingDown();
+      disconnectTaskRunQueueRedis();
     });
 
     const healthServer = await startWorkerHealthServer(healthState);

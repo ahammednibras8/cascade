@@ -8,11 +8,7 @@ const globalForRunEventNotifications = globalThis as unknown as {
 function createRedisSubscriber() {
   const subscriber = taskRunQueueRedis.duplicate();
 
-  subscriber.on("error", (error: unknown) => {
-    process.stderr.write(
-      `Run event Redis subscriber error: ${error instanceof Error ? error.stack : String(error)}\n`,
-    );
-  });
+  subscriber.on("error", () => {});
 
   return subscriber;
 }

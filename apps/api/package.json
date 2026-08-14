@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file=../../.env --conditions=development --import tsx --import @cascade/telemetry/register --watch src/index.ts",
+    "dev": "node ../../scripts/run-node-watch.mjs src/index.ts",
     "dev:create-api-key": "node --env-file=../../.env --conditions=development --import tsx src/dev/create-api-key.ts",
     "dev:sync-dashboard-api-key": "node --env-file=../../.env --conditions=development --import tsx src/dev/sync-dashboard-api-key.ts",
     "start": "node --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import @cascade/telemetry/register dist/index.js",

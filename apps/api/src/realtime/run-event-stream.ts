@@ -180,6 +180,7 @@ export function createTaskRunEventStream(dependencies: StreamDependencies) {
       });
       input.response.status(200);
       input.response.flushHeaders?.();
+      input.response.write(": connected\n\n");
 
       for (const eventId of replayedEventIds) {
         sendEvent(eventId);

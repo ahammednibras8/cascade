@@ -24,9 +24,7 @@ const processTaskRun = vi.hoisted(() =>
   vi.fn<(message: TaskRunQueueMessage, taskRegistry: unknown) => Promise<void>>(),
 );
 
-const taskRunQueueRedis = vi.hoisted(() => ({
-  quit: vi.fn<() => Promise<void>>(),
-}));
+const disconnectTaskRunQueueRedis = vi.hoisted(() => vi.fn<() => void>());
 
 const prisma = vi.hoisted(() => ({
   $disconnect: vi.fn<() => Promise<void>>(),
@@ -60,8 +58,8 @@ vi.mock("../src/config.js", () => ({
 }));
 
 vi.mock("../src/queue/task-runs.js", () => ({
+  disconnectTaskRunQueueRedis,
   popTaskRunMessage,
-  taskRunQueueRedis,
 }));
 
 vi.mock("../src/task-run-processor.js", () => ({
@@ -117,7 +115,6 @@ describe("runWorker", () => {
 
     processTaskRun.mockResolvedValue(undefined);
     loadTaskRegistry.mockResolvedValue(taskRegistry);
-    taskRunQueueRedis.quit.mockResolvedValue(undefined);
     prisma.$disconnect.mockResolvedValue(undefined);
 
     stopRunEventOutboxDispatcher.mockReturnValue(undefined);
@@ -150,7 +147,7 @@ describe("runWorker", () => {
     expect(stopTaskScheduleScheduler).not.toHaveBeenCalled();
     expect(stopRunEventOutboxDispatcher).not.toHaveBeenCalled();
 
-    expect(taskRunQueueRedis.quit).toHaveBeenCalledOnce();
+    expect(disconnectTaskRunQueueRedis).toHaveBeenCalledOnce();
     expect(prisma.$disconnect).toHaveBeenCalledOnce();
   });
 
@@ -162,7 +159,7 @@ describe("runWorker", () => {
     expect(popTaskRunMessage).toHaveBeenCalledTimes(2);
     expect(processTaskRun).not.toHaveBeenCalled();
 
-    expect(taskRunQueueRedis.quit).toHaveBeenCalledOnce();
+    expect(disconnectTaskRunQueueRedis).toHaveBeenCalledOnce();
     expect(prisma.$disconnect).toHaveBeenCalledOnce();
   });
 

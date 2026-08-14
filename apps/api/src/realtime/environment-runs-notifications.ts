@@ -10,13 +10,7 @@ const globalForEnvironmentRunsNotifications = globalThis as unknown as {
 function createRedisSubscriber() {
   const subscriber = taskRunQueueRedis.duplicate();
 
-  subscriber.on("error", (error: unknown) => {
-    process.stderr.write(
-      `Environment runs Redis subscriber error: ${
-        error instanceof Error ? error.stack : String(error)
-      }\n`,
-    );
-  });
+  subscriber.on("error", () => {});
 
   return subscriber;
 }

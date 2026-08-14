@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Form, Link, redirect, useActionData, useNavigation } from "react-router";
 import type { Route } from "./+types/edit-schedule";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
@@ -171,7 +170,6 @@ export async function action({ params, request }: Route.ActionArgs) {
 
 export default function EditSchedule({ loaderData }: Route.ComponentProps) {
   const { schedule } = loaderData;
-  const [scheduleType, setScheduleType] = useState(schedule.scheduleType);
   const actionData = useActionData<ActionData>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
@@ -212,10 +210,7 @@ export default function EditSchedule({ loaderData }: Route.ComponentProps) {
           <span className="text-sm font-medium text-gray-800">Schedule type</span>
           <select
             name="scheduleType"
-            value={scheduleType}
-            onChange={(event) => {
-              setScheduleType(event.target.value as "INTERVAL" | "CRON");
-            }}
+            defaultValue={schedule.scheduleType}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
           >
             <option value="INTERVAL">Interval</option>
@@ -223,42 +218,37 @@ export default function EditSchedule({ loaderData }: Route.ComponentProps) {
           </select>
         </label>
 
-        {scheduleType === "INTERVAL" ? (
-          <label className="block">
-            <span className="text-sm font-medium text-gray-800">Interval seconds</span>
-            <input
-              name="intervalSeconds"
-              type="number"
-              min={60}
-              max={31_536_000}
-              required
-              defaultValue={schedule.intervalSeconds ?? 60}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-            />
-          </label>
-        ) : (
-          <>
-            <label className="block">
-              <span className="text-sm font-medium text-gray-800">Cron expression</span>
-              <input
-                name="cronExpression"
-                required
-                defaultValue={schedule.cronExpression ?? ""}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm"
-              />
-            </label>
+        <label className="block">
+          <span className="text-sm font-medium text-gray-800">Interval seconds</span>
+          <input
+            name="intervalSeconds"
+            type="number"
+            min={60}
+            max={31_536_000}
+            defaultValue={schedule.intervalSeconds ?? 60}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+          />
+          <span className="mt-1 block text-xs text-gray-500">Used for interval schedules.</span>
+        </label>
 
-            <label className="block">
-              <span className="text-sm font-medium text-gray-800">Timezone</span>
-              <input
-                name="timezone"
-                required
-                defaultValue={schedule.timezone}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-              />
-            </label>
-          </>
-        )}
+        <label className="block">
+          <span className="text-sm font-medium text-gray-800">Cron expression</span>
+          <input
+            name="cronExpression"
+            defaultValue={schedule.cronExpression ?? ""}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm"
+          />
+          <span className="mt-1 block text-xs text-gray-500">Used for cron schedules.</span>
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-medium text-gray-800">Timezone</span>
+          <input
+            name="timezone"
+            defaultValue={schedule.timezone}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+          />
+        </label>
 
         <label className="block">
           <span className="text-sm font-medium text-gray-800">Replacement payload JSON</span>

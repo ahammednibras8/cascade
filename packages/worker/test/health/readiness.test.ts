@@ -5,10 +5,12 @@ const dependencies = vi.hoisted(() => ({
   queueRedisPing: vi.fn<() => Promise<unknown>>(),
   healthRedisPing: vi.fn<() => Promise<unknown>>(),
   healthRedisDisconnect: vi.fn<() => void>(),
+  healthRedisOn: vi.fn<(event: string, listener: () => void) => unknown>(),
   duplicateQueueRedis: vi.fn<
     (options: { lazyConnect: boolean; maxRetriesPerRequest: null }) => {
       ping: () => Promise<unknown>;
       disconnect: () => void;
+      on: (event: string, listener: () => void) => unknown;
     }
   >(),
 }));
@@ -29,6 +31,7 @@ vi.mock("../../src/queue/task-runs.js", () => ({
 dependencies.duplicateQueueRedis.mockReturnValue({
   ping: dependencies.healthRedisPing,
   disconnect: dependencies.healthRedisDisconnect,
+  on: dependencies.healthRedisOn,
 });
 
 const { checkWorkerReadiness, stopWorkerReadinessChecks } =
@@ -101,6 +104,7 @@ describe("checkWorkerReadiness", () => {
       lazyConnect: true,
       maxRetriesPerRequest: null,
     });
+    expect(dependencies.healthRedisOn).toHaveBeenCalledWith("error", expect.any(Function));
     expect(dependencies.queueRedisPing).not.toHaveBeenCalled();
     expect(dependencies.healthRedisPing).toHaveBeenCalledOnce();
     expect(dependencies.healthRedisDisconnect).toHaveBeenCalledOnce();

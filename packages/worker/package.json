@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file=../../.env --conditions=development --import tsx --import @cascade/telemetry/register --watch src/index.ts",
+    "dev": "node ../../scripts/run-node-watch.mjs src/index.ts",
     "start": "node --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import @cascade/telemetry/register dist/index.js",
     "build": "tsc --project tsconfig.build.json",
     "check-types": "tsc --noEmit",

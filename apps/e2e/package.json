@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "e2e": "NODE_OPTIONS=--conditions=development playwright test",
+    "e2e": "NODE_OPTIONS=--conditions=development node scripts/run-playwright.mjs",
     "e2e:ui": "NODE_OPTIONS=--conditions=development playwright test --ui",
     "e2e:headed": "NODE_OPTIONS=--conditions=development playwright test --headed",
     "e2e:debug": "NODE_OPTIONS=--conditions=development playwright test --debug",

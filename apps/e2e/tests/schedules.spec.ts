@@ -28,12 +28,11 @@ test.afterEach(async () => {
       },
     });
   }
-
-  await restoreDashboardApiKey();
 });
 
 test.afterAll(async () => {
   const prisma = await getPrisma();
+  await restoreDashboardApiKey();
   await prisma.$disconnect();
 });
 

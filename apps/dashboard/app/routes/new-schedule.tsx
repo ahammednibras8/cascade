@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Form, Link, redirect, useActionData, useNavigation } from "react-router";
 import type { Route } from "./+types/new-schedule";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
@@ -176,7 +175,6 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function NewSchedule({ loaderData }: Route.ComponentProps) {
-  const [scheduleType, setScheduleType] = useState<"INTERVAL" | "CRON">("INTERVAL");
   const actionData = useActionData<ActionData>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
@@ -226,10 +224,7 @@ export default function NewSchedule({ loaderData }: Route.ComponentProps) {
           <span className="text-sm font-medium text-gray-800">Schedule type</span>
           <select
             name="scheduleType"
-            value={scheduleType}
-            onChange={(event) => {
-              setScheduleType(event.target.value as "INTERVAL" | "CRON");
-            }}
+            defaultValue="INTERVAL"
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
           >
             <option value="INTERVAL">Interval</option>
@@ -237,47 +232,42 @@ export default function NewSchedule({ loaderData }: Route.ComponentProps) {
           </select>
         </label>
 
-        {scheduleType === "INTERVAL" ? (
-          <label className="block">
-            <span className="text-sm font-medium text-gray-800">Interval seconds</span>
-            <input
-              name="intervalSeconds"
-              type="number"
-              min={60}
-              max={31_536_000}
-              required
-              defaultValue={60}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-            />
-            <span className="mt-1 block text-xs text-gray-500">Minimum: 60 seconds.</span>
-          </label>
-        ) : (
-          <>
-            <label className="block">
-              <span className="text-sm font-medium text-gray-800">Cron expression</span>
-              <input
-                name="cronExpression"
-                required
-                placeholder="0 9 * * 1-5"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm"
-              />
-              <span className="mt-1 block text-xs text-gray-500">
-                Five fields: minute hour day-of-month month day-of-week.
-              </span>
-            </label>
+        <label className="block">
+          <span className="text-sm font-medium text-gray-800">Interval seconds</span>
+          <input
+            name="intervalSeconds"
+            type="number"
+            min={60}
+            max={31_536_000}
+            defaultValue={60}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+          />
+          <span className="mt-1 block text-xs text-gray-500">
+            Used for interval schedules. Minimum: 60 seconds.
+          </span>
+        </label>
 
-            <label className="block">
-              <span className="text-sm font-medium text-gray-800">Timezone</span>
-              <input
-                name="timezone"
-                required
-                defaultValue="UTC"
-                placeholder="Asia/Kolkata"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-              />
-            </label>
-          </>
-        )}
+        <label className="block">
+          <span className="text-sm font-medium text-gray-800">Cron expression</span>
+          <input
+            name="cronExpression"
+            placeholder="0 9 * * 1-5"
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm"
+          />
+          <span className="mt-1 block text-xs text-gray-500">
+            Used for cron schedules. Five fields: minute hour day-of-month month day-of-week.
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-medium text-gray-800">Timezone</span>
+          <input
+            name="timezone"
+            defaultValue="UTC"
+            placeholder="Asia/Kolkata"
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+          />
+        </label>
 
         <label className="block">
           <span className="text-sm font-medium text-gray-800">

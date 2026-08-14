@@ -130,7 +130,9 @@ test("shows run payload, output, error, attempts, and logs", async ({ page }) =>
     },
   });
 
-  await page.goto("/runs");
+  await page.goto("/runs", {
+    waitUntil: "domcontentloaded",
+  });
 
   await page.getByRole("link", { name: run.id }).click();
 
@@ -217,28 +219,33 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
     },
   });
 
-  await page.goto(`/runs/${run.id}`);
+  await page.goto(`/runs/${run.id}`, {
+    waitUntil: "domcontentloaded",
+  });
 
   await expect(page.getByRole("heading", { name: "Run detail" })).toBeVisible();
   await expect(page.locator("body")).toContainText("PENDING");
   await expect(page.locator("body")).toContainText("waiting for realtime update");
+  await expect(page.locator("body")).toContainText("Live updates connected");
 
-  await prisma.taskRun.update({
-    where: {
-      id: run.id,
-    },
-    data: {
-      status: "COMPLETED",
-      output: {
-        ok: true,
-        source: "sse",
+  const { createTaskRunEvent } = await import("@cascade/database");
+
+  await prisma.$transaction(async (tx) => {
+    await tx.taskRun.update({
+      where: {
+        id: run.id,
       },
-      completedAt: new Date(),
-    },
-  });
+      data: {
+        status: "COMPLETED",
+        output: {
+          ok: true,
+          source: "sse",
+        },
+        completedAt: new Date(),
+      },
+    });
 
-  await prisma.taskEvent.create({
-    data: {
+    await createTaskRunEvent(tx, {
       taskRunId: run.id,
       type: "task.log",
       level: "INFO",
@@ -246,8 +253,32 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
       data: {
         source: "sse",
       },
-    },
+    });
   });
+
+  await expect
+    .poll(
+      async () =>
+        prisma.runEventOutbox.findFirst({
+          where: {
+            taskEvent: {
+              taskRunId: run.id,
+              message: "Realtime update arrived",
+            },
+          },
+          select: {
+            publishedAt: true,
+            publishAttempts: true,
+          },
+        }),
+      {
+        timeout: 10_000,
+      },
+    )
+    .toMatchObject({
+      publishedAt: expect.any(Date),
+      publishAttempts: 1,
+    });
 
   await expect(page.locator("body")).toContainText("COMPLETED", {
     timeout: 7_000,

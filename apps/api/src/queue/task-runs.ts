@@ -29,10 +29,14 @@ function getQueueRedisUrl() {
 }
 
 function createRedisClient() {
-  return new Redis(getQueueRedisUrl(), {
+  const redis = new Redis(getQueueRedisUrl(), {
     maxRetriesPerRequest: 3,
     lazyConnect: true,
   });
+
+  redis.on("error", () => {});
+
+  return redis;
 }
 
 function getDeploymentQueuePart(deploymentId: string | null | undefined) {
@@ -55,6 +59,10 @@ export const taskRunQueueRedis = globalForRedis.taskRunQueueRedis ?? createRedis
 
 if (process.env.NODE_ENV !== "production") {
   globalForRedis.taskRunQueueRedis = taskRunQueueRedis;
+}
+
+export function disconnectTaskRunQueueRedis() {
+  taskRunQueueRedis.disconnect();
 }
 
 export async function enqueueTaskRun(

@@ -4,7 +4,7 @@ import { packageName } from "@cascade/core";
 import { prisma } from "@cascade/database";
 import { WORKER_CONCURRENCY, WORKER_ROLE } from "./config.js";
 import type { ShutdownSignal } from "./lifecycle/shutdown.js";
-import { popTaskRunMessage, taskRunQueueRedis } from "./queue/task-runs.js";
+import { disconnectTaskRunQueueRedis, popTaskRunMessage } from "./queue/task-runs.js";
 import { processTaskRun } from "./task-run-processor.js";
 import { startTaskScheduleScheduler } from "./timers/task-schedule-scheduler.js";
 import { startStuckRunSweeper } from "./timers/stuck-run-sweeper.js";
@@ -64,7 +64,17 @@ export async function runWorker(shutdownSignal: ShutdownSignal, healthState?: Wo
     while (!shutdownSignal.isShuttingDown()) {
       await waitForAvailableWorkerSlot();
 
-      const message = await popTaskRunMessage();
+      let message: Awaited<ReturnType<typeof popTaskRunMessage>>;
+
+      try {
+        message = await popTaskRunMessage();
+      } catch (error) {
+        if (shutdownSignal.isShuttingDown()) {
+          break;
+        }
+
+        throw error;
+      }
 
       if (!message) {
         continue;
@@ -85,7 +95,7 @@ export async function runWorker(shutdownSignal: ShutdownSignal, healthState?: Wo
     stopTaskScheduleScheduler();
     stopRunEventOutboxDispatcher();
 
-    await taskRunQueueRedis.quit();
+    disconnectTaskRunQueueRedis();
     await prisma.$disconnect();
 
     process.stdout.write("Worker stopped\n");

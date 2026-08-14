@@ -14,7 +14,7 @@
       "project": ["*.json", ".configs/**/*.json"]
     },
     "apps/api": {
-      "entry": ["src/dev/*.ts"],
+      "entry": ["src/index.ts", "src/dev/*.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "apps/dashboard": {
@@ -38,7 +38,7 @@
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/worker": {
-      "entry": ["src/tasks/registry.ts"],
+      "entry": ["src/index.ts", "src/tasks/registry.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.mjs"]
     },
     "packages/clickhouse": {

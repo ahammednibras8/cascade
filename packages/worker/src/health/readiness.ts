@@ -8,6 +8,8 @@ const healthRedis = taskRunQueueRedis.duplicate({
   maxRetriesPerRequest: null,
 });
 
+healthRedis.on("error", () => {});
+
 type DependencyStatus = "ok" | "unavailable";
 
 type WorkerStatus = "ready" | "starting" | "shutting_down";

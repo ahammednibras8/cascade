@@ -1,8 +1,9 @@
 import express from "express";
+import type { Socket } from "node:net";
 import { packageName } from "@cascade/core";
 import { requireApiKey } from "./auth/api-key.js";
 import { tasksRouter } from "./routes/tasks.js";
-import { taskRunQueueRedis } from "./queue/task-runs.js";
+import { disconnectTaskRunQueueRedis } from "./queue/task-runs.js";
 import { prisma } from "@cascade/database";
 import { shutdownTelemetry } from "@cascade/telemetry";
 import { errorHandler } from "./http/error-handler.js";
@@ -16,6 +17,7 @@ import { checkApiReadiness } from "./health/api-readiness.js";
 const app = express();
 const port = Number(process.env.API_PORT ?? 3001);
 let shuttingDown = false;
+const sockets = new Set<Socket>();
 
 app.disable("x-powered-by");
 app.use(securityHeaders());
@@ -47,7 +49,7 @@ app.get("/livez", (_request, response) => {
 });
 
 app.get("/readyz", readinessHandler);
-app.get("healthz", readinessHandler);
+app.get("/healthz", readinessHandler);
 
 app.get("/me", (request, response) => {
   response.json({
@@ -62,6 +64,20 @@ app.use(errorHandler);
 const server = app.listen(port, () => {
   process.stdout.write(`API listening on http://localhost:${port}\n`);
 });
+
+server.on("connection", (socket) => {
+  sockets.add(socket);
+
+  socket.once("close", () => {
+    sockets.delete(socket);
+  });
+});
+
+function destroyOpenSockets() {
+  for (const socket of sockets) {
+    socket.destroy();
+  }
+}
 
 async function shutdown(signal: "SIGINT" | "SIGTERM") {
   if (shuttingDown) {
@@ -88,9 +104,11 @@ async function shutdown(signal: "SIGINT" | "SIGTERM") {
 
         resolve();
       });
+
+      destroyOpenSockets();
     });
 
-    await taskRunQueueRedis.quit();
+    disconnectTaskRunQueueRedis();
     await prisma.$disconnect();
     await shutdownTelemetry();
 

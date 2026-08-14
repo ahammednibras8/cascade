@@ -2,9 +2,11 @@ import type { TaskRunQueueMessage } from "../../src/queue/task-runs.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const redisInstance = vi.hoisted(() => ({
+  on: vi.fn<(event: string, listener: () => void) => unknown>(),
   rpush: vi.fn<(key: string, message: string) => Promise<number>>(),
   zadd: vi.fn<(key: string, score: number, message: string) => Promise<number>>(),
   blpop: vi.fn<(key: string, timeoutSeconds: number) => Promise<[string, string] | null>>(),
+  disconnect: vi.fn<() => void>(),
 }));
 
 const Redis = vi.hoisted(() =>
