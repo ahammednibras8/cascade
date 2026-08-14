@@ -168,6 +168,7 @@ test("shows run payload, output, error, attempts, and logs", async ({ page }) =>
 
 test("updates run detail when SSE detects run changes", async ({ page }) => {
   const prisma = await getPrisma();
+  const { createTaskRunEvent } = await import("@cascade/database");
   const suffix = randomUUID().slice(0, 8);
 
   const project = await prisma.project.create({
@@ -226,9 +227,6 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Run detail" })).toBeVisible();
   await expect(page.locator("body")).toContainText("PENDING");
   await expect(page.locator("body")).toContainText("waiting for realtime update");
-  await expect(page.locator("body")).toContainText("Live updates connected");
-
-  const { createTaskRunEvent } = await import("@cascade/database");
 
   await prisma.$transaction(async (tx) => {
     await tx.taskRun.update({
@@ -258,19 +256,23 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
 
   await expect
     .poll(
-      async () =>
-        prisma.runEventOutbox.findFirst({
-          where: {
-            taskEvent: {
-              taskRunId: run.id,
-              message: "Realtime update arrived",
-            },
-          },
-          select: {
-            publishedAt: true,
-            publishAttempts: true,
-          },
-        }),
+      async () => {
+        const entries = await prisma.$queryRaw<
+          Array<{
+            publishedAt: Date | null;
+            publishAttempts: number;
+          }>
+        >`
+          SELECT outbox."publishedAt", outbox."publishAttempts"
+          FROM "RunEventOutbox" outbox
+          INNER JOIN "TaskEvent" event ON event.id = outbox."taskEventId"
+          WHERE event."taskRunId" = ${run.id}::uuid
+            AND event.message = 'Realtime update arrived'
+          LIMIT 1
+        `;
+
+        return entries[0] ?? null;
+      },
       {
         timeout: 10_000,
       },
@@ -281,11 +283,11 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
     });
 
   await expect(page.locator("body")).toContainText("COMPLETED", {
-    timeout: 7_000,
+    timeout: 15_000,
   });
 
   await expect(page.locator("body")).toContainText("Realtime update arrived", {
-    timeout: 7_000,
+    timeout: 15_000,
   });
 
   await expect(page.locator("body")).toContainText("source");

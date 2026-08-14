@@ -35,9 +35,22 @@ const dashboardApiKey =
     ? (process.env.CASCADE_DASHBOARD_API_KEY ?? "csc_e2e_dashboard_test_key")
     : "csc_e2e_dashboard_test_key");
 
+function ensureNodeOption(value: string | undefined, option: string) {
+  const options = value?.split(/\s+/).filter(Boolean) ?? [];
+
+  if (!options.includes(option)) {
+    options.push(option);
+  }
+
+  return options.join(" ");
+}
+
+const nodeOptions = ensureNodeOption(process.env.NODE_OPTIONS, "--conditions=development");
+
 process.env.PLAYWRIGHT_BASE_URL = baseURL;
 process.env.CASCADE_API_URL = apiURL;
 process.env.CASCADE_DASHBOARD_API_KEY = dashboardApiKey;
+process.env.NODE_OPTIONS = nodeOptions;
 
 function getUrlPort(url: string, fallbackPort: string) {
   const parsed = new URL(url);
@@ -56,7 +69,7 @@ const inheritedEnv = Object.fromEntries(
 
 const serverEnv = {
   ...inheritedEnv,
-  NODE_OPTIONS: "--conditions=development",
+  NODE_OPTIONS: nodeOptions,
   DATABASE_URL: databaseURL,
   QUEUE_REDIS_URL: queueRedisURL,
   API_PORT: apiPort,

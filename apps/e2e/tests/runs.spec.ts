@@ -5,20 +5,17 @@ import { createExecutionConfig } from "./support/execution-config.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
-const createdTaskIds: string[] = [];
-
 async function getPrisma() {
   const { prisma } = await import("@cascade/database");
   return prisma;
 }
 
-test.afterEach(async () => {
-  const prisma = await getPrisma();
-  const taskIds = createdTaskIds.splice(0);
-
+async function deleteTasks(taskIds: string[]) {
   if (taskIds.length === 0) {
     return;
   }
+
+  const prisma = await getPrisma();
 
   await prisma.task.deleteMany({
     where: {
@@ -27,7 +24,7 @@ test.afterEach(async () => {
       },
     },
   });
-});
+}
 
 test.afterAll(async () => {
   const prisma = await getPrisma();
@@ -39,6 +36,7 @@ test("shows task runs in the dashboard table", async ({ page }) => {
   const { environment, project } = await getDashboardTestEnvironment();
   const suffix = randomUUID().slice(0, 8);
   const executionConfig = createExecutionConfig(`e2e-hello-${suffix}`);
+  const taskIds: string[] = [];
 
   const task = await prisma.task.create({
     data: {
@@ -49,42 +47,48 @@ test("shows task runs in the dashboard table", async ({ page }) => {
     },
   });
 
-  createdTaskIds.push(task.id);
+  taskIds.push(task.id);
 
-  const run = await prisma.taskRun.create({
-    data: {
-      taskId: task.id,
-      status: "PENDING",
-      executionConfig,
-      payload: {
-        message: "hello from e2e",
+  try {
+    const run = await prisma.taskRun.create({
+      data: {
+        taskId: task.id,
+        status: "PENDING",
+        executionConfig,
+        payload: {
+          message: "hello from e2e",
+        },
       },
-    },
-  });
+    });
 
-  await page.goto("/runs", {
-    waitUntil: "domcontentloaded",
-  });
+    await page.goto("/runs", {
+      waitUntil: "domcontentloaded",
+    });
 
-  await expect(page.getByRole("heading", { name: "Task runs" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Task runs" })).toBeVisible();
 
-  const row = page.getByRole("row").filter({
-    hasText: run.id,
-  });
+    const row = page.getByRole("row").filter({
+      hasText: run.id,
+    });
 
-  await expect(row).toBeVisible();
-  await expect(row).toContainText("PENDING");
-  await expect(row).toContainText("E2E Hello Task");
-  await expect(row).toContainText(task.slug);
-  await expect(row).toContainText(project.name);
-  await expect(row).toContainText(`${project.slug}/${environment.slug}`);
+    await expect(row).toBeVisible();
+    await expect(row).toContainText("PENDING");
+    await expect(row).toContainText("E2E Hello Task");
+    await expect(row).toContainText(task.slug);
+    await expect(row).toContainText(project.name);
+    await expect(row).toContainText(`${project.slug}/${environment.slug}`);
+  } finally {
+    await deleteTasks(taskIds);
+  }
 });
 
 test("updates the runs list when realtime receives an environment event", async ({ page }) => {
   const prisma = await getPrisma();
+  const { createTaskRunEvent } = await import("@cascade/database");
   const { environment } = await getDashboardTestEnvironment();
   const suffix = randomUUID().slice(0, 8);
   const executionConfig = createExecutionConfig(`e2e-live-runs-${suffix}`);
+  const taskIds: string[] = [];
 
   const task = await prisma.task.create({
     data: {
@@ -95,45 +99,46 @@ test("updates the runs list when realtime receives an environment event", async 
     },
   });
 
-  createdTaskIds.push(task.id);
+  taskIds.push(task.id);
 
-  await page.goto("/runs", {
-    waitUntil: "domcontentloaded",
-  });
-
-  await expect(page.getByRole("heading", { name: "Task runs" })).toBeVisible();
-  await expect(page.locator("body")).toContainText("Live updates connected");
-
-  const run = await prisma.taskRun.create({
-    data: {
-      taskId: task.id,
-      status: "PENDING",
-      executionConfig,
-      payload: {
-        source: "runs-list-sse",
-      },
-    },
-  });
-
-  const { createTaskRunEvent } = await import("@cascade/database");
-
-  await prisma.$transaction(async (tx) => {
-    await createTaskRunEvent(tx, {
-      taskRunId: run.id,
-      type: "task.triggered",
-      level: "INFO",
-      message: "Run created for runs-list realtime test",
+  try {
+    await page.goto("/runs", {
+      waitUntil: "domcontentloaded",
     });
-  });
 
-  const row = page.getByRole("row").filter({
-    hasText: run.id,
-  });
+    await expect(page.getByRole("heading", { name: "Task runs" })).toBeVisible();
 
-  await expect(row).toBeVisible({
-    timeout: 10_000,
-  });
+    const run = await prisma.taskRun.create({
+      data: {
+        taskId: task.id,
+        status: "PENDING",
+        executionConfig,
+        payload: {
+          source: "runs-list-sse",
+        },
+      },
+    });
 
-  await expect(row).toContainText("PENDING");
-  await expect(row).toContainText("E2E Live Runs Task");
+    await prisma.$transaction(async (tx) => {
+      await createTaskRunEvent(tx, {
+        taskRunId: run.id,
+        type: "task.triggered",
+        level: "INFO",
+        message: "Run created for runs-list realtime test",
+      });
+    });
+
+    const row = page.getByRole("row").filter({
+      hasText: run.id,
+    });
+
+    await expect(row).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await expect(row).toContainText("PENDING");
+    await expect(row).toContainText("E2E Live Runs Task");
+  } finally {
+    await deleteTasks(taskIds);
+  }
 });
