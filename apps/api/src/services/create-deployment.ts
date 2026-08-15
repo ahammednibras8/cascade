@@ -1,170 +1,11 @@
-import { parseTaskExecutionConfig, type TaskExecutionConfig } from "@cascade/core";
-import { prisma, type Prisma } from "@cascade/database";
+import { Prisma, prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../auth/api-key.js";
+import { parseDeploymentBody } from "./deployment-request.js";
 
 type CreateDeploymentInput = {
   auth: ApiAuthContext;
   body: unknown;
 };
-
-type DeploymentTaskInput = {
-  slug: string;
-  name: string;
-  description: string | null;
-  executionConfig: TaskExecutionConfig;
-};
-
-const MAX_DEPLOYMENT_VERSION_LENGTH = 120;
-const MAX_DEPLOYMENT_IMAGE_LENGTH = 512;
-const MAX_DEPLOYMENT_TASKS = 100;
-const MAX_TASK_SLUG_LENGTH = 120;
-const MAX_TASK_NAME_LENGTH = 200;
-const MAX_TASK_DESCRIPTION_LENGTH = 4_000;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function invalidDepoloymentBody(code: string, message: string) {
-  return {
-    ok: false as const,
-    status: 400,
-    error: {
-      code,
-      message,
-    },
-  };
-}
-
-function getTrimmedString(value: unknown) {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmed = value.trim();
-
-  return trimmed || null;
-}
-
-function parseDeploymentBody(body: unknown) {
-  if (!isRecord(body)) {
-    return invalidDepoloymentBody("INVALID_BODY", "Body must be an object");
-  }
-
-  const version = getTrimmedString(body.version);
-
-  if (!version || version.length > MAX_DEPLOYMENT_VERSION_LENGTH) {
-    return invalidDepoloymentBody(
-      "INVALID_VERSION",
-      `version must be a non-empty string with at most ${MAX_DEPLOYMENT_VERSION_LENGTH} characters`,
-    );
-  }
-
-  const image = getTrimmedString(body.image);
-
-  if (!image || image.length > MAX_DEPLOYMENT_IMAGE_LENGTH || /\s/.test(image)) {
-    return invalidDepoloymentBody(
-      "INVALID_IMAGE",
-      `image must be a whitespace-free string with at most ${MAX_DEPLOYMENT_IMAGE_LENGTH} characters`,
-    );
-  }
-
-  const { tasks } = body;
-
-  if (!Array.isArray(tasks) || tasks.length === 0) {
-    return invalidDepoloymentBody("INVALID_TASKS", "tasks must be a non-empty array");
-  }
-
-  if (tasks.length > MAX_DEPLOYMENT_TASKS) {
-    return invalidDepoloymentBody(
-      "INVALID_TASKS",
-      `tasks must contain at most ${MAX_DEPLOYMENT_TASKS} items`,
-    );
-  }
-
-  const parsedTaks: DeploymentTaskInput[] = [];
-  const tasksSlug = new Set<string>();
-
-  for (const task of tasks) {
-    if (!isRecord(task)) {
-      return invalidDepoloymentBody("INVALID_TASK", "Each task must be an object");
-    }
-
-    const slug = getTrimmedString(task.slug);
-
-    if (!slug || slug.length > MAX_TASK_SLUG_LENGTH) {
-      return invalidDepoloymentBody(
-        "INVALID_TASK",
-        `task.slug must be a non-empty string with at most ${MAX_TASK_SLUG_LENGTH} characters`,
-      );
-    }
-
-    if (tasksSlug.has(slug)) {
-      return invalidDepoloymentBody(
-        "DUPLICATE_TASK_SLUG",
-        "tasks must not contain duplicate task.slug values",
-      );
-    }
-
-    tasksSlug.add(slug);
-
-    let name = slug;
-
-    if (task.name !== undefined) {
-      const explicitName = getTrimmedString(task.name);
-
-      if (!explicitName || explicitName.length > MAX_TASK_NAME_LENGTH) {
-        return invalidDepoloymentBody(
-          "INVALID_TASK_NAME",
-          `task.name must be a non-empty string with at most ${MAX_TASK_NAME_LENGTH} characters`,
-        );
-      }
-
-      name = explicitName;
-    }
-
-    let description: string | null = null;
-
-    if (task.description !== undefined && task.description !== null) {
-      if (
-        typeof task.description !== "string" ||
-        task.description.length > MAX_TASK_DESCRIPTION_LENGTH
-      ) {
-        return invalidDepoloymentBody(
-          "INVALID_TASK_DESCRIPTION",
-          `task.description must be a string with at most ${MAX_TASK_DESCRIPTION_LENGTH} characters`,
-        );
-      }
-
-      description = task.description;
-    }
-
-    const executionConfig = parseTaskExecutionConfig(task.executionConfig);
-
-    if (!executionConfig) {
-      return invalidDepoloymentBody(
-        "INVALID_TASK_EXECUTION_CONFIG",
-        "task.executionConfig must contain schemaVersion, timeoutMs, retry, and queue settings",
-      );
-    }
-
-    parsedTaks.push({
-      slug,
-      name,
-      description,
-      executionConfig,
-    });
-  }
-
-  return {
-    ok: true as const,
-    deployment: {
-      version,
-      image,
-      tasks: parsedTaks,
-    },
-  };
-}
 
 function isDeploymentVersionConflict(error: unknown) {
   if (
@@ -183,6 +24,21 @@ function isDeploymentVersionConflict(error: unknown) {
   }
 
   return target === "Deployment_environmentId_version_key";
+}
+
+function getOmittedTaskWhere(input: {
+  environmentId: string;
+  deployedSlugs: string[];
+}): Prisma.TaskWhereInput {
+  return {
+    environmentId: input.environmentId,
+    deploymentId: {
+      not: null,
+    },
+    slug: {
+      notIn: input.deployedSlugs,
+    },
+  };
 }
 
 export async function createDeployment(input: CreateDeploymentInput) {
@@ -212,6 +68,32 @@ export async function createDeployment(input: CreateDeploymentInput) {
           version: parsed.deployment.version,
           image: parsed.deployment.image,
           status: "ACTIVE",
+        },
+      });
+
+      const omittedTaskWhere = getOmittedTaskWhere({
+        environmentId: input.auth.environmentId,
+        deployedSlugs: parsed.deployment.tasks.map((task) => task.slug),
+      });
+
+      await tx.taskSchedule.updateMany({
+        where: {
+          task: omittedTaskWhere,
+        },
+        data: {
+          enabled: false,
+          revision: {
+            increment: 1,
+          },
+          lockedAt: null,
+        },
+      });
+
+      await tx.task.updateMany({
+        where: omittedTaskWhere,
+        data: {
+          deploymentId: null,
+          executionConfig: Prisma.DbNull,
         },
       });
 

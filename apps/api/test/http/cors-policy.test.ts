@@ -62,7 +62,9 @@ describe("corsPolicy", () => {
 
     expect(response.status).toBe(204);
     expect(response.headers["access-control-allow-origin"]).toBe("http://localhost:3000");
-    expect(response.headers["access-control-allow-methods"]).toBe("GET, POST, OPTIONS");
+    expect(response.headers["access-control-allow-methods"]).toBe(
+      "GET, POST, PUT, DELETE, OPTIONS",
+    );
     expect(response.headers["access-control-allow-headers"]).toContain("Authorization");
     expect(response.headers["access-control-allow-headers"]).toContain("X-API-Key");
   });

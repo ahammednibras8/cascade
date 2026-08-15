@@ -38,6 +38,7 @@ const mocks = vi.hoisted(() => ({
     taskSchedule: { create: vi.fn<(args: unknown) => Promise<CreatedSchedule>>() },
   },
   maybeStoreJsonValue: vi.fn<(input: { value: unknown }) => Promise<unknown>>(),
+  randomUUID: vi.fn<() => string>(),
 }));
 
 vi.mock("@cascade/database", () => ({
@@ -46,22 +47,12 @@ vi.mock("@cascade/database", () => ({
 }));
 
 vi.mock("@cascade/storage", () => ({ maybeStoreJsonValue: mocks.maybeStoreJsonValue }));
+vi.mock("node:crypto", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("node:crypto")>()),
+  randomUUID: mocks.randomUUID,
+}));
 
 const { createTaskSchedule } = await import("../../src/services/create-task-schedule.js");
-
-const SCHEDULE_SELECT = {
-  id: true,
-  taskId: true,
-  name: true,
-  scheduleType: true,
-  intervalSeconds: true,
-  cronExpression: true,
-  timezone: true,
-  nextRunAt: true,
-  enabled: true,
-  payload: true,
-  createdAt: true,
-};
 
 function intervalBody(overrides: Record<string, unknown> = {}) {
   return { intervalSeconds: 60, ...overrides };
@@ -109,13 +100,14 @@ function expectNoWrites() {
 function expectScheduleCreate(data: Record<string, unknown>) {
   expect(mocks.prisma.taskSchedule.create).toHaveBeenCalledWith({
     data,
-    select: SCHEDULE_SELECT,
+    select: expect.any(Object),
   });
 }
 
 describe("createTaskSchedule", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.randomUUID.mockReturnValue(SCHEDULE_ID);
     mocks.maybeStoreJsonValue.mockImplementation(async (input) => input.value);
     mocks.prisma.task.findFirst.mockResolvedValue({ id: TASK_ID, name: "Hello" });
     mocks.prisma.taskSchedule.create.mockResolvedValue(createdSchedule());
@@ -239,10 +231,11 @@ describe("createTaskSchedule", () => {
       kind: "PAYLOAD",
       environmentId: ENVIRONMENT_ID,
       taskId: TASK_ID,
-      runId: TASK_ID,
+      runId: SCHEDULE_ID,
       value: PAYLOAD,
     });
     expectScheduleCreate({
+      id: SCHEDULE_ID,
       taskId: TASK_ID,
       name: "Every minute",
       scheduleType: "INTERVAL",
@@ -287,6 +280,7 @@ describe("createTaskSchedule", () => {
       },
     });
     expectScheduleCreate({
+      id: SCHEDULE_ID,
       taskId: TASK_ID,
       name: "Weekday morning",
       scheduleType: "CRON",

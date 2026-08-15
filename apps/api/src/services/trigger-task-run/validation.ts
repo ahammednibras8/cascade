@@ -1,4 +1,4 @@
-import type { Prisma } from "@cascade/database";
+import { Prisma } from "@cascade/database";
 import { IDEMPOTENCY_KEY_MAX_LENGTH } from "../../lib/idempotency.js";
 import { isUuid } from "../../lib/route-params.js";
 import type { TriggerTaskRunFailure } from "./types.js";
@@ -66,6 +66,9 @@ export function getTaskReferenceWhere(input: {
       where: {
         id: taskId,
         environmentId: input.environmentId,
+        executionConfig: {
+          not: Prisma.DbNull,
+        },
       },
     };
   }
@@ -84,6 +87,9 @@ export function getTaskReferenceWhere(input: {
     where: {
       slug: taskSlug,
       environmentId: input.environmentId,
+      executionConfig: {
+        not: Prisma.DbNull,
+      },
     },
   };
 }

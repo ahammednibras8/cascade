@@ -1,6 +1,7 @@
 import type { ApiAuthContext } from "../auth/api-key.js";
 import { Prisma, prisma } from "@cascade/database";
 import { maybeStoreJsonValue } from "@cascade/storage";
+import { randomUUID } from "node:crypto";
 import { getPayload } from "../lib/trigger-payload.js";
 import { isUuid } from "../lib/route-params.js";
 import { parseTaskScheduleBody } from "./task-schedule-request.js";
@@ -113,7 +114,9 @@ export async function createTaskSchedule(
   }
 
   const payload = getPayload(parsedBody.body);
+  const scheduleId = randomUUID();
   const data: Prisma.TaskScheduleUncheckedCreateInput = {
+    id: scheduleId,
     taskId,
     name: parsedBody.name ?? `${task.name} schedule`,
     scheduleType: parsedBody.rule.scheduleType,
@@ -128,7 +131,7 @@ export async function createTaskSchedule(
       kind: "PAYLOAD",
       environmentId: auth.environmentId,
       taskId,
-      runId: taskId,
+      runId: scheduleId,
       value: payload,
     })) as Prisma.InputJsonValue;
   }

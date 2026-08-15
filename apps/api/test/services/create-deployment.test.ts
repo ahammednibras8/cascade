@@ -7,11 +7,15 @@ type TransactionClient = {
     create: (args: unknown) => Promise<unknown>;
     findUniqueOrThrow: (args: unknown) => Promise<unknown>;
   };
-  task: { upsert: (args: unknown) => Promise<{ id: string }> };
+  task: {
+    updateMany: (args: unknown) => Promise<unknown>;
+    upsert: (args: unknown) => Promise<{ id: string }>;
+  };
   taskSchedule: { updateMany: (args: unknown) => Promise<unknown> };
 };
 
 const mocks = vi.hoisted(() => ({
+  dbNull: Symbol("DbNull"),
   prisma: {
     $transaction:
       vi.fn<(callback: (tx: TransactionClient) => Promise<unknown>) => Promise<unknown>>(),
@@ -19,11 +23,12 @@ const mocks = vi.hoisted(() => ({
   deploymentUpdateMany: vi.fn<(args: unknown) => Promise<unknown>>(),
   deploymentCreate: vi.fn<(args: unknown) => Promise<{ id: string }>>(),
   deploymentFindUniqueOrThrow: vi.fn<(args: unknown) => Promise<unknown>>(),
+  taskUpdateMany: vi.fn<(args: unknown) => Promise<unknown>>(),
   taskUpsert: vi.fn<(args: unknown) => Promise<{ id: string }>>(),
   taskScheduleUpdateMany: vi.fn<(args: unknown) => Promise<unknown>>(),
 }));
 
-vi.mock("@cascade/database", () => ({ prisma: mocks.prisma }));
+vi.mock("@cascade/database", () => ({ Prisma: { DbNull: mocks.dbNull }, prisma: mocks.prisma }));
 
 const { createDeployment } = await import("../../src/services/create-deployment.js");
 
@@ -69,12 +74,13 @@ describe("createDeployment", () => {
           create: mocks.deploymentCreate,
           findUniqueOrThrow: mocks.deploymentFindUniqueOrThrow,
         },
-        task: { upsert: mocks.taskUpsert },
+        task: { updateMany: mocks.taskUpdateMany, upsert: mocks.taskUpsert },
         taskSchedule: { updateMany: mocks.taskScheduleUpdateMany },
       }),
     );
     mocks.deploymentUpdateMany.mockResolvedValue({ count: 1 });
     mocks.deploymentCreate.mockResolvedValue({ id: "deployment-1" });
+    mocks.taskUpdateMany.mockResolvedValue({ count: 1 });
     mocks.taskUpsert.mockResolvedValue({ id: "task-1" });
     mocks.taskScheduleUpdateMany.mockResolvedValue({ count: 1 });
     mocks.deploymentFindUniqueOrThrow.mockResolvedValue({
@@ -104,6 +110,19 @@ describe("createDeployment", () => {
     expect(mocks.deploymentCreate).toHaveBeenCalledWith({
       data: { environmentId: ENVIRONMENT_ID, version: "v1", image: IMAGE, status: "ACTIVE" },
     });
+    const omittedTaskWhere = {
+      environmentId: ENVIRONMENT_ID,
+      deploymentId: { not: null },
+      slug: { notIn: ["hello"] },
+    };
+    expect(mocks.taskScheduleUpdateMany).toHaveBeenNthCalledWith(1, {
+      where: { task: omittedTaskWhere },
+      data: { enabled: false, revision: { increment: 1 }, lockedAt: null },
+    });
+    expect(mocks.taskUpdateMany).toHaveBeenCalledWith({
+      where: omittedTaskWhere,
+      data: { deploymentId: null, executionConfig: mocks.dbNull },
+    });
     expect(mocks.taskUpsert).toHaveBeenCalledWith({
       where: { environmentId_slug: { environmentId: ENVIRONMENT_ID, slug: "hello" } },
       create: {
@@ -122,7 +141,7 @@ describe("createDeployment", () => {
       },
       select: { id: true },
     });
-    expect(mocks.taskScheduleUpdateMany).toHaveBeenCalledWith({
+    expect(mocks.taskScheduleUpdateMany).toHaveBeenNthCalledWith(2, {
       where: { taskId: { in: ["task-1"] } },
       data: { revision: { increment: 1 }, lockedAt: null },
     });

@@ -1,10 +1,13 @@
-import { prisma } from "@cascade/database";
+import { Prisma, prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../auth/api-key.js";
 
 export async function listTasks(input: { auth: ApiAuthContext }) {
   const tasks = await prisma.task.findMany({
     where: {
       environmentId: input.auth.environmentId,
+      executionConfig: {
+        not: Prisma.DbNull,
+      },
     },
     orderBy: {
       slug: "asc",

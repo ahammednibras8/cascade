@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ApiAuthContext } from "../../src/auth/api-key.js";
 
 const taskFindMany = vi.hoisted(() => vi.fn<(args: unknown) => Promise<unknown[]>>());
+const dbNull = vi.hoisted(() => Symbol("DbNull"));
 
 const prisma = vi.hoisted(() => ({
   task: {
@@ -10,6 +11,9 @@ const prisma = vi.hoisted(() => ({
 }));
 
 vi.mock("@cascade/database", () => ({
+  Prisma: {
+    DbNull: dbNull,
+  },
   prisma,
 }));
 
@@ -53,6 +57,9 @@ describe("listTasks", () => {
     expect(taskFindMany).toHaveBeenCalledWith({
       where: {
         environmentId: "environment-1",
+        executionConfig: {
+          not: dbNull,
+        },
       },
       orderBy: {
         slug: "asc",

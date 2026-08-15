@@ -14,6 +14,7 @@ export const RUN_ID = "22222222-2222-4222-8222-222222222222";
 export const CREATED_AT = new Date("2026-01-01T00:00:00.000Z");
 export const TRACE_ID = "11111111111111111111111111111111";
 export const SPAN_ID = "2222222222222222";
+export const DB_NULL = Symbol("DbNull");
 
 export const EXECUTION_CONFIG = {
   schemaVersion: 1,
@@ -113,7 +114,9 @@ export {
 };
 
 vi.mock("@cascade/database", () => ({
-  Prisma: {},
+  Prisma: {
+    DbNull: DB_NULL,
+  },
   prisma,
   createTaskRunEvent,
 }));

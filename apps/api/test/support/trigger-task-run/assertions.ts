@@ -5,6 +5,7 @@ import {
   CREATED_AT,
   enqueueTaskRun,
   EXECUTION_CONFIG,
+  DB_NULL,
   maybeStoreJsonValue,
   prisma,
   RUN_ID,
@@ -71,6 +72,9 @@ export function expectTaskLookupById() {
       where: {
         id: TASK_ID,
         environmentId: auth.environmentId,
+        executionConfig: {
+          not: DB_NULL,
+        },
       },
     }),
   );
@@ -82,6 +86,9 @@ export function expectTaskLookupBySlug(slug = "hello") {
       where: {
         slug,
         environmentId: auth.environmentId,
+        executionConfig: {
+          not: DB_NULL,
+        },
       },
     }),
   );
