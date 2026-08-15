@@ -12,8 +12,22 @@
         "pages": ["index", "quickstart"]
       },
       {
+        "group": "Using Cascade",
+        "pages": [
+          "concepts/architecture",
+          "concepts/task-runs",
+          "concepts/deployments",
+          "concepts/schedules",
+          "concepts/api-keys"
+        ]
+      },
+      {
         "group": "API Reference",
         "pages": ["api-reference/overview"]
+      },
+      {
+        "group": "Self-hosting",
+        "pages": ["operations/configuration"]
       }
     ]
   }

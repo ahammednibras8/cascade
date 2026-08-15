@@ -1,13 +1,53 @@
 ---
 title: Introduction
-description: Developer documentation for Cascade.
+description: Build and operate durable background tasks with Cascade.
 ---
 
 # Cascade
 
-Cascade is a monorepo for building the web app, shared packages, tests, and documentation.
+Cascade is a durable task platform for background jobs, scheduled work, long-running operations, and workflow-style tasks.
+
+Use Cascade when you need tasks that can survive process restarts, record every attempt, retry safely, be canceled or replayed, and give operators a clear dashboard for what happened.
+
+## What you can do with Cascade
+
+- Register task deployments with explicit timeout, retry, and queue-concurrency settings.
+- Trigger task runs from your application or scripts.
+- Make trigger requests idempotent so retries from clients do not create duplicate work.
+- Delay a run until a future time.
+- Create interval or cron schedules.
+- Cancel pending or executing runs.
+- Replay completed, failed, or canceled runs.
+- Inspect payloads, outputs, errors, attempts, logs, traces, and live updates in the dashboard.
+- Manage scoped API keys from the dashboard.
+
+## Core ideas
+
+| Concept    | Meaning                                                                          |
+| ---------- | -------------------------------------------------------------------------------- |
+| Task       | A named unit of work, such as `send-email`, `sync-stripe`, or `generate-report`. |
+| Deployment | A registered version of task code plus the execution policy for each task.       |
+| Run        | One durable execution request for a task.                                        |
+| Attempt    | One worker try for a run. Failed attempts may retry.                             |
+| Event      | A log or lifecycle record attached to a run.                                     |
+| Schedule   | A rule that creates runs automatically.                                          |
+| API key    | A scoped token used by applications, operators, or CI/CD.                        |
+
+## Typical flow
+
+1. Create an API key with the scopes your integration needs.
+2. Register a deployment that lists each task and its execution config.
+3. Trigger runs by task slug or task id.
+4. Watch runs in the dashboard or through the API.
+5. Add schedules for recurring work.
+6. Cancel or replay runs when operators need to intervene.
 
 ## Start here
 
 - [Quickstart](/quickstart)
+- [Task runs](/concepts/task-runs)
+- [Deployments](/concepts/deployments)
+- [Schedules](/concepts/schedules)
+- [API keys](/concepts/api-keys)
 - [API Reference](/api-reference/overview)
+- [Self-hosting configuration](/operations/configuration)

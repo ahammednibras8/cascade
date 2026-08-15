@@ -1,17 +1,194 @@
 ---
 title: Quickstart
-description: Get Cascade running locally.
+description: Register a task, trigger a run, and inspect it in Cascade.
 ---
 
 # Quickstart
 
-## Requirements
+This guide assumes you already have access to a running Cascade API and dashboard.
 
-- Node.js `24.18.0`
-- pnpm `11.13.1`
+You need:
 
-## Install dependencies
+- A Cascade API URL, for example `https://cascade.example.com`.
+- An API key with these scopes:
+  - `DEPLOYMENTS_WRITE`
+  - `TASKS_TRIGGER`
+  - `RUNS_READ`
+
+If you are self-hosting Cascade, see [Self-hosting configuration](/operations/configuration).
+
+## 1. Create an API key
+
+Open the dashboard and go to **API keys**.
+
+Create a key for your integration. For this guide, select:
+
+- **Create deployments**
+- **Trigger tasks**
+- **Read runs**
+
+Copy the token immediately. Cascade only shows the full token once.
 
 ```sh
-pnpm install
+export CASCADE_API_URL="https://cascade.example.com"
+export CASCADE_API_KEY="csc_..."
 ```
+
+## 2. Define task code
+
+Task code runs inside a worker. A task has an id and a `run` function.
+
+```ts
+import { defineTask } from "@cascade/sdk";
+
+export const hello = defineTask({
+  id: "hello",
+  async run({ payload, logger, signal }) {
+    signal.throwIfAborted();
+
+    await logger.info("Hello task started", {
+      payload,
+    });
+
+    return {
+      message: "Hello from Cascade",
+      payload,
+    };
+  },
+});
+```
+
+## 3. Register the task deployment
+
+Every deployed task must include an execution config. This config becomes the default for future runs, and each run receives its own snapshot.
+
+```sh
+curl -i "$CASCADE_API_URL/api/deployments" \
+  -H "Authorization: Bearer $CASCADE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "version": "hello-v1",
+    "image": "ghcr.io/acme/cascade-worker:hello-v1",
+    "tasks": [
+      {
+        "slug": "hello",
+        "name": "Hello",
+        "description": "Returns a greeting",
+        "executionConfig": {
+          "schemaVersion": 1,
+          "timeoutMs": 30000,
+          "retry": {
+            "maxAttempts": 3,
+            "delayMs": 1000,
+            "exponentialBackoff": true
+          },
+          "queue": {
+            "name": "hello",
+            "concurrencyLimit": 2
+          }
+        }
+      }
+    ]
+  }'
+```
+
+Important fields:
+
+| Field                       | Meaning                                                           |
+| --------------------------- | ----------------------------------------------------------------- |
+| `version`                   | Your deployment version. It must be unique in the environment.    |
+| `image`                     | Worker image or runtime identifier used by your deployment setup. |
+| `tasks[].slug`              | Public task identifier used by trigger requests.                  |
+| `executionConfig.timeoutMs` | Max execution time. Use `null` to disable timeout.                |
+| `executionConfig.retry`     | Retry policy for this task.                                       |
+| `executionConfig.queue`     | Queue name and optional concurrency limit.                        |
+
+## 4. Trigger a run
+
+```sh
+curl -i "$CASCADE_API_URL/api/tasks/slug/hello/trigger" \
+  -H "Authorization: Bearer $CASCADE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: hello-demo-1" \
+  -d '{
+    "payload": {
+      "name": "Nibras"
+    }
+  }'
+```
+
+A new run returns `202 Accepted`.
+
+```json
+{
+  "taskRun": {
+    "id": "8f5c...",
+    "taskId": "7aa1...",
+    "taskSlug": "hello",
+    "taskName": "Hello",
+    "status": "PENDING",
+    "payload": {
+      "name": "Nibras"
+    },
+    "createdAt": "2026-08-15T00:00:00.000Z",
+    "idempotentReplay": false,
+    "traceparent": "00-..."
+  }
+}
+```
+
+Send the same request with the same `Idempotency-Key` and body to get the same run back with `200 OK`.
+
+## 5. Inspect the run
+
+Open the dashboard:
+
+- **Runs** shows recent task runs.
+- **Run detail** shows status, payload, output, error, attempts, logs, and events.
+- Live updates refresh the page when new run events arrive.
+
+You can also fetch the run by API:
+
+```sh
+curl "$CASCADE_API_URL/api/runs/RUN_ID" \
+  -H "Authorization: Bearer $CASCADE_API_KEY"
+```
+
+## 6. Create a schedule
+
+Create a key with `SCHEDULES_WRITE`, or add that scope to your integration key.
+
+Interval example:
+
+```sh
+curl -i "$CASCADE_API_URL/api/tasks/TASK_ID/schedules" \
+  -H "Authorization: Bearer $CASCADE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Hello every 5 minutes",
+    "scheduleType": "INTERVAL",
+    "intervalSeconds": 300,
+    "payload": {
+      "name": "scheduled run"
+    }
+  }'
+```
+
+Cron example:
+
+```sh
+curl -i "$CASCADE_API_URL/api/tasks/TASK_ID/schedules" \
+  -H "Authorization: Bearer $CASCADE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Weekday hello",
+    "scheduleType": "CRON",
+    "cronExpression": "0 9 * * 1-5",
+    "timezone": "Asia/Kolkata",
+    "payload": {
+      "name": "weekday run"
+    }
+  }'
+```
+
+Schedules are visible and manageable from the dashboard.
