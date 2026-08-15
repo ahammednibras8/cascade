@@ -41,21 +41,19 @@ type TransactionCallback<T> = (tx: TransactionClient) => Promise<T>;
 
 const localTaskRun = vi.hoisted(() => vi.fn<(context: unknown) => Promise<unknown>>());
 
-const taskExecutionConfig = vi.hoisted(
-  (): TaskExecutionConfig => ({
-    schemaVersion: 1,
-    timeoutMs: 30_000,
-    retry: {
-      maxAttempts: 1,
-      delayMs: 0,
-      exponentialBackoff: false,
-    },
-    queue: {
-      name: "hello",
-      concurrencyLimit: null,
-    },
-  }),
-);
+const taskExecutionConfig = vi.hoisted((): TaskExecutionConfig => ({
+  schemaVersion: 1,
+  timeoutMs: 30_000,
+  retry: {
+    maxAttempts: 1,
+    delayMs: 0,
+    exponentialBackoff: false,
+  },
+  queue: {
+    name: "hello",
+    concurrencyLimit: null,
+  },
+}));
 
 const parseTaskExecutionConfig = vi.hoisted(() =>
   vi.fn<(value: unknown) => TaskExecutionConfig | null>((value) =>
