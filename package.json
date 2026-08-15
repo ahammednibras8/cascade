@@ -78,14 +78,14 @@
     "repo:verify": "pnpm run hooks:validate && pnpm run repo:quick && pnpm run repo:deps && pnpm run repo:security"
   },
   "devDependencies": {
-    "@changesets/cli": "2.31.0",
+    "@changesets/cli": "2.31.1",
     "@types/node": "24.13.3",
     "@vitest/coverage-v8": "4.1.10",
-    "knip": "6.27.0",
+    "knip": "6.32.0",
     "lefthook": "2.1.10",
-    "oxfmt": "0.59.0",
-    "oxlint": "1.74.0",
-    "turbo": "2.10.5",
+    "oxfmt": "0.62.0",
+    "oxlint": "1.77.0",
+    "turbo": "2.10.8",
     "typescript": "6.0.3",
     "vitest": "4.1.10"
   },
