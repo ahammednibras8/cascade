@@ -9,5 +9,5 @@
     "verbatimModuleSyntax": false
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["dist", ".tshy", ".tshy-build", "test"]
+  "exclude": ["dist", ".tshy", ".tshy-build", "test/**/*.ts"]
 }

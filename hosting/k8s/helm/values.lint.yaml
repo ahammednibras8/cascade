@@ -1,0 +1,24 @@
+runtimeSecret:
+  existingSecret: cascade-runtime
+
+apiSecret:
+  existingSecret: cascade-api
+
+dashboardSecret:
+  existingSecret: cascade-dashboard
+
+api:
+  image:
+    tag: lint
+
+dashboard:
+  image:
+    tag: lint
+
+deploymentRunner:
+  image:
+    tag: lint
+
+workers:
+  image:
+    tag: lint

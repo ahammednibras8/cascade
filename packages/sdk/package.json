@@ -1,0 +1,49 @@
+{
+  "name": "@cascade/sdk",
+  "version": "0.0.0",
+  "private": false,
+  "type": "module",
+  "sideEffects": false,
+  "module": "./dist/esm/index.js",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "scripts": {
+    "build": "tshy",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@cascade/core": "workspace:*",
+    "@opentelemetry/api": "^1.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "tshy": "4.1.3",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  },
+  "tshy": {
+    "dialects": [
+      "esm"
+    ],
+    "exports": {
+      ".": "./src/index.ts",
+      "./package.json": "./package.json"
+    },
+    "project": "./tsconfig.build.json"
+  }
+}

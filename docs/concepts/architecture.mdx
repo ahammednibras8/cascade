@@ -1,0 +1,53 @@
+---
+title: How Cascade works
+description: A user-level view of Cascade's runtime model.
+---
+
+# How Cascade works
+
+Cascade separates accepting work from executing work.
+
+The API records a durable run first. Workers execute later. That means a client can safely submit work and receive a run id even if execution starts seconds or minutes later.
+
+## Runtime pieces
+
+| Piece                 | What it does                                                                 |
+| --------------------- | ---------------------------------------------------------------------------- |
+| API                   | Accepts deployment, trigger, schedule, run, and API-key requests.            |
+| Dashboard             | Lets users inspect tasks, schedules, runs, attempts, logs, and API keys.     |
+| Queue workers         | Execute task runs.                                                           |
+| Control worker        | Fires schedules, recovers stuck work, and delivers realtime run updates.     |
+| Deployment runner     | Starts workers for active deployments in Docker or Kubernetes.               |
+| Postgres              | Stores durable state.                                                        |
+| Redis                 | Handles queues, rate limits, concurrency leases, and realtime notifications. |
+| S3-compatible storage | Stores large JSON payloads and outputs.                                      |
+
+## Run lifecycle
+
+1. A task is registered through a deployment.
+2. A client triggers the task.
+3. Cascade creates a durable run in `PENDING`.
+4. A worker claims the run and creates an attempt.
+5. The run moves to `EXECUTING`.
+6. The worker writes logs and heartbeats while task code runs.
+7. The run becomes `COMPLETED`, `FAILED`, `CANCELED`, or goes back to `PENDING` for retry.
+
+## Realtime updates
+
+The dashboard does not guess run state. It receives a lightweight realtime event, then reloads authoritative data from the API.
+
+This is why dashboard pages update as runs execute, retry, complete, fail, or receive logs.
+
+## Durable execution policy
+
+Each task has an execution config with timeout, retry, and queue settings. When a run is created, Cascade copies that config onto the run.
+
+That snapshot matters. If you redeploy a task later with different retry settings, an old retry still uses the original run's settings.
+
+## Where users interact
+
+Most users interact with Cascade through:
+
+- the dashboard for visibility and manual actions;
+- the HTTP API for automation; and
+- the TypeScript SDK for task definitions and triggers.

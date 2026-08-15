@@ -1,22 +1,22 @@
-{{- if .Values.ingress.enabled }}
+{{- if and .Values.dashboard.enabled .Values.dashboard.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "cascade.fullname" . }}
+  name: {{ include "cascade.fullname" . }}-dashboard
   labels:
     {{- include "cascade.labels" . | nindent 4 }}
   annotations:
-    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+    {{- toYaml .Values.dashboard.ingress.annotations | nindent 4 }}
 spec:
-  {{- if .Values.ingress.className }}
-  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.dashboard.ingress.className }}
+  ingressClassName: {{ .Values.dashboard.ingress.className }}
   {{- end }}
-  {{- if .Values.ingress.tls }}
+  {{- if .Values.dashboard.ingress.tls }}
   tls:
-    {{- toYaml .Values.ingress.tls | nindent 4 }}
+    {{- toYaml .Values.dashboard.ingress.tls | nindent 4 }}
   {{- end }}
   rules:
-    {{- range .Values.ingress.hosts }}
+    {{- range .Values.dashboard.ingress.hosts }}
     - host: {{ .host }}
       http:
         paths:
@@ -25,9 +25,9 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "cascade.fullname" $ }}
+                name: {{ include "cascade.fullname" $ }}-dashboard
                 port:
-                  number: {{ $.Values.service.port }}
+                  number: {{ $.Values.dashboard.service.port }}
           {{- end }}
     {{- end }}
 {{- end }}

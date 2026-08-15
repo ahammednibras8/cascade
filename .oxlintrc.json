@@ -23,6 +23,12 @@
   ],
   "rules": {
     "no-console": "warn",
-    "import/no-unassigned-import": "off"
+    "import/no-unassigned-import": "off",
+    "no-underscore-dangle": [
+      "warn",
+      {
+        "allow": ["_count", "_avg", "_sum", "_min", "_max"]
+      }
+    ]
   }
 }

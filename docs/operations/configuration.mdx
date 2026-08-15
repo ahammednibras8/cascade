@@ -1,0 +1,113 @@
+---
+title: Self-hosting configuration
+description: Configure a self-hosted Cascade installation.
+---
+
+# Self-hosting configuration
+
+This page is for operators running their own Cascade instance.
+
+If you are using a managed Cascade instance, you usually only need the API URL, dashboard URL, and API keys created in the dashboard.
+
+## Required services
+
+Cascade needs:
+
+- Postgres for durable state.
+- Redis for queues, rate limits, concurrency leases, and realtime notifications.
+- S3-compatible object storage for large JSON payloads and outputs.
+
+Optional:
+
+- OpenTelemetry collector for traces and metrics.
+- ClickHouse for analytics experiments.
+
+## Core environment variables
+
+| Variable                    | Purpose                                                                                         |
+| --------------------------- | ----------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`              | Postgres connection string used by API and workers.                                             |
+| `QUEUE_REDIS_URL`           | Redis connection string used by API and workers.                                                |
+| `CASCADE_API_URL`           | URL the dashboard uses to call the API.                                                         |
+| `CASCADE_DASHBOARD_API_KEY` | API key used by the dashboard.                                                                  |
+| `API_KEY_PEPPER`            | Secret pepper used when hashing API keys. Keep stable; rotating it invalidates existing tokens. |
+
+## API
+
+| Variable                            | Default                              | Purpose                                                            |
+| ----------------------------------- | ------------------------------------ | ------------------------------------------------------------------ |
+| `API_PORT`                          | `3001`                               | API listen port.                                                   |
+| `API_JSON_BODY_LIMIT_BYTES`         | `5242880`                            | Maximum JSON request body size.                                    |
+| `API_RATE_LIMIT_MAX_REQUESTS`       | `300`                                | Max requests per API key per window.                               |
+| `API_RATE_LIMIT_WINDOW_MS`          | `60000`                              | Rate-limit window.                                                 |
+| `API_CORS_ALLOWED_ORIGINS`          | development: `http://localhost:3000` | Comma-separated dashboard/browser origins. Required in production. |
+| `HEALTHCHECK_DEPENDENCY_TIMEOUT_MS` | `2000`                               | Timeout for Postgres and Redis readiness checks.                   |
+
+## Workers
+
+| Variable                                 | Default | Purpose                                                    |
+| ---------------------------------------- | ------- | ---------------------------------------------------------- |
+| `CASCADE_WORKER_ROLE`                    | `local` | `local`, `deployment`, or `control`.                       |
+| `WORKER_CONCURRENCY`                     | `4`     | Max runs executing in one worker process.                  |
+| `WORKER_HEALTH_PORT`                     | `3002`  | Worker health endpoint port.                               |
+| `CASCADE_TASK_MODULE`                    | unset   | Task module loaded by a worker.                            |
+| `QUEUE_CONCURRENCY_RETRY_MS`             | `1000`  | Delay before retrying queue-concurrency acquisition.       |
+| `PENDING_RUN_RECOVERY_MS`                | `30000` | Age after which an unclaimed pending run can be recovered. |
+| `PENDING_RUN_SWEEP_INTERVAL_MS`          | `10000` | Pending-run recovery interval.                             |
+| `TASK_RUN_CANCELLATION_POLL_INTERVAL_MS` | `500`   | How often workers check for cancellation.                  |
+| `RUN_EVENT_OUTBOX_DISPATCH_INTERVAL_MS`  | `1000`  | Realtime outbox dispatch interval.                         |
+| `RUN_EVENT_OUTBOX_LOCK_TIMEOUT_MS`       | `30000` | Stale outbox lock timeout.                                 |
+
+Run at least one control worker. Without it, schedules, stuck-run recovery, pending-run recovery, and realtime outbox delivery will not progress.
+
+## Deployment runner
+
+The deployment runner starts workers for active deployments.
+
+| Variable                                    | Default                 | Purpose                                            |
+| ------------------------------------------- | ----------------------- | -------------------------------------------------- |
+| `DEPLOYMENT_RUNTIME`                        | `docker`                | `docker` or `kubernetes`.                          |
+| `DEPLOYMENT_DATABASE_URL`                   | required                | Database URL injected into deployment workers.     |
+| `DEPLOYMENT_QUEUE_REDIS_URL`                | required                | Redis URL injected into deployment workers.        |
+| `DEPLOYMENT_DOCKER_NETWORK`                 | `cascade_default`       | Docker network for deployment worker containers.   |
+| `DEPLOYMENT_WORKER_CONCURRENCY`             | `2`                     | Worker concurrency for deployment workers.         |
+| `DEPLOYMENT_RUNNER_POLL_MS`                 | `5000`                  | Reconcile interval.                                |
+| `DEPLOYMENT_PULL_IMAGES`                    | `false`                 | Pull Docker images before starting them.           |
+| `DEPLOYMENT_KUBERNETES_NAMESPACE`           | `default`               | Kubernetes namespace for deployment workers.       |
+| `DEPLOYMENT_KUBERNETES_RUNTIME_SECRET_NAME` | required for Kubernetes | Secret containing runtime environment for workers. |
+
+## Object storage
+
+Cascade stores JSON inline until it exceeds `LARGE_PAYLOAD_THRESHOLD_BYTES`. Larger values are written to S3-compatible storage.
+
+| Variable                        | Default                   | Purpose                                         |
+| ------------------------------- | ------------------------- | ----------------------------------------------- |
+| `S3_ENDPOINT`                   | unset                     | S3-compatible endpoint.                         |
+| `S3_REGION`                     | `us-east-1`               | S3 region.                                      |
+| `S3_ACCESS_KEY_ID`              | required for large values | S3 access key.                                  |
+| `S3_SECRET_ACCESS_KEY`          | required for large values | S3 secret key.                                  |
+| `S3_BUCKET`                     | required for large values | Bucket for payloads and outputs.                |
+| `S3_FORCE_PATH_STYLE`           | `true`                    | Usually needed for local S3-compatible storage. |
+| `LARGE_PAYLOAD_THRESHOLD_BYTES` | `262144`                  | Inline/S3 cutoff in bytes.                      |
+
+## Telemetry
+
+| Variable                         | Default           | Purpose                                    |
+| -------------------------------- | ----------------- | ------------------------------------------ |
+| `OTEL_ENABLED`                   | `false`           | Enables OpenTelemetry.                     |
+| `OTEL_EXPORTER_MODE`             | `otlp`            | `console` or `otlp`.                       |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`    | required for OTLP | Base OTLP HTTP endpoint.                   |
+| `OTEL_SERVICE_NAME`              | service-specific  | Service name.                              |
+| `OTEL_DEPLOYMENT_ENVIRONMENT`    | `development`     | Deployment environment resource attribute. |
+| `OTEL_METRIC_EXPORT_INTERVAL_MS` | `1000`            | Metric export interval.                    |
+| `CASCADE_VERSION`                | `development`     | Service version attribute.                 |
+
+## Health endpoints
+
+| Endpoint   | Meaning                                 |
+| ---------- | --------------------------------------- |
+| `/livez`   | Process is alive and not shutting down. |
+| `/readyz`  | Dependencies are reachable.             |
+| `/healthz` | Same readiness check as `/readyz`.      |
+
+Use readiness endpoints for load balancers and orchestrator readiness probes.

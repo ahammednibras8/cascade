@@ -1,0 +1,58 @@
+{{- if .Values.deploymentRunner.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cascade.fullname" . }}-deployment-runner
+  labels:
+    {{- include "cascade.labels" . | nindent 4 }}
+    app.kubernetes.io/component: deployment-runner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "cascade.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: deployment-runner
+  template:
+    metadata:
+      labels:
+        {{- include "cascade.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: deployment-runner
+    spec:
+      serviceAccountName: {{ include "cascade.deploymentRunnerServiceAccountName" . }}
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: deployment-runner
+          image: "{{ .Values.deploymentRunner.image.repository }}:{{ required "deploymentRunner.image.tag is required" .Values.deploymentRunner.image.tag }}"
+          imagePullPolicy: {{ .Values.deploymentRunner.image.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ include "cascade.runtimeSecretName" . }}
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: DEPLOYMENT_RUNTIME
+              value: kubernetes
+            - name: DEPLOYMENT_KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: DEPLOYMENT_KUBERNETES_RUNTIME_SECRET_NAME
+              value: {{ include "cascade.runtimeSecretName" . | quote }}
+            - name: DEPLOYMENT_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "cascade.runtimeSecretName" . }}
+                  key: DATABASE_URL
+            - name: DEPLOYMENT_QUEUE_REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "cascade.runtimeSecretName" . }}
+                  key: QUEUE_REDIS_URL
+            - name: DEPLOYMENT_WORKER_CONCURRENCY
+              value: {{ .Values.deploymentRunner.workerConcurrency | quote }}
+            - name: DEPLOYMENT_RUNNER_POLL_MS
+              value: {{ .Values.deploymentRunner.pollIntervalMs | quote }}
+          {{- include "cascade.telemetryEnv" (dict "root" . "serviceName" "cascade-deployment-runner") | nindent 12 }}
+          resources:
+            {{- toYaml .Values.deploymentRunner.resources | nindent 12 }}
+{{- end }}

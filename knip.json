@@ -1,3 +1,59 @@
 {
-  "$schema": "https://unpkg.com/knip@6/schema.json"
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": [
+    "apps/dashboard/app/lib/environment-runs-stream.client.ts",
+    "apps/dashboard/app/lib/run-event-stream.client.ts",
+    "packages/database/src/generated/prisma/browser.ts",
+    "packages/database/src/generated/prisma/internal/prismaNamespaceBrowser.ts"
+  ],
+  "ignoreIssues": {
+    "packages/database/src/generated/**": ["exports", "types"]
+  },
+  "ignoreBinaries": ["goose", "helm", "infisical", "mint"],
+  "workspaces": {
+    ".": {
+      "entry": ["package.json"],
+      "project": ["*.json", ".configs/**/*.json"]
+    },
+    "apps/api": {
+      "entry": ["src/index.ts", "src/dev/*.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "apps/dashboard": {
+      "entry": ["app/routes/**/*.{ts,tsx}"],
+      "project": ["app/**/*.{ts,tsx}", "test/**/*.{ts,tsx}", "*.ts"]
+    },
+    "packages/core": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "packages/database": {
+      "entry": ["prisma/seed/**/*.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts", "prisma/**/*.ts"]
+    },
+    "packages/sdk": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/storage": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "packages/worker": {
+      "entry": ["src/index.ts", "src/tasks/registry.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.mjs"]
+    },
+    "packages/clickhouse": {
+      "entry": ["package.json"],
+      "project": []
+    },
+    "docs": {
+      "entry": ["docs.json", "**/*.mdx"],
+      "project": ["**/*.mdx"]
+    },
+    "apps/e2e": {
+      "entry": ["tests/**/*.ts"],
+      "project": ["**/*.ts"]
+    }
+  }
 }

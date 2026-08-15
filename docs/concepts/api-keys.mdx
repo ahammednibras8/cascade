@@ -1,0 +1,64 @@
+---
+title: API keys
+description: Scoped access tokens for Cascade integrations.
+---
+
+# API keys
+
+API keys control access to Cascade's HTTP API.
+
+Create and manage keys from the dashboard under **API keys**.
+
+## Token visibility
+
+Cascade shows the full API key only when it is created or rotated.
+
+After that, the dashboard only shows the key prefix. Store the token in your secret manager immediately.
+
+## Scopes
+
+Give each key only the scopes it needs.
+
+| Scope               | Use when the key needs to                          |
+| ------------------- | -------------------------------------------------- |
+| `TASKS_READ`        | List registered tasks.                             |
+| `TASKS_TRIGGER`     | Trigger task runs.                                 |
+| `SCHEDULES_WRITE`   | Create and manage schedules.                       |
+| `RUNS_READ`         | Read runs, attempts, events, and realtime streams. |
+| `RUNS_CANCEL`       | Cancel pending or executing runs.                  |
+| `RUNS_REPLAY`       | Replay completed, failed, or canceled runs.        |
+| `DEPLOYMENTS_WRITE` | Register deployments and tasks.                    |
+| `API_KEYS_MANAGE`   | Create, list, rotate, and revoke API keys.         |
+
+## Common key types
+
+| Key                     | Suggested scopes                        |
+| ----------------------- | --------------------------------------- |
+| Application trigger key | `TASKS_TRIGGER`, optionally `RUNS_READ` |
+| CI/CD deployment key    | `DEPLOYMENTS_WRITE`                     |
+| Dashboard/operator key  | All dashboard-required scopes           |
+| Schedule manager key    | `SCHEDULES_WRITE`, `TASKS_READ`         |
+| Read-only observer key  | `TASKS_READ`, `RUNS_READ`               |
+
+## Rotation
+
+Rotating a key revokes the old token and creates a replacement with the same name and scopes.
+
+Use rotation when:
+
+- a token might have leaked;
+- a teammate leaves;
+- your organization requires periodic credential rotation; or
+- you are moving secrets between systems.
+
+An API key cannot rotate itself.
+
+## Revocation
+
+Revoking a key immediately prevents future API calls with that token.
+
+An API key cannot revoke itself.
+
+## Last used
+
+Cascade records `lastUsedAt` for valid API calls. Use it to find stale keys before revoking them.

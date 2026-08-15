@@ -1,0 +1,83 @@
+---
+title: Deployments
+description: Register task versions and execution policy.
+---
+
+# Deployments
+
+A deployment tells Cascade which tasks exist and how future runs should execute.
+
+Each deployment has:
+
+- a `version`;
+- an `image` or runtime identifier; and
+- a list of tasks.
+
+## Why deployments matter
+
+Cascade does not trigger arbitrary task names. A task must be registered first.
+
+Registration gives Cascade enough durable metadata to:
+
+- show the task in the dashboard;
+- validate trigger requests;
+- create schedules;
+- snapshot timeout, retry, and queue settings onto each run; and
+- route work to deployment-specific workers when deployment routing is enabled.
+
+## Deployment request
+
+```json
+{
+  "version": "worker-2026-08-15",
+  "image": "ghcr.io/acme/cascade-worker:2026-08-15",
+  "tasks": [
+    {
+      "slug": "send-email",
+      "name": "Send email",
+      "description": "Sends a transactional email",
+      "executionConfig": {
+        "schemaVersion": 1,
+        "timeoutMs": 30000,
+        "retry": {
+          "maxAttempts": 3,
+          "delayMs": 1000,
+          "exponentialBackoff": true
+        },
+        "queue": {
+          "name": "email",
+          "concurrencyLimit": 10
+        }
+      }
+    }
+  ]
+}
+```
+
+## Active deployment
+
+When you create a new deployment, Cascade marks previous active deployments inactive in that environment.
+
+The task row is updated for future runs. Existing runs keep their own snapshots.
+
+## Execution config
+
+Every task in a deployment must include:
+
+| Field                      | Required | Meaning                     |
+| -------------------------- | -------- | --------------------------- |
+| `schemaVersion`            | Yes      | Currently `1`.              |
+| `timeoutMs`                | Yes      | Positive integer or `null`. |
+| `retry.maxAttempts`        | Yes      | Positive integer.           |
+| `retry.delayMs`            | Yes      | Non-negative integer.       |
+| `retry.exponentialBackoff` | Yes      | Boolean.                    |
+| `queue.name`               | Yes      | Non-empty string.           |
+| `queue.concurrencyLimit`   | Yes      | Positive integer or `null`. |
+
+## Redeploying safely
+
+Changing retry, timeout, or queue settings affects future runs only.
+
+If a run already exists, retries and replays use that run's stored execution config.
+
+This protects old runs from changing behavior when a new deployment updates task defaults.

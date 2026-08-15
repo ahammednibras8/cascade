@@ -1,7 +1,49 @@
-image:
-  repository: cascade-web
-  tag: local
-  pullPolicy: Never
+runtimeSecret:
+  existingSecret: cascade-runtime
 
-ingress:
-  enabled: false
+apiSecret:
+  existingSecret: cascade-api
+
+dashboardSecret:
+  existingSecret: cascade-dashboard
+
+api:
+  image:
+    repository: cascade-api
+    tag: local
+    pullPolicy: Never
+
+dashboard:
+  image:
+    repository: cascade-dashboard
+    tag: local
+    pullPolicy: Never
+  ingress:
+    enabled: false
+
+deploymentRunner:
+  image:
+    repository: cascade-deployment-runner
+    tag: local
+    pullPolicy: Never
+
+workers:
+  image:
+    repository: cascade-worker
+    tag: local
+    pullPolicy: Never
+
+postgres:
+  enabled: true
+  auth:
+    existingSecret: cascade-runtime
+
+redis:
+  enabled: true
+  auth:
+    existingSecret: cascade-runtime
+
+rustfs:
+  enabled: true
+  auth:
+    existingSecret: cascade-runtime

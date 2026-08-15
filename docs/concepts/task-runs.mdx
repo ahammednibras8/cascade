@@ -1,0 +1,95 @@
+---
+title: Task runs
+description: What happens when a task is triggered.
+---
+
+# Task runs
+
+A task run is one durable execution request.
+
+For example, if `send-email` is triggered for 1,000 users, Cascade creates 1,000 task runs. Each run has its own status, payload, attempts, logs, output, error, and execution policy snapshot.
+
+## Statuses
+
+| Status      | Meaning                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------- |
+| `PENDING`   | The run is waiting to be executed. It may be delayed, waiting for queue concurrency, or waiting for a worker. |
+| `EXECUTING` | A worker is running an attempt.                                                                               |
+| `COMPLETED` | The task returned successfully.                                                                               |
+| `FAILED`    | The task exhausted retries or failed permanently.                                                             |
+| `CANCELED`  | A user or API call canceled the run.                                                                          |
+
+## Attempts
+
+An attempt is one worker try.
+
+If a task fails and retry is enabled, Cascade creates another attempt later. Run detail shows every attempt in order.
+
+## Retry policy
+
+Retry behavior comes from the run's execution config:
+
+```json
+{
+  "retry": {
+    "maxAttempts": 3,
+    "delayMs": 1000,
+    "exponentialBackoff": true
+  }
+}
+```
+
+If `exponentialBackoff` is enabled, Cascade increases the delay after each failed attempt.
+
+## Timeout
+
+`timeoutMs` limits how long an attempt may run.
+
+```json
+{
+  "timeoutMs": 30000
+}
+```
+
+Use `null` only if the task should have no timeout.
+
+## Queue concurrency
+
+Queue concurrency limits how many runs for the same queue can execute at once in an environment.
+
+```json
+{
+  "queue": {
+    "name": "email",
+    "concurrencyLimit": 5
+  }
+}
+```
+
+Use this for rate-limited APIs, expensive jobs, or any task where too many concurrent executions would be unsafe.
+
+## Cancellation
+
+Users can cancel `PENDING` or `EXECUTING` runs.
+
+Task code receives an `AbortSignal`. Well-behaved task code should stop when the signal is aborted.
+
+Completed and failed runs cannot be canceled.
+
+## Replay
+
+Users can replay `COMPLETED`, `FAILED`, or `CANCELED` runs.
+
+Replay creates a new run using:
+
+- the original payload;
+- the original deployment id, when available; and
+- the original execution-config snapshot.
+
+Replay does not rewrite history. The original run remains unchanged.
+
+## Logs and events
+
+Task code can write structured logs. Cascade also writes lifecycle events such as trigger accepted, attempt started, retry scheduled, run completed, run failed, cancellation, and replay.
+
+These logs and events appear on the run detail page and are available through the run-events API.

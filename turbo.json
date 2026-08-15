@@ -3,14 +3,19 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "build/**", ".react-router/**"]
+      "outputs": ["dist/**", "build/**", ".react-router/**"],
+      "passThroughEnv": ["DATABASE_URL"]
+    },
+    "@cascade/docs#build": {
+      "outputs": []
     },
     "check-types": {
       "dependsOn": ["^check-types"],
       "passThroughEnv": ["DATABASE_URL"]
     },
     "test": {
-      "dependsOn": ["build"]
+      "dependsOn": ["build"],
+      "passThroughEnv": ["DATABASE_URL", "CI"]
     },
     "test:watch": {
       "cache": false,
@@ -18,7 +23,8 @@
     },
     "test:coverage": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "passThroughEnv": ["DATABASE_URL", "CI"]
     },
     "dev": {
       "cache": false,
@@ -27,7 +33,7 @@
     "e2e": {
       "dependsOn": ["^build"],
       "outputs": ["playwright-report/**", "test-results/**"],
-      "passThroughEnv": ["PLAYWRIGHT_*", "CI"]
+      "passThroughEnv": ["PLAYWRIGHT_*", "DATABASE_URL", "CI"]
     },
     "e2e:ui": {
       "cache": false,

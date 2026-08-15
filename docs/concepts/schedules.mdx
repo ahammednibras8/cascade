@@ -1,0 +1,74 @@
+---
+title: Schedules
+description: Run tasks automatically on interval or cron rules.
+---
+
+# Schedules
+
+Schedules create task runs automatically.
+
+Use schedules for recurring work such as sync jobs, cleanup tasks, reminders, reporting, or polling external systems.
+
+## Interval schedules
+
+Interval schedules run every N seconds.
+
+```json
+{
+  "name": "Sync every 5 minutes",
+  "scheduleType": "INTERVAL",
+  "intervalSeconds": 300,
+  "payload": {
+    "mode": "incremental"
+  }
+}
+```
+
+Rules:
+
+- `intervalSeconds` must be between `60` and `31536000`.
+- Interval schedules always use `UTC`.
+
+## Cron schedules
+
+Cron schedules run on a five-field cron expression.
+
+```json
+{
+  "name": "Weekday report",
+  "scheduleType": "CRON",
+  "cronExpression": "0 9 * * 1-5",
+  "timezone": "Asia/Kolkata",
+  "payload": {
+    "report": "daily"
+  }
+}
+```
+
+Rules:
+
+- Cron expressions must have five fields.
+- `timezone` must be a valid IANA timezone.
+- If `timezone` is omitted, Cascade uses `UTC`.
+
+## Payloads
+
+A schedule can include a payload. Every run created by that schedule receives the payload.
+
+Update the schedule if future runs should receive a different payload.
+
+## Pausing and resuming
+
+Pausing a schedule stops future runs. It does not cancel runs that already exist.
+
+Resuming a schedule computes the next run time from the current time.
+
+## Editing
+
+Editing a schedule replaces its rule for future runs.
+
+If you send `"payload": null`, Cascade clears the schedule payload.
+
+## Duplicate protection
+
+Cascade protects each schedule from creating duplicate runs for the same scheduled time.

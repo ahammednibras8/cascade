@@ -2,10 +2,18 @@
   "name": "@cascade/database",
   "private": true,
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
+    "build": "prisma generate && tsc --project tsconfig.build.json",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",
@@ -13,19 +21,20 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "db:seed": "prisma db seed",
-    "check-types": "prisma generate && tsc --noEmit"
+    "check-types": "prisma generate && tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "7.8.0",
-    "@prisma/client": "7.8.0",
-    "pg": "8.22.0"
+    "@prisma/adapter-pg": "7.9.0",
+    "@prisma/client": "7.9.0"
   },
   "devDependencies": {
     "@types/node": "24.13.3",
     "dotenv": "17.4.2",
-    "prisma": "7.8.0",
+    "prisma": "7.9.0",
     "tsx": "4.23.1",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
   },
   "prisma": {
     "seed": "tsx prisma/seed/seed.ts"

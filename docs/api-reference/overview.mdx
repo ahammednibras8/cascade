@@ -1,8 +1,399 @@
 ---
 title: API Reference
-description: Cascade API reference.
+description: Public HTTP API endpoints and request shapes.
 ---
 
 # API Reference
 
-This section will contain the public API reference when Cascade exposes stable API endpoints.
+All application routes are mounted under `/api` and require an API key. Health routes are unauthenticated.
+
+## Authentication
+
+Send an API key with either header:
+
+```http
+Authorization: Bearer csc_dev_...
+```
+
+or:
+
+```http
+X-API-Key: csc_dev_...
+```
+
+Requests with bodies must use `Content-Type: application/json`. The API enforces a per-key Redis-backed rate limit and returns:
+
+- `RateLimit-Limit`
+- `RateLimit-Remaining`
+- `RateLimit-Reset`
+- `Retry-After` on `429`
+
+## Scopes
+
+| Scope               | Allows                                                             |
+| ------------------- | ------------------------------------------------------------------ |
+| `TASKS_READ`        | List registered tasks.                                             |
+| `TASKS_TRIGGER`     | Trigger task runs.                                                 |
+| `SCHEDULES_WRITE`   | Create, list, edit, pause, resume, and delete schedules.           |
+| `RUNS_READ`         | List runs, read run detail, read events, and open run SSE streams. |
+| `RUNS_CANCEL`       | Cancel pending or executing runs.                                  |
+| `RUNS_REPLAY`       | Replay completed, failed, or canceled runs.                        |
+| `DEPLOYMENTS_WRITE` | Create deployments and register tasks.                             |
+| `API_KEYS_MANAGE`   | List, create, revoke, and rotate API keys.                         |
+
+## Health
+
+| Method | Path       | Auth | Description                                          |
+| ------ | ---------- | ---- | ---------------------------------------------------- |
+| `GET`  | `/livez`   | No   | Process liveness. Returns `503` while shutting down. |
+| `GET`  | `/readyz`  | No   | Checks Postgres and Redis.                           |
+| `GET`  | `/healthz` | No   | Same readiness check as `/readyz`.                   |
+
+## Deployments
+
+### `POST /api/deployments`
+
+Required scope: `DEPLOYMENTS_WRITE`.
+
+Creates a deployment, marks previous active deployments inactive, and upserts task defaults for future runs. Every task must include `executionConfig`.
+
+```json
+{
+  "version": "v2",
+  "image": "ghcr.io/cascade/worker:v2",
+  "tasks": [
+    {
+      "slug": "hello",
+      "name": "Hello",
+      "description": "Greets a user",
+      "executionConfig": {
+        "schemaVersion": 1,
+        "timeoutMs": 30000,
+        "retry": {
+          "maxAttempts": 3,
+          "delayMs": 1000,
+          "exponentialBackoff": true
+        },
+        "queue": {
+          "name": "hello",
+          "concurrencyLimit": 2
+        }
+      }
+    }
+  ]
+}
+```
+
+Response `201`:
+
+```json
+{
+  "deployment": {
+    "id": "uuid",
+    "environmentId": "uuid",
+    "version": "v2",
+    "image": "ghcr.io/cascade/worker:v2",
+    "status": "ACTIVE",
+    "tasks": [
+      {
+        "id": "uuid",
+        "slug": "hello",
+        "name": "Hello"
+      }
+    ],
+    "createdAt": "2026-08-15T00:00:00.000Z"
+  }
+}
+```
+
+Common errors:
+
+- `400 INVALID_TASK_EXECUTION_CONFIG`
+- `400 DUPLICATE_TASK_SLUG`
+- `409 DEPLOYMENT_VERSION_CONFLICT`
+
+## Tasks
+
+### `GET /api/tasks`
+
+Required scope: `TASKS_READ`.
+
+Returns up to 50 tasks in the current environment, ordered by slug.
+
+```json
+{
+  "tasks": [
+    {
+      "id": "uuid",
+      "slug": "hello",
+      "name": "Hello",
+      "description": "Greets a user",
+      "deployment": {
+        "id": "uuid",
+        "version": "v2",
+        "status": "ACTIVE"
+      },
+      "runsCount": 4,
+      "schedulesCount": 1,
+      "createdAt": "2026-08-15T00:00:00.000Z",
+      "updatedAt": "2026-08-15T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+## Triggering runs
+
+### `POST /api/tasks/slug/:taskSlug/trigger`
+
+### `POST /api/tasks/:taskId/trigger`
+
+Required scope: `TASKS_TRIGGER`.
+
+Body:
+
+```json
+{
+  "payload": {
+    "message": "hello"
+  },
+  "delayUntil": "2026-08-15T12:00:00.000Z"
+}
+```
+
+Headers:
+
+- `Idempotency-Key`: optional, max 255 characters.
+- `traceparent`: optional W3C trace context. If omitted, the API creates a root trace context.
+
+Status behavior:
+
+| Situation                                                | Status                     |
+| -------------------------------------------------------- | -------------------------- |
+| New run                                                  | `202`                      |
+| Same task, no `Idempotency-Key`                          | `202` new run              |
+| Same `Idempotency-Key` and same payload/delay/task       | `200` existing run         |
+| Same `Idempotency-Key` with different payload/delay/task | `409 IDEMPOTENCY_CONFLICT` |
+
+Response:
+
+```json
+{
+  "taskRun": {
+    "id": "uuid",
+    "taskId": "uuid",
+    "taskSlug": "hello",
+    "taskName": "Hello",
+    "status": "PENDING",
+    "payload": {
+      "message": "hello"
+    },
+    "createdAt": "2026-08-15T00:00:00.000Z",
+    "idempotentReplay": false,
+    "traceparent": "00-..."
+  }
+}
+```
+
+If the task was created before execution configs were required, triggering returns `409 TASK_EXECUTION_CONFIG_MISSING`. Redeploy the task with `executionConfig`.
+
+## Runs
+
+### `GET /api/runs`
+
+Required scope: `RUNS_READ`.
+
+Returns up to 50 latest runs.
+
+### `GET /api/runs/:runId`
+
+Required scope: `RUNS_READ`.
+
+Returns run detail, task metadata, attempt count, event count, trace IDs, and ordered attempts.
+
+### `GET /api/runs/:runId/events`
+
+Required scope: `RUNS_READ`.
+
+Query parameters:
+
+- `after`: optional event UUID cursor.
+
+Returns up to 100 ordered events:
+
+```json
+{
+  "events": [
+    {
+      "id": "uuid",
+      "taskAttemptId": "uuid",
+      "type": "task.run.completed",
+      "level": "INFO",
+      "message": "Task run completed",
+      "data": {},
+      "traceId": "hex",
+      "spanId": "hex",
+      "parentSpanId": "hex",
+      "createdAt": "2026-08-15T00:00:00.000Z"
+    }
+  ],
+  "nextCursor": "uuid",
+  "hasMore": false
+}
+```
+
+### `GET /api/runs/stream`
+
+Required scope: `RUNS_READ`.
+
+Server-Sent Events stream for any run event in the current environment. The dashboard listens for `runs-changed` events and revalidates the runs list.
+
+### `GET /api/runs/:runId/events/stream`
+
+Required scope: `RUNS_READ`.
+
+Server-Sent Events stream for a single run. The dashboard listens for `run-event` events and revalidates run detail.
+
+### `POST /api/runs/:runId/cancel`
+
+Required scope: `RUNS_CANCEL`.
+
+Can cancel `PENDING` or `EXECUTING` runs. Completed and failed runs return `409 RUN_NOT_CANCELABLE`. Canceling an already canceled run returns `200` with `alreadyCanceled: true`.
+
+### `POST /api/runs/:runId/replay`
+
+Required scope: `RUNS_REPLAY`.
+
+Can replay `COMPLETED`, `FAILED`, or `CANCELED` runs. Pending or executing runs return `409 RUN_NOT_REPLAYABLE`. Legacy runs without an execution config snapshot return `409 RUN_EXECUTION_CONFIG_MISSING`.
+
+Replay copies the original run payload and execution-config snapshot, then enqueues a new pending run.
+
+## Schedules
+
+### `GET /api/schedules`
+
+Required scope: `SCHEDULES_WRITE`.
+
+Returns up to 100 schedules ordered by `nextRunAt`.
+
+### `GET /api/schedules/:scheduleId`
+
+Required scope: `SCHEDULES_WRITE`.
+
+Returns one schedule in the current environment.
+
+### `POST /api/tasks/:taskId/schedules`
+
+Required scope: `SCHEDULES_WRITE`.
+
+Creates an interval or cron schedule.
+
+Interval schedule:
+
+```json
+{
+  "name": "Every two minutes",
+  "scheduleType": "INTERVAL",
+  "intervalSeconds": 120,
+  "payload": {
+    "message": "scheduled"
+  }
+}
+```
+
+Cron schedule:
+
+```json
+{
+  "name": "Weekday morning",
+  "scheduleType": "CRON",
+  "cronExpression": "0 9 * * 1-5",
+  "timezone": "Asia/Kolkata",
+  "payload": {
+    "message": "cron"
+  }
+}
+```
+
+Rules:
+
+- `scheduleType` defaults to `INTERVAL`.
+- Interval schedules require `intervalSeconds` between `60` and `31536000`.
+- Cron schedules require a five-field cron expression.
+- `timezone` defaults to `UTC` for cron schedules and must be an IANA timezone.
+- Optional `startAt` must be a valid UTC ISO timestamp.
+
+### `PUT /api/schedules/:scheduleId`
+
+Required scope: `SCHEDULES_WRITE`.
+
+Replaces the schedule rule and optionally changes `name` and `payload`. Sending `"payload": null` clears the payload.
+
+### `POST /api/schedules/:scheduleId/pause`
+
+Required scope: `SCHEDULES_WRITE`.
+
+Disables a schedule and clears its lock.
+
+### `POST /api/schedules/:scheduleId/resume`
+
+Required scope: `SCHEDULES_WRITE`.
+
+Re-enables a schedule and computes a fresh next run time.
+
+### `DELETE /api/schedules/:scheduleId`
+
+Required scope: `SCHEDULES_WRITE`.
+
+Deletes a schedule. Success returns `204`.
+
+## API keys
+
+### `GET /api/api-keys`
+
+Required scope: `API_KEYS_MANAGE`.
+
+Returns API keys and available scope definitions. Tokens are never returned after creation or rotation.
+
+### `POST /api/api-keys`
+
+Required scope: `API_KEYS_MANAGE`.
+
+Body:
+
+```json
+{
+  "name": "CI deploy key",
+  "scopes": ["DEPLOYMENTS_WRITE", "TASKS_TRIGGER", "RUNS_READ"]
+}
+```
+
+Response `201` includes the one-time token:
+
+```json
+{
+  "apiKey": {
+    "id": "uuid",
+    "name": "CI deploy key",
+    "keyPrefix": "csc_prod_...",
+    "scopes": ["DEPLOYMENTS_WRITE", "TASKS_TRIGGER", "RUNS_READ"],
+    "lastUsedAt": null,
+    "revokedAt": null,
+    "createdAt": "2026-08-15T00:00:00.000Z",
+    "rotatedFromId": null
+  },
+  "token": "csc_prod_..."
+}
+```
+
+### `POST /api/api-keys/:apiKeyId/revoke`
+
+Required scope: `API_KEYS_MANAGE`.
+
+Revokes a key in the same environment. A key cannot revoke itself.
+
+### `POST /api/api-keys/:apiKeyId/rotate`
+
+Required scope: `API_KEYS_MANAGE`.
+
+Revokes the old key and creates a replacement with the same name and scopes. A key cannot rotate itself.

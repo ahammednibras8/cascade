@@ -1,0 +1,41 @@
+{{- if and .Values.deploymentRunner.enabled .Values.deploymentRunner.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "cascade.deploymentRunnerServiceAccountName" . }}
+  labels:
+    {{- include "cascade.labels" . | nindent 4 }}
+{{- end }}
+{{- if .Values.deploymentRunner.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "cascade.fullname" . }}-deployment-runner
+  labels:
+    {{- include "cascade.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - get
+      - create
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "cascade.fullname" . }}-deployment-runner
+  labels:
+    {{- include "cascade.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "cascade.deploymentRunnerServiceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "cascade.fullname" . }}-deployment-runner
+{{- end }}

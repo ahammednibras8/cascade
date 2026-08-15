@@ -3,19 +3,52 @@ min_version: 2.1.10
 pre-commit:
   parallel: false
   commands:
-    lint:
-      glob: "*.{js,jsx,ts,tsx}"
-      run: pnpm exec oxlint --fix {staged_files}
-      stage_fixed: true
+    guard-main:
+      run: |
+        branch="$(git branch --show-current)"
+        if [ "$branch" = "main" ]; then
+          echo "Do not commit directly to main. Create a feature branch."
+          exit 1
+        fi
+
+    guard-env:
+      run: |
+        staged_files="$(git diff --cached --name-only)"
+
+        for file in $staged_files; do
+          case "$file" in
+            .env.example|docker/.env.example)
+              ;;
+            .env|.env.*|docker/.env|docker/.env.*)
+              echo "Refusing to commit env file: $file"
+              exit 1
+              ;;
+          esac
+        done
+
     format:
-      glob: "*.{js,jsx,ts,tsx,json,jsonc,css,md,yml,yaml}"
+      glob: "*.{js,jsx,ts,tsx,json,jsonc,css,md,mdx,yml,yaml}"
       exclude:
         - "hosting/k8s/helm/templates/**"
+        - "packages/database/src/generated/**"
       run: pnpm exec oxfmt {staged_files}
       stage_fixed: true
 
+    lint:
+      glob: "*.{js,jsx,ts,tsx}"
+      exclude:
+        - "packages/database/src/generated/**"
+      run: pnpm exec oxlint --fix {staged_files}
+      stage_fixed: true
+
 pre-push:
-  parallel: true
+  parallel: false
   commands:
+    lint-ci:
+      run: pnpm run lint:ci
+
     check-types:
       run: pnpm run check-types
+
+    knip-prod:
+      run: pnpm run knip:prod

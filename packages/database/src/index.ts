@@ -25,3 +25,4 @@ if (process.env.NODE_ENV !== "production") {
 
 export { PrismaClient };
 export * from "./generated/prisma/client.js";
+export { createTaskRunEvent, type CreateTaskRunEventInput } from "./run-event-outbox.js";

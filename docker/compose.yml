@@ -8,9 +8,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-cascade}
       POSTGRES_USER: ${POSTGRES_USER:-cascade}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cascade}
-    ports:
-      - "${POSTGRES_PORT:-15432}:5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}
     volumes:
       - cascade_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -23,28 +21,258 @@ services:
     image: redis:7-alpine
     container_name: cascade-redis
     restart: unless-stopped
-    ports:
-      - "${REDIS_PORT:-16379}:6379"
     volumes:
       - cascade_redis_data:/data
-    command: ["redis-server", "--appendonly", "yes"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in docker/.env or the deployment environment}
+    command: ["sh", "-ec", 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
+
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", 'redis-cli --no-auth-warning -a "$$REDIS_PASSWORD" ping | grep -qx PONG']
       interval: 5s
       timeout: 5s
       retries: 10
 
+  migrate:
+    profiles:
+      - app
+    image: cascade-api:local
+    container_name: cascade-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
+    working_dir: /app/packages/database
+    command:
+      - ./node_modules/.bin/prisma
+      - migrate
+      - deploy
+    restart: "no"
+
+  api:
+    profiles:
+      - app
+    image: cascade-api:local
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    container_name: cascade-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      rustfs:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      API_PORT: 3001
+      API_CORS_ALLOWED_ORIGINS: ${API_CORS_ALLOWED_ORIGINS:?Set API_CORS_ALLOWED_ORIGINS in docker/.env or the deployment environment}
+      API_JSON_BODY_LIMIT_BYTES: ${API_JSON_BODY_LIMIT_BYTES:-5242880}
+      API_RATE_LIMIT_MAX_REQUESTS: ${API_RATE_LIMIT_MAX_REQUESTS:-300}
+      API_RATE_LIMIT_WINDOW_MS: ${API_RATE_LIMIT_WINDOW_MS:-60000}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
+      QUEUE_REDIS_URL: ${QUEUE_REDIS_URL:?Set QUEUE_REDIS_URL in docker/.env or the deployment environment}
+      API_KEY_PEPPER: ${API_KEY_PEPPER:?Set API_KEY_PEPPER in docker/.env or the deployment environment}
+      S3_ENDPOINT: http://rustfs:9000
+      S3_REGION: ${RUSTFS_REGION:-us-east-1}
+      S3_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:?Set RUSTFS_ACCESS_KEY in docker/.env or the deployment environment}
+      S3_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:?Set RUSTFS_SECRET_KEY in docker/.env or the deployment environment}
+      S3_BUCKET: ${S3_BUCKET:-cascade-task-payloads}
+      S3_FORCE_PATH_STYLE: "true"
+      LARGE_PAYLOAD_THRESHOLD_BYTES: ${LARGE_PAYLOAD_THRESHOLD_BYTES:-262144}
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_MODE: ${OTEL_EXPORTER_MODE:-otlp}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_SERVICE_NAME: cascade-api
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${OTEL_DEPLOYMENT_ENVIRONMENT:-local}
+      OTEL_METRIC_EXPORT_INTERVAL_MS: ${OTEL_METRIC_EXPORT_INTERVAL_MS:-1000}
+      CASCADE_VERSION: ${CASCADE_VERSION:-development}
+    ports:
+      - "${API_PORT:-3001}:3001"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "fetch('http://127.0.0.1:3001/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  dashboard:
+    profiles:
+      - app
+    image: cascade-dashboard:local
+    build:
+      context: ..
+      dockerfile: apps/dashboard/Dockerfile
+    container_name: cascade-dashboard
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      CASCADE_API_URL: http://api:3001
+      CASCADE_DASHBOARD_API_KEY: ${CASCADE_DASHBOARD_API_KEY:?Set CASCADE_DASHBOARD_API_KEY in docker/.env or the deployment environment}
+    ports:
+      - "${DASHBOARD_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  worker:
+    profiles:
+      - app
+    image: cascade-worker:local
+    build:
+      context: ..
+      dockerfile: packages/worker/Dockerfile
+    container_name: cascade-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      rustfs:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
+      QUEUE_REDIS_URL: ${QUEUE_REDIS_URL:?Set QUEUE_REDIS_URL in docker/.env or the deployment environment}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
+      WORKER_HEALTH_PORT: 3002
+      CASCADE_WORKER_ROLE: local
+      CASCADE_DEPLOYMENT_ID: local
+      CASCADE_TASK_MODULE: file:///app/packages/worker/dist/tasks/local.js
+      S3_ENDPOINT: http://rustfs:9000
+      S3_REGION: ${RUSTFS_REGION:-us-east-1}
+      S3_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:?Set RUSTFS_ACCESS_KEY in docker/.env or the deployment environment}
+      S3_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:?Set RUSTFS_SECRET_KEY in docker/.env or the deployment environment}
+      S3_BUCKET: ${S3_BUCKET:-cascade-task-payloads}
+      S3_FORCE_PATH_STYLE: "true"
+      LARGE_PAYLOAD_THRESHOLD_BYTES: ${LARGE_PAYLOAD_THRESHOLD_BYTES:-262144}
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_MODE: ${OTEL_EXPORTER_MODE:-otlp}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_SERVICE_NAME: cascade-worker
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${OTEL_DEPLOYMENT_ENVIRONMENT:-local}
+      OTEL_METRIC_EXPORT_INTERVAL_MS: ${OTEL_METRIC_EXPORT_INTERVAL_MS:-1000}
+      CASCADE_VERSION: ${CASCADE_VERSION:-development}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "fetch('http://127.0.0.1:3002/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  worker-control:
+    profiles:
+      - app
+    image: cascade-worker:local
+    build:
+      context: ..
+      dockerfile: packages/worker/Dockerfile
+    container_name: cascade-worker-control
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
+      QUEUE_REDIS_URL: ${QUEUE_REDIS_URL:?Set QUEUE_REDIS_URL in docker/.env or the deployment environment}
+      CASCADE_WORKER_ROLE: control
+      WORKER_HEALTH_PORT: 3002
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_MODE: ${OTEL_EXPORTER_MODE:-otlp}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_SERVICE_NAME: cascade-worker-control
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${OTEL_DEPLOYMENT_ENVIRONMENT:-local}
+      OTEL_METRIC_EXPORT_INTERVAL_MS: ${OTEL_METRIC_EXPORT_INTERVAL_MS:-1000}
+      CASCADE_VERSION: ${CASCADE_VERSION:-development}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "fetch('http://127.0.0.1:3002/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  deployment-runner:
+    profiles:
+      - app
+    image: cascade-deployment-runner:local
+    build:
+      context: ..
+      dockerfile: apps/deployment-runner/Dockerfile
+    container_name: cascade-deployment-runner
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      rustfs:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DEPLOYMENT_RUNTIME: ${DEPLOYMENT_RUNTIME:-docker}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
+      DEPLOYMENT_DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
+      DEPLOYMENT_QUEUE_REDIS_URL: ${DEPLOYMENT_QUEUE_REDIS_URL:?Set DEPLOYMENT_QUEUE_REDIS_URL in docker/.env or the deployment environment}
+      DEPLOYMENT_DOCKER_NETWORK: ${DEPLOYMENT_DOCKER_NETWORK:-cascade_default}
+      DEPLOYMENT_WORKER_CONCURRENCY: ${DEPLOYMENT_WORKER_CONCURRENCY:-2}
+      DEPLOYMENT_RUNNER_POLL_MS: ${DEPLOYMENT_RUNNER_POLL_MS:-5000}
+      DEPLOYMENT_PULL_IMAGES: ${DEPLOYMENT_PULL_IMAGES:-false}
+      S3_ENDPOINT: http://rustfs:9000
+      S3_REGION: ${RUSTFS_REGION:-us-east-1}
+      S3_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:?Set RUSTFS_ACCESS_KEY in docker/.env or the deployment environment}
+      S3_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:?Set RUSTFS_SECRET_KEY in docker/.env or the deployment environment}
+      S3_BUCKET: ${S3_BUCKET:-cascade-task-payloads}
+      S3_FORCE_PATH_STYLE: "true"
+      LARGE_PAYLOAD_THRESHOLD_BYTES: ${LARGE_PAYLOAD_THRESHOLD_BYTES:-262144}
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_MODE: ${OTEL_EXPORTER_MODE:-otlp}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_SERVICE_NAME: cascade-deployment-runner
+      OTEL_DEPLOYMENT_ENVIRONMENT: ${OTEL_DEPLOYMENT_ENVIRONMENT:-local}
+      OTEL_METRIC_EXPORT_INTERVAL_MS: ${OTEL_METRIC_EXPORT_INTERVAL_MS:-1000}
+      CASCADE_VERSION: ${CASCADE_VERSION:-development}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
   clickhouse:
+    profiles:
+      - analytics
     image: clickhouse/clickhouse-server:25.11-alpine
     container_name: cascade-clickhouse
     restart: unless-stopped
     environment:
       CLICKHOUSE_DB: ${CLICKHOUSE_DB:-cascade}
       CLICKHOUSE_USER: ${CLICKHOUSE_USER:-cascade}
-      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-cascade}
-    ports:
-      - "${CLICKHOUSE_HTTP_PORT:-18123}:8123"
-      - "${CLICKHOUSE_NATIVE_PORT:-19000}:9000"
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?Set CLICKHOUSE_PASSWORD in docker/.env or the deployment environment}
     volumes:
       - cascade_clickhouse_data:/var/lib/clickhouse
     healthcheck:
@@ -53,7 +281,53 @@ services:
       timeout: 5s
       retries: 20
 
+  rustfs-volume-init:
+    profiles:
+      - app
+      - storage
+    image: alpine:3.20
+    container_name: cascade-rustfs-volume-init
+    command: ["sh", "-c", "chown -R 10001:10001 /data /logs"]
+    volumes:
+      - cascade_rustfs_data:/data
+      - cascade_rustfs_logs:/logs
+
+  rustfs:
+    profiles:
+      - app
+      - storage
+    # Keep this version aligned with hosting/k8s/helm/values.yaml.
+    # Do not use :latest or a preview tag.
+    image: rustfs/rustfs:1.0.0-beta.11
+    container_name: cascade-rustfs
+    restart: unless-stopped
+    depends_on:
+      rustfs-volume-init:
+        condition: service_completed_successfully
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?Set RUSTFS_ACCESS_KEY in docker/.env or the deployment environment}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?Set RUSTFS_SECRET_KEY in docker/.env or the deployment environment}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_REGION: ${RUSTFS_REGION:-us-east-1}
+    volumes:
+      - cascade_rustfs_data:/data
+      - cascade_rustfs_logs:/logs
+    command: ["/data"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:9000/health/ready || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
 volumes:
   cascade_postgres_data:
   cascade_redis_data:
   cascade_clickhouse_data:
+  cascade_rustfs_data:
+  cascade_rustfs_logs:

@@ -1,0 +1,127 @@
+{{- if .Values.workers.local.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cascade.fullname" . }}-worker-local
+  labels:
+    {{- include "cascade.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker-local
+spec:
+  replicas: {{ .Values.workers.local.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "cascade.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker-local
+  template:
+    metadata:
+      labels:
+        {{- include "cascade.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker-local
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: worker
+          image: "{{ .Values.workers.image.repository }}:{{ required "workers.image.tag is required" .Values.workers.image.tag }}"
+          imagePullPolicy: {{ .Values.workers.image.pullPolicy }}
+          ports:
+            - name: health
+              containerPort: 3002
+          envFrom:
+            - secretRef:
+                name: {{ include "cascade.runtimeSecretName" . }}
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: CASCADE_WORKER_ROLE
+              value: local
+            - name: CASCADE_DEPLOYMENT_ID
+              value: local
+            - name: CASCADE_TASK_MODULE
+              value: file:///app/packages/worker/dist/tasks/local.js
+            - name: WORKER_CONCURRENCY
+              value: {{ .Values.workers.local.concurrency | quote }}
+            - name: WORKER_HEALTH_PORT
+              value: "3002"
+          {{- include "cascade.telemetryEnv" (dict "root" . "serviceName" "cascade-worker-local") | nindent 12 }}
+
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+
+          resources:
+            {{- toYaml .Values.workers.local.resources | nindent 12 }}
+{{- end }}
+{{- if .Values.workers.control.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cascade.fullname" . }}-worker-control
+  labels:
+    {{- include "cascade.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker-control
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "cascade.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker-control
+  template:
+    metadata:
+      labels:
+        {{- include "cascade.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker-control
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: worker
+          image: "{{ .Values.workers.image.repository }}:{{ required "workers.image.tag is required" .Values.workers.image.tag }}"
+          imagePullPolicy: {{ .Values.workers.image.pullPolicy }}
+          ports:
+            - name: health
+              containerPort: 3002
+          envFrom:
+            - secretRef:
+                name: {{ include "cascade.runtimeSecretName" . }}
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: CASCADE_WORKER_ROLE
+              value: control
+            - name: WORKER_HEALTH_PORT
+              value: "3002"
+          {{- include "cascade.telemetryEnv" (dict "root" . "serviceName" "cascade-worker-control") | nindent 12 }}
+
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+
+          resources:
+            {{- toYaml .Values.workers.control.resources | nindent 12 }}
+{{- end }}
