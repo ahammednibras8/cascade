@@ -272,7 +272,7 @@ services:
     environment:
       CLICKHOUSE_DB: ${CLICKHOUSE_DB:-cascade}
       CLICKHOUSE_USER: ${CLICKHOUSE_USER:-cascade}
-      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-cascade}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?Set CLICKHOUSE_PASSWORD in docker/.env or the deployment environment}
     ports:
       - "${CLICKHOUSE_HTTP_PORT:-18123}:8123"
       - "${CLICKHOUSE_NATIVE_PORT:-19000}:9000"
