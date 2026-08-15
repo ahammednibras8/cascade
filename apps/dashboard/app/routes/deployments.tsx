@@ -73,7 +73,12 @@ export default function Deployments({ loaderData }: Route.ComponentProps) {
             {loaderData.deployments.map((deployment) => (
               <tr key={deployment.id}>
                 <td className="px-4 py-3">
-                  <div className="font-medium text-gray-900">{deployment.version}</div>
+                  <Link
+                    to={`/deployments/${deployment.id}`}
+                    className="font-medium text-blue-700 hover:text-blue-900 hover:underline"
+                  >
+                    {deployment.version}
+                  </Link>
                   <div className="font-mono text-xs text-gray-500">{deployment.id}</div>
                 </td>
 
