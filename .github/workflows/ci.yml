@@ -86,6 +86,9 @@ jobs:
       - name: Validate database schema
         run: pnpm run db:validate
 
+      - name: Verify generated Prisma client
+        run: pnpm run db:generate:check
+
       - name: Apply database migrations
         run: pnpm run db:deploy
 

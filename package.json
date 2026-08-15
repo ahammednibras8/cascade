@@ -62,6 +62,7 @@
     "secrets:api:dev": "infisical run --env=dev --path=/ --path=/apps/api -- pnpm --filter @cascade/api run dev",
     "secrets:worker:dev": "infisical run --env=dev --path=/ -- pnpm --filter @cascade/worker run dev",
     "db:generate": "pnpm --filter @cascade/database run db:generate",
+    "db:generate:check": "node scripts/check-generated-prisma.mjs",
     "db:validate": "pnpm --filter @cascade/database run db:validate",
     "db:migrate": "pnpm --filter @cascade/database run db:migrate",
     "db:deploy": "pnpm --filter @cascade/database run db:deploy",
