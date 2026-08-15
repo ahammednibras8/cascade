@@ -33,6 +33,8 @@ const routeMocks = vi.hoisted(() => ({
   deleteTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
   getTaskRun: vi.fn<(input: unknown) => Promise<unknown>>(),
   getTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
+  getDeployment: vi.fn<(input: unknown) => Promise<unknown>>(),
+  listDeployments: vi.fn<(input: unknown) => Promise<unknown>>(),
   listTaskRunEvents: vi.fn<(input: unknown) => Promise<unknown>>(),
   listTasks: vi.fn<(input: unknown) => Promise<unknown>>(),
   listApiKeys: vi.fn<(input: unknown) => Promise<unknown>>(),
@@ -59,6 +61,8 @@ export const {
   deleteTaskSchedule,
   getTaskRun,
   getTaskSchedule,
+  getDeployment,
+  listDeployments,
   listTaskRunEvents,
   listTasks,
   listApiKeys,
@@ -167,6 +171,14 @@ vi.mock("../../src/realtime/run-event-stream.js", () => ({
 
 vi.mock("../../src/realtime/environment-runs-stream.js", () => ({
   streamEnvironmentRuns: routeMocks.streamEnvironmentRuns,
+}));
+
+vi.mock("../../src/services/get-deployment.js", () => ({
+  getDeployment: routeMocks.getDeployment,
+}));
+
+vi.mock("../../src/services/list-deployments.js", () => ({
+  listDeployments: routeMocks.listDeployments,
 }));
 
 const { tasksRouter } = await import("../../src/routes/tasks.js");
