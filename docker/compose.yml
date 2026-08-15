@@ -27,9 +27,12 @@ services:
       - "${REDIS_PORT:-16379}:6379"
     volumes:
       - cascade_redis_data:/data
-    command: ["redis-server", "--appendonly", "yes"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in docker/.env or the deployment environment}
+    command: ["sh", "-ec", 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
+
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", 'redis-cli --no-auth-warning -a "$$REDIS_PASSWORD" ping | grep -qx PONG']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -76,7 +79,7 @@ services:
       API_RATE_LIMIT_MAX_REQUESTS: ${API_RATE_LIMIT_MAX_REQUESTS:-300}
       API_RATE_LIMIT_WINDOW_MS: ${API_RATE_LIMIT_WINDOW_MS:-60000}
       DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
-      QUEUE_REDIS_URL: redis://redis:6379
+      QUEUE_REDIS_URL: ${QUEUE_REDIS_URL:?Set QUEUE_REDIS_URL in docker/.env or the deployment environment}
       API_KEY_PEPPER: ${API_KEY_PEPPER:?Set API_KEY_PEPPER in docker/.env or the deployment environment}
       S3_ENDPOINT: http://rustfs:9000
       S3_REGION: ${RUSTFS_REGION:-us-east-1}
@@ -241,7 +244,7 @@ services:
       DEPLOYMENT_RUNTIME: ${DEPLOYMENT_RUNTIME:-docker}
       DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
       DEPLOYMENT_DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
-      DEPLOYMENT_QUEUE_REDIS_URL: redis://redis:6379
+      DEPLOYMENT_QUEUE_REDIS_URL: ${DEPLOYMENT_QUEUE_REDIS_URL:?Set DEPLOYMENT_QUEUE_REDIS_URL in docker/.env or the deployment environment}
       DEPLOYMENT_DOCKER_NETWORK: ${DEPLOYMENT_DOCKER_NETWORK:-cascade_default}
       DEPLOYMENT_WORKER_CONCURRENCY: ${DEPLOYMENT_WORKER_CONCURRENCY:-2}
       DEPLOYMENT_RUNNER_POLL_MS: ${DEPLOYMENT_RUNNER_POLL_MS:-5000}
