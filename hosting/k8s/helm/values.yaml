@@ -158,7 +158,7 @@ rustfs:
   enabled: false
   image:
     repository: rustfs/rustfs
-    tag: 1.0.0-beta.11-preview.1
+    tag: 1.0.0-beta.11
     pullPolicy: IfNotPresent
   region: us-east-1
   auth:

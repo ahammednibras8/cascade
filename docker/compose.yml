@@ -299,7 +299,9 @@ services:
     profiles:
       - app
       - storage
-    image: rustfs/rustfs:latest
+    # Keep this version aligned with hosting/k8s/helm/values.yaml.
+    # Do not use :latest or a preview tag.
+    image: rustfs/rustfs:1.0.0-beta.11
     container_name: cascade-rustfs
     restart: unless-stopped
     depends_on:
