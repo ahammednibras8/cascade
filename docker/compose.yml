@@ -156,7 +156,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
-      QUEUE_REDIS_URL: redis://redis:6379
+      QUEUE_REDIS_URL: ${QUEUE_REDIS_URL:?Set QUEUE_REDIS_URL in docker/.env or the deployment environment}
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
       WORKER_HEALTH_PORT: 3002
       CASCADE_WORKER_ROLE: local
@@ -203,7 +203,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
-      QUEUE_REDIS_URL: redis://redis:6379
+      QUEUE_REDIS_URL: ${QUEUE_REDIS_URL:?Set QUEUE_REDIS_URL in docker/.env or the deployment environment}
       CASCADE_WORKER_ROLE: control
       WORKER_HEALTH_PORT: 3002
       OTEL_ENABLED: ${OTEL_ENABLED:-false}
