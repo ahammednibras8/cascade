@@ -80,9 +80,6 @@ jobs:
       - name: Typecheck
         run: pnpm run check-types
 
-      - name: Unit tests
-        run: pnpm run test:unit
-
       - name: Validate database schema
         run: pnpm run db:validate
 
@@ -91,6 +88,9 @@ jobs:
 
       - name: Apply database migrations
         run: pnpm run db:deploy
+
+      - name: Unit tests
+        run: pnpm run test:unit
 
       - name: Render Helm chart
         run: helm template cascade hosting/k8s/helm --set image.tag=${{ github.event.pull_request.head.sha || github.sha }}
