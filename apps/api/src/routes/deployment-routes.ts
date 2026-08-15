@@ -7,6 +7,7 @@ import { requireApiKeyScope } from "../auth/api-key.js";
 import { getSingleParam } from "../lib/route-params.js";
 import { getDeployment } from "../services/get-deployment.js";
 import { listDeployments } from "../services/list-deployments.js";
+import { deactivateDeployment } from "../services/deactivate-deployment.js";
 
 export const deploymentRoutes: ExpressRouter = Router();
 
@@ -39,6 +40,34 @@ deploymentRoutes.get(
     }
 
     const result = await getDeployment({
+      auth,
+      deploymentId: getSingleParam(request.params.deploymentId),
+    });
+
+    if (!result.ok) {
+      response.status(result.status).json({
+        error: result.error,
+      });
+      return;
+    }
+
+    response.status(result.status).json({
+      deployment: result.deployment,
+    });
+  }),
+);
+
+deploymentRoutes.post(
+  "/deployments/:deploymentId/deactivate",
+  requireApiKeyScope(ApiKeyScope.DEPLOYMENTS_WRITE),
+  asyncHandler(async (request, response) => {
+    const auth = getAuthOrRespond(request, response);
+
+    if (!auth) {
+      return;
+    }
+
+    const result = await deactivateDeployment({
       auth,
       deploymentId: getSingleParam(request.params.deploymentId),
     });
