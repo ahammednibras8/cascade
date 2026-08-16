@@ -161,6 +161,33 @@ export function createListTasksSuccess() {
   };
 }
 
+export function createGetTaskSuccess() {
+  return {
+    ok: true,
+    status: 200,
+    task: {
+      id: TASK_ID,
+      slug: "hello",
+      name: "Hello",
+      description: "Greets a user",
+      executionConfig: EXECUTION_CONFIG,
+      createdAt: CREATED_AT,
+      updatedAt: "2026-01-02T00:00:00.000Z",
+      deployment: {
+        id: "deployment-1",
+        version: "v1",
+        image: "ghcr.io/cascade/worker:v1",
+        status: "ACTIVE",
+        runtimeStatus: "RUNNING",
+      },
+      runsCount: 3,
+      schedulesCount: 1,
+      schedules: [],
+      recentRuns: [],
+    },
+  };
+}
+
 export function createDeploymentVersionExistsFailure() {
   return {
     ok: false,

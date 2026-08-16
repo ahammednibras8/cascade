@@ -10,6 +10,7 @@ import { deleteTaskSchedule } from "../schedules/delete-task-schedule.js";
 import { getTaskSchedule } from "../schedules/get-task-schedule.js";
 import { listTaskSchedules } from "../schedules/list-task-schedules.js";
 import { listTasks } from "./list-tasks.js";
+import { getTask } from "./get-task.js";
 import { pauseTaskSchedule } from "../schedules/pause-task-schedule.js";
 import { resumeTaskSchedule } from "../schedules/resume-task-schedule.js";
 import { triggerTaskRun } from "../task-runs/trigger-task-run.js";
@@ -23,6 +24,19 @@ taskRoutes.get(
   requireApiKeyScope(ApiKeyScope.TASKS_READ),
   authenticatedRoute(async ({ auth, response }) => {
     writeJsonResult(response, await listTasks({ auth }), ({ tasks }) => ({ tasks }));
+  }),
+);
+
+taskRoutes.get(
+  "/tasks/:taskId",
+  requireApiKeyScope(ApiKeyScope.TASKS_READ),
+  authenticatedRoute(async ({ auth, request, response }) => {
+    const result = await getTask({
+      auth,
+      taskId: getSingleParam(request.params.taskId),
+    });
+
+    writeTaskResult(response, result);
   }),
 );
 
@@ -173,6 +187,10 @@ type ScheduleRouteSuccess = RouteSuccessResult & {
   schedule: unknown;
 };
 
+type TaskRouteSuccess = RouteSuccessResult & {
+  task: unknown;
+};
+
 type TaskReference =
   | {
       kind: "id";
@@ -220,6 +238,10 @@ function writeJsonResult<TSuccess extends RouteSuccessResult>(
 
 function writeScheduleResult(response: Response, result: RouteJsonResult<ScheduleRouteSuccess>) {
   writeJsonResult(response, result, ({ schedule }) => ({ schedule }));
+}
+
+function writeTaskResult(response: Response, result: RouteJsonResult<TaskRouteSuccess>) {
+  writeJsonResult(response, result, ({ task }) => ({ task }));
 }
 
 function writeDeleteResult(response: Response, result: DeleteScheduleResult) {

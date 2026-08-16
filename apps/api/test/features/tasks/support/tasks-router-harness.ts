@@ -33,6 +33,7 @@ const routeMocks = vi.hoisted(() => ({
   deleteTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
   deactivateDeployment: vi.fn<(input: unknown) => Promise<unknown>>(),
   getTaskRun: vi.fn<(input: unknown) => Promise<unknown>>(),
+  getTask: vi.fn<(input: unknown) => Promise<unknown>>(),
   getTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
   getDeployment: vi.fn<(input: unknown) => Promise<unknown>>(),
   listDeployments: vi.fn<(input: unknown) => Promise<unknown>>(),
@@ -63,6 +64,7 @@ export const {
   deleteTaskSchedule,
   deactivateDeployment,
   getTaskRun,
+  getTask,
   getTaskSchedule,
   getDeployment,
   listDeployments,
@@ -191,6 +193,10 @@ vi.mock("../../../../src/features/deployments/deactivate-deployment.js", () => (
 
 vi.mock("../../../../src/features/deployments/rollback-deployment.js", () => ({
   rollbackDeployment: routeMocks.rollbackDeployment,
+}));
+
+vi.mock("../../../../src/features/tasks/get-task.js", () => ({
+  getTask: routeMocks.getTask,
 }));
 
 const { apiRouter } = await import("../../../../src/routes/api-router.js");
