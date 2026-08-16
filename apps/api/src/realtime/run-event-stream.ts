@@ -1,7 +1,7 @@
 /* eslint-disable no-await-in-loop */
 import type { Request, Response } from "express";
 import type { ApiAuthContext } from "../auth/api-key.js";
-import { listTaskRunEvents } from "../services/list-task-run-events.js";
+import { listTaskRunEvents } from "../features/task-runs/list-task-run-events.js";
 import { runEventNotificationSubscriber } from "./run-event-notifications.js";
 
 const SSE_HEARTBEAT_INTERVAL_MS = 15_000;

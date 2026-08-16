@@ -2,7 +2,7 @@ import express from "express";
 import type { Socket } from "node:net";
 import { packageName } from "@cascade/core";
 import { requireApiKey } from "./auth/api-key.js";
-import { tasksRouter } from "./routes/tasks.js";
+import { apiRouter } from "./routes/api-router.js";
 import { disconnectTaskRunQueueRedis } from "./queue/task-runs.js";
 import { disconnectEnvironmentRunsNotificationSubscriber } from "./realtime/environment-runs-notifications.js";
 import { disconnectRunEventNotificationSubscriber } from "./realtime/run-event-notifications.js";
@@ -59,7 +59,7 @@ app.get("/me", (request, response) => {
   });
 });
 
-app.use("/api", requireApiKey(), apiRateLimit(), tasksRouter);
+app.use("/api", requireApiKey(), apiRateLimit(), apiRouter);
 
 app.use(errorHandler);
 

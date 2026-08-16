@@ -139,6 +139,74 @@ describeWithDatabase("Postgres schema contract", () => {
 
     expect(event.level).toBe("INFO");
 
+    const deployment = await prisma.deployment.create({
+      data: {
+        environmentId: environment.id,
+        version: `schema-contract-deployment-${suffix}`,
+        image: "ghcr.io/cascade/schema-contract-worker:test",
+        manifestTasks: {
+          create: {
+            slug: "hello",
+            name: "Hello",
+            description: "Deployment manifest task",
+            executionConfig: {
+              schemaVersion: 1,
+              timeoutMs: 30_000,
+              retry: {
+                maxAttempts: 3,
+                delayMs: 1_000,
+                exponentialBackoff: true,
+              },
+              queue: {
+                name: "default",
+                concurrencyLimit: 2,
+              },
+            },
+          },
+        },
+      },
+      include: {
+        manifestTasks: true,
+      },
+    });
+
+    expect(deployment.manifestTasks).toEqual([
+      expect.objectContaining({
+        deploymentId: deployment.id,
+        slug: "hello",
+        name: "Hello",
+        description: "Deployment manifest task",
+        executionConfig: {
+          schemaVersion: 1,
+          timeoutMs: 30_000,
+          retry: {
+            maxAttempts: 3,
+            delayMs: 1_000,
+            exponentialBackoff: true,
+          },
+          queue: {
+            name: "default",
+            concurrencyLimit: 2,
+          },
+        },
+      }),
+    ]);
+
+    await expect(
+      prisma.deploymentTask.create({
+        data: {
+          deploymentId: deployment.id,
+          slug: "hello",
+          name: "Duplicate manifest task",
+          executionConfig: {
+            schemaVersion: 1,
+          },
+        },
+      }),
+    ).rejects.toMatchObject({
+      code: "P2002",
+    });
+
     await prisma.project.delete({
       where: {
         id: project.id,

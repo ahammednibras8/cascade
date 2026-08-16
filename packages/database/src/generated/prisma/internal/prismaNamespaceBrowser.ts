@@ -60,7 +60,8 @@ export const ModelName = {
   TaskEvent: 'TaskEvent',
   RunEventOutbox: 'RunEventOutbox',
   TaskSchedule: 'TaskSchedule',
-  Deployment: 'Deployment'
+  Deployment: 'Deployment',
+  DeploymentTask: 'DeploymentTask'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -245,6 +246,19 @@ export const DeploymentScalarFieldEnum = {
 export type DeploymentScalarFieldEnum = (typeof DeploymentScalarFieldEnum)[keyof typeof DeploymentScalarFieldEnum]
 
 
+export const DeploymentTaskScalarFieldEnum = {
+  id: 'id',
+  deploymentId: 'deploymentId',
+  slug: 'slug',
+  name: 'name',
+  description: 'description',
+  executionConfig: 'executionConfig',
+  createdAt: 'createdAt'
+} as const
+
+export type DeploymentTaskScalarFieldEnum = (typeof DeploymentTaskScalarFieldEnum)[keyof typeof DeploymentTaskScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -259,6 +273,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {

@@ -36,7 +36,7 @@ type ListTaskRunEvents = (input: {
 const productionListTaskRunEvents = vi.hoisted(() => vi.fn<ListTaskRunEvents>());
 const productionSubscribe = vi.hoisted(() => vi.fn<Subscribe>());
 
-vi.mock("../../src/services/list-task-run-events.js", () => ({
+vi.mock("../../src/features/task-runs/list-task-run-events.js", () => ({
   listTaskRunEvents: productionListTaskRunEvents,
 }));
 
