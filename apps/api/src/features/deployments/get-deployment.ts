@@ -54,6 +54,19 @@ export async function getDeployment(input: {
           },
         },
       },
+      manifestTasks: {
+        orderBy: {
+          slug: "asc",
+        },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          description: true,
+          executionConfig: true,
+          createdAt: true,
+        },
+      },
       _count: {
         select: {
           runs: true,
@@ -91,6 +104,14 @@ export async function getDeployment(input: {
       updatedAt: deployment.updatedAt.toISOString(),
       runsCount: deployment._count.runs,
       canRollback: deployment.status === "INACTIVE" && deployment._count.manifestTasks > 0,
+      manifestTasks: deployment.manifestTasks.map((task) => ({
+        id: task.id,
+        slug: task.slug,
+        name: task.name,
+        description: task.description,
+        executionConfig: task.executionConfig,
+        createdAt: task.createdAt.toISOString(),
+      })),
       tasks: deployment.tasks.map((task) => ({
         id: task.id,
         slug: task.slug,
