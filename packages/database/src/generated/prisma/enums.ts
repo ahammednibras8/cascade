@@ -84,6 +84,16 @@ export const ApiKeyScope = {
 export type ApiKeyScope = (typeof ApiKeyScope)[keyof typeof ApiKeyScope]
 
 
+export const OrganizationRole = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  DEVELOPER: 'DEVELOPER',
+  VIEWER: 'VIEWER'
+} as const
+
+export type OrganizationRole = (typeof OrganizationRole)[keyof typeof OrganizationRole]
+
+
 export const TaskScheduleType = {
   INTERVAL: 'INTERVAL',
   CRON: 'CRON'

@@ -558,10 +558,6 @@ export type ApiKeyUpdateOneWithoutRotatedFromNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ApiKeyUpdateToOneWithWhereWithoutRotatedFromInput, Prisma.ApiKeyUpdateWithoutRotatedFromInput>, Prisma.ApiKeyUncheckedUpdateWithoutRotatedFromInput>
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type ApiKeyUncheckedUpdateOneWithoutRotatedFromNestedInput = {
   create?: Prisma.XOR<Prisma.ApiKeyCreateWithoutRotatedFromInput, Prisma.ApiKeyUncheckedCreateWithoutRotatedFromInput>
   connectOrCreate?: Prisma.ApiKeyCreateOrConnectWithoutRotatedFromInput

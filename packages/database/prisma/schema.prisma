@@ -63,20 +63,84 @@ enum ApiKeyScope {
   API_KEYS_MANAGE
 }
 
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  DEVELOPER
+  VIEWER
+}
+
 enum TaskScheduleType {
   INTERVAL
   CRON
 }
 
-model Project {
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  email       String   @unique
+  displayName String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  identities  UserIdentity[]
+  memberships OrganizationMember[]
+
+  @@index([createdAt])
+}
+
+model UserIdentity {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  provider  String
+  subject   String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, subject])
+  @@index([userId])
+}
+
+model Organization {
   id        String   @id @default(uuid()) @db.Uuid
   slug      String   @unique
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  members  OrganizationMember[]
+  projects Project[]
+
+  @@index([createdAt])
+}
+
+model OrganizationMember {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @db.Uuid
+  userId         String           @db.Uuid
+  role           OrganizationRole @default(VIEWER)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model Project {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String?  @db.Uuid
+  slug           String   @unique
+  name           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   environments Environment[]
 
+  @@index([organizationId])
   @@index([createdAt])
 }
 
@@ -294,13 +358,13 @@ model Deployment {
 }
 
 model DeploymentTask {
-  id           String @id @default(uuid()) @db.Uuid
-  deploymentId String @db.Uuid
-  slug         String
-  name         String
-  description String?
+  id              String   @id @default(uuid()) @db.Uuid
+  deploymentId    String   @db.Uuid
+  slug            String
+  name            String
+  description     String?
   executionConfig Json
-  createdAt DateTime @default(now())
+  createdAt       DateTime @default(now())
 
   deployment Deployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
 
