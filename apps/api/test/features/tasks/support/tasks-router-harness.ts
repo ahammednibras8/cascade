@@ -43,6 +43,7 @@ const routeMocks = vi.hoisted(() => ({
   revokeApiKey: vi.fn<(input: unknown) => Promise<unknown>>(),
   rotateApiKey: vi.fn<(input: unknown) => Promise<unknown>>(),
   resumeTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
+  rollbackDeployment: vi.fn<(input: unknown) => Promise<unknown>>(),
   streamTaskRunEvents: vi.fn<(input: unknown) => Promise<unknown>>(),
   streamEnvironmentRuns: vi.fn<(input: unknown) => Promise<unknown>>(),
   pauseTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
@@ -72,6 +73,7 @@ export const {
   pauseTaskSchedule,
   prisma,
   replayTaskRun,
+  rollbackDeployment,
   triggerTaskRun,
   revokeApiKey,
   rotateApiKey,
@@ -185,6 +187,10 @@ vi.mock("../../../../src/features/deployments/list-deployments.js", () => ({
 
 vi.mock("../../../../src/features/deployments/deactivate-deployment.js", () => ({
   deactivateDeployment: routeMocks.deactivateDeployment,
+}));
+
+vi.mock("../../../../src/features/deployments/rollback-deployment.js", () => ({
+  rollbackDeployment: routeMocks.rollbackDeployment,
 }));
 
 const { apiRouter } = await import("../../../../src/routes/api-router.js");

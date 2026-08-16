@@ -8,6 +8,7 @@ import { getSingleParam } from "../../lib/route-params.js";
 import { getDeployment } from "./get-deployment.js";
 import { listDeployments } from "./list-deployments.js";
 import { deactivateDeployment } from "./deactivate-deployment.js";
+import { rollbackDeployment } from "./rollback-deployment.js";
 
 export const deploymentRoutes: ExpressRouter = Router();
 
@@ -68,6 +69,34 @@ deploymentRoutes.post(
     }
 
     const result = await deactivateDeployment({
+      auth,
+      deploymentId: getSingleParam(request.params.deploymentId),
+    });
+
+    if (!result.ok) {
+      response.status(result.status).json({
+        error: result.error,
+      });
+      return;
+    }
+
+    response.status(result.status).json({
+      deployment: result.deployment,
+    });
+  }),
+);
+
+deploymentRoutes.post(
+  "/deployments/:deploymentId/rollback",
+  requireApiKeyScope(ApiKeyScope.DEPLOYMENTS_WRITE),
+  asyncHandler(async (request, response) => {
+    const auth = getAuthOrRespond(request, response);
+
+    if (!auth) {
+      return;
+    }
+
+    const result = await rollbackDeployment({
       auth,
       deploymentId: getSingleParam(request.params.deploymentId),
     });
