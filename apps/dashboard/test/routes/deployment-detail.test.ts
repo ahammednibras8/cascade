@@ -6,7 +6,7 @@ vi.mock("../../app/lib/cascade-api.server.js", () => ({
   cascadeApiRequest,
 }));
 
-const { loader } = await import("../../app/routes/deployment-detail.js");
+const { action, loader } = await import("../../app/routes/deployment-detail.js");
 
 const DEPLOYMENT_ID = "44444444-4444-4444-8444-444444444444";
 
@@ -58,6 +58,20 @@ function routeArgs(deploymentId = DEPLOYMENT_ID) {
     params: {
       deploymentId,
     },
+  } as never;
+}
+
+function actionArgs(intent: string, deploymentId = DEPLOYMENT_ID) {
+  return {
+    params: {
+      deploymentId,
+    },
+    request: new Request(`http://dashboard.test/deployments/${deploymentId}`, {
+      method: "POST",
+      body: new URLSearchParams({
+        intent,
+      }),
+    }),
   } as never;
 }
 
@@ -124,5 +138,53 @@ describe("deployment detail loader", () => {
     cascadeApiRequest.mockRejectedValue(error);
 
     await expect(loader(routeArgs())).rejects.toBe(error);
+  });
+
+  it("sends a deployment deactivation request to the API", async () => {
+    cascadeApiRequest.mockResolvedValue({
+      deployment: {
+        id: DEPLOYMENT_ID,
+        status: "INACTIVE",
+        tasksDetached: 2,
+        schedulesPaused: 1,
+      },
+    });
+
+    await expect(action(actionArgs("deactivate"))).resolves.toEqual({
+      ok: true,
+      deployment: {
+        id: DEPLOYMENT_ID,
+        status: "INACTIVE",
+        tasksDetached: 2,
+        schedulesPaused: 1,
+      },
+    });
+
+    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/deployments/${DEPLOYMENT_ID}/deactivate`, {
+      method: "POST",
+    });
+  });
+
+  it("rejects an invalid deployment action before calling the API", async () => {
+    await expect(action(actionArgs("delete"))).rejects.toMatchObject({
+      status: 400,
+    });
+
+    expect(cascadeApiRequest).not.toHaveBeenCalled();
+  });
+
+  it("returns the API failure status when deactivation fails", async () => {
+    cascadeApiRequest.mockRejectedValue({
+      status: 409,
+      responseBody: {
+        error: {
+          code: "DEPLOYMENT_ALREADY_INACTIVE",
+        },
+      },
+    });
+
+    await expect(action(actionArgs("deactivate"))).rejects.toMatchObject({
+      status: 409,
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Form, Link, useNavigation } from "react-router";
 import type { Route } from "./+types/deployment-detail";
 import { StatusBadge } from "~/components/status-badge";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
@@ -71,6 +71,46 @@ export async function loader({ params }: Route.LoaderArgs) {
   }
 }
 
+export async function action({ params, request }: Route.ActionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (intent !== "deactivate") {
+    throw new Response("Invalid deployment action", {
+      status: 400,
+    });
+  }
+
+  try {
+    const response = await cascadeApiRequest<{
+      deployment: {
+        id: string;
+        status: "INACTIVE";
+        tasksDetached: number;
+        schedulesPaused: number;
+      };
+    }>(`/api/deployments/${encodeURIComponent(params.deploymentId)}/deactivate`, {
+      method: "POST",
+    });
+
+    return {
+      ok: true,
+      deployment: response.deployment,
+    };
+  } catch (error) {
+    const status =
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      typeof error.status === "number"
+        ? error.status
+        : 500;
+    throw new Response("Could not deactivate deployment", {
+      status,
+    });
+  }
+}
+
 function isDeploymentNotFoundError(error: unknown) {
   if (typeof error !== "object" || error === null || !("status" in error)) {
     return false;
@@ -122,6 +162,7 @@ function executionConfigSummary(config: ExecutionConfig | null) {
 
 export default function DeploymentDetail({ loaderData }: Route.ComponentProps) {
   const { deployment } = loaderData;
+  const navigation = useNavigation();
 
   if (!deployment) {
     return (
@@ -161,6 +202,42 @@ export default function DeploymentDetail({ loaderData }: Route.ComponentProps) {
         </div>
 
         <p className="mt-2 font-mono text-sm text-gray-500">{deployment.id}</p>
+
+        {deployment.status === "ACTIVE" ? (
+          <div className="mt-4">
+            <Form method="post">
+              <button
+                type="submit"
+                name="intent"
+                value="deactivate"
+                disabled={
+                  navigation.state === "submitting" &&
+                  navigation.formData?.get("intent") === "deactivate"
+                }
+                onClick={(event) => {
+                  const confirmed = window.confirm(
+                    `Deactivate deployment "${deployment.version}"? This disables its tasks and pauses their enabled schedules. Existing runs will drain.`,
+                  );
+
+                  if (!confirmed) {
+                    event.preventDefault();
+                  }
+                }}
+                className="rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {navigation.state === "submitting" &&
+                navigation.formData?.get("intent") === "deactivate"
+                  ? "Deactivating..."
+                  : "Deactivate deployment"}
+              </button>
+            </Form>
+
+            <p className="mt-2 text-xs text-gray-500">
+              New task triggers are disabled for this deployment. Existing task runs are allowed to
+              drain.
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

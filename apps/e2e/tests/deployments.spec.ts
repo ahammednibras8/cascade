@@ -1,69 +1,20 @@
 import { expect, test } from "@playwright/test";
-import { randomUUID } from "node:crypto";
-import { ensureDashboardApiKey, restoreDashboardApiKey } from "./support/dashboard-environment.js";
+import {
+  cleanupDashboardProjects,
+  createDashboardProject,
+  disconnectPrisma,
+} from "./support/dashboard-project.js";
 import { createExecutionConfig } from "./support/execution-config.js";
 
-process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
-
-const createdProjectIds: string[] = [];
-
-async function getPrisma() {
-  const { prisma } = await import("@cascade/database");
-  return prisma;
-}
-
-test.afterEach(async () => {
-  const prisma = await getPrisma();
-  const projectIds = createdProjectIds.splice(0);
-
-  if (projectIds.length > 0) {
-    await prisma.project.deleteMany({
-      where: {
-        id: {
-          in: projectIds,
-        },
-      },
-    });
-  }
-
-  await restoreDashboardApiKey();
-});
-
-test.afterAll(async () => {
-  const prisma = await getPrisma();
-  await prisma.$disconnect();
-});
+test.afterEach(cleanupDashboardProjects);
+test.afterAll(disconnectPrisma);
 
 test("shows deployments and their worker runtime state", async ({ page }) => {
-  const prisma = await getPrisma();
-  const suffix = randomUUID().slice(0, 8);
-
-  const project = await prisma.project.create({
-    data: {
-      slug: `e2e-deployments-project-${suffix}`,
-      name: "E2E Deployments Project",
-      environments: {
-        create: {
-          slug: `e2e-deployments-dev-${suffix}`,
-          name: "E2E Deployments Dev",
-          type: "DEVELOPMENT",
-        },
-      },
-    },
-    include: {
-      environments: true,
-    },
+  const { environment, prisma, suffix } = await createDashboardProject({
+    slugPrefix: "e2e-deployments",
+    projectName: "E2E Deployments Project",
+    environmentName: "E2E Deployments Dev",
   });
-
-  createdProjectIds.push(project.id);
-
-  const environment = project.environments[0];
-
-  if (!environment) {
-    throw new Error("Expected seeded environment");
-  }
-
-  await ensureDashboardApiKey(environment.id);
 
   const deployment = await prisma.deployment.create({
     data: {
@@ -116,35 +67,11 @@ test("shows deployments and their worker runtime state", async ({ page }) => {
 });
 
 test("opens deployment detail and shows its registered task configuration", async ({ page }) => {
-  const prisma = await getPrisma();
-  const suffix = randomUUID().slice(0, 8);
-
-  const project = await prisma.project.create({
-    data: {
-      slug: `e2e-deployment-detail-project-${suffix}`,
-      name: "E2E Deployment Detail Project",
-      environments: {
-        create: {
-          slug: `e2e-deployment-detail-dev-${suffix}`,
-          name: "E2E Deployment Detail Dev",
-          type: "DEVELOPMENT",
-        },
-      },
-    },
-    include: {
-      environments: true,
-    },
+  const { environment, prisma, suffix } = await createDashboardProject({
+    slugPrefix: "e2e-deployment-detail",
+    projectName: "E2E Deployment Detail Project",
+    environmentName: "E2E Deployment Detail Dev",
   });
-
-  createdProjectIds.push(project.id);
-
-  const environment = project.environments[0];
-
-  if (!environment) {
-    throw new Error("Expected seeded environment");
-  }
-
-  await ensureDashboardApiKey(environment.id);
 
   const deployment = await prisma.deployment.create({
     data: {
@@ -215,4 +142,119 @@ test("opens deployment detail and shows its registered task configuration", asyn
   await expect(taskRow).toContainText("Queue");
   await expect(taskRow.locator("td").nth(2)).toHaveText("1");
   await expect(taskRow.locator("td").nth(3)).toHaveText("1");
+});
+
+test("dashboard deactivates a deployment and disables its tasks and schedules", async ({
+  page,
+}) => {
+  const { environment, prisma, suffix } = await createDashboardProject({
+    slugPrefix: "e2e-deactivate-deployment",
+    projectName: "E2E Deactivate Deployment Project",
+    environmentName: "E2E Deactivate Deployment Dev",
+  });
+
+  const deployment = await prisma.deployment.create({
+    data: {
+      environmentId: environment.id,
+      version: `e2e-deactivate-${suffix}`,
+      image: "ghcr.io/cascade/deactivate-worker:e2e",
+      status: "ACTIVE",
+      runtimeStatus: "RUNNING",
+    },
+  });
+
+  const executionConfig = createExecutionConfig(`e2e-deactivate-task-${suffix}`);
+
+  const task = await prisma.task.create({
+    data: {
+      environmentId: environment.id,
+      deploymentId: deployment.id,
+      slug: `e2e-deactivate-task-${suffix}`,
+      name: "E2E Deactivate Task",
+      executionConfig,
+    },
+  });
+
+  const schedule = await prisma.taskSchedule.create({
+    data: {
+      taskId: task.id,
+      name: `E2E deactivate schedule ${suffix}`,
+      intervalSeconds: 3_600,
+      nextRunAt: new Date(Date.now() + 3_600_000),
+    },
+  });
+
+  await page.goto(`/deployments/${deployment.id}`);
+
+  await expect(page.getByRole("heading", { name: "Deployment detail" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Deactivate deployment" })).toBeVisible();
+
+  page.once("dialog", async (dialog) => {
+    await dialog.accept();
+  });
+
+  await page.getByRole("button", { name: "Deactivate deployment" }).click();
+
+  await expect
+    .poll(
+      async () => {
+        const [updatedDeployment, updatedTask, updatedSchedule] = await Promise.all([
+          prisma.deployment.findUnique({
+            where: {
+              id: deployment.id,
+            },
+            select: {
+              status: true,
+            },
+          }),
+          prisma.task.findUnique({
+            where: {
+              id: task.id,
+            },
+            select: {
+              deploymentId: true,
+              executionConfig: true,
+            },
+          }),
+          prisma.taskSchedule.findUnique({
+            where: {
+              id: schedule.id,
+            },
+            select: {
+              enabled: true,
+              revision: true,
+              lockedAt: true,
+            },
+          }),
+        ]);
+
+        return {
+          deploymentStatus: updatedDeployment?.status ?? null,
+          taskDeploymentId: updatedTask?.deploymentId ?? null,
+          taskExecutionConfig: updatedTask?.executionConfig ?? null,
+          scheduleEnabled: updatedSchedule?.enabled ?? null,
+          scheduleRevision: updatedSchedule?.revision ?? null,
+          scheduleLockedAt: updatedSchedule?.lockedAt ?? null,
+        };
+      },
+      {
+        timeout: 10_000,
+      },
+    )
+    .toEqual({
+      deploymentStatus: "INACTIVE",
+      taskDeploymentId: null,
+      taskExecutionConfig: null,
+      scheduleEnabled: false,
+      scheduleRevision: 2,
+      scheduleLockedAt: null,
+    });
+
+  await expect(page.locator("body")).toContainText("INACTIVE");
+  await expect(page.locator("body")).toContainText("This deployment has no registered tasks.");
+  await expect(
+    page.getByRole("button", {
+      name: "Deactivate deployment",
+    }),
+  ).not.toBeVisible();
 });
