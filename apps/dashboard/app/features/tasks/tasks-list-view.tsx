@@ -57,7 +57,12 @@ function TaskRow({ task }: { task: Task }) {
   return (
     <tr>
       <td className="px-4 py-3">
-        <div className="font-medium text-gray-900">{task.name}</div>
+        <Link
+          to={`/tasks/${task.id}`}
+          className="font-medium text-blue-700 hover:text-blue-900 hover:underline"
+        >
+          {task.name}
+        </Link>
         <div className="font-mono text-xs text-gray-500">{task.slug}</div>
         {task.description ? <p className="mt-1 text-xs text-gray-500">{task.description}</p> : null}
       </td>
