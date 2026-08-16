@@ -24,6 +24,15 @@ export type DeploymentTask = {
   schedulesCount: number;
 };
 
+export type DeploymentManifestTask = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  executionConfig: ExecutionConfig;
+  createdAt: string;
+};
+
 export type Deployment = {
   id: string;
   environmentId: string;
@@ -38,9 +47,10 @@ export type Deployment = {
   updatedAt: string;
   runsCount: number;
   canRollback: boolean;
+  manifestTasks: DeploymentManifestTask[];
   tasks: DeploymentTask[];
 };
 
-export type DeploymentListItem = Omit<Deployment, "canRollback" | "tasks"> & {
+export type DeploymentListItem = Omit<Deployment, "canRollback" | "manifestTasks" | "tasks"> & {
   tasksCount: number;
 };

@@ -25,6 +25,7 @@ function deployment(overrides: Record<string, unknown> = {}) {
     updatedAt: "2026-08-16T10:00:00.000Z",
     runsCount: 4,
     canRollback: false,
+    manifestTasks: [],
     tasks: [
       {
         id: "task-1",

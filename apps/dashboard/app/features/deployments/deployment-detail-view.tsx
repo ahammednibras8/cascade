@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { StatusBadge } from "~/components/status-badge";
 import { DeploymentActions } from "./deployment-actions";
 import { executionConfigSummary, formatDeploymentDate } from "./format";
-import type { Deployment, DeploymentTask } from "./types";
+import type { Deployment, DeploymentManifestTask, DeploymentTask } from "./types";
 
 type DeploymentDetailViewProps = {
   deployment: Deployment;
@@ -145,6 +145,25 @@ function TaskRow({ task }: { task: DeploymentTask }) {
   );
 }
 
+function ManifestTaskRow({ task }: { task: DeploymentManifestTask }) {
+  return (
+    <tr>
+      <td className="px-4 py-3">
+        <div className="font-medium text-gray-900">{task.name}</div>
+        <div className="font-mono text-xs text-gray-500">{task.slug}</div>
+
+        {task.description ? <p className="mt-1 text-xs text-gray-500">{task.description}</p> : null}
+      </td>
+
+      <td className="max-w-xl px-4 py-3 text-xs text-gray-700">
+        {executionConfigSummary(task.executionConfig)}
+      </td>
+
+      <td className="px-4 py-3 text-gray-700">{formatDeploymentDate(task.createdAt)}</td>
+    </tr>
+  );
+}
+
 function DeploymentTasksTable({ deployment }: DeploymentDetailViewProps) {
   return (
     <section className="mt-6">
@@ -183,6 +202,47 @@ function DeploymentTasksTable({ deployment }: DeploymentDetailViewProps) {
   );
 }
 
+function DeploymentManifestTable({ deployment }: DeploymentDetailViewProps) {
+  return (
+    <section className="mt-6">
+      <h2 className="text-xl font-semibold tracking-tight">Saved task manifest</h2>
+
+      <p className="mt-1 text-sm text-gray-600">
+        This task definition was saved when the deployment was created. Rollback uses this manifest
+        even when the deployment has no currently registered tasks.
+      </p>
+
+      <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              {["Task", "Execution", "Saved"].map((heading) => (
+                <th key={heading} className="px-4 py-3 text-left font-medium text-gray-600">
+                  {heading}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-gray-100">
+            {deployment.manifestTasks.map((task) => (
+              <ManifestTaskRow key={task.id} task={task} />
+            ))}
+
+            {deployment.manifestTasks.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
+                  This deployment has no saved task manifest and cannot be rolled back.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 export function DeploymentDetailView({ deployment }: DeploymentDetailViewProps) {
   return (
     <main className="mx-auto max-w-7xl p-6">
@@ -201,6 +261,7 @@ export function DeploymentDetailView({ deployment }: DeploymentDetailViewProps) 
       </section>
 
       <DeploymentTasksTable deployment={deployment} />
+      <DeploymentManifestTable deployment={deployment} />
     </main>
   );
 }
