@@ -89,7 +89,7 @@ test("shows registered tasks in the dashboard table", async ({ page }) => {
     },
   });
 
-  await prisma.taskRun.create({
+  const run = await prisma.taskRun.create({
     data: {
       taskId: task.id,
       deploymentId: deployment.id,
@@ -129,4 +129,43 @@ test("shows registered tasks in the dashboard table", async ({ page }) => {
   await expect(row).toContainText("ACTIVE");
   await expect(row.locator("td").nth(2)).toHaveText("1");
   await expect(row.locator("td").nth(3)).toHaveText("1");
+  await page.getByRole("link", { name: "E2E Task List Task" }).click();
+
+  await expect(page).toHaveURL(new RegExp(`/tasks/${task.id}$`));
+  await expect(page.getByRole("heading", { name: "E2E Task List Task" })).toBeVisible();
+
+  await expect(page.locator("body")).toContainText(task.slug);
+  await expect(page.locator("body")).toContainText(task.id);
+  await expect(page.locator("body")).toContainText("Visible from the task list e2e test");
+
+  await expect(page.getByRole("heading", { name: "Execution configuration" })).toBeVisible();
+  await expect(page.locator("body")).toContainText("Schema v1");
+  await expect(page.locator("body")).toContainText("Timeout 30000 ms");
+  await expect(page.locator("body")).toContainText("Attempts 3");
+  await expect(page.locator("body")).toContainText(`Queue ${taskSlug}`);
+
+  await expect(page.getByRole("heading", { name: "Deployment" })).toBeVisible();
+  await expect(page.getByRole("link", { name: deployment.version })).toBeVisible();
+  await expect(page.locator("body")).toContainText(deployment.image);
+
+  await expect(page.getByRole("heading", { name: "Schedules", exact: true })).toBeVisible();
+
+  const scheduleRow = page.getByRole("row").filter({
+    hasText: "E2E hourly schedule",
+  });
+
+  await expect(scheduleRow).toBeVisible();
+  await expect(scheduleRow).toContainText("Every 3600 seconds");
+  await expect(scheduleRow).toContainText("Enabled");
+
+  await expect(page.getByRole("heading", { name: "Recent runs" })).toBeVisible();
+
+  const runRow = page.getByRole("row").filter({
+    hasText: run.id,
+  });
+
+  await expect(runRow).toBeVisible();
+  await expect(runRow).toContainText("COMPLETED");
+  await expect(runRow.locator("td").nth(2)).toHaveText("0");
+  await expect(runRow.locator("td").nth(3)).toHaveText("0");
 });

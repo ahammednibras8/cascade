@@ -36,7 +36,7 @@ export type TaskDetailSchedule = {
   cronExpression: string | null;
   timezone: string;
   nextRunAt: string;
-  lastRunAt: string;
+  lastRunAt: string | null;
   enabled: boolean;
   hasPayload: boolean;
   revision: number;
