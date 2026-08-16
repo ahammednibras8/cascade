@@ -84,6 +84,7 @@ model User {
 
   identities  UserIdentity[]
   memberships OrganizationMember[]
+  sessions    DashboardSession[]
 
   @@index([createdAt])
 }
@@ -99,6 +100,20 @@ model UserIdentity {
 
   @@unique([provider, subject])
   @@index([userId])
+}
+
+model DashboardSession {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Organization {

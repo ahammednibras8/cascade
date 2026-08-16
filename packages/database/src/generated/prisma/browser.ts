@@ -28,6 +28,11 @@ export type User = Prisma.UserModel
  */
 export type UserIdentity = Prisma.UserIdentityModel
 /**
+ * Model DashboardSession
+ * 
+ */
+export type DashboardSession = Prisma.DashboardSessionModel
+/**
  * Model Organization
  * 
  */

@@ -10,6 +10,7 @@
  */
 export type * from './models/User.js'
 export type * from './models/UserIdentity.js'
+export type * from './models/DashboardSession.js'
 export type * from './models/Organization.js'
 export type * from './models/OrganizationMember.js'
 export type * from './models/Project.js'

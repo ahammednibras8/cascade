@@ -399,6 +399,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   User: 'User',
   UserIdentity: 'UserIdentity',
+  DashboardSession: 'DashboardSession',
   Organization: 'Organization',
   OrganizationMember: 'OrganizationMember',
   Project: 'Project',
@@ -427,7 +428,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "userIdentity" | "organization" | "organizationMember" | "project" | "environment" | "apiKey" | "task" | "taskRun" | "taskAttempt" | "taskEvent" | "runEventOutbox" | "taskSchedule" | "deployment" | "deploymentTask"
+    modelProps: "user" | "userIdentity" | "dashboardSession" | "organization" | "organizationMember" | "project" | "environment" | "apiKey" | "task" | "taskRun" | "taskAttempt" | "taskEvent" | "runEventOutbox" | "taskSchedule" | "deployment" | "deploymentTask"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -576,6 +577,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserIdentityCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserIdentityCountAggregateOutputType> | number
+        }
+      }
+    }
+    DashboardSession: {
+      payload: Prisma.$DashboardSessionPayload<ExtArgs>
+      fields: Prisma.DashboardSessionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DashboardSessionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DashboardSessionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DashboardSessionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DashboardSessionPayload>
+        }
+        findFirst: {
+          args: Prisma.DashboardSessionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DashboardSessionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DashboardSessionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DashboardSessionPayload>
+        }
+        findMany: {
+          args: Prisma.DashboardSessionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DashboardSessionPayload>[]
+        }
+        create: {
+          args: Prisma.DashboardSessionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DashboardSessionPayload>
+        }
+        createMany: {
+          args: Prisma.DashboardSessionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DashboardSessionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DashboardSessionPayload>[]
+        }
+        delete: {
+          args: Prisma.DashboardSessionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DashboardSessionPayload>
+        }
+        update: {
+          args: Prisma.DashboardSessionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DashboardSessionPayload>
+        }
+        deleteMany: {
+          args: Prisma.DashboardSessionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DashboardSessionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DashboardSessionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DashboardSessionPayload>[]
+        }
+        upsert: {
+          args: Prisma.DashboardSessionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DashboardSessionPayload>
+        }
+        aggregate: {
+          args: Prisma.DashboardSessionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDashboardSession>
+        }
+        groupBy: {
+          args: Prisma.DashboardSessionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DashboardSessionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DashboardSessionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DashboardSessionCountAggregateOutputType> | number
         }
       }
     }
@@ -1602,6 +1677,18 @@ export const UserIdentityScalarFieldEnum = {
 export type UserIdentityScalarFieldEnum = (typeof UserIdentityScalarFieldEnum)[keyof typeof UserIdentityScalarFieldEnum]
 
 
+export const DashboardSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  lastSeenAt: 'lastSeenAt'
+} as const
+
+export type DashboardSessionScalarFieldEnum = (typeof DashboardSessionScalarFieldEnum)[keyof typeof DashboardSessionScalarFieldEnum]
+
+
 export const OrganizationScalarFieldEnum = {
   id: 'id',
   slug: 'slug',
@@ -2228,6 +2315,7 @@ export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaC
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
   userIdentity?: Prisma.UserIdentityOmit
+  dashboardSession?: Prisma.DashboardSessionOmit
   organization?: Prisma.OrganizationOmit
   organizationMember?: Prisma.OrganizationMemberOmit
   project?: Prisma.ProjectOmit

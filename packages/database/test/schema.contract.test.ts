@@ -230,8 +230,17 @@ describeWithDatabase("Postgres schema contract", () => {
           email: `schema-user-${suffix}@example.test`,
           displayName: "Schema Contract Owner",
           identities: { create: { provider: "oidc", subject: `subject-${suffix}` } },
+          sessions: {
+            create: {
+              tokenHash: `session-hash-${suffix}`,
+              expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+            },
+          },
         },
-        include: { identities: true },
+        include: {
+          identities: true,
+          sessions: true,
+        },
       });
       cleanupIds.userId = user.id;
 
@@ -259,6 +268,14 @@ describeWithDatabase("Postgres schema contract", () => {
           userId: user.id,
           provider: "oidc",
           subject: `subject-${suffix}`,
+        }),
+      ]);
+
+      expect(user.sessions).toEqual([
+        expect.objectContaining({
+          userId: user.id,
+          tokenHash: `session-hash-${suffix}`,
+          expiresAt: new Date("2030-01-01T00:00:00.000Z"),
         }),
       ]);
 
