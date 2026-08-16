@@ -119,6 +119,17 @@ test("dashboard rolls back an inactive deployment from its saved manifest", asyn
   await expect(page.getByRole("heading", { name: "Deployment detail" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Roll back deployment" })).toBeVisible();
 
+  const manifestSection = page.getByRole("heading", { name: "Saved task manifest" }).locator("..");
+  const manifestTaskRow = manifestSection.getByRole("row").filter({
+    hasText: fixture.restoredTaskSlug,
+  });
+
+  await expect(manifestTaskRow).toBeVisible();
+  await expect(manifestTaskRow).toContainText("E2E Restored Task");
+  await expect(manifestTaskRow).toContainText("Restored by rollback");
+  await expect(manifestTaskRow).toContainText("Attempts 3");
+  await expect(manifestTaskRow).toContainText("Queue");
+
   await clickConfirmedButton(page, "Roll back deployment");
   await expectDeploymentRolledBack({
     prisma: fixture.prisma,
@@ -135,7 +146,10 @@ test("dashboard rolls back an inactive deployment from its saved manifest", asyn
   await expect(page.getByRole("button", { name: "Deactivate deployment" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Roll back deployment" })).not.toBeVisible();
 
-  const restoredTaskRow = page.getByRole("row").filter({
+  const tasksSection = page
+    .getByRole("heading", { name: "Tasks in this deployment" })
+    .locator("..");
+  const restoredTaskRow = tasksSection.getByRole("row").filter({
     hasText: fixture.restoredTaskSlug,
   });
 
