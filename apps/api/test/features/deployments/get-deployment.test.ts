@@ -61,6 +61,7 @@ describe("getDeployment", () => {
       updatedAt: UPDATED_AT,
       _count: {
         runs: 5,
+        manifestTasks: 1,
       },
       tasks: [
         {
@@ -100,6 +101,7 @@ describe("getDeployment", () => {
         createdAt: CREATED_AT.toISOString(),
         updatedAt: UPDATED_AT.toISOString(),
         runsCount: 5,
+        canRollback: true,
         tasks: [
           {
             id: "task-1",
@@ -156,6 +158,7 @@ describe("getDeployment", () => {
         _count: {
           select: {
             runs: true,
+            manifestTasks: true,
           },
         },
       },
@@ -186,5 +189,40 @@ describe("getDeployment", () => {
     });
 
     expect(prisma.deployment.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("does not offer rollback for an inactive deployment without a saved manifest", async () => {
+    prisma.deployment.findFirst.mockResolvedValue({
+      id: DEPLOYMENT_ID,
+      environmentId: ENVIRONMENT_ID,
+      version: "v1",
+      image: "ghcr.io/cascade/worker:v1",
+      status: "INACTIVE",
+      runtimeStatus: "STOPPED",
+      runtimeError: null,
+      runtimeStartedAt: null,
+      runtimeStoppedAt: null,
+      createdAt: CREATED_AT,
+      updatedAt: UPDATED_AT,
+      _count: {
+        runs: 0,
+        manifestTasks: 0,
+      },
+      tasks: [],
+    });
+
+    await expect(
+      getDeployment({
+        auth,
+        deploymentId: DEPLOYMENT_ID,
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      status: 200,
+      deployment: {
+        id: DEPLOYMENT_ID,
+        canRollback: false,
+      },
+    });
   });
 });

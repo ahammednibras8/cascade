@@ -24,6 +24,7 @@ function deployment(overrides: Record<string, unknown> = {}) {
     createdAt: "2026-08-16T09:00:00.000Z",
     updatedAt: "2026-08-16T10:00:00.000Z",
     runsCount: 4,
+    canRollback: false,
     tasks: [
       {
         id: "task-1",
@@ -152,6 +153,7 @@ describe("deployment detail loader", () => {
 
     await expect(action(actionArgs("deactivate"))).resolves.toEqual({
       ok: true,
+      intent: "deactivate",
       deployment: {
         id: DEPLOYMENT_ID,
         status: "INACTIVE",
@@ -185,6 +187,36 @@ describe("deployment detail loader", () => {
 
     await expect(action(actionArgs("deactivate"))).rejects.toMatchObject({
       status: 409,
+    });
+  });
+
+  it("sends a deployment rollback request to the API", async () => {
+    cascadeApiRequest.mockResolvedValue({
+      deployment: {
+        id: DEPLOYMENT_ID,
+        status: "ACTIVE",
+        tasksRestored: 2,
+        tasksDetached: 1,
+        schedulesUpdated: 2,
+        schedulesPaused: 1,
+      },
+    });
+
+    await expect(action(actionArgs("rollback"))).resolves.toEqual({
+      ok: true,
+      intent: "rollback",
+      deployment: {
+        id: DEPLOYMENT_ID,
+        status: "ACTIVE",
+        tasksRestored: 2,
+        tasksDetached: 1,
+        schedulesUpdated: 2,
+        schedulesPaused: 1,
+      },
+    });
+
+    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/deployments/${DEPLOYMENT_ID}/rollback`, {
+      method: "POST",
     });
   });
 });

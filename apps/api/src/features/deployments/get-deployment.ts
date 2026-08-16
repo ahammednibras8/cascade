@@ -57,6 +57,7 @@ export async function getDeployment(input: {
       _count: {
         select: {
           runs: true,
+          manifestTasks: true,
         },
       },
     },
@@ -89,6 +90,7 @@ export async function getDeployment(input: {
       createdAt: deployment.createdAt.toISOString(),
       updatedAt: deployment.updatedAt.toISOString(),
       runsCount: deployment._count.runs,
+      canRollback: deployment.status === "INACTIVE" && deployment._count.manifestTasks > 0,
       tasks: deployment.tasks.map((task) => ({
         id: task.id,
         slug: task.slug,
