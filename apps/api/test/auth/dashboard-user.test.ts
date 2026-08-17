@@ -1,10 +1,9 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  createDashboardApiAuthorization,
-  DASHBOARD_API_AUTH_HEADER,
-} from "@cascade/core/dashboard-api-auth";
+import { createDashboardApiAuthorization } from "@cascade/core/dashboard-api-auth";
+
+const DASHBOARD_API_AUTH_HEADER = "x-cascade-dashboard-authorization";
 
 const prisma = vi.hoisted(() => ({
   environment: {

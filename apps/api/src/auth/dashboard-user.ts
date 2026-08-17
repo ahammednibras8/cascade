@@ -1,8 +1,5 @@
 import type { Request, RequestHandler } from "express";
-import {
-  DASHBOARD_API_AUTH_HEADER,
-  verifyDashboardApiAuthorization,
-} from "@cascade/core/dashboard-api-auth";
+import { verifyDashboardApiAuthorization } from "@cascade/core/dashboard-api-auth";
 import type { ApiAuthContext } from "./api-key.js";
 import { ApiKeyScope, prisma } from "@cascade/database";
 
@@ -28,6 +25,7 @@ const DEVELOPER_SCOPES: ApiKeyScope[] = [
 ];
 
 const VIEWER_SCOPES: ApiKeyScope[] = [ApiKeyScope.TASKS_READ, ApiKeyScope.RUNS_READ];
+const DASHBOARD_API_AUTH_HEADER = "x-cascade-dashboard-authorization";
 
 function getDashboardApiAuthSecret() {
   const secret = process.env.DASHBOARD_API_AUTH_SECRET;
@@ -55,7 +53,7 @@ function getDashboardAuthorizationFromRequest(request: Request) {
   return request.get(DASHBOARD_API_AUTH_HEADER)?.trim();
 }
 
-export async function authenticateDashboardUser(token: string): Promise<ApiAuthContext | null> {
+async function authenticateDashboardUser(token: string): Promise<ApiAuthContext | null> {
   const claims = verifyDashboardApiAuthorization(token, getDashboardApiAuthSecret());
 
   if (!claims) {
