@@ -8,7 +8,7 @@ type OidcTransaction = {
   returnTo: string;
 };
 
-type OidcProfile = {
+export type OidcProfile = {
   provider: string;
   subject: string;
   email: string;
@@ -72,6 +72,12 @@ function getOidcTransactionCookie() {
     secure: production,
     secrets: [getDashboardSessionSecret()],
     maxAge: 10 * 60,
+  });
+}
+
+export async function clearOidcLoginTransaction() {
+  return getOidcTransactionCookie().serialize("", {
+    maxAge: 0,
   });
 }
 
@@ -168,9 +174,7 @@ export async function completeOidcLogin(request: Request): Promise<OidcCompletio
       displayName: typeof name === "string" && name ? name : null,
     },
     returnTo: transaction.returnTo,
-    clearCookie: await getOidcTransactionCookie().serialize("", {
-      maxAge: 0,
-    }),
+    clearCookie: await clearOidcLoginTransaction(),
   };
 }
 
