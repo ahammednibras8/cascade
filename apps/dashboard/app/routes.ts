@@ -7,6 +7,7 @@ export default [
   route("signed-out", "routes/signed-out.tsx"),
   route("auth/callback", "routes/auth-callback.ts"),
   route("logout", "routes/logout.ts"),
+  route("organizations/select", "routes/select-organization.ts"),
   route("tasks", "routes/tasks.tsx"),
   route("tasks/:taskId", "routes/task-detail.tsx"),
   route("deployments", "routes/deployments.tsx"),

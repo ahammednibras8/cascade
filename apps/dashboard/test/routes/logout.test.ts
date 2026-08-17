@@ -2,8 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const destroyDashboardSession = vi.hoisted(() => vi.fn<(request: Request) => Promise<string>>());
 
+const clearActiveDashboardOrganization = vi.hoisted(() => vi.fn<() => Promise<string>>());
+
 vi.mock("../../app/lib/dashboard-session.server.js", () => ({
   destroyDashboardSession,
+}));
+
+vi.mock("../../app/lib/dashboard-organization.server.js", () => ({
+  clearActiveDashboardOrganization,
 }));
 
 const { action } = await import("../../app/routes/logout.js");
@@ -11,6 +17,9 @@ const { action } = await import("../../app/routes/logout.js");
 describe("logout route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearActiveDashboardOrganization.mockResolvedValue(
+      "cascade-active-organization=; Max-Age=0; HttpOnly",
+    );
   });
 
   it("deletes the session and redirects to the signed-out page", async () => {
@@ -23,8 +32,10 @@ describe("logout route", () => {
     const response = await action({ request } as never);
 
     expect(destroyDashboardSession).toHaveBeenCalledWith(request);
+    expect(clearActiveDashboardOrganization).toHaveBeenCalledWith();
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/signed-out");
     expect(response.headers.get("Set-Cookie")).toContain("Max-Age=0");
+    expect(response.headers.get("Set-Cookie")).toContain("cascade-active-organization=");
   });
 });
