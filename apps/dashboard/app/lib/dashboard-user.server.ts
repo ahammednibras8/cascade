@@ -82,3 +82,30 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
     },
   });
 }
+
+export async function findOrCreateDevDashboardUser() {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("DASHBOARD_AUTH_MODE=dev cannot be used in production");
+  }
+
+  const email = process.env.DASHBOARD_DEV_AUTH_EMAIL?.trim() || "local-dashboard@example.test";
+  const displayName = process.env.DASHBOARD_DEV_AUTH_DISPLAY_NAME?.trim() || "Local Dashboard User";
+
+  return prisma.user.upsert({
+    where: {
+      email,
+    },
+    update: {
+      displayName,
+    },
+    create: {
+      email,
+      displayName,
+    },
+    select: {
+      id: true,
+      email: true,
+      displayName: true,
+    },
+  });
+}

@@ -2,7 +2,9 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
   index("routes/home.tsx"),
+  route("readyz", "routes/readyz.ts"),
   route("login", "routes/login.ts"),
+  route("signed-out", "routes/signed-out.tsx"),
   route("auth/callback", "routes/auth-callback.ts"),
   route("logout", "routes/logout.ts"),
   route("tasks", "routes/tasks.tsx"),

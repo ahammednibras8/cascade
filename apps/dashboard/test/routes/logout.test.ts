@@ -13,7 +13,7 @@ describe("logout route", () => {
     vi.clearAllMocks();
   });
 
-  it("deletes the session and redirects to login", async () => {
+  it("deletes the session and redirects to the signed-out page", async () => {
     destroyDashboardSession.mockResolvedValue("cascade-session=; Max-Age=0; HttpOnly");
 
     const request = new Request("http://dashboard.test/logout", {
@@ -24,7 +24,7 @@ describe("logout route", () => {
 
     expect(destroyDashboardSession).toHaveBeenCalledWith(request);
     expect(response.status).toBe(302);
-    expect(response.headers.get("Location")).toBe("/login");
+    expect(response.headers.get("Location")).toBe("/signed-out");
     expect(response.headers.get("Set-Cookie")).toContain("Max-Age=0");
   });
 });

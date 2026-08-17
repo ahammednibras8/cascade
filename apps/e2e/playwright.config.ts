@@ -14,6 +14,10 @@ const apiDir = fileURLToPath(new URL("../api", import.meta.url));
 const dashboardDir = fileURLToPath(new URL("../dashboard", import.meta.url));
 const workerDir = fileURLToPath(new URL("../../packages/worker", import.meta.url));
 
+const dashboardStorageStatePath = fileURLToPath(
+  new URL("./.auth/dashboard-session.json", import.meta.url),
+);
+
 const databaseURL =
   process.env.DATABASE_URL ?? "postgresql://cascade:cascade@localhost:15432/cascade";
 const queueRedisURL = process.env.QUEUE_REDIS_URL ?? "redis://localhost:16379";
@@ -34,6 +38,9 @@ const dashboardApiKey =
   (reuseExistingServer
     ? (process.env.CASCADE_DASHBOARD_API_KEY ?? "csc_e2e_dashboard_test_key")
     : "csc_e2e_dashboard_test_key");
+const dashboardSessionSecret =
+  process.env.DASHBOARD_SESSION_SECRET ??
+  "e2e-dashboard-session-secret-change-me-at-least-32-characters";
 
 function ensureNodeOption(value: string | undefined, option: string) {
   const options = value?.split(/\s+/).filter(Boolean) ?? [];
@@ -50,6 +57,10 @@ const nodeOptions = ensureNodeOption(process.env.NODE_OPTIONS, "--conditions=dev
 process.env.PLAYWRIGHT_BASE_URL = baseURL;
 process.env.CASCADE_API_URL = apiURL;
 process.env.CASCADE_DASHBOARD_API_KEY = dashboardApiKey;
+process.env.DASHBOARD_SESSION_SECRET = dashboardSessionSecret;
+process.env.DATABASE_URL = databaseURL;
+process.env.QUEUE_REDIS_URL = queueRedisURL;
+process.env.PLAYWRIGHT_DASHBOARD_STORAGE_STATE = dashboardStorageStatePath;
 process.env.NODE_OPTIONS = nodeOptions;
 
 function getUrlPort(url: string, fallbackPort: string) {
@@ -69,9 +80,11 @@ const inheritedEnv = Object.fromEntries(
 
 const serverEnv = {
   ...inheritedEnv,
+  NODE_ENV: "test",
   NODE_OPTIONS: nodeOptions,
   DATABASE_URL: databaseURL,
   QUEUE_REDIS_URL: queueRedisURL,
+  DASHBOARD_SESSION_SECRET: dashboardSessionSecret,
   API_PORT: apiPort,
   WORKER_HEALTH_PORT: process.env.PLAYWRIGHT_WORKER_HEALTH_PORT ?? "3003",
   API_KEY_PEPPER: apiKeyPepper,
@@ -87,6 +100,7 @@ const controlWorkerEnv = {
 
 export default defineConfig({
   testDir: "./tests",
+  globalSetup: "./tests/support/dashboard-auth.global-setup.ts",
   timeout: 30_000,
   expect: {
     timeout: 5_000,
@@ -100,6 +114,7 @@ export default defineConfig({
     : [["list"], ["html", { open: "never" }]],
   use: {
     baseURL,
+    storageState: dashboardStorageStatePath,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -140,7 +155,7 @@ export default defineConfig({
       name: "dashboard",
       command: `node --env-file=../../.env --conditions=development ./node_modules/@react-router/dev/bin.cjs dev --port ${dashboardPort} --strictPort`,
       cwd: dashboardDir,
-      url: baseURL,
+      url: `${baseURL}/readyz`,
       reuseExistingServer,
       timeout: 120_000,
       env: serverEnv,
