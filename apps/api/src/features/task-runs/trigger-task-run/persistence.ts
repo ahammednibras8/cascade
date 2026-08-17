@@ -62,10 +62,17 @@ function buildTaskRunCreateData(input: {
 
 function buildTriggerEventData(input: CreateTriggeredTaskRunInput) {
   const data: Record<string, Prisma.InputJsonValue> = {
-    apiKeyId: input.auth.apiKeyId,
     traceId: input.triggerTrace.traceId,
     spanId: input.triggerTrace.spanId,
   };
+
+  if (input.auth.apiKeyId) {
+    data.apiKeyId = input.auth.apiKeyId;
+  }
+
+  if (input.auth.principalId) {
+    data.principalId = input.auth.principalId;
+  }
 
   if (input.triggerTrace.parentSpanId) {
     data.parentSpanId = input.triggerTrace.parentSpanId;

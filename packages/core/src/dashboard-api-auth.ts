@@ -4,6 +4,8 @@ const TOKEN_VERSION = "v1";
 const MAX_TOKEN_LIFETIME_SECONDS = 120;
 const MAX_CLOCK_SKEW_SECONDS = 30;
 
+export const DASHBOARD_API_AUTH_HEADER = "x-cascade-dashboard-authorization";
+
 export type DashboardApiAuthorizationClaims = {
   userId: string;
   organizationId: string;

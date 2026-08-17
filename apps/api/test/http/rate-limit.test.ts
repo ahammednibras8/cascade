@@ -25,6 +25,8 @@ function createApp() {
 
   app.use((request, _response, next) => {
     request.auth = {
+      authType: "api-key",
+      principalId: "api-key:api-key-1",
       apiKeyId: "api-key-1",
       environmentId: "environment-1",
       projectId: "project-1",
@@ -82,7 +84,7 @@ describe("apiRateLimit", () => {
     expect(redis.eval).toHaveBeenCalledWith(
       expect.stringContaining('redis.call("INCR"'),
       1,
-      expect.stringContaining("cascade:rate-limit:api-key:api-key-1:"),
+      expect.stringContaining("cascade:rate-limit:principal:api-key:api-key-1:"),
       expect.any(String),
     );
   });

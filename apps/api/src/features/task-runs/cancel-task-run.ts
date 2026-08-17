@@ -31,15 +31,25 @@ type CancelTaskRunFailure = {
 export type CancelTaskRunResult = CancelTaskRunSuccess | CancelTaskRunFailure;
 
 function createCancelError(input: {
-  apiKeyId: string;
+  apiKeyId: string | undefined;
+  principalId: string | undefined;
   previousStatus: string;
 }): Prisma.InputJsonValue {
-  return {
+  const error: Record<string, Prisma.InputJsonValue> = {
     code: "RUN_CANCELED",
     message: "Task run was canceled",
-    apiKeyId: input.apiKeyId,
     previousStatus: input.previousStatus,
   };
+
+  if (input.apiKeyId) {
+    error.apiKeyId = input.apiKeyId;
+  }
+
+  if (input.principalId) {
+    error.principalId = input.principalId;
+  }
+
+  return error;
 }
 
 export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTaskRunResult> {
@@ -121,6 +131,7 @@ export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTa
   const latestAttempt = run.attempts[0];
   const error = createCancelError({
     apiKeyId: auth.apiKeyId,
+    principalId: auth.principalId,
     previousStatus: run.status,
   });
 

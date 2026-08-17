@@ -62,9 +62,9 @@ export function apiRateLimit(): RequestHandler {
   const { maxRequests, windowMs } = getApiRateLimitConfig();
 
   return async (request, response, next) => {
-    const apiKeyId = request.auth?.apiKeyId;
+    const principalId = request.auth?.principalId;
 
-    if (!apiKeyId) {
+    if (!principalId) {
       next(
         new ApiError({
           status: 500,
@@ -78,7 +78,7 @@ export function apiRateLimit(): RequestHandler {
     const now = Date.now();
     const windowNumber = Math.floor(now / windowMs);
     const millisecondsUntilWindowEnds = windowMs - (now % windowMs);
-    const redisKey = `cascade:rate-limit:api-key:${apiKeyId}:${windowNumber}`;
+    const redisKey = `cascade:rate-limit:principal:${principalId}:${windowNumber}`;
 
     try {
       const result = await taskRunQueueRedis.eval(

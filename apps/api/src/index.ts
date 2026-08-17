@@ -1,7 +1,8 @@
 import express from "express";
 import type { Socket } from "node:net";
 import { packageName } from "@cascade/core";
-import { requireApiKey } from "./auth/api-key.js";
+import { requireApiKeyWhenUnauthenticated } from "./auth/api-key.js";
+import { requireDashboardUserAuthorization } from "./auth/dashboard-user.js";
 import { apiRouter } from "./routes/api-router.js";
 import { disconnectTaskRunQueueRedis } from "./queue/task-runs.js";
 import { disconnectEnvironmentRunsNotificationSubscriber } from "./realtime/environment-runs-notifications.js";
@@ -59,7 +60,13 @@ app.get("/me", (request, response) => {
   });
 });
 
-app.use("/api", requireApiKey(), apiRateLimit(), apiRouter);
+app.use(
+  "/api",
+  requireDashboardUserAuthorization(),
+  requireApiKeyWhenUnauthenticated(),
+  apiRateLimit(),
+  apiRouter,
+);
 
 app.use(errorHandler);
 
