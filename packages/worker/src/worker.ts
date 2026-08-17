@@ -90,10 +90,12 @@ export async function runWorker(shutdownSignal: ShutdownSignal, healthState?: Wo
   } finally {
     healthState?.markShuttingDown();
 
-    stopStuckRunSweeper();
-    stopPendingRunSweeper();
-    stopTaskScheduleScheduler();
-    stopRunEventOutboxDispatcher();
+    await Promise.allSettled([
+      stopStuckRunSweeper(),
+      stopPendingRunSweeper(),
+      stopTaskScheduleScheduler(),
+      stopRunEventOutboxDispatcher(),
+    ]);
 
     disconnectTaskRunQueueRedis();
     await prisma.$disconnect();

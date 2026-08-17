@@ -8,6 +8,45 @@ export class OidcIdentityLinkRequiredError extends Error {
   }
 }
 
+type DashboardUser = {
+  id: string;
+  email: string;
+  displayName: string | null;
+};
+
+async function ensurePersonalOrganization(user: DashboardUser) {
+  const organization = await prisma.organization.upsert({
+    where: {
+      slug: `personal-${user.id}`,
+    },
+    update: {},
+    create: {
+      slug: `personal-${user.id}`,
+      name: `${user.displayName ?? user.email}'s workspace`,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  await prisma.organizationMember.upsert({
+    where: {
+      organizationId_userId: {
+        organizationId: organization.id,
+        userId: user.id,
+      },
+    },
+    update: {},
+    create: {
+      organizationId: organization.id,
+      userId: user.id,
+      role: "OWNER",
+    },
+  });
+
+  return user;
+}
+
 export async function findOrCreateOidcUser(profile: OidcProfile) {
   const identity = await prisma.userIdentity.findUnique({
     where: {
@@ -35,7 +74,7 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
       throw new OidcIdentityLinkRequiredError();
     }
 
-    return prisma.user.update({
+    const user = await prisma.user.update({
       where: {
         id: identity.userId,
       },
@@ -49,6 +88,8 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
         displayName: true,
       },
     });
+
+    return ensurePersonalOrganization(user);
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -64,7 +105,7 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
     throw new OidcIdentityLinkRequiredError();
   }
 
-  return prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       email: profile.email,
       displayName: profile.displayName,
@@ -81,6 +122,8 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
       displayName: true,
     },
   });
+
+  return ensurePersonalOrganization(user);
 }
 
 export async function findOrCreateDevDashboardUser() {
@@ -91,7 +134,7 @@ export async function findOrCreateDevDashboardUser() {
   const email = process.env.DASHBOARD_DEV_AUTH_EMAIL?.trim() || "local-dashboard@example.test";
   const displayName = process.env.DASHBOARD_DEV_AUTH_DISPLAY_NAME?.trim() || "Local Dashboard User";
 
-  return prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: {
       email,
     },
@@ -108,4 +151,6 @@ export async function findOrCreateDevDashboardUser() {
       displayName: true,
     },
   });
+
+  return ensurePersonalOrganization(user);
 }

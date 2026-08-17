@@ -60,6 +60,35 @@ export default async function setup(_config: FullConfig) {
     },
   });
 
+  const organization = await prisma.organization.upsert({
+    where: {
+      slug: "playwright-dashboard",
+    },
+    update: {},
+    create: {
+      slug: "playwright-dashboard",
+      name: "Playwright Dashboard",
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  await prisma.organizationMember.upsert({
+    where: {
+      organizationId_userId: {
+        organizationId: organization.id,
+        userId: user.id,
+      },
+    },
+    update: {},
+    create: {
+      organizationId: organization.id,
+      userId: user.id,
+      role: "OWNER",
+    },
+  });
+
   await prisma.dashboardSession.deleteMany({
     where: {
       userId: user.id,

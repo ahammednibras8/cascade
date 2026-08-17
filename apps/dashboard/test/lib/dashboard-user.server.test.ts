@@ -8,6 +8,13 @@ const prisma = vi.hoisted(() => ({
     create: vi.fn<(input: unknown) => Promise<unknown>>(),
     findUnique: vi.fn<(input: unknown) => Promise<unknown>>(),
     update: vi.fn<(input: unknown) => Promise<unknown>>(),
+    upsert: vi.fn<(input: unknown) => Promise<unknown>>(),
+  },
+  organization: {
+    upsert: vi.fn<(input: unknown) => Promise<unknown>>(),
+  },
+  organizationMember: {
+    upsert: vi.fn<(input: unknown) => Promise<unknown>>(),
   },
 }));
 
@@ -28,6 +35,11 @@ const profile = {
 describe("findOrCreateOidcUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    prisma.organization.upsert.mockResolvedValue({
+      id: "organization-1",
+    });
+    prisma.organizationMember.upsert.mockResolvedValue({});
   });
 
   it("creates a user and linked OIDC identity for a first login", async () => {
@@ -106,5 +118,46 @@ describe("findOrCreateOidcUser", () => {
     );
 
     expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it("creates an owner membership in the user's personal organization", async () => {
+    prisma.userIdentity.findUnique.mockResolvedValue(null);
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue({
+      id: "user-1",
+      email: profile.email,
+      displayName: profile.displayName,
+    });
+
+    await findOrCreateOidcUser(profile);
+
+    expect(prisma.organization.upsert).toHaveBeenCalledWith({
+      where: {
+        slug: "personal-user-1",
+      },
+      update: {},
+      create: {
+        slug: "personal-user-1",
+        name: "Ahammed Nibras's workspace",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    expect(prisma.organizationMember.upsert).toHaveBeenCalledWith({
+      where: {
+        organizationId_userId: {
+          organizationId: "organization-1",
+          userId: "user-1",
+        },
+      },
+      update: {},
+      create: {
+        organizationId: "organization-1",
+        userId: "user-1",
+        role: "OWNER",
+      },
+    });
   });
 });
