@@ -5,6 +5,7 @@ import {
   getDashboardOrganizations,
 } from "~/lib/dashboard-organization.server";
 import { redirect } from "react-router";
+import { clearActiveDashboardEnvironment } from "~/lib/dashboard-workspace.server";
 
 function normalizeReturnTo(value: FormDataEntryValue | null) {
   if (typeof value === "string" && value.startsWith("/") && !value.startsWith("//")) {
@@ -34,9 +35,11 @@ export async function action({ request }: Route.ActionArgs) {
     });
   }
 
+  const headers = new Headers();
+  headers.append("Set-Cookie", await commitActiveDashboardOrganization(organization.id));
+  headers.append("Set-Cookie", await clearActiveDashboardEnvironment());
+
   return redirect(normalizeReturnTo(formData.get("returnTo")), {
-    headers: {
-      "Set-Cookie": await commitActiveDashboardOrganization(organization.id),
-    },
+    headers,
   });
 }

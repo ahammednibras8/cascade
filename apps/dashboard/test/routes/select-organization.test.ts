@@ -5,6 +5,7 @@ const getDashboardOrganizations = vi.hoisted(() => vi.fn<(userId: string) => Pro
 const commitActiveDashboardOrganization = vi.hoisted(() =>
   vi.fn<(organizationId: string) => Promise<string>>(),
 );
+const clearActiveDashboardEnvironment = vi.hoisted(() => vi.fn<() => Promise<string>>());
 
 vi.mock("../../app/lib/dashboard-auth.server.js", () => ({
   requireDashboardUser,
@@ -13,6 +14,10 @@ vi.mock("../../app/lib/dashboard-auth.server.js", () => ({
 vi.mock("../../app/lib/dashboard-organization.server.js", () => ({
   getDashboardOrganizations,
   commitActiveDashboardOrganization,
+}));
+
+vi.mock("../../app/lib/dashboard-workspace.server.js", () => ({
+  clearActiveDashboardEnvironment,
 }));
 
 const { action } = await import("../../app/routes/select-organization.js");
@@ -39,6 +44,9 @@ describe("organization selector action", () => {
     commitActiveDashboardOrganization.mockResolvedValue(
       "cascade-active-organization=signed-value; HttpOnly",
     );
+    clearActiveDashboardEnvironment.mockResolvedValue(
+      "cascade-active-environment=; Max-Age=0; HttpOnly",
+    );
   });
 
   it("accepts a selected organization the user belongs to", async () => {
@@ -53,9 +61,11 @@ describe("organization selector action", () => {
     } as never);
 
     expect(commitActiveDashboardOrganization).toHaveBeenCalledWith("organization-1");
+    expect(clearActiveDashboardEnvironment).toHaveBeenCalledWith();
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/runs");
     expect(response.headers.get("Set-Cookie")).toContain("cascade-active-organization=");
+    expect(response.headers.get("Set-Cookie")).toContain("cascade-active-environment=");
   });
 
   it("rejects selecting an organization the user does not belong to", async () => {
@@ -71,5 +81,6 @@ describe("organization selector action", () => {
     });
 
     expect(commitActiveDashboardOrganization).not.toHaveBeenCalled();
+    expect(clearActiveDashboardEnvironment).not.toHaveBeenCalled();
   });
 });

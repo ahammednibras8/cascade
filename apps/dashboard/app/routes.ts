@@ -8,6 +8,7 @@ export default [
   route("auth/callback", "routes/auth-callback.ts"),
   route("logout", "routes/logout.ts"),
   route("organizations/select", "routes/select-organization.ts"),
+  route("workspace/select", "routes/select-workspace.ts"),
   route("tasks", "routes/tasks.tsx"),
   route("tasks/:taskId", "routes/task-detail.tsx"),
   route("deployments", "routes/deployments.tsx"),
