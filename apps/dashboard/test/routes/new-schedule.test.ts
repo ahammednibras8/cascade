@@ -38,7 +38,9 @@ describe("new schedule route", () => {
       ],
     });
 
-    await expect(loader()).resolves.toEqual({
+    await expect(
+      loader({ request: new Request("http://dashboard.test/schedules/new") } as never),
+    ).resolves.toEqual({
       tasks: [
         {
           id: TASK_ID,

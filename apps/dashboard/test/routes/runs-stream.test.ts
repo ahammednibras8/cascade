@@ -29,7 +29,9 @@ describe("runs stream proxy", () => {
       }),
     );
 
-    const response = await loader({} as never);
+    const response = await loader({
+      request: new Request("http://dashboard.test/runs/stream"),
+    } as never);
 
     expect(cascadeApiStreamRequest).toHaveBeenCalledWith("/api/runs/stream");
     expect(response.status).toBe(200);
@@ -50,7 +52,9 @@ describe("runs stream proxy", () => {
       }),
     );
 
-    const response = await loader({} as never);
+    const response = await loader({
+      request: new Request("http://dashboard.test/runs/stream"),
+    } as never);
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({

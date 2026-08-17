@@ -38,7 +38,9 @@ describe("API keys loader", () => {
       ],
     });
 
-    const result = await loader();
+    const result = await loader({
+      request: new Request("http://dashboard.test/api-keys"),
+    } as never);
 
     expect(cascadeApiRequest).toHaveBeenCalledWith("/api/api-keys");
     expect(result).toEqual({

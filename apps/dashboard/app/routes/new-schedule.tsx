@@ -3,12 +3,15 @@ import { handleCreateSchedule } from "~/features/schedules/schedule-actions.serv
 import { NewSchedulePage } from "~/features/schedules/schedule-form";
 import type { ScheduleTask } from "~/features/schedules/types";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
 export function meta() {
   return [{ title: "New schedule | Cascade" }];
 }
 
-export async function loader() {
+export async function loader({ request }: Route.LoaderArgs) {
+  await requireDashboardUser(request);
+
   const response = await cascadeApiRequest<{
     tasks: ScheduleTask[];
   }>("/api/tasks");

@@ -3,12 +3,15 @@ import { handleUpdateSchedule } from "~/features/schedules/schedule-actions.serv
 import { EditSchedulePage } from "~/features/schedules/schedule-form";
 import type { Schedule } from "~/features/schedules/types";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
 export function meta() {
   return [{ title: "Edit schedule | Cascade" }];
 }
 
-export async function loader({ params }: Route.LoaderArgs) {
+export async function loader({ params, request }: Route.LoaderArgs) {
+  await requireDashboardUser(request);
+
   const response = await cascadeApiRequest<{
     schedule: Schedule;
   }>(`/api/schedules/${encodeURIComponent(params.scheduleId)}`);

@@ -15,6 +15,7 @@ function routeArgs(taskId = TASK_ID) {
     params: {
       taskId,
     },
+    request: new Request(`http://dashboard.test/tasks/${taskId}`),
   } as never;
 }
 

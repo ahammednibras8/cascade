@@ -4,6 +4,7 @@ export default [
   index("routes/home.tsx"),
   route("login", "routes/login.ts"),
   route("auth/callback", "routes/auth-callback.ts"),
+  route("logout", "routes/logout.ts"),
   route("tasks", "routes/tasks.tsx"),
   route("tasks/:taskId", "routes/task-detail.tsx"),
   route("deployments", "routes/deployments.tsx"),

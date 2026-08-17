@@ -51,7 +51,9 @@ describe("deployments loader", () => {
       deployments,
     });
 
-    await expect(loader()).resolves.toEqual({
+    await expect(
+      loader({ request: new Request("http://dashboard.test/deployments") } as never),
+    ).resolves.toEqual({
       deployments,
     });
 
@@ -63,7 +65,9 @@ describe("deployments loader", () => {
       deployments: [],
     });
 
-    await expect(loader()).resolves.toEqual({
+    await expect(
+      loader({ request: new Request("http://dashboard.test/deployments") } as never),
+    ).resolves.toEqual({
       deployments: [],
     });
   });

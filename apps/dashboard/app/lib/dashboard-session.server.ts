@@ -4,7 +4,7 @@ import { createCookie } from "react-router";
 
 const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 7;
 
-type DashboardSessionIdentity = {
+export type DashboardSessionIdentity = {
   id: string;
   userId: string;
   expiresAt: Date;

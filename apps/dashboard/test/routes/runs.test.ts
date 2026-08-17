@@ -40,7 +40,7 @@ describe("runs loader", () => {
       ],
     });
 
-    const result = await loader();
+    const result = await loader({ request: new Request("http://dashboard.test/runs") } as never);
 
     expect(cascadeApiRequest).toHaveBeenCalledWith("/api/runs");
 
@@ -70,7 +70,9 @@ describe("runs loader", () => {
       taskRuns: [],
     });
 
-    await expect(loader()).resolves.toEqual({
+    await expect(
+      loader({ request: new Request("http://dashboard.test/runs") } as never),
+    ).resolves.toEqual({
       runs: [],
     });
   });

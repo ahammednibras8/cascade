@@ -60,6 +60,7 @@ function routeArgs(deploymentId = DEPLOYMENT_ID) {
     params: {
       deploymentId,
     },
+    request: new Request(`http://dashboard.test/deployments/${deploymentId}`),
   } as never;
 }
 

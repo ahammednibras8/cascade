@@ -56,7 +56,9 @@ describe("schedules loader", () => {
       ],
     });
 
-    await expect(loader()).resolves.toEqual({
+    await expect(
+      loader({ request: new Request("http://dashboard.test/schedules") } as never),
+    ).resolves.toEqual({
       schedules: [
         expect.objectContaining({
           id: "schedule-1",
@@ -76,7 +78,9 @@ describe("schedules loader", () => {
       schedules: [],
     });
 
-    await expect(loader()).resolves.toEqual({
+    await expect(
+      loader({ request: new Request("http://dashboard.test/schedules") } as never),
+    ).resolves.toEqual({
       schedules: [],
     });
   });

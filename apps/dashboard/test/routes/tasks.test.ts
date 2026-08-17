@@ -34,7 +34,7 @@ describe("tasks loader", () => {
       ],
     });
 
-    const result = await loader();
+    const result = await loader({ request: new Request("http://dashboard.test/tasks") } as never);
 
     expect(cascadeApiRequest).toHaveBeenCalledWith("/api/tasks");
 
@@ -64,7 +64,9 @@ describe("tasks loader", () => {
       tasks: [],
     });
 
-    await expect(loader()).resolves.toEqual({
+    await expect(
+      loader({ request: new Request("http://dashboard.test/tasks") } as never),
+    ).resolves.toEqual({
       tasks: [],
     });
   });

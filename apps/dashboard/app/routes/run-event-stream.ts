@@ -1,5 +1,6 @@
 import { cascadeApiStreamRequest } from "~/lib/cascade-api.server";
 import type { Route } from "./+types/run-event-stream";
+import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
 const FORWARDED_RESPONSE_HEADERS = [
   "cache-control",
@@ -9,6 +10,8 @@ const FORWARDED_RESPONSE_HEADERS = [
 ];
 
 export async function loader({ params, request }: Route.LoaderArgs) {
+  await requireDashboardUser(request);
+
   const runId = params.runId;
 
   const lastEventId = request.headers.get("Last-Event-ID");

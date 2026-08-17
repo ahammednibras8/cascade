@@ -3,12 +3,15 @@ import { handleScheduleListAction } from "~/features/schedules/schedule-actions.
 import { SchedulesListView } from "~/features/schedules/schedules-list-view";
 import type { Schedule } from "~/features/schedules/types";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
 export function meta() {
   return [{ title: "Schedules | Cascade" }];
 }
 
-export async function loader() {
+export async function loader({ request }: Route.LoaderArgs) {
+  await requireDashboardUser(request);
+
   const response = await cascadeApiRequest<{
     schedules: Schedule[];
   }>("/api/schedules");

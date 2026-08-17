@@ -1,5 +1,11 @@
-import { Link } from "react-router";
+import { Form, Link } from "react-router";
+import type { Route } from "./+types/home";
 import { ArrowRight } from "~/components/icons";
+import { requireDashboardUser } from "~/lib/dashboard-auth.server";
+
+export async function loader({ request }: Route.LoaderArgs) {
+  await requireDashboardUser(request);
+}
 
 export function meta() {
   return [
@@ -55,6 +61,14 @@ export default function Home() {
         >
           Manage API keys
           <ArrowRight size={15} />
+          <Form method="post" action="/logout">
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900"
+            >
+              Sign out
+            </button>
+          </Form>
         </Link>
       </div>
     </main>

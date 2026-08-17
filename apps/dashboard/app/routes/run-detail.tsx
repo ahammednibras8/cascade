@@ -3,6 +3,7 @@ import { isRunNotFoundError } from "~/features/runs/errors";
 import { RunDetailView, RunNotFound } from "~/features/runs/run-detail-view";
 import type { TaskRunDetail, TaskRunEvent } from "~/features/runs/types";
 import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
 type TaskRunWithoutEvents = Omit<TaskRunDetail, "events">;
 
@@ -10,7 +11,9 @@ export function meta() {
   return [{ title: "Run detail | Cascade" }];
 }
 
-export async function loader({ params }: Route.LoaderArgs) {
+export async function loader({ params, request }: Route.LoaderArgs) {
+  await requireDashboardUser(request);
+
   const runId = params.runId;
 
   try {
