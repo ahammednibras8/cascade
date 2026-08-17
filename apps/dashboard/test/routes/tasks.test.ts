@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const cascadeApiRequest = vi.hoisted(() => vi.fn<(path: string) => Promise<unknown>>());
+const cascadeDashboardApiRequest = vi.hoisted(() =>
+  vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
+);
 
 vi.mock("../../app/lib/cascade-api.server.js", () => ({
-  cascadeApiRequest,
+  cascadeDashboardApiRequest,
 }));
 
 const { loader } = await import("../../app/routes/tasks.js");
@@ -14,7 +16,7 @@ describe("tasks loader", () => {
   });
 
   it("returns tasks from the Cascade API", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       tasks: [
         {
           id: "task-1",
@@ -36,7 +38,7 @@ describe("tasks loader", () => {
 
     const result = await loader({ request: new Request("http://dashboard.test/tasks") } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/tasks");
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(expect.any(Request), "/api/tasks");
 
     expect(result).toEqual({
       tasks: [
@@ -60,7 +62,7 @@ describe("tasks loader", () => {
   });
 
   it("returns an empty list when the API has no tasks", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       tasks: [],
     });
 

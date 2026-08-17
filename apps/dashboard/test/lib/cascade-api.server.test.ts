@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const createDashboardApiAuthorizationForRequest = vi.hoisted(() =>
+  vi.fn<(request: Request) => Promise<string>>(),
+);
+
+vi.mock("../../app/lib/dashboard-api-authorization.server.js", () => ({
+  createDashboardApiAuthorizationForRequest,
+}));
+
 const { cascadeApiRequest } = await import("../../app/lib/cascade-api.server.js");
 
 const originalApiUrl = process.env.CASCADE_API_URL;

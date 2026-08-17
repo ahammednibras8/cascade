@@ -40,8 +40,31 @@ test("shows registered tasks in the dashboard table", async ({ page }) => {
   const prisma = await getPrisma();
   const suffix = randomUUID().slice(0, 8);
 
+  const dashboardUser = await prisma.user.findUniqueOrThrow({
+    where: {
+      email: "playwright-dashboard@example.test",
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const organization = await prisma.organization.findFirstOrThrow({
+    where: {
+      members: {
+        some: {
+          userId: dashboardUser.id,
+        },
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
   const project = await prisma.project.create({
     data: {
+      organizationId: organization.id,
       slug: `e2e-tasks-project-${suffix}`,
       name: "E2E Tasks Project",
       environments: {

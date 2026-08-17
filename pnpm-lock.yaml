@@ -455,6 +455,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@cascade/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@cascade/database':
         specifier: workspace:*
         version: link:../../packages/database

@@ -42,6 +42,10 @@ const dashboardSessionSecret =
   process.env.DASHBOARD_SESSION_SECRET ??
   "e2e-dashboard-session-secret-change-me-at-least-32-characters";
 
+const dashboardApiAuthSecret =
+  process.env.DASHBOARD_API_AUTH_SECRET ??
+  "e2e-dashboard-api-auth-secret-change-me-at-least-32-characters";
+
 function ensureNodeOption(value: string | undefined, option: string) {
   const options = value?.split(/\s+/).filter(Boolean) ?? [];
 
@@ -62,6 +66,7 @@ process.env.DATABASE_URL = databaseURL;
 process.env.QUEUE_REDIS_URL = queueRedisURL;
 process.env.PLAYWRIGHT_DASHBOARD_STORAGE_STATE = dashboardStorageStatePath;
 process.env.NODE_OPTIONS = nodeOptions;
+process.env.DASHBOARD_API_AUTH_SECRET = dashboardApiAuthSecret;
 
 function getUrlPort(url: string, fallbackPort: string) {
   const parsed = new URL(url);
@@ -90,6 +95,7 @@ const serverEnv = {
   API_KEY_PEPPER: apiKeyPepper,
   CASCADE_API_URL: apiURL,
   CASCADE_DASHBOARD_API_KEY: dashboardApiKey,
+  DASHBOARD_API_AUTH_SECRET: dashboardApiAuthSecret,
 };
 
 const controlWorkerEnv = {

@@ -1,7 +1,7 @@
 import type { Route } from "./+types/tasks";
 import { TasksListView } from "~/features/tasks/tasks-list-view";
 import type { Task } from "~/features/tasks/types";
-import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
 import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
 export function meta() {
@@ -11,9 +11,9 @@ export function meta() {
 export async function loader({ request }: Route.LoaderArgs) {
   await requireDashboardUser(request);
 
-  const response = await cascadeApiRequest<{
+  const response = await cascadeDashboardApiRequest<{
     tasks: Task[];
-  }>("/api/tasks");
+  }>(request, "/api/tasks");
 
   return {
     tasks: response.tasks,
