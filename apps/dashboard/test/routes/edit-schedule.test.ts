@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const cascadeApiRequest = vi.hoisted(() =>
-  vi.fn<(path: string, init?: RequestInit) => Promise<unknown>>(),
+const cascadeDashboardApiRequest = vi.hoisted(() =>
+  vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
 );
 
-vi.mock("../../app/lib/cascade-api.server.js", () => ({
-  cascadeApiRequest,
+vi.mock("~/lib/cascade-api.server", () => ({
+  cascadeDashboardApiRequest,
 }));
 
 const { action, loader } = await import("../../app/routes/edit-schedule.js");
@@ -28,7 +28,7 @@ describe("edit schedule route", () => {
   });
 
   it("loads a single schedule", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       schedule: {
         id: SCHEDULE_ID,
       },
@@ -36,6 +36,7 @@ describe("edit schedule route", () => {
 
     await expect(
       loader({
+        request: new Request(`http://dashboard.test/schedules/${SCHEDULE_ID}/edit`),
         params: {
           scheduleId: SCHEDULE_ID,
         },
@@ -46,11 +47,14 @@ describe("edit schedule route", () => {
       },
     });
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/schedules/${SCHEDULE_ID}`);
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/schedules/${SCHEDULE_ID}`,
+    );
   });
 
   it("updates an interval schedule", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       schedule: {
         id: SCHEDULE_ID,
       },
@@ -68,24 +72,28 @@ describe("edit schedule route", () => {
       }),
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/schedules/${SCHEDULE_ID}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/schedules/${SCHEDULE_ID}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          scheduleType: "INTERVAL",
+          name: "Every two minutes",
+          intervalSeconds: 120,
+        }),
       },
-      body: JSON.stringify({
-        scheduleType: "INTERVAL",
-        name: "Every two minutes",
-        intervalSeconds: 120,
-      }),
-    });
+    );
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/schedules");
   });
 
   it("updates a cron schedule and payload", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       schedule: {
         id: SCHEDULE_ID,
       },
@@ -104,25 +112,29 @@ describe("edit schedule route", () => {
       }),
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/schedules/${SCHEDULE_ID}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        scheduleType: "CRON",
-        name: "Weekday morning",
-        cronExpression: "0 9 * * 1-5",
-        timezone: "Asia/Kolkata",
-        payload: {
-          customerId: "customer-1",
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/schedules/${SCHEDULE_ID}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          scheduleType: "CRON",
+          name: "Weekday morning",
+          cronExpression: "0 9 * * 1-5",
+          timezone: "Asia/Kolkata",
+          payload: {
+            customerId: "customer-1",
+          },
+        }),
+      },
+    );
   });
 
   it("clears the payload", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       schedule: {
         id: SCHEDULE_ID,
       },
@@ -141,7 +153,8 @@ describe("edit schedule route", () => {
       }),
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
       `/api/schedules/${SCHEDULE_ID}`,
       expect.objectContaining({
         body: JSON.stringify({

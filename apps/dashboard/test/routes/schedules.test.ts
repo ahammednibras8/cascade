@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const cascadeApiRequest = vi.hoisted(() =>
-  vi.fn<(path: string, init?: RequestInit) => Promise<unknown>>(),
+const cascadeDashboardApiRequest = vi.hoisted(() =>
+  vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
 );
 
-vi.mock("../../app/lib/cascade-api.server.js", () => ({
-  cascadeApiRequest,
+vi.mock("~/lib/cascade-api.server", () => ({
+  cascadeDashboardApiRequest,
 }));
 
 const { action, loader } = await import("../../app/routes/schedules.js");
@@ -25,7 +25,7 @@ describe("schedules loader", () => {
   });
 
   it("returns schedules from the Cascade API", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       schedules: [
         {
           id: "schedule-1",
@@ -70,11 +70,11 @@ describe("schedules loader", () => {
       ],
     });
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/schedules");
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(expect.any(Request), "/api/schedules");
   });
 
   it("returns an empty list when the API has no schedules", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       schedules: [],
     });
 
@@ -86,7 +86,7 @@ describe("schedules loader", () => {
   });
 
   it("calls the API pause endpoint", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       schedule: {
         id: SCHEDULE_ID,
       },
@@ -107,13 +107,17 @@ describe("schedules loader", () => {
       scheduleId: SCHEDULE_ID,
     });
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/schedules/${SCHEDULE_ID}/pause`, {
-      method: "POST",
-    });
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/schedules/${SCHEDULE_ID}/pause`,
+      {
+        method: "POST",
+      },
+    );
   });
 
   it("calls the API resume endpoint", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       schedule: {
         id: SCHEDULE_ID,
       },
@@ -128,13 +132,17 @@ describe("schedules loader", () => {
       context: {},
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/schedules/${SCHEDULE_ID}/resume`, {
-      method: "POST",
-    });
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/schedules/${SCHEDULE_ID}/resume`,
+      {
+        method: "POST",
+      },
+    );
   });
 
   it("calls the API delete endpoint", async () => {
-    cascadeApiRequest.mockResolvedValue(null);
+    cascadeDashboardApiRequest.mockResolvedValue(null);
 
     await action({
       request: actionRequest({
@@ -145,9 +153,13 @@ describe("schedules loader", () => {
       context: {},
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/schedules/${SCHEDULE_ID}`, {
-      method: "DELETE",
-    });
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/schedules/${SCHEDULE_ID}`,
+      {
+        method: "DELETE",
+      },
+    );
   });
 
   it("rejects invalid dashboard schedule actions", async () => {
@@ -164,6 +176,6 @@ describe("schedules loader", () => {
       status: 400,
     });
 
-    expect(cascadeApiRequest).not.toHaveBeenCalled();
+    expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
   });
 });

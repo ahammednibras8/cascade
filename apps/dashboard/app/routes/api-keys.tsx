@@ -2,7 +2,7 @@ import type { Route } from "./+types/api-keys";
 import { handleApiKeyAction } from "~/features/api-keys/api-key-actions.server";
 import { ApiKeysPage } from "~/features/api-keys/api-keys-page";
 import type { ApiKey, ApiKeyScopeDefinition } from "~/features/api-keys/types";
-import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
 import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
 export function meta() {
@@ -12,10 +12,10 @@ export function meta() {
 export async function loader({ request }: Route.LoaderArgs) {
   await requireDashboardUser(request);
 
-  const response = await cascadeApiRequest<{
+  const response = await cascadeDashboardApiRequest<{
     apiKeys: ApiKey[];
     availableScopes: ApiKeyScopeDefinition[];
-  }>("/api/api-keys");
+  }>(request, "/api/api-keys");
 
   return {
     apiKeys: response.apiKeys,
@@ -24,7 +24,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  return handleApiKeyAction(await request.formData());
+  return handleApiKeyAction(request, await request.formData());
 }
 
 export default function ApiKeys({ loaderData }: Route.ComponentProps) {

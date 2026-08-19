@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const cascadeApiRequest = vi.hoisted(() => vi.fn<(path: string) => Promise<unknown>>());
+const cascadeDashboardApiRequest = vi.hoisted(() =>
+  vi.fn<(request: Request, path: string) => Promise<unknown>>(),
+);
 
-vi.mock("../../app/lib/cascade-api.server.js", () => ({
-  cascadeApiRequest,
+vi.mock("~/lib/cascade-api.server", () => ({
+  cascadeDashboardApiRequest,
 }));
 
 const { loader } = await import("../../app/routes/deployments.js");
@@ -47,7 +49,7 @@ describe("deployments loader", () => {
       }),
     ];
 
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       deployments,
     });
 
@@ -57,11 +59,14 @@ describe("deployments loader", () => {
       deployments,
     });
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/deployments");
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/deployments",
+    );
   });
 
   it("returns an empty list when the API has no deployments", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       deployments: [],
     });
 

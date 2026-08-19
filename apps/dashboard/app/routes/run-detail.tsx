@@ -2,7 +2,7 @@ import type { Route } from "./+types/run-detail";
 import { isRunNotFoundError } from "~/features/runs/errors";
 import { RunDetailView, RunNotFound } from "~/features/runs/run-detail-view";
 import type { TaskRunDetail, TaskRunEvent } from "~/features/runs/types";
-import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
 import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
 type TaskRunWithoutEvents = Omit<TaskRunDetail, "events">;
@@ -17,12 +17,12 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const runId = params.runId;
 
   try {
-    const runResponse = await cascadeApiRequest<{
+    const runResponse = await cascadeDashboardApiRequest<{
       taskRun: TaskRunWithoutEvents;
-    }>(`/api/runs/${encodeURIComponent(runId)}`);
-    const eventsResponse = await cascadeApiRequest<{
+    }>(request, `/api/runs/${encodeURIComponent(runId)}`);
+    const eventsResponse = await cascadeDashboardApiRequest<{
       events: TaskRunEvent[];
-    }>(`/api/runs/${encodeURIComponent(runId)}/events`);
+    }>(request, `/api/runs/${encodeURIComponent(runId)}/events`);
 
     return {
       run: {
@@ -57,12 +57,12 @@ export async function action({ params, request }: Route.ActionArgs) {
     const runId = encodeURIComponent(params.runId);
     const path = intent === "cancel" ? `/api/runs/${runId}/cancel` : `/api/runs/${runId}/replay`;
 
-    return await cascadeApiRequest<{
+    return await cascadeDashboardApiRequest<{
       taskRun: {
         id: string;
         status: string;
       };
-    }>(path, {
+    }>(request, path, {
       method: "POST",
     });
   } catch (error) {

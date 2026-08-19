@@ -1,4 +1,4 @@
-import { cascadeApiStreamRequest } from "~/lib/cascade-api.server";
+import { cascadeDashboardApiStreamRequest } from "~/lib/cascade-api.server";
 import type { Route } from "./+types/runs-stream";
 import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
@@ -11,7 +11,7 @@ const FORWARDED_RESPONSE_HEADERS = [
 
 export async function loader({ request }: Route.LoaderArgs) {
   await requireDashboardUser(request);
-  const upstream = await cascadeApiStreamRequest("/api/runs/stream");
+  const upstream = await cascadeDashboardApiStreamRequest(request, "/api/runs/stream");
 
   const headers = new Headers();
 

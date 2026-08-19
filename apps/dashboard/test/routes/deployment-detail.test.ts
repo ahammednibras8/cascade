@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const cascadeApiRequest = vi.hoisted(() => vi.fn<(path: string) => Promise<unknown>>());
+const cascadeDashboardApiRequest = vi.hoisted(() =>
+  vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
+);
 
-vi.mock("../../app/lib/cascade-api.server.js", () => ({
-  cascadeApiRequest,
+vi.mock("~/lib/cascade-api.server", () => ({
+  cascadeDashboardApiRequest,
 }));
 
 const { action, loader } = await import("../../app/routes/deployment-detail.js");
@@ -86,7 +88,7 @@ describe("deployment detail loader", () => {
   it("returns a deployment from the Cascade API", async () => {
     const result = deployment();
 
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       deployment: result,
     });
 
@@ -95,13 +97,16 @@ describe("deployment detail loader", () => {
       deploymentId: DEPLOYMENT_ID,
     });
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/deployments/${DEPLOYMENT_ID}`);
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/deployments/${DEPLOYMENT_ID}`,
+    );
   });
 
   it("URL-encodes the deployment ID before requesting the API", async () => {
     const deploymentId = "deployment/with spaces";
 
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       deployment: deployment({
         id: deploymentId,
       }),
@@ -109,11 +114,14 @@ describe("deployment detail loader", () => {
 
     await loader(routeArgs(deploymentId));
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/deployments/deployment%2Fwith%20spaces");
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/deployments/deployment%2Fwith%20spaces",
+    );
   });
 
   it("returns null when the deployment does not exist", async () => {
-    cascadeApiRequest.mockRejectedValue({
+    cascadeDashboardApiRequest.mockRejectedValue({
       status: 404,
       responseBody: {
         error: {
@@ -138,13 +146,13 @@ describe("deployment detail loader", () => {
       },
     };
 
-    cascadeApiRequest.mockRejectedValue(error);
+    cascadeDashboardApiRequest.mockRejectedValue(error);
 
     await expect(loader(routeArgs())).rejects.toBe(error);
   });
 
   it("sends a deployment deactivation request to the API", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       deployment: {
         id: DEPLOYMENT_ID,
         status: "INACTIVE",
@@ -164,9 +172,13 @@ describe("deployment detail loader", () => {
       },
     });
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/deployments/${DEPLOYMENT_ID}/deactivate`, {
-      method: "POST",
-    });
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/deployments/${DEPLOYMENT_ID}/deactivate`,
+      {
+        method: "POST",
+      },
+    );
   });
 
   it("rejects an invalid deployment action before calling the API", async () => {
@@ -174,11 +186,11 @@ describe("deployment detail loader", () => {
       status: 400,
     });
 
-    expect(cascadeApiRequest).not.toHaveBeenCalled();
+    expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
   });
 
   it("returns the API failure status when deactivation fails", async () => {
-    cascadeApiRequest.mockRejectedValue({
+    cascadeDashboardApiRequest.mockRejectedValue({
       status: 409,
       responseBody: {
         error: {
@@ -193,7 +205,7 @@ describe("deployment detail loader", () => {
   });
 
   it("sends a deployment rollback request to the API", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       deployment: {
         id: DEPLOYMENT_ID,
         status: "ACTIVE",
@@ -217,8 +229,12 @@ describe("deployment detail loader", () => {
       },
     });
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/deployments/${DEPLOYMENT_ID}/rollback`, {
-      method: "POST",
-    });
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/deployments/${DEPLOYMENT_ID}/rollback`,
+      {
+        method: "POST",
+      },
+    );
   });
 });

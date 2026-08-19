@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const cascadeApiStreamRequest = vi.hoisted(() =>
-  vi.fn<(path: string, init?: RequestInit) => Promise<Response>>(),
+const cascadeDashboardApiStreamRequest = vi.hoisted(() =>
+  vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<Response>>(),
 );
 
-vi.mock("../../app/lib/cascade-api.server.js", () => ({
-  cascadeApiStreamRequest,
+vi.mock("~/lib/cascade-api.server", () => ({
+  cascadeDashboardApiStreamRequest,
 }));
 
 const { loader } = await import("../../app/routes/run-event-stream.js");
@@ -18,7 +18,7 @@ describe("run event stream proxy", () => {
   it("forwards Last-Event-ID and preserves the SSE response", async () => {
     const eventId = "33333333-3333-4333-8333-333333333333";
 
-    cascadeApiStreamRequest.mockResolvedValue(
+    cascadeDashboardApiStreamRequest.mockResolvedValue(
       new Response(`id: ${eventId}\nevent: run-event\ndata: {"eventId":"${eventId}"}\n\n`, {
         status: 200,
         headers: {
@@ -42,11 +42,15 @@ describe("run event stream proxy", () => {
       }),
     } as never);
 
-    expect(cascadeApiStreamRequest).toHaveBeenCalledWith("/api/runs/run-1/events/stream", {
-      headers: {
-        "Last-Event-ID": eventId,
+    expect(cascadeDashboardApiStreamRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/runs/run-1/events/stream",
+      {
+        headers: {
+          "Last-Event-ID": eventId,
+        },
       },
-    });
+    );
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("text/event-stream");
@@ -57,7 +61,7 @@ describe("run event stream proxy", () => {
   });
 
   it("forwards API errors without exposing the dashboard API key", async () => {
-    cascadeApiStreamRequest.mockResolvedValue(
+    cascadeDashboardApiStreamRequest.mockResolvedValue(
       new Response(
         JSON.stringify({
           error: {
@@ -90,7 +94,7 @@ describe("run event stream proxy", () => {
       },
     });
 
-    expect(JSON.stringify(cascadeApiStreamRequest.mock.calls)).not.toContain(
+    expect(JSON.stringify(cascadeDashboardApiStreamRequest.mock.calls)).not.toContain(
       "CASCADE_DASHBOARD_API_KEY",
     );
   });

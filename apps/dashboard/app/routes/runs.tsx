@@ -1,7 +1,7 @@
 import type { Route } from "./+types/runs";
 import { RunsListView } from "~/features/runs/runs-list-view";
 import type { TaskRunListItem } from "~/features/runs/types";
-import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
 import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
 type ApiTaskRunListItem = {
@@ -33,9 +33,9 @@ export function meta() {
 export async function loader({ request }: Route.LoaderArgs) {
   await requireDashboardUser(request);
 
-  const response = await cascadeApiRequest<{
+  const response = await cascadeDashboardApiRequest<{
     taskRuns: ApiTaskRunListItem[];
-  }>("/api/runs");
+  }>(request, "/api/runs");
 
   return {
     runs: response.taskRuns.map(toTaskRunListItem),

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const cascadeApiRequest = vi.hoisted(() =>
-  vi.fn<(path: string, init?: RequestInit) => Promise<unknown>>(),
+const cascadeDashboardApiRequest = vi.hoisted(() =>
+  vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
 );
 
-vi.mock("../../app/lib/cascade-api.server.js", () => ({
-  cascadeApiRequest,
+vi.mock("~/lib/cascade-api.server", () => ({
+  cascadeDashboardApiRequest,
 }));
 
 const { action, loader } = await import("../../app/routes/api-keys.js");
@@ -16,7 +16,7 @@ describe("API keys loader", () => {
   });
 
   it("loads API keys and their available permissions", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       apiKeys: [
         {
           id: "key-1",
@@ -42,7 +42,7 @@ describe("API keys loader", () => {
       request: new Request("http://dashboard.test/api-keys"),
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/api-keys");
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(expect.any(Request), "/api/api-keys");
     expect(result).toEqual({
       apiKeys: [
         {
@@ -67,7 +67,7 @@ describe("API keys loader", () => {
   });
 
   it("creates an API key through the dashboard server action", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       apiKey: {
         id: "key-1",
         name: "GitHub deploy",
@@ -97,7 +97,7 @@ describe("API keys loader", () => {
       }),
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/api-keys", {
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(expect.any(Request), "/api/api-keys", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -145,11 +145,11 @@ describe("API keys loader", () => {
         message: "Unsupported API key action",
       },
     });
-    expect(cascadeApiRequest).not.toHaveBeenCalled();
+    expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
   });
 
   it("returns API validation errors without throwing to the dashboard error boundary", async () => {
-    cascadeApiRequest.mockRejectedValue({
+    cascadeDashboardApiRequest.mockRejectedValue({
       status: 400,
       responseBody: {
         error: {
@@ -184,7 +184,7 @@ describe("API keys loader", () => {
   });
 
   it("revokes an API key through the dashboard server action", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       apiKey: {
         id: "key-1",
         name: "GitHub deploy",
@@ -210,9 +210,13 @@ describe("API keys loader", () => {
       }),
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/api-keys/key-1/revoke", {
-      method: "POST",
-    });
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/api-keys/key-1/revoke",
+      {
+        method: "POST",
+      },
+    );
 
     await expect(response.json()).resolves.toEqual({
       ok: true,
@@ -231,7 +235,7 @@ describe("API keys loader", () => {
   });
 
   it("rotates an API key through the dashboard server action", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       apiKey: {
         id: "replacement-key-1",
         name: "GitHub deploy",
@@ -258,9 +262,13 @@ describe("API keys loader", () => {
       }),
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/api-keys/key-1/rotate", {
-      method: "POST",
-    });
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/api-keys/key-1/rotate",
+      {
+        method: "POST",
+      },
+    );
 
     expect(response.headers.get("Cache-Control")).toBe("no-store");
 

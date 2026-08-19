@@ -1,23 +1,27 @@
 import type { ApiKey, ApiKeyActionData } from "./types";
-import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
 
 type ActionFailure = Extract<ApiKeyActionData, { ok: false }>;
 
-export async function handleApiKeyAction(formData: FormData) {
+export async function handleApiKeyAction(request: Request, formData: FormData) {
   const intent = formData.get("intent");
 
   if (intent === "rotate" || intent === "revoke") {
-    return handleExistingApiKeyAction(intent, formData);
+    return handleExistingApiKeyAction(request, intent, formData);
   }
 
   if (intent !== "create") {
     return jsonFailure(400, "INVALID_ACTION", "Unsupported API key action");
   }
 
-  return handleCreateApiKey(formData);
+  return handleCreateApiKey(request, formData);
 }
 
-async function handleExistingApiKeyAction(intent: "rotate" | "revoke", formData: FormData) {
+async function handleExistingApiKeyAction(
+  request: Request,
+  intent: "rotate" | "revoke",
+  formData: FormData,
+) {
   const apiKeyId = formData.get("apiKeyId");
 
   if (typeof apiKeyId !== "string") {
@@ -25,10 +29,10 @@ async function handleExistingApiKeyAction(intent: "rotate" | "revoke", formData:
   }
 
   try {
-    const result = await cascadeApiRequest<{
+    const result = await cascadeDashboardApiRequest<{
       apiKey: ApiKey;
       token?: string;
-    }>(`/api/api-keys/${encodeURIComponent(apiKeyId)}/${intent}`, {
+    }>(request, `/api/api-keys/${encodeURIComponent(apiKeyId)}/${intent}`, {
       method: "POST",
     });
 
@@ -43,7 +47,7 @@ async function handleExistingApiKeyAction(intent: "rotate" | "revoke", formData:
   }
 }
 
-async function handleCreateApiKey(formData: FormData) {
+async function handleCreateApiKey(request: Request, formData: FormData) {
   const name = formData.get("name");
   const scopes = formData.getAll("scope");
 
@@ -52,10 +56,10 @@ async function handleCreateApiKey(formData: FormData) {
   }
 
   try {
-    const result = await cascadeApiRequest<{
+    const result = await cascadeDashboardApiRequest<{
       apiKey: ApiKey;
       token: string;
-    }>("/api/api-keys", {
+    }>(request, "/api/api-keys", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

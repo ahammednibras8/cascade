@@ -128,3 +128,19 @@ export async function cascadeApiStreamRequest(
     },
   });
 }
+
+export async function cascadeDashboardApiStreamRequest(
+  request: Request,
+  path: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  const authorization = await createDashboardApiAuthorizationForRequest(request);
+
+  return fetch(`${getApiUrl()}${path}`, {
+    ...init,
+    headers: {
+      ...init.headers,
+      [DASHBOARD_API_AUTH_HEADER]: authorization,
+    },
+  });
+}

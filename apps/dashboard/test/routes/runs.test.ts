@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const cascadeApiRequest = vi.hoisted(() => vi.fn<(path: string) => Promise<unknown>>());
+const cascadeDashboardApiRequest = vi.hoisted(() =>
+  vi.fn<(request: Request, path: string) => Promise<unknown>>(),
+);
 
-vi.mock("../../app/lib/cascade-api.server.js", () => ({
-  cascadeApiRequest,
+vi.mock("~/lib/cascade-api.server", () => ({
+  cascadeDashboardApiRequest,
 }));
 
 const { loader } = await import("../../app/routes/runs.js");
@@ -14,7 +16,7 @@ describe("runs loader", () => {
   });
 
   it("returns latest task runs for the table", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       taskRuns: [
         {
           id: "run-1",
@@ -42,7 +44,7 @@ describe("runs loader", () => {
 
     const result = await loader({ request: new Request("http://dashboard.test/runs") } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/runs");
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(expect.any(Request), "/api/runs");
 
     expect(result).toEqual({
       runs: [
@@ -66,7 +68,7 @@ describe("runs loader", () => {
   });
 
   it("returns an empty runs list", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       taskRuns: [],
     });
 

@@ -2,7 +2,7 @@ import type { Route } from "./+types/schedules";
 import { handleScheduleListAction } from "~/features/schedules/schedule-actions.server";
 import { SchedulesListView } from "~/features/schedules/schedules-list-view";
 import type { Schedule } from "~/features/schedules/types";
-import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
 import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
 export function meta() {
@@ -12,9 +12,9 @@ export function meta() {
 export async function loader({ request }: Route.LoaderArgs) {
   await requireDashboardUser(request);
 
-  const response = await cascadeApiRequest<{
+  const response = await cascadeDashboardApiRequest<{
     schedules: Schedule[];
-  }>("/api/schedules");
+  }>(request, "/api/schedules");
 
   return {
     schedules: response.schedules,
@@ -22,7 +22,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  return handleScheduleListAction(await request.formData());
+  return handleScheduleListAction(request, await request.formData());
 }
 
 export default function Schedules({ loaderData }: Route.ComponentProps) {

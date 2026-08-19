@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const cascadeApiRequest = vi.hoisted(() =>
-  vi.fn<(path: string, init?: RequestInit) => Promise<unknown>>(),
+const cascadeDashboardApiRequest = vi.hoisted(() =>
+  vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
 );
 
-vi.mock("../../app/lib/cascade-api.server.js", () => ({
-  cascadeApiRequest,
+vi.mock("~/lib/cascade-api.server", () => ({
+  cascadeDashboardApiRequest,
 }));
 
 const { action, loader } = await import("../../app/routes/new-schedule.js");
@@ -28,7 +28,7 @@ describe("new schedule route", () => {
   });
 
   it("loads available tasks", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       tasks: [
         {
           id: TASK_ID,
@@ -50,11 +50,11 @@ describe("new schedule route", () => {
       ],
     });
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/tasks");
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(expect.any(Request), "/api/tasks");
   });
 
   it("creates an interval schedule through the API", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       schedule: {
         id: "schedule-1",
       },
@@ -70,28 +70,32 @@ describe("new schedule route", () => {
       }),
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/tasks/${TASK_ID}/schedules`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        taskId: undefined,
-        scheduleType: "INTERVAL",
-        name: "Every two minutes",
-        intervalSeconds: 120,
-        payload: {
-          customerId: "customer-1",
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/tasks/${TASK_ID}/schedules`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          taskId: undefined,
+          scheduleType: "INTERVAL",
+          name: "Every two minutes",
+          intervalSeconds: 120,
+          payload: {
+            customerId: "customer-1",
+          },
+        }),
+      },
+    );
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/schedules");
   });
 
   it("creates a cron schedule through the API", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       schedule: {
         id: "schedule-1",
       },
@@ -107,18 +111,22 @@ describe("new schedule route", () => {
       }),
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/tasks/${TASK_ID}/schedules`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/tasks/${TASK_ID}/schedules`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          taskId: undefined,
+          scheduleType: "CRON",
+          cronExpression: "0 9 * * 1-5",
+          timezone: "Asia/Kolkata",
+        }),
       },
-      body: JSON.stringify({
-        taskId: undefined,
-        scheduleType: "CRON",
-        cronExpression: "0 9 * * 1-5",
-        timezone: "Asia/Kolkata",
-      }),
-    });
+    );
   });
 
   it("rejects invalid payload JSON before calling the API", async () => {
@@ -140,6 +148,6 @@ describe("new schedule route", () => {
       },
     });
 
-    expect(cascadeApiRequest).not.toHaveBeenCalled();
+    expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
   });
 });

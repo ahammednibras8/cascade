@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const cascadeApiStreamRequest = vi.hoisted(() =>
-  vi.fn<(path: string, init?: RequestInit) => Promise<Response>>(),
+const cascadeDashboardApiStreamRequest = vi.hoisted(() =>
+  vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<Response>>(),
 );
 
-vi.mock("../../app/lib/cascade-api.server.js", () => ({
-  cascadeApiStreamRequest,
+vi.mock("~/lib/cascade-api.server", () => ({
+  cascadeDashboardApiStreamRequest,
 }));
 
 const { loader } = await import("../../app/routes/runs-stream.js");
@@ -16,7 +16,7 @@ describe("runs stream proxy", () => {
   });
 
   it("proxies the environment runs SSE stream", async () => {
-    cascadeApiStreamRequest.mockResolvedValue(
+    cascadeDashboardApiStreamRequest.mockResolvedValue(
       new Response("event: runs-changed\ndata: {}\n\n", {
         status: 200,
         headers: {
@@ -33,7 +33,10 @@ describe("runs stream proxy", () => {
       request: new Request("http://dashboard.test/runs/stream"),
     } as never);
 
-    expect(cascadeApiStreamRequest).toHaveBeenCalledWith("/api/runs/stream");
+    expect(cascadeDashboardApiStreamRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/runs/stream",
+    );
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("text/event-stream");
     expect(response.headers.get("cache-control")).toBe("no-cache, no-transform");
@@ -43,7 +46,7 @@ describe("runs stream proxy", () => {
   });
 
   it("forwards an API error response", async () => {
-    cascadeApiStreamRequest.mockResolvedValue(
+    cascadeDashboardApiStreamRequest.mockResolvedValue(
       new Response(JSON.stringify({ error: { code: "UNAUTHORIZED" } }), {
         status: 401,
         headers: {

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { action } from "../../app/routes/run-detail.js";
 
-const cascadeApiRequest = vi.hoisted(() =>
-  vi.fn<(path: string, init?: RequestInit) => Promise<unknown>>(),
+const cascadeDashboardApiRequest = vi.hoisted(() =>
+  vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
 );
 
-vi.mock("../../app/lib/cascade-api.server.js", () => ({
-  cascadeApiRequest,
+vi.mock("~/lib/cascade-api.server", () => ({
+  cascadeDashboardApiRequest,
 }));
 
 const { loader } = await import("../../app/routes/run-detail.js");
@@ -17,7 +17,7 @@ describe("run detail loader", () => {
   });
 
   it("returns the run and its events from the API", async () => {
-    cascadeApiRequest
+    cascadeDashboardApiRequest
       .mockResolvedValueOnce({
         taskRun: {
           id: "run-1",
@@ -92,10 +92,19 @@ describe("run detail loader", () => {
       params: {
         runId: "run-1",
       },
+      request: new Request("http://dashboard.test/runs/run-1"),
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenNthCalledWith(1, "/api/runs/run-1");
-    expect(cascadeApiRequest).toHaveBeenNthCalledWith(2, "/api/runs/run-1/events");
+    expect(cascadeDashboardApiRequest).toHaveBeenNthCalledWith(
+      1,
+      expect.any(Request),
+      "/api/runs/run-1",
+    );
+    expect(cascadeDashboardApiRequest).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Request),
+      "/api/runs/run-1/events",
+    );
 
     expect(result.run).toMatchObject({
       id: "run-1",
@@ -117,7 +126,7 @@ describe("run detail loader", () => {
   });
 
   it("returns a not-found state when the API cannot find the run", async () => {
-    cascadeApiRequest.mockRejectedValueOnce({
+    cascadeDashboardApiRequest.mockRejectedValueOnce({
       status: 404,
       responseBody: {
         error: {
@@ -132,18 +141,22 @@ describe("run detail loader", () => {
         params: {
           runId: "missing-run",
         },
+        request: new Request("http://dashboard.test/runs/missing-run"),
       } as never),
     ).resolves.toEqual({
       run: null,
       runId: "missing-run",
     });
 
-    expect(cascadeApiRequest).toHaveBeenCalledTimes(1);
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/runs/missing-run");
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledTimes(1);
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/runs/missing-run",
+    );
   });
 
   it("sends a cancel request to the API", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       taskRun: {
         id: "run-1",
         status: "CANCELED",
@@ -162,13 +175,17 @@ describe("run detail loader", () => {
       }),
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/runs/run-1/cancel", {
-      method: "POST",
-    });
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/runs/run-1/cancel",
+      {
+        method: "POST",
+      },
+    );
   });
 
   it("sends a replay request to the API", async () => {
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       taskRun: {
         id: "run-2",
         status: "PENDING",
@@ -187,8 +204,12 @@ describe("run detail loader", () => {
       }),
     } as never);
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/runs/run-1/replay", {
-      method: "POST",
-    });
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/runs/run-1/replay",
+      {
+        method: "POST",
+      },
+    );
   });
 });

@@ -5,7 +5,7 @@ import {
 } from "~/features/deployments/deployment-detail-view";
 import { isDeploymentNotFoundError } from "~/features/deployments/errors";
 import type { Deployment } from "~/features/deployments/types";
-import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
 import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
 type DeploymentActionIntent = "deactivate" | "rollback";
@@ -20,9 +20,9 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const deploymentId = params.deploymentId;
 
   try {
-    const response = await cascadeApiRequest<{
+    const response = await cascadeDashboardApiRequest<{
       deployment: Deployment;
-    }>(`/api/deployments/${encodeURIComponent(deploymentId)}`);
+    }>(request, `/api/deployments/${encodeURIComponent(deploymentId)}`);
 
     return {
       deployment: response.deployment,
@@ -47,12 +47,12 @@ export async function action({ params, request }: Route.ActionArgs) {
   const deploymentId = encodeURIComponent(params.deploymentId);
 
   try {
-    const response = await cascadeApiRequest<{
+    const response = await cascadeDashboardApiRequest<{
       deployment: {
         id: string;
         status: "ACTIVE" | "INACTIVE";
       };
-    }>(`/api/deployments/${deploymentId}/${intent}`, {
+    }>(request, `/api/deployments/${deploymentId}/${intent}`, {
       method: "POST",
     });
 

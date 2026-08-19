@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const cascadeApiRequest = vi.hoisted(() => vi.fn<(path: string) => Promise<unknown>>());
+const cascadeDashboardApiRequest = vi.hoisted(() =>
+  vi.fn<(request: Request, path: string) => Promise<unknown>>(),
+);
 
-vi.mock("../../app/lib/cascade-api.server.js", () => ({
-  cascadeApiRequest,
+vi.mock("~/lib/cascade-api.server", () => ({
+  cascadeDashboardApiRequest,
 }));
 
 const { loader } = await import("../../app/routes/task-detail.js");
@@ -63,7 +65,7 @@ describe("task detail loader", () => {
   it("returns task detail from the Cascade API", async () => {
     const result = task();
 
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       task: result,
     });
 
@@ -72,13 +74,16 @@ describe("task detail loader", () => {
       taskId: TASK_ID,
     });
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith(`/api/tasks/${TASK_ID}`);
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/tasks/${TASK_ID}`,
+    );
   });
 
   it("URL-encodes the task ID before calling the API", async () => {
     const taskId = "task/with spaces";
 
-    cascadeApiRequest.mockResolvedValue({
+    cascadeDashboardApiRequest.mockResolvedValue({
       task: task({
         id: taskId,
       }),
@@ -86,11 +91,14 @@ describe("task detail loader", () => {
 
     await loader(routeArgs(taskId));
 
-    expect(cascadeApiRequest).toHaveBeenCalledWith("/api/tasks/task%2Fwith%20spaces");
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/tasks/task%2Fwith%20spaces",
+    );
   });
 
   it("returns null when the task does not exist", async () => {
-    cascadeApiRequest.mockRejectedValue({
+    cascadeDashboardApiRequest.mockRejectedValue({
       status: 404,
       responseBody: {
         error: {
@@ -115,7 +123,7 @@ describe("task detail loader", () => {
       },
     };
 
-    cascadeApiRequest.mockRejectedValue(error);
+    cascadeDashboardApiRequest.mockRejectedValue(error);
 
     await expect(loader(routeArgs())).rejects.toBe(error);
   });

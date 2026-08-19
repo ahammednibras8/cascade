@@ -1,4 +1,4 @@
-import { cascadeApiStreamRequest } from "~/lib/cascade-api.server";
+import { cascadeDashboardApiStreamRequest } from "~/lib/cascade-api.server";
 import type { Route } from "./+types/run-event-stream";
 import { requireDashboardUser } from "~/lib/dashboard-auth.server";
 
@@ -14,18 +14,14 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
   const runId = params.runId;
 
-  const lastEventId = request.headers.get("Last-Event-ID");
-  const init: RequestInit = lastEventId
-    ? {
-        headers: {
-          "Last-Event-ID": lastEventId,
-        },
-      }
-    : {};
-
-  const upstream = await cascadeApiStreamRequest(
+  const upstream = await cascadeDashboardApiStreamRequest(
+    request,
     `/api/runs/${encodeURIComponent(runId)}/events/stream`,
-    init,
+    {
+      headers: {
+        "Last-Event-ID": request.headers.get("Last-Event-ID") ?? "",
+      },
+    },
   );
 
   const headers = new Headers();

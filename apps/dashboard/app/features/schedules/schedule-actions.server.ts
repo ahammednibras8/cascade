@@ -1,9 +1,9 @@
 import { redirect } from "react-router";
-import { cascadeApiRequest } from "~/lib/cascade-api.server";
+import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
 
 type ScheduleActionIntent = "pause" | "resume" | "delete";
 
-export async function handleScheduleListAction(formData: FormData) {
+export async function handleScheduleListAction(request: Request, formData: FormData) {
   const intent = formData.get("intent");
   const scheduleId = formData.get("scheduleId");
 
@@ -15,7 +15,7 @@ export async function handleScheduleListAction(formData: FormData) {
   }
 
   try {
-    await cascadeApiRequest(scheduleActionPath(scheduleId, intent), {
+    await cascadeDashboardApiRequest(request, scheduleActionPath(scheduleId, intent), {
       method: intent === "delete" ? "DELETE" : "POST",
     });
 
@@ -25,7 +25,7 @@ export async function handleScheduleListAction(formData: FormData) {
   }
 }
 
-export async function handleCreateSchedule(formData: FormData) {
+export async function handleCreateSchedule(request: Request, formData: FormData) {
   const taskId = formData.get("taskId");
 
   if (typeof taskId !== "string" || !taskId) {
@@ -39,11 +39,15 @@ export async function handleCreateSchedule(formData: FormData) {
   }
 
   try {
-    await cascadeApiRequest(`/api/tasks/${encodeURIComponent(taskId)}/schedules`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    await cascadeDashboardApiRequest(
+      request,
+      `/api/tasks/${encodeURIComponent(taskId)}/schedules`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+    );
 
     return redirect("/schedules");
   } catch (error) {
@@ -51,7 +55,11 @@ export async function handleCreateSchedule(formData: FormData) {
   }
 }
 
-export async function handleUpdateSchedule(scheduleId: string, formData: FormData) {
+export async function handleUpdateSchedule(
+  request: Request,
+  scheduleId: string,
+  formData: FormData,
+) {
   const body = parseScheduleRequestBody(formData, formData.get("clearPayload") === "true");
 
   if (body instanceof Response) {
@@ -59,7 +67,7 @@ export async function handleUpdateSchedule(scheduleId: string, formData: FormDat
   }
 
   try {
-    await cascadeApiRequest(`/api/schedules/${encodeURIComponent(scheduleId)}`, {
+    await cascadeDashboardApiRequest(request, `/api/schedules/${encodeURIComponent(scheduleId)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
