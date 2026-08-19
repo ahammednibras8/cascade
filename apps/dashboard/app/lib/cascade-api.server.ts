@@ -116,19 +116,6 @@ export async function cascadeDashboardApiRequest<T>(
   return body as T;
 }
 
-export async function cascadeApiStreamRequest(
-  path: string,
-  init: RequestInit = {},
-): Promise<Response> {
-  return fetch(`${getApiUrl()}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${getApiKey()}`,
-      ...init.headers,
-    },
-  });
-}
-
 export async function cascadeDashboardApiStreamRequest(
   request: Request,
   path: string,
