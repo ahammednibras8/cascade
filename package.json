@@ -81,11 +81,11 @@
     "@changesets/cli": "2.31.1",
     "@types/node": "24.13.3",
     "@vitest/coverage-v8": "4.1.10",
-    "knip": "6.32.0",
+    "knip": "6.32.2",
     "lefthook": "2.1.10",
     "oxfmt": "0.62.0",
     "oxlint": "1.78.0",
-    "turbo": "2.10.8",
+    "turbo": "2.10.9",
     "typescript": "6.0.3",
     "vitest": "4.1.10"
   },
