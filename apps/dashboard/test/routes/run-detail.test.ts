@@ -1,19 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { action } from "../../app/routes/run-detail.js";
 
 const cascadeDashboardApiRequest = vi.hoisted(() =>
   vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
+);
+
+const requireDashboardCapability = vi.hoisted(() =>
+  vi.fn<(request: Request, capability: string) => Promise<unknown>>(),
 );
 
 vi.mock("~/lib/cascade-api.server", () => ({
   cascadeDashboardApiRequest,
 }));
 
-const { loader } = await import("../../app/routes/run-detail.js");
+vi.mock("../../app/lib/dashboard-permissions.server.js", () => ({
+  requireDashboardCapability,
+}));
+
+const { action, loader } = await import("../../app/routes/run-detail.js");
 
 describe("run detail loader", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requireDashboardCapability.mockResolvedValue({});
   });
 
   it("returns the run and its events from the API", async () => {
@@ -182,6 +190,7 @@ describe("run detail loader", () => {
         method: "POST",
       },
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "RUNS_MUTATE");
   });
 
   it("sends a replay request to the API", async () => {
@@ -211,5 +220,33 @@ describe("run detail loader", () => {
         method: "POST",
       },
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "RUNS_MUTATE");
+  });
+
+  it("does not call the API when run mutation permission is denied", async () => {
+    requireDashboardCapability.mockRejectedValueOnce(
+      new Response("Forbidden", {
+        status: 403,
+      }),
+    );
+
+    await expect(
+      action({
+        params: {
+          runId: "run-1",
+        },
+        request: new Request("http://localhost/runs/run-1", {
+          method: "POST",
+          body: new URLSearchParams({
+            intent: "cancel",
+          }),
+        }),
+      } as never),
+    ).rejects.toMatchObject({
+      status: 403,
+    });
+
+    expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "RUNS_MUTATE");
+    expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
   });
 });

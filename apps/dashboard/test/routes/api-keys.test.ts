@@ -4,8 +4,16 @@ const cascadeDashboardApiRequest = vi.hoisted(() =>
   vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
 );
 
+const requireDashboardCapability = vi.hoisted(() =>
+  vi.fn<(request: Request, capability: string) => Promise<unknown>>(),
+);
+
 vi.mock("~/lib/cascade-api.server", () => ({
   cascadeDashboardApiRequest,
+}));
+
+vi.mock("../../app/lib/dashboard-permissions.server.js", () => ({
+  requireDashboardCapability,
 }));
 
 const { action, loader } = await import("../../app/routes/api-keys.js");
@@ -13,6 +21,7 @@ const { action, loader } = await import("../../app/routes/api-keys.js");
 describe("API keys loader", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requireDashboardCapability.mockResolvedValue({});
   });
 
   it("loads API keys and their available permissions", async () => {
@@ -43,6 +52,7 @@ describe("API keys loader", () => {
     } as never);
 
     expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(expect.any(Request), "/api/api-keys");
+    expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "API_KEYS_MANAGE");
     expect(result).toEqual({
       apiKeys: [
         {
@@ -107,6 +117,7 @@ describe("API keys loader", () => {
         scopes: ["DEPLOYMENTS_WRITE"],
       }),
     });
+    expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "API_KEYS_MANAGE");
 
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     await expect(response.json()).resolves.toEqual({
@@ -146,6 +157,7 @@ describe("API keys loader", () => {
       },
     });
     expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
+    expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "API_KEYS_MANAGE");
   });
 
   it("returns API validation errors without throwing to the dashboard error boundary", async () => {
@@ -173,6 +185,7 @@ describe("API keys loader", () => {
     } as never);
 
     expect(response.status).toBe(400);
+    expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "API_KEYS_MANAGE");
 
     await expect(response.json()).resolves.toEqual({
       ok: false,
@@ -217,6 +230,7 @@ describe("API keys loader", () => {
         method: "POST",
       },
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "API_KEYS_MANAGE");
 
     await expect(response.json()).resolves.toEqual({
       ok: true,
@@ -269,6 +283,7 @@ describe("API keys loader", () => {
         method: "POST",
       },
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "API_KEYS_MANAGE");
 
     expect(response.headers.get("Cache-Control")).toBe("no-store");
 
@@ -287,5 +302,34 @@ describe("API keys loader", () => {
       },
       token: "csc_dev_test_rotation_token_not_a_real_secret",
     });
+  });
+
+  it("does not call the API when API-key management permission is denied", async () => {
+    requireDashboardCapability.mockRejectedValueOnce(
+      new Response("Forbidden", {
+        status: 403,
+      }),
+    );
+
+    await expect(
+      action({
+        request: new Request("http://dashboard.test/api-keys", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams([
+            ["intent", "create"],
+            ["name", "GitHub deploy"],
+            ["scope", "DEPLOYMENTS_WRITE"],
+          ]),
+        }),
+      } as never),
+    ).rejects.toMatchObject({
+      status: 403,
+    });
+
+    expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "API_KEYS_MANAGE");
+    expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
   });
 });

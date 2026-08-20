@@ -4,6 +4,7 @@ import { SchedulesListView } from "~/features/schedules/schedules-list-view";
 import type { Schedule } from "~/features/schedules/types";
 import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
 import { requireDashboardUser } from "~/lib/dashboard-auth.server";
+import { requireDashboardCapability } from "~/lib/dashboard-permissions.server";
 
 export function meta() {
   return [{ title: "Schedules | Cascade" }];
@@ -22,6 +23,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
+  await requireDashboardCapability(request, "SCHEDULES_MANAGE");
   return handleScheduleListAction(request, await request.formData());
 }
 

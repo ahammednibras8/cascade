@@ -4,8 +4,16 @@ const cascadeDashboardApiRequest = vi.hoisted(() =>
   vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
 );
 
+const requireDashboardCapability = vi.hoisted(() =>
+  vi.fn<(request: Request, capability: string) => Promise<unknown>>(),
+);
+
 vi.mock("~/lib/cascade-api.server", () => ({
   cascadeDashboardApiRequest,
+}));
+
+vi.mock("../../app/lib/dashboard-permissions.server.js", () => ({
+  requireDashboardCapability,
 }));
 
 const { action, loader } = await import("../../app/routes/edit-schedule.js");
@@ -25,6 +33,7 @@ function request(fields: Record<string, string>) {
 describe("edit schedule route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requireDashboardCapability.mockResolvedValue({});
   });
 
   it("loads a single schedule", async () => {
@@ -87,6 +96,10 @@ describe("edit schedule route", () => {
         }),
       },
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/schedules");
@@ -131,6 +144,10 @@ describe("edit schedule route", () => {
         }),
       },
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
   });
 
   it("clears the payload", async () => {
@@ -165,5 +182,39 @@ describe("edit schedule route", () => {
         }),
       }),
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
+  });
+
+  it("does not call the API when schedule management permission is denied", async () => {
+    requireDashboardCapability.mockRejectedValueOnce(
+      new Response("Forbidden", {
+        status: 403,
+      }),
+    );
+
+    await expect(
+      action({
+        params: {
+          scheduleId: SCHEDULE_ID,
+        },
+        request: request({
+          name: "Every two minutes",
+          scheduleType: "INTERVAL",
+          intervalSeconds: "120",
+          payloadJson: "",
+        }),
+      } as never),
+    ).rejects.toMatchObject({
+      status: 403,
+    });
+
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
+    expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
   });
 });

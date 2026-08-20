@@ -4,8 +4,16 @@ const cascadeDashboardApiRequest = vi.hoisted(() =>
   vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
 );
 
+const requireDashboardCapability = vi.hoisted(() =>
+  vi.fn<(request: Request, capability: string) => Promise<unknown>>(),
+);
+
 vi.mock("~/lib/cascade-api.server", () => ({
   cascadeDashboardApiRequest,
+}));
+
+vi.mock("../../app/lib/dashboard-permissions.server.js", () => ({
+  requireDashboardCapability,
 }));
 
 const { action, loader } = await import("../../app/routes/schedules.js");
@@ -22,6 +30,7 @@ const SCHEDULE_ID = "schedule-1";
 describe("schedules loader", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requireDashboardCapability.mockResolvedValue({});
   });
 
   it("returns schedules from the Cascade API", async () => {
@@ -114,6 +123,10 @@ describe("schedules loader", () => {
         method: "POST",
       },
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
   });
 
   it("calls the API resume endpoint", async () => {
@@ -139,6 +152,10 @@ describe("schedules loader", () => {
         method: "POST",
       },
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
   });
 
   it("calls the API delete endpoint", async () => {
@@ -160,6 +177,10 @@ describe("schedules loader", () => {
         method: "DELETE",
       },
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
   });
 
   it("rejects invalid dashboard schedule actions", async () => {
@@ -176,6 +197,37 @@ describe("schedules loader", () => {
       status: 400,
     });
 
+    expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
+  });
+
+  it("does not call the API when schedule management permission is denied", async () => {
+    requireDashboardCapability.mockRejectedValueOnce(
+      new Response("Forbidden", {
+        status: 403,
+      }),
+    );
+
+    await expect(
+      action({
+        request: actionRequest({
+          intent: "pause",
+          scheduleId: SCHEDULE_ID,
+        }),
+        params: {},
+        context: {},
+      } as never),
+    ).rejects.toMatchObject({
+      status: 403,
+    });
+
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
     expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
   });
 });

@@ -7,6 +7,7 @@ import { isDeploymentNotFoundError } from "~/features/deployments/errors";
 import type { Deployment } from "~/features/deployments/types";
 import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
 import { requireDashboardUser } from "~/lib/dashboard-auth.server";
+import { requireDashboardCapability } from "~/lib/dashboard-permissions.server";
 
 type DeploymentActionIntent = "deactivate" | "rollback";
 
@@ -41,7 +42,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 }
 
 export async function action({ params, request }: Route.ActionArgs) {
-  await requireDashboardUser(request);
+  await requireDashboardCapability(request, "DEPLOYMENTS_MANAGE");
 
   const intent = getDeploymentActionIntent(await request.formData());
   const deploymentId = encodeURIComponent(params.deploymentId);

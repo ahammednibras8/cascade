@@ -4,6 +4,7 @@ import { RunDetailView, RunNotFound } from "~/features/runs/run-detail-view";
 import type { TaskRunDetail, TaskRunEvent } from "~/features/runs/types";
 import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
 import { requireDashboardUser } from "~/lib/dashboard-auth.server";
+import { requireDashboardCapability } from "~/lib/dashboard-permissions.server";
 
 type TaskRunWithoutEvents = Omit<TaskRunDetail, "events">;
 
@@ -44,6 +45,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 }
 
 export async function action({ params, request }: Route.ActionArgs) {
+  await requireDashboardCapability(request, "RUNS_MUTATE");
+
   const formData = await request.formData();
   const intent = formData.get("intent");
 

@@ -4,8 +4,16 @@ const cascadeDashboardApiRequest = vi.hoisted(() =>
   vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
 );
 
+const requireDashboardCapability = vi.hoisted(() =>
+  vi.fn<(request: Request, capability: string) => Promise<unknown>>(),
+);
+
 vi.mock("~/lib/cascade-api.server", () => ({
   cascadeDashboardApiRequest,
+}));
+
+vi.mock("../../app/lib/dashboard-permissions.server.js", () => ({
+  requireDashboardCapability,
 }));
 
 const { action, loader } = await import("../../app/routes/new-schedule.js");
@@ -25,6 +33,7 @@ function createRequest(fields: Record<string, string>) {
 describe("new schedule route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requireDashboardCapability.mockResolvedValue({});
   });
 
   it("loads available tasks", async () => {
@@ -51,6 +60,10 @@ describe("new schedule route", () => {
     });
 
     expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(expect.any(Request), "/api/tasks");
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
   });
 
   it("creates an interval schedule through the API", async () => {
@@ -88,6 +101,10 @@ describe("new schedule route", () => {
           },
         }),
       },
+    );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
     );
 
     expect(response.status).toBe(302);
@@ -127,6 +144,10 @@ describe("new schedule route", () => {
         }),
       },
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
   });
 
   it("rejects invalid payload JSON before calling the API", async () => {
@@ -148,6 +169,38 @@ describe("new schedule route", () => {
       },
     });
 
+    expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
+  });
+
+  it("does not call the API when schedule management permission is denied", async () => {
+    requireDashboardCapability.mockRejectedValueOnce(
+      new Response("Forbidden", {
+        status: 403,
+      }),
+    );
+
+    await expect(
+      action({
+        request: createRequest({
+          taskId: TASK_ID,
+          name: "Every two minutes",
+          scheduleType: "INTERVAL",
+          intervalSeconds: "120",
+          payloadJson: "{}",
+        }),
+      } as never),
+    ).rejects.toMatchObject({
+      status: 403,
+    });
+
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "SCHEDULES_MANAGE",
+    );
     expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
   });
 });

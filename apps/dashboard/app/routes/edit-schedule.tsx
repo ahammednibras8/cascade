@@ -4,6 +4,7 @@ import { EditSchedulePage } from "~/features/schedules/schedule-form";
 import type { Schedule } from "~/features/schedules/types";
 import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
 import { requireDashboardUser } from "~/lib/dashboard-auth.server";
+import { requireDashboardCapability } from "~/lib/dashboard-permissions.server";
 
 export function meta() {
   return [{ title: "Edit schedule | Cascade" }];
@@ -22,6 +23,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 }
 
 export async function action({ params, request }: Route.ActionArgs) {
+  await requireDashboardCapability(request, "SCHEDULES_MANAGE");
   return handleUpdateSchedule(request, params.scheduleId, await request.formData());
 }
 

@@ -4,8 +4,16 @@ const cascadeDashboardApiRequest = vi.hoisted(() =>
   vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
 );
 
+const requireDashboardCapability = vi.hoisted(() =>
+  vi.fn<(request: Request, capability: string) => Promise<unknown>>(),
+);
+
 vi.mock("~/lib/cascade-api.server", () => ({
   cascadeDashboardApiRequest,
+}));
+
+vi.mock("../../app/lib/dashboard-permissions.server.js", () => ({
+  requireDashboardCapability,
 }));
 
 const { action, loader } = await import("../../app/routes/deployment-detail.js");
@@ -83,6 +91,7 @@ function actionArgs(intent: string, deploymentId = DEPLOYMENT_ID) {
 describe("deployment detail loader", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requireDashboardCapability.mockResolvedValue({});
   });
 
   it("returns a deployment from the Cascade API", async () => {
@@ -179,6 +188,10 @@ describe("deployment detail loader", () => {
         method: "POST",
       },
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "DEPLOYMENTS_MANAGE",
+    );
   });
 
   it("rejects an invalid deployment action before calling the API", async () => {
@@ -187,6 +200,10 @@ describe("deployment detail loader", () => {
     });
 
     expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "DEPLOYMENTS_MANAGE",
+    );
   });
 
   it("returns the API failure status when deactivation fails", async () => {
@@ -202,6 +219,10 @@ describe("deployment detail loader", () => {
     await expect(action(actionArgs("deactivate"))).rejects.toMatchObject({
       status: 409,
     });
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "DEPLOYMENTS_MANAGE",
+    );
   });
 
   it("sends a deployment rollback request to the API", async () => {
@@ -236,5 +257,27 @@ describe("deployment detail loader", () => {
         method: "POST",
       },
     );
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "DEPLOYMENTS_MANAGE",
+    );
+  });
+
+  it("does not call the API when deployment management permission is denied", async () => {
+    requireDashboardCapability.mockRejectedValueOnce(
+      new Response("Forbidden", {
+        status: 403,
+      }),
+    );
+
+    await expect(action(actionArgs("deactivate"))).rejects.toMatchObject({
+      status: 403,
+    });
+
+    expect(requireDashboardCapability).toHaveBeenCalledWith(
+      expect.any(Request),
+      "DEPLOYMENTS_MANAGE",
+    );
+    expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
   });
 });
