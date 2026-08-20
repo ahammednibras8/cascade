@@ -42,7 +42,7 @@ export default async function setup(_config: FullConfig) {
 
   const { prisma } = await import("@cascade/database");
   const { commitDashboardSession, createDashboardSession } =
-    await import("../../../dashboard/app/lib/dashboard-session.server.js");
+    await import("../../../dashboard/app/lib/auth/dashboard-session.server.js");
 
   const user = await prisma.user.upsert({
     where: {
