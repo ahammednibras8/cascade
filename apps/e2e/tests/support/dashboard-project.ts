@@ -1,9 +1,5 @@
 import { randomUUID } from "node:crypto";
-import {
-  ensureDashboardApiKey,
-  getDashboardTestOrganization,
-  restoreDashboardApiKey,
-} from "./dashboard-environment.js";
+import { getDashboardTestOrganization } from "./dashboard-environment.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -55,8 +51,6 @@ export async function createDashboardProject({
     throw new Error("Expected seeded environment");
   }
 
-  await ensureDashboardApiKey(environment.id);
-
   return {
     prisma,
     suffix,
@@ -78,8 +72,6 @@ export async function cleanupDashboardProjects() {
       },
     });
   }
-
-  await restoreDashboardApiKey();
 }
 
 export async function disconnectPrisma() {

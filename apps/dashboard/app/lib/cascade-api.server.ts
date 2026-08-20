@@ -64,34 +64,6 @@ function getApiUrl(): string {
   return apiUrl;
 }
 
-function getApiKey() {
-  const apiKey = process.env.CASCADE_DASHBOARD_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("CASCADE_DASHBOARD_API_KEY is required");
-  }
-
-  return apiKey;
-}
-
-export async function cascadeApiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${getApiUrl()}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${getApiKey()}`,
-      ...init.headers,
-    },
-  });
-
-  const body = await readResponseBody(response);
-
-  if (!response.ok) {
-    throw new CascadeApiError(response.status, body, getErrorMessage(response.status, body));
-  }
-
-  return body as T;
-}
-
 export async function cascadeDashboardApiRequest<T>(
   request: Request,
   path: string,

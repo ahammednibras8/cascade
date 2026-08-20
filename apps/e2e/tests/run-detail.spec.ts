@@ -1,10 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import {
-  ensureDashboardApiKey,
-  getDashboardTestOrganization,
-  restoreDashboardApiKey,
-} from "./support/dashboard-environment.js";
+import { getDashboardTestOrganization } from "./support/dashboard-environment.js";
 import { createExecutionConfig } from "./support/execution-config.js";
 import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
@@ -32,8 +28,6 @@ test.afterEach(async () => {
       },
     },
   });
-
-  await restoreDashboardApiKey();
 });
 
 test.afterAll(async () => {
@@ -71,8 +65,6 @@ test("shows run payload, output, error, attempts, and logs", async ({ page }) =>
   if (!environment) {
     throw new Error("Expected seeded environment");
   }
-
-  await ensureDashboardApiKey(environment.id);
 
   const executionConfig = createExecutionConfig(`e2e-detail-task-${suffix}`);
 
@@ -206,8 +198,6 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
   if (!environment) {
     throw new Error("Expected seeded environment");
   }
-
-  await ensureDashboardApiKey(environment.id);
 
   const executionConfig = createExecutionConfig(`e2e-sse-task-${suffix}`);
 

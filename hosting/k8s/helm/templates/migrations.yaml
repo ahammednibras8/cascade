@@ -34,7 +34,6 @@ spec:
             - -ec
             - |
               ./node_modules/.bin/prisma migrate deploy
-              node /app/apps/api/dist/dev/sync-dashboard-api-key.js
           envFrom:
             - secretRef:
                 name: {{ include "cascade.runtimeSecretName" . }}

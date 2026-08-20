@@ -60,7 +60,7 @@ describe("run event stream proxy", () => {
     await expect(response.text()).resolves.toContain(eventId);
   });
 
-  it("forwards API errors without exposing the dashboard API key", async () => {
+  it("forwards API errors without exposing bearer authorization", async () => {
     cascadeDashboardApiStreamRequest.mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -95,7 +95,7 @@ describe("run event stream proxy", () => {
     });
 
     expect(JSON.stringify(cascadeDashboardApiStreamRequest.mock.calls)).not.toContain(
-      "CASCADE_DASHBOARD_API_KEY",
+      "Authorization",
     );
   });
 });

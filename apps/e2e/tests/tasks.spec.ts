@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import { ensureDashboardApiKey, restoreDashboardApiKey } from "./support/dashboard-environment.js";
 import { createExecutionConfig } from "./support/execution-config.js";
 import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
@@ -28,8 +27,6 @@ test.afterEach(async () => {
       },
     },
   });
-
-  await restoreDashboardApiKey();
 });
 
 test.afterAll(async () => {
@@ -89,7 +86,6 @@ test("shows registered tasks in the dashboard table", async ({ page }) => {
     throw new Error("Expected seeded environment");
   }
 
-  await ensureDashboardApiKey(environment.id);
   const taskSlug = `e2e-task-${suffix}`;
   const executionConfig = createExecutionConfig(taskSlug);
 

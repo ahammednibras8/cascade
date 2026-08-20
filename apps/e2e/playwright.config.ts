@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 
 const explicitBaseURL = process.env.PLAYWRIGHT_BASE_URL;
 const explicitApiURL = process.env.CASCADE_API_URL;
-const explicitDashboardApiKey = process.env.CASCADE_DASHBOARD_API_KEY;
 const explicitReuseExistingServer = process.env.PLAYWRIGHT_REUSE_SERVERS;
 
 const rootEnvPath = fileURLToPath(new URL("../../.env", import.meta.url));
@@ -33,11 +32,6 @@ const apiURL =
   (reuseExistingServer
     ? (process.env.CASCADE_API_URL ?? "http://localhost:3001")
     : "http://localhost:3101");
-const dashboardApiKey =
-  explicitDashboardApiKey ??
-  (reuseExistingServer
-    ? (process.env.CASCADE_DASHBOARD_API_KEY ?? "csc_e2e_dashboard_test_key")
-    : "csc_e2e_dashboard_test_key");
 const dashboardSessionSecret =
   process.env.DASHBOARD_SESSION_SECRET ??
   "e2e-dashboard-session-secret-change-me-at-least-32-characters";
@@ -45,6 +39,7 @@ const dashboardSessionSecret =
 const dashboardApiAuthSecret =
   process.env.DASHBOARD_API_AUTH_SECRET ??
   "e2e-dashboard-api-auth-secret-change-me-at-least-32-characters";
+const e2eTaskApiKey = process.env.E2E_TASK_API_KEY ?? "csc_e2e_task_test_key";
 
 function ensureNodeOption(value: string | undefined, option: string) {
   const options = value?.split(/\s+/).filter(Boolean) ?? [];
@@ -60,7 +55,7 @@ const nodeOptions = ensureNodeOption(process.env.NODE_OPTIONS, "--conditions=dev
 
 process.env.PLAYWRIGHT_BASE_URL = baseURL;
 process.env.CASCADE_API_URL = apiURL;
-process.env.CASCADE_DASHBOARD_API_KEY = dashboardApiKey;
+process.env.E2E_TASK_API_KEY = e2eTaskApiKey;
 process.env.DASHBOARD_SESSION_SECRET = dashboardSessionSecret;
 process.env.DATABASE_URL = databaseURL;
 process.env.QUEUE_REDIS_URL = queueRedisURL;
@@ -94,7 +89,6 @@ const serverEnv = {
   WORKER_HEALTH_PORT: process.env.PLAYWRIGHT_WORKER_HEALTH_PORT ?? "3003",
   API_KEY_PEPPER: apiKeyPepper,
   CASCADE_API_URL: apiURL,
-  CASCADE_DASHBOARD_API_KEY: dashboardApiKey,
   DASHBOARD_API_AUTH_SECRET: dashboardApiAuthSecret,
 };
 

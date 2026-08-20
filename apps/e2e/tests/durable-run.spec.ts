@@ -1,14 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { createCascadeClient, defineTask } from "@cascade/sdk";
 import { randomUUID } from "node:crypto";
-import {
-  ensureDashboardApiKey,
-  getDashboardApiKey,
-  getDashboardTestOrganization,
-  restoreDashboardApiKey,
-} from "./support/dashboard-environment.js";
+import { getDashboardTestOrganization } from "./support/dashboard-environment.js";
 import { createExecutionConfig } from "./support/execution-config.js";
 import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
+import { ensureE2eTaskApiKey, getE2eTaskApiKey } from "./support/task-api-key.js";
 
 const databaseURL =
   process.env.DATABASE_URL ?? "postgresql://cascade:cascade@localhost:15432/cascade";
@@ -56,7 +52,7 @@ async function createHelloTaskWithApiKey() {
     throw new Error("Expected created environment");
   }
 
-  await ensureDashboardApiKey(environment.id);
+  await ensureE2eTaskApiKey(environment.id);
 
   const executionConfig = createExecutionConfig("hello");
 
@@ -76,7 +72,7 @@ async function createHelloTaskWithApiKey() {
     environment,
     task,
     executionConfig,
-    apiKey: getDashboardApiKey(),
+    apiKey: getE2eTaskApiKey(),
   };
 }
 
@@ -95,8 +91,6 @@ test.afterEach(async () => {
       },
     },
   });
-
-  await restoreDashboardApiKey();
 });
 
 test.afterAll(async () => {
