@@ -4,9 +4,11 @@ import { randomUUID } from "node:crypto";
 import {
   ensureDashboardApiKey,
   getDashboardApiKey,
+  getDashboardTestOrganization,
   restoreDashboardApiKey,
 } from "./support/dashboard-environment.js";
 import { createExecutionConfig } from "./support/execution-config.js";
+import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
 const databaseURL =
   process.env.DATABASE_URL ?? "postgresql://cascade:cascade@localhost:15432/cascade";
@@ -26,9 +28,11 @@ async function getPrisma() {
 async function createHelloTaskWithApiKey() {
   const prisma = await getPrisma();
   const suffix = randomUUID().slice(0, 8);
+  const organization = await getDashboardTestOrganization();
 
   const project = await prisma.project.create({
     data: {
+      organizationId: organization.id,
       slug: `e2e-durable-project-${suffix}`,
       name: "E2E Durable Project",
       environments: {
@@ -101,7 +105,7 @@ test.afterAll(async () => {
 });
 
 test("triggers, executes, persists, and displays a durable task run", async ({ page }) => {
-  const { prisma, task, apiKey } = await createHelloTaskWithApiKey();
+  const { prisma, task, environment, apiKey } = await createHelloTaskWithApiKey();
 
   const helloTask = defineTask<{ message: string }>({
     id: "hello",
@@ -199,6 +203,8 @@ test("triggers, executes, persists, and displays a durable task run", async ({ p
 
   expect(persistedRun.events.some((event) => event.message === "Hello task started")).toBe(true);
 
+  await selectDashboardWorkspace(page, environment.id);
+
   await page.goto(`/runs/${runId}`);
 
   await expect(page.getByRole("heading", { name: "Run detail" })).toBeVisible();
@@ -211,7 +217,7 @@ test("triggers, executes, persists, and displays a durable task run", async ({ p
 });
 
 test("dashboard cancels a pending task run", async ({ page }) => {
-  const { prisma, task, executionConfig } = await createHelloTaskWithApiKey();
+  const { prisma, task, executionConfig, environment } = await createHelloTaskWithApiKey();
 
   const pendingRun = await prisma.taskRun.create({
     data: {
@@ -220,6 +226,8 @@ test("dashboard cancels a pending task run", async ({ page }) => {
       executionConfig,
     },
   });
+
+  await selectDashboardWorkspace(page, environment.id);
 
   await page.goto(`/runs/${pendingRun.id}`);
 
@@ -255,7 +263,7 @@ test("dashboard cancels a pending task run", async ({ page }) => {
 });
 
 test("dashboard replays a completed task run", async ({ page }) => {
-  const { prisma, task, executionConfig } = await createHelloTaskWithApiKey();
+  const { prisma, task, executionConfig, environment } = await createHelloTaskWithApiKey();
 
   const sourceRun = await prisma.taskRun.create({
     data: {
@@ -265,6 +273,8 @@ test("dashboard replays a completed task run", async ({ page }) => {
       completedAt: new Date(),
     },
   });
+
+  await selectDashboardWorkspace(page, environment.id);
 
   await page.goto(`/runs/${sourceRun.id}`);
 

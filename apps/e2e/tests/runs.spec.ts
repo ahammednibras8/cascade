@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { getDashboardTestEnvironment } from "./support/dashboard-environment.js";
 import { createExecutionConfig } from "./support/execution-config.js";
+import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -34,6 +35,9 @@ test.afterAll(async () => {
 test("shows task runs in the dashboard table", async ({ page }) => {
   const prisma = await getPrisma();
   const { environment, project } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
+
   const suffix = randomUUID().slice(0, 8);
   const executionConfig = createExecutionConfig(`e2e-hello-${suffix}`);
   const taskIds: string[] = [];
@@ -86,6 +90,9 @@ test("updates the runs list when realtime receives an environment event", async 
   const prisma = await getPrisma();
   const { createTaskRunEvent } = await import("@cascade/database");
   const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
+
   const suffix = randomUUID().slice(0, 8);
   const executionConfig = createExecutionConfig(`e2e-live-runs-${suffix}`);
   const taskIds: string[] = [];

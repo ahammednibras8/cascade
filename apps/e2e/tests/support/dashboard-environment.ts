@@ -1,9 +1,25 @@
 import { createHash } from "node:crypto";
 
 export const DEFAULT_E2E_DASHBOARD_API_KEY = "csc_e2e_dashboard_test_key";
+const PLAYWRIGHT_ORGANIZATION_SLUG = "playwright-dashboard";
 
 export function getDashboardApiKey() {
   return process.env.CASCADE_DASHBOARD_API_KEY ?? DEFAULT_E2E_DASHBOARD_API_KEY;
+}
+
+export async function getDashboardTestOrganization() {
+  const { prisma } = await import("@cascade/database");
+
+  return prisma.organization.findUniqueOrThrow({
+    where: {
+      slug: PLAYWRIGHT_ORGANIZATION_SLUG,
+    },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+    },
+  });
 }
 
 function hashApiKey(apiKey: string) {
@@ -42,13 +58,17 @@ export async function ensureDashboardApiKey(environmentId: string) {
 
 export async function getDashboardTestEnvironment() {
   const { prisma } = await import("@cascade/database");
+  const organization = await getDashboardTestOrganization();
 
   const project = await prisma.project.upsert({
     where: {
       slug: "e2e-dashboard",
     },
-    update: {},
+    update: {
+      organizationId: organization.id,
+    },
     create: {
+      organizationId: organization.id,
       slug: "e2e-dashboard",
       name: "E2E Dashboard",
     },

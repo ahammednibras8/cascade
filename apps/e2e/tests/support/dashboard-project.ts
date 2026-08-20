@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { ensureDashboardApiKey, restoreDashboardApiKey } from "./dashboard-environment.js";
+import {
+  ensureDashboardApiKey,
+  getDashboardTestOrganization,
+  restoreDashboardApiKey,
+} from "./dashboard-environment.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -23,9 +27,11 @@ export async function createDashboardProject({
 }: DashboardProjectOptions) {
   const prisma = await getPrisma();
   const suffix = randomUUID().slice(0, 8);
+  const organization = await getDashboardTestOrganization();
 
   const project = await prisma.project.create({
     data: {
+      organizationId: organization.id,
       slug: `${slugPrefix}-project-${suffix}`,
       name: projectName,
       environments: {

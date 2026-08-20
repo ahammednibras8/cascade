@@ -4,6 +4,7 @@ import {
   getDashboardTestEnvironment,
   restoreDashboardApiKey,
 } from "./support/dashboard-environment.js";
+import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -39,6 +40,8 @@ test.afterAll(async () => {
 test("dashboard creates a scoped API key that can call the API", async ({ page, request }) => {
   const prisma = await getPrisma();
   const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
 
   const name = `E2E API key ${randomUUID().slice(0, 8)}`;
   createdApiKeyNames.push(name);
@@ -96,7 +99,9 @@ test("dashboard creates a scoped API key that can call the API", async ({ page, 
 });
 
 test("dashboard rotation immediately invalidates the old API key", async ({ page, request }) => {
-  await getDashboardTestEnvironment();
+  const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
 
   const name = `E2E rotated API key ${randomUUID().slice(0, 8)}`;
   createdApiKeyNames.push(name);
@@ -152,7 +157,9 @@ test("dashboard rotation immediately invalidates the old API key", async ({ page
 });
 
 test("dashboard revocation immediately invalidates an API key", async ({ page, request }) => {
-  await getDashboardTestEnvironment();
+  const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
 
   const name = `E2E revoked API key ${randomUUID().slice(0, 8)}`;
   createdApiKeyNames.push(name);
@@ -195,7 +202,9 @@ test("dashboard revocation immediately invalidates an API key", async ({ page, r
 });
 
 test("a key can use only its selected permission", async ({ page, request }) => {
-  await getDashboardTestEnvironment();
+  const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
 
   const name = `E2E runs-read key ${randomUUID().slice(0, 8)}`;
   createdApiKeyNames.push(name);

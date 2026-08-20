@@ -1,7 +1,12 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import { ensureDashboardApiKey, restoreDashboardApiKey } from "./support/dashboard-environment.js";
+import {
+  ensureDashboardApiKey,
+  getDashboardTestOrganization,
+  restoreDashboardApiKey,
+} from "./support/dashboard-environment.js";
 import { createExecutionConfig } from "./support/execution-config.js";
+import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -39,9 +44,11 @@ test.afterAll(async () => {
 test("shows run payload, output, error, attempts, and logs", async ({ page }) => {
   const prisma = await getPrisma();
   const suffix = randomUUID().slice(0, 8);
+  const organization = await getDashboardTestOrganization();
 
   const project = await prisma.project.create({
     data: {
+      organizationId: organization.id,
       slug: `e2e-detail-project-${suffix}`,
       name: "E2E Detail Project",
       environments: {
@@ -130,6 +137,8 @@ test("shows run payload, output, error, attempts, and logs", async ({ page }) =>
     },
   });
 
+  await selectDashboardWorkspace(page, environment.id);
+
   await page.goto("/runs", {
     waitUntil: "domcontentloaded",
   });
@@ -170,9 +179,11 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
   const prisma = await getPrisma();
   const { createTaskRunEvent } = await import("@cascade/database");
   const suffix = randomUUID().slice(0, 8);
+  const organization = await getDashboardTestOrganization();
 
   const project = await prisma.project.create({
     data: {
+      organizationId: organization.id,
       slug: `e2e-sse-project-${suffix}`,
       name: "E2E SSE Project",
       environments: {
@@ -219,6 +230,8 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
       },
     },
   });
+
+  await selectDashboardWorkspace(page, environment.id);
 
   await page.goto(`/runs/${run.id}`, {
     waitUntil: "domcontentloaded",

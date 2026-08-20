@@ -5,6 +5,7 @@ import {
   restoreDashboardApiKey,
 } from "./support/dashboard-environment.js";
 import { createExecutionConfig } from "./support/execution-config.js";
+import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -39,6 +40,9 @@ test.afterAll(async () => {
 test("dashboard lists, pauses, and resumes a schedule", async ({ page }) => {
   const prisma = await getPrisma();
   const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
+
   const suffix = randomUUID().slice(0, 8);
   const executionConfig = createExecutionConfig(`e2e-schedule-${suffix}`);
 
@@ -162,6 +166,9 @@ test("dashboard lists, pauses, and resumes a schedule", async ({ page }) => {
 test("dashboard creates and edits a cron schedule", async ({ page }) => {
   const prisma = await getPrisma();
   const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
+
   const suffix = randomUUID().slice(0, 8);
   const executionConfig = createExecutionConfig(`e2e-schedule-form-${suffix}`);
 

@@ -7,12 +7,13 @@ import {
   expectDeploymentDeactivated,
   expectDeploymentRolledBack,
 } from "./support/deployments.js";
+import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
 test.afterEach(cleanupDashboardProjects);
 test.afterAll(disconnectPrisma);
 
 test("shows deployments and their worker runtime state", async ({ page }) => {
-  const { deployment } = await createDeploymentWithTask({
+  const { deployment, environment } = await createDeploymentWithTask({
     slugPrefix: "e2e-deployments",
     projectName: "E2E Deployments Project",
     environmentName: "E2E Deployments Dev",
@@ -23,6 +24,8 @@ test("shows deployments and their worker runtime state", async ({ page }) => {
     taskName: "E2E Deployment Task",
     createRun: true,
   });
+
+  await selectDashboardWorkspace(page, environment.id);
 
   await page.goto("/deployments");
   await expect(page.getByRole("heading", { name: "Deployments" })).toBeVisible();
@@ -38,7 +41,7 @@ test("shows deployments and their worker runtime state", async ({ page }) => {
 });
 
 test("opens deployment detail and shows its registered task configuration", async ({ page }) => {
-  const { deployment, task } = await createDeploymentWithTask({
+  const { deployment, task, environment } = await createDeploymentWithTask({
     slugPrefix: "e2e-deployment-detail",
     projectName: "E2E Deployment Detail Project",
     environmentName: "E2E Deployment Detail Dev",
@@ -54,6 +57,8 @@ test("opens deployment detail and shows its registered task configuration", asyn
     createRun: true,
     createSchedule: true,
   });
+
+  await selectDashboardWorkspace(page, environment.id);
 
   await page.goto("/deployments");
   await page.getByRole("link", { name: deployment.version }).click();
@@ -79,7 +84,7 @@ test("opens deployment detail and shows its registered task configuration", asyn
 test("dashboard deactivates a deployment and disables its tasks and schedules", async ({
   page,
 }) => {
-  const { deployment, prisma, schedule, task } = await createDeploymentWithTask({
+  const { deployment, prisma, schedule, task, environment } = await createDeploymentWithTask({
     slugPrefix: "e2e-deactivate-deployment",
     projectName: "E2E Deactivate Deployment Project",
     environmentName: "E2E Deactivate Deployment Dev",
@@ -94,6 +99,8 @@ test("dashboard deactivates a deployment and disables its tasks and schedules", 
   if (!schedule) {
     throw new Error("Expected deactivate fixture to create a schedule");
   }
+
+  await selectDashboardWorkspace(page, environment.id);
 
   await page.goto(`/deployments/${deployment.id}`);
   await expect(page.getByRole("heading", { name: "Deployment detail" })).toBeVisible();
@@ -114,6 +121,8 @@ test("dashboard deactivates a deployment and disables its tasks and schedules", 
 
 test("dashboard rolls back an inactive deployment from its saved manifest", async ({ page }) => {
   const fixture = await createRollbackDeploymentFixture();
+
+  await selectDashboardWorkspace(page, fixture.environment.id);
 
   await page.goto(`/deployments/${fixture.targetDeployment.id}`);
   await expect(page.getByRole("heading", { name: "Deployment detail" })).toBeVisible();

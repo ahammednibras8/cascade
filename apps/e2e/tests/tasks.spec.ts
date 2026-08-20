@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { ensureDashboardApiKey, restoreDashboardApiKey } from "./support/dashboard-environment.js";
 import { createExecutionConfig } from "./support/execution-config.js";
+import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
 process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -136,6 +137,8 @@ test("shows registered tasks in the dashboard table", async ({ page }) => {
       nextRunAt: new Date(Date.now() + 60 * 60 * 1000),
     },
   });
+
+  await selectDashboardWorkspace(page, environment.id);
 
   await page.goto("/tasks");
 
