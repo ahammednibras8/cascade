@@ -3,6 +3,7 @@ import type { Route } from "./+types/home";
 import { ArrowRight } from "~/components/icons";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
 import { getDashboardWorkspaceContext } from "~/lib/workspace/dashboard-workspace.server";
+import { hasDashboardCapability } from "~/lib/auth/dashboard-permissions";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await requireDashboardUser(request);
@@ -163,13 +164,15 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <ArrowRight size={15} />
         </Link>
 
-        <Link
-          to="/api-keys"
-          className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900"
-        >
-          Manage API keys
-          <ArrowRight size={15} />
-        </Link>
+        {hasDashboardCapability(loaderData.activeOrganization?.role, "API_KEYS_MANAGE") ? (
+          <Link
+            to="/api-keys"
+            className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900"
+          >
+            Manage API keys
+            <ArrowRight size={15} />
+          </Link>
+        ) : null}
 
         <Form method="post" action="/logout">
           <button

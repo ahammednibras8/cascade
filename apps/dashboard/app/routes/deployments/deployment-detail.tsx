@@ -8,6 +8,7 @@ import type { Deployment } from "~/features/deployments/types";
 import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
 import { requireDashboardCapability } from "~/lib/auth/dashboard-permissions.server";
+import { getDashboardWorkspaceContext } from "~/lib/workspace/dashboard-workspace.server";
 
 type DeploymentActionIntent = "deactivate" | "rollback";
 
@@ -16,7 +17,9 @@ export function meta() {
 }
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  await requireDashboardUser(request);
+  const session = await requireDashboardUser(request);
+  const workspace = await getDashboardWorkspaceContext(request, session.userId);
+  const role = workspace.activeOrganization?.role ?? null;
 
   const deploymentId = params.deploymentId;
 
@@ -28,12 +31,14 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     return {
       deployment: response.deployment,
       deploymentId,
+      role,
     };
   } catch (error) {
     if (isDeploymentNotFoundError(error)) {
       return {
         deployment: null,
         deploymentId,
+        role,
       };
     }
 
@@ -98,7 +103,7 @@ function getActionFailureStatus(error: unknown) {
 
 export default function DeploymentDetail({ loaderData }: Route.ComponentProps) {
   return loaderData.deployment ? (
-    <DeploymentDetailView deployment={loaderData.deployment} />
+    <DeploymentDetailView deployment={loaderData.deployment} role={loaderData.role} />
   ) : (
     <DeploymentNotFound deploymentId={loaderData.deploymentId} />
   );

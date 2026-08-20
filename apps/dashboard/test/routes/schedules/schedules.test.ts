@@ -8,12 +8,20 @@ const requireDashboardCapability = vi.hoisted(() =>
   vi.fn<(request: Request, capability: string) => Promise<unknown>>(),
 );
 
+const getDashboardWorkspaceContext = vi.hoisted(() =>
+  vi.fn<(request: Request, userId: string) => Promise<unknown>>(),
+);
+
 vi.mock("~/lib/api/cascade-api.server", () => ({
   cascadeDashboardApiRequest,
 }));
 
-vi.mock("../../../app/lib/auth/dashboard-permissions.server.js", () => ({
+vi.mock("~/lib/auth/dashboard-permissions.server", () => ({
   requireDashboardCapability,
+}));
+
+vi.mock("~/lib/workspace/dashboard-workspace.server", () => ({
+  getDashboardWorkspaceContext,
 }));
 
 const { action, loader } = await import("../../../app/routes/schedules/schedules.js");
@@ -31,6 +39,11 @@ describe("schedules loader", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireDashboardCapability.mockResolvedValue({});
+    getDashboardWorkspaceContext.mockResolvedValue({
+      activeOrganization: {
+        role: "OWNER",
+      },
+    });
   });
 
   it("returns schedules from the Cascade API", async () => {
@@ -77,6 +90,7 @@ describe("schedules loader", () => {
           }),
         }),
       ],
+      role: "OWNER",
     });
 
     expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(expect.any(Request), "/api/schedules");
@@ -91,6 +105,7 @@ describe("schedules loader", () => {
       loader({ request: new Request("http://dashboard.test/schedules") } as never),
     ).resolves.toEqual({
       schedules: [],
+      role: "OWNER",
     });
   });
 

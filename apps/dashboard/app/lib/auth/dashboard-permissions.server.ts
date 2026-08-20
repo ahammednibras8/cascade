@@ -1,20 +1,6 @@
 import { requireDashboardUser } from "./dashboard-auth.server";
 import { getDashboardWorkspaceContext } from "../workspace/dashboard-workspace.server";
-
-type DashboardCapability =
-  | "RUNS_MUTATE"
-  | "SCHEDULES_MANAGE"
-  | "DEPLOYMENTS_MANAGE"
-  | "API_KEYS_MANAGE";
-
-type DashboardRole = "OWNER" | "ADMIN" | "DEVELOPER" | "VIEWER";
-
-const capabilityRoles: Record<DashboardCapability, DashboardRole[]> = {
-  RUNS_MUTATE: ["OWNER", "ADMIN", "DEVELOPER"],
-  SCHEDULES_MANAGE: ["OWNER", "ADMIN", "DEVELOPER"],
-  DEPLOYMENTS_MANAGE: ["OWNER", "ADMIN", "DEVELOPER"],
-  API_KEYS_MANAGE: ["OWNER", "ADMIN"],
-};
+import { hasDashboardCapability, type DashboardCapability } from "./dashboard-permissions";
 
 export async function requireDashboardCapability(
   request: Request,
@@ -24,7 +10,7 @@ export async function requireDashboardCapability(
   const workspace = await getDashboardWorkspaceContext(request, session.userId);
   const role = workspace.activeOrganization?.role;
 
-  if (!role || !capabilityRoles[capability].includes(role)) {
+  if (!hasDashboardCapability(role, capability)) {
     throw new Response("Forbidden", {
       status: 403,
     });

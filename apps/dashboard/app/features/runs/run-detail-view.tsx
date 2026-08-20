@@ -6,8 +6,14 @@ import { StatusBadge } from "~/components/status-badge";
 import type { RunEventStreamState } from "~/lib/realtime/run-event-stream";
 import { formatRunDate, runDetailStreamLabel } from "./format";
 import type { TaskRunAttempt, TaskRunDetail, TaskRunEvent } from "./types";
+import { hasDashboardCapability, type DashboardRole } from "~/lib/auth/dashboard-permissions";
 
 type RunDetailViewProps = {
+  run: TaskRunDetail;
+  role: DashboardRole | null;
+};
+
+type RunOnlyProps = {
   run: TaskRunDetail;
 };
 
@@ -29,7 +35,7 @@ export function RunNotFound({ runId }: { runId: string }) {
   );
 }
 
-export function RunDetailView({ run }: RunDetailViewProps) {
+export function RunDetailView({ run, role }: RunDetailViewProps) {
   const revalidator = useRevalidator();
   const navigation = useNavigation();
   const [streamState, setStreamState] = useState<RunEventStreamState>("connecting");
@@ -63,7 +69,11 @@ export function RunDetailView({ run }: RunDetailViewProps) {
 
   return (
     <main className="mx-auto max-w-7xl p-6">
-      <RunHeader run={run} isSubmitting={navigation.state === "submitting"} />
+      <RunHeader
+        run={run}
+        canMutate={hasDashboardCapability(role, "RUNS_MUTATE")}
+        isSubmitting={navigation.state === "submitting"}
+      />
       <p className="mt-1 text-xs text-gray-500">
         {runDetailStreamLabel({ revalidatorState: revalidator.state, streamState })}
       </p>
@@ -75,10 +85,33 @@ export function RunDetailView({ run }: RunDetailViewProps) {
   );
 }
 
-function RunHeader({ run, isSubmitting }: { run: TaskRunDetail; isSubmitting: boolean }) {
+function RunHeader({
+  run,
+  isSubmitting,
+  canMutate,
+}: {
+  run: TaskRunDetail;
+  isSubmitting: boolean;
+  canMutate: boolean;
+}) {
   const canCancel = run.status === "PENDING" || run.status === "EXECUTING";
   const canReplay =
     run.status === "COMPLETED" || run.status === "FAILED" || run.status === "CANCELED";
+
+  if (!canMutate) {
+    return (
+      <div className="mb-6">
+        <Link to="/runs" className="text-sm text-blue-700 hover:text-blue-900 hover:underline">
+          Back to runs
+        </Link>
+        <div className="mt-3 flex items-center gap-3">
+          <h1 className="text-3xl font-semibold tracking-tight">Run detail</h1>
+          <StatusBadge status={run.status} />
+        </div>
+        <p className="mt-2 font-mono text-sm text-gray-500">{run.id}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mb-6">
@@ -130,7 +163,7 @@ function RunActionButton({
   );
 }
 
-function RunSummary({ run }: RunDetailViewProps) {
+function RunSummary({ run }: RunOnlyProps) {
   return (
     <section className="grid gap-4 md:grid-cols-3">
       <SummaryCard title="Task">
@@ -179,7 +212,7 @@ function TimingRow({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-function RunPayloads({ run }: RunDetailViewProps) {
+function RunPayloads({ run }: RunOnlyProps) {
   const payloadSections: Array<{ label: string; value: unknown }> = [
     { label: "Payload", value: run.payload },
     { label: "Output", value: run.output },

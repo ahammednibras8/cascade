@@ -8,12 +8,20 @@ const requireDashboardCapability = vi.hoisted(() =>
   vi.fn<(request: Request, capability: string) => Promise<unknown>>(),
 );
 
+const getDashboardWorkspaceContext = vi.hoisted(() =>
+  vi.fn<(request: Request, userId: string) => Promise<unknown>>(),
+);
+
 vi.mock("~/lib/api/cascade-api.server", () => ({
   cascadeDashboardApiRequest,
 }));
 
-vi.mock("../../../app/lib/auth/dashboard-permissions.server.js", () => ({
+vi.mock("~/lib/auth/dashboard-permissions.server", () => ({
   requireDashboardCapability,
+}));
+
+vi.mock("~/lib/workspace/dashboard-workspace.server", () => ({
+  getDashboardWorkspaceContext,
 }));
 
 const { action, loader } = await import("../../../app/routes/deployments/deployment-detail.js");
@@ -92,6 +100,11 @@ describe("deployment detail loader", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireDashboardCapability.mockResolvedValue({});
+    getDashboardWorkspaceContext.mockResolvedValue({
+      activeOrganization: {
+        role: "OWNER",
+      },
+    });
   });
 
   it("returns a deployment from the Cascade API", async () => {
@@ -104,6 +117,7 @@ describe("deployment detail loader", () => {
     await expect(loader(routeArgs())).resolves.toEqual({
       deployment: result,
       deploymentId: DEPLOYMENT_ID,
+      role: "OWNER",
     });
 
     expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
@@ -142,6 +156,7 @@ describe("deployment detail loader", () => {
     await expect(loader(routeArgs())).resolves.toEqual({
       deployment: null,
       deploymentId: DEPLOYMENT_ID,
+      role: "OWNER",
     });
   });
 

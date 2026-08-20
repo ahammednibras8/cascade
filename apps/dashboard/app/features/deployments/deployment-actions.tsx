@@ -3,6 +3,7 @@ import type { Deployment } from "./types";
 
 type DeploymentActionsProps = {
   deployment: Deployment;
+  canManage: boolean;
 };
 
 function isSubmittingIntent(
@@ -12,7 +13,11 @@ function isSubmittingIntent(
   return navigation.state === "submitting" && navigation.formData?.get("intent") === intent;
 }
 
-export function DeploymentActions({ deployment }: DeploymentActionsProps) {
+export function DeploymentActions({ deployment, canManage }: DeploymentActionsProps) {
+  if (!canManage) {
+    return null;
+  }
+
   const navigation = useNavigation();
 
   if (deployment.status === "ACTIVE") {

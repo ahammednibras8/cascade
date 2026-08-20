@@ -4,8 +4,14 @@ import { StatusBadge } from "~/components/status-badge";
 import { DeploymentActions } from "./deployment-actions";
 import { executionConfigSummary, formatDeploymentDate } from "./format";
 import type { Deployment, DeploymentManifestTask, DeploymentTask } from "./types";
+import { hasDashboardCapability, type DashboardRole } from "~/lib/auth/dashboard-permissions";
 
 type DeploymentDetailViewProps = {
+  deployment: Deployment;
+  role: DashboardRole | null;
+};
+
+type DeploymentOnlyProps = {
   deployment: Deployment;
 };
 
@@ -71,7 +77,7 @@ export function DeploymentNotFound({ deploymentId }: DeploymentNotFoundProps) {
   );
 }
 
-function DeploymentHeader({ deployment }: DeploymentDetailViewProps) {
+function DeploymentHeader({ deployment, role }: DeploymentDetailViewProps) {
   return (
     <div className="mb-6">
       <BackLink />
@@ -83,12 +89,15 @@ function DeploymentHeader({ deployment }: DeploymentDetailViewProps) {
       </div>
 
       <p className="mt-2 font-mono text-sm text-gray-500">{deployment.id}</p>
-      <DeploymentActions deployment={deployment} />
+      <DeploymentActions
+        deployment={deployment}
+        canManage={hasDashboardCapability(role, "DEPLOYMENTS_MANAGE")}
+      />
     </div>
   );
 }
 
-function RuntimePanel({ deployment }: DeploymentDetailViewProps) {
+function RuntimePanel({ deployment }: DeploymentOnlyProps) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
       <h2 className="font-medium text-gray-900">Runtime</h2>
@@ -114,7 +123,7 @@ function RuntimePanel({ deployment }: DeploymentDetailViewProps) {
   );
 }
 
-function TimingPanel({ deployment }: DeploymentDetailViewProps) {
+function TimingPanel({ deployment }: DeploymentOnlyProps) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
       <h2 className="font-medium text-gray-900">Deployment timing</h2>
@@ -164,7 +173,7 @@ function ManifestTaskRow({ task }: { task: DeploymentManifestTask }) {
   );
 }
 
-function DeploymentTasksTable({ deployment }: DeploymentDetailViewProps) {
+function DeploymentTasksTable({ deployment }: DeploymentOnlyProps) {
   return (
     <section className="mt-6">
       <h2 className="text-xl font-semibold tracking-tight">Tasks in this deployment</h2>
@@ -202,7 +211,7 @@ function DeploymentTasksTable({ deployment }: DeploymentDetailViewProps) {
   );
 }
 
-function DeploymentManifestTable({ deployment }: DeploymentDetailViewProps) {
+function DeploymentManifestTable({ deployment }: DeploymentOnlyProps) {
   return (
     <section className="mt-6">
       <h2 className="text-xl font-semibold tracking-tight">Saved task manifest</h2>
@@ -243,10 +252,10 @@ function DeploymentManifestTable({ deployment }: DeploymentDetailViewProps) {
   );
 }
 
-export function DeploymentDetailView({ deployment }: DeploymentDetailViewProps) {
+export function DeploymentDetailView({ deployment, role }: DeploymentDetailViewProps) {
   return (
     <main className="mx-auto max-w-7xl p-6">
-      <DeploymentHeader deployment={deployment} />
+      <DeploymentHeader deployment={deployment} role={role} />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Version" value={deployment.version} mono />

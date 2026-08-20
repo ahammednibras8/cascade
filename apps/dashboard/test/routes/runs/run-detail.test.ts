@@ -8,12 +8,20 @@ const requireDashboardCapability = vi.hoisted(() =>
   vi.fn<(request: Request, capability: string) => Promise<unknown>>(),
 );
 
+const getDashboardWorkspaceContext = vi.hoisted(() =>
+  vi.fn<(request: Request, userId: string) => Promise<unknown>>(),
+);
+
 vi.mock("~/lib/api/cascade-api.server", () => ({
   cascadeDashboardApiRequest,
 }));
 
-vi.mock("../../../app/lib/auth/dashboard-permissions.server.js", () => ({
+vi.mock("~/lib/auth/dashboard-permissions.server", () => ({
   requireDashboardCapability,
+}));
+
+vi.mock("~/lib/workspace/dashboard-workspace.server", () => ({
+  getDashboardWorkspaceContext,
 }));
 
 const { action, loader } = await import("../../../app/routes/runs/run-detail.js");
@@ -22,6 +30,11 @@ describe("run detail loader", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireDashboardCapability.mockResolvedValue({});
+    getDashboardWorkspaceContext.mockResolvedValue({
+      activeOrganization: {
+        role: "OWNER",
+      },
+    });
   });
 
   it("returns the run and its events from the API", async () => {
@@ -154,6 +167,7 @@ describe("run detail loader", () => {
     ).resolves.toEqual({
       run: null,
       runId: "missing-run",
+      role: "OWNER",
     });
 
     expect(cascadeDashboardApiRequest).toHaveBeenCalledTimes(1);

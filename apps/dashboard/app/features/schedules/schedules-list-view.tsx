@@ -1,14 +1,17 @@
 import { Form, Link, useNavigation } from "react-router";
 import { formatScheduleDate, formatScheduleRule } from "./format";
 import type { Schedule } from "./types";
+import { hasDashboardCapability, type DashboardRole } from "~/lib/auth/dashboard-permissions";
 
 type SchedulesListViewProps = {
   schedules: Schedule[];
+  role: DashboardRole | null;
 };
 
-export function SchedulesListView({ schedules }: SchedulesListViewProps) {
+export function SchedulesListView({ schedules, role }: SchedulesListViewProps) {
   const navigation = useNavigation();
   const submittingScheduleId = navigation.formData?.get("scheduleId");
+  const canManage = hasDashboardCapability(role, "SCHEDULES_MANAGE");
 
   return (
     <main className="mx-auto max-w-7xl p-6">
@@ -18,12 +21,14 @@ export function SchedulesListView({ schedules }: SchedulesListViewProps) {
         </Link>
         <div className="mt-3 flex items-center justify-between gap-4">
           <h1 className="text-3xl font-semibold tracking-tight">Schedules</h1>
-          <Link
-            to="/schedules/new"
-            className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white"
-          >
-            New schedule
-          </Link>
+          {canManage ? (
+            <Link
+              to="/schedules/new"
+              className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white"
+            >
+              New schedule
+            </Link>
+          ) : null}
         </div>
         <p className="mt-2 text-gray-600">Task schedules in the current environment.</p>
       </div>
@@ -32,13 +37,13 @@ export function SchedulesListView({ schedules }: SchedulesListViewProps) {
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50">
             <tr>
-              {["Schedule", "Task", "Rule", "Next run", "Last run", "State", "Actions"].map(
-                (heading) => (
+              {["Schedule", "Task", "Rule", "Next run", "Last run", "State"]
+                .concat(canManage ? ["Actions"] : [])
+                .map((heading) => (
                   <th key={heading} className="px-4 py-3 text-left font-medium text-gray-600">
                     {heading}
                   </th>
-                ),
-              )}
+                ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -46,12 +51,13 @@ export function SchedulesListView({ schedules }: SchedulesListViewProps) {
               <ScheduleRow
                 key={schedule.id}
                 schedule={schedule}
+                canManage={canManage}
                 isSubmitting={submittingScheduleId === schedule.id}
               />
             ))}
             {schedules.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={canManage ? 7 : 6} className="px-4 py-8 text-center text-gray-500">
                   No schedules in this environment.
                 </td>
               </tr>
@@ -63,7 +69,15 @@ export function SchedulesListView({ schedules }: SchedulesListViewProps) {
   );
 }
 
-function ScheduleRow({ schedule, isSubmitting }: { schedule: Schedule; isSubmitting: boolean }) {
+function ScheduleRow({
+  schedule,
+  isSubmitting,
+  canManage,
+}: {
+  schedule: Schedule;
+  isSubmitting: boolean;
+  canManage: boolean;
+}) {
   return (
     <tr>
       <td className="px-4 py-3">
@@ -89,9 +103,11 @@ function ScheduleRow({ schedule, isSubmitting }: { schedule: Schedule; isSubmitt
           {schedule.enabled ? "Enabled" : "Paused"}
         </span>
       </td>
-      <td className="px-4 py-3">
-        <ScheduleActions schedule={schedule} isSubmitting={isSubmitting} />
-      </td>
+      {canManage ? (
+        <td className="px-4 py-3">
+          <ScheduleActions schedule={schedule} isSubmitting={isSubmitting} />
+        </td>
+      ) : null}
     </tr>
   );
 }

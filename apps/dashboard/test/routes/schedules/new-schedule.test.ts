@@ -12,7 +12,7 @@ vi.mock("~/lib/api/cascade-api.server", () => ({
   cascadeDashboardApiRequest,
 }));
 
-vi.mock("../../../app/lib/auth/dashboard-permissions.server.js", () => ({
+vi.mock("~/lib/auth/dashboard-permissions.server", () => ({
   requireDashboardCapability,
 }));
 

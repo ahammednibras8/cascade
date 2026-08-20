@@ -5,6 +5,7 @@ import type { TaskRunDetail, TaskRunEvent } from "~/features/runs/types";
 import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
 import { requireDashboardCapability } from "~/lib/auth/dashboard-permissions.server";
+import { getDashboardWorkspaceContext } from "~/lib/workspace/dashboard-workspace.server";
 
 type TaskRunWithoutEvents = Omit<TaskRunDetail, "events">;
 
@@ -13,7 +14,9 @@ export function meta() {
 }
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  await requireDashboardUser(request);
+  const session = await requireDashboardUser(request);
+  const workspace = await getDashboardWorkspaceContext(request, session.userId);
+  const role = workspace.activeOrganization?.role ?? null;
 
   const runId = params.runId;
 
@@ -31,12 +34,14 @@ export async function loader({ params, request }: Route.LoaderArgs) {
         events: eventsResponse.events,
       },
       runId,
+      role,
     };
   } catch (error) {
     if (isRunNotFoundError(error)) {
       return {
         run: null,
         runId,
+        role,
       };
     }
 
@@ -86,7 +91,7 @@ function getErrorStatus(error: unknown) {
 
 export default function RunDetail({ loaderData }: Route.ComponentProps) {
   return loaderData.run ? (
-    <RunDetailView run={loaderData.run} />
+    <RunDetailView run={loaderData.run} role={loaderData.role} />
   ) : (
     <RunNotFound runId={loaderData.runId} />
   );
