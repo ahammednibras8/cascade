@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Form, Link, useNavigation, useRevalidator } from "react-router";
 import { JsonBlock } from "~/components/json-block";
 import { StatusBadge } from "~/components/status-badge";
-import type { RunEventStreamState } from "~/lib/run-event-stream";
+import type { RunEventStreamState } from "~/lib/realtime/run-event-stream";
 import { formatRunDate, runDetailStreamLabel } from "./format";
 import type { TaskRunAttempt, TaskRunDetail, TaskRunEvent } from "./types";
 
@@ -39,7 +39,7 @@ export function RunDetailView({ run }: RunDetailViewProps) {
     let stop: (() => void) | undefined;
     let canceled = false;
 
-    void import("~/lib/run-event-stream").then(({ connectRunEventStream }) => {
+    void import("~/lib/realtime/run-event-stream").then(({ connectRunEventStream }) => {
       if (canceled) {
         return undefined;
       }

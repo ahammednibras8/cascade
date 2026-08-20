@@ -1,8 +1,8 @@
 import { Form, Link } from "react-router";
 import type { Route } from "./+types/home";
 import { ArrowRight } from "~/components/icons";
-import { requireDashboardUser } from "~/lib/dashboard-auth.server";
-import { getDashboardWorkspaceContext } from "~/lib/dashboard-workspace.server";
+import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
+import { getDashboardWorkspaceContext } from "~/lib/workspace/dashboard-workspace.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await requireDashboardUser(request);

@@ -1,5 +1,5 @@
 import { redirect } from "react-router";
-import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
+import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
 
 type ScheduleActionIntent = "pause" | "resume" | "delete";
 

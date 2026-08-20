@@ -1,5 +1,5 @@
 import type { ApiKey, ApiKeyActionData } from "./types";
-import { cascadeDashboardApiRequest } from "~/lib/cascade-api.server";
+import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
 
 type ActionFailure = Extract<ApiKeyActionData, { ok: false }>;
 

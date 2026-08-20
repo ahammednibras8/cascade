@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-vi.mock("../app/lib/dashboard-auth.server.js", () => ({
+vi.mock("../app/lib/auth/dashboard-auth.server.js", () => ({
   requireDashboardUser: vi
     .fn<
       () => Promise<{

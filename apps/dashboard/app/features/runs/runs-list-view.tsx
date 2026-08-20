@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useRevalidator } from "react-router";
 import { StatusBadge } from "~/components/status-badge";
-import type { EnvironmentRunsStreamState } from "~/lib/environment-runs-stream";
+import type { EnvironmentRunsStreamState } from "~/lib/realtime/environment-runs-stream";
 import { environmentRunsStreamLabel, formatRunDate } from "./format";
 import type { TaskRunListItem } from "./types";
 
@@ -18,20 +18,22 @@ export function RunsListView({ runs }: RunsListViewProps) {
     let stop: (() => void) | undefined;
     let canceled = false;
 
-    void import("~/lib/environment-runs-stream").then(({ connectEnvironmentRunsStream }) => {
-      if (canceled) {
+    void import("~/lib/realtime/environment-runs-stream").then(
+      ({ connectEnvironmentRunsStream }) => {
+        if (canceled) {
+          return undefined;
+        }
+
+        stop = connectEnvironmentRunsStream({
+          onRunsChanged() {
+            void revalidate();
+          },
+          onStateChange: setStreamState,
+        });
+
         return undefined;
-      }
-
-      stop = connectEnvironmentRunsStream({
-        onRunsChanged() {
-          void revalidate();
-        },
-        onStateChange: setStreamState,
-      });
-
-      return undefined;
-    });
+      },
+    );
 
     return () => {
       canceled = true;
