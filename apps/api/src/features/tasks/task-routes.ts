@@ -42,7 +42,7 @@ taskRoutes.get(
 
 taskRoutes.get(
   "/schedules",
-  requireApiKeyScope(ApiKeyScope.SCHEDULES_WRITE),
+  requireApiKeyScope(ApiKeyScope.TASKS_READ),
   authenticatedRoute(async ({ auth, response }) => {
     writeJsonResult(response, await listTaskSchedules({ auth }), ({ schedules }) => ({
       schedules,
@@ -52,7 +52,7 @@ taskRoutes.get(
 
 taskRoutes.get(
   "/schedules/:scheduleId",
-  requireApiKeyScope(ApiKeyScope.SCHEDULES_WRITE),
+  requireApiKeyScope(ApiKeyScope.TASKS_READ),
   authenticatedRoute(async ({ auth, request, response }) => {
     const result = await getTaskSchedule({
       auth,

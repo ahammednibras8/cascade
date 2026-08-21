@@ -67,7 +67,7 @@ function expectForbidden(response: { body: unknown; status: number }) {
   expect(response.body).toEqual(FORBIDDEN);
 }
 
-async function expectScopeRejection(input: {
+async function expectScheduleWriteScopeRejection(input: {
   method: HttpMethod;
   path: string;
   service: RouteService;
@@ -331,6 +331,17 @@ describe("apiRouter write routes", () => {
     it.each([
       ["list", "get", "/api/schedules", listTaskSchedules],
       ["detail", "get", schedulePath(), getTaskSchedule],
+    ] as const)(
+      "rejects %s schedule reads without TASKS_READ",
+      async (_, method, path, service) => {
+        const response = await request(method, path, []);
+
+        expectForbidden(response);
+        expect(service).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
       ["pause", "post", schedulePath("/pause"), pauseTaskSchedule],
       ["resume", "post", schedulePath("/resume"), resumeTaskSchedule],
       ["delete", "delete", schedulePath(), deleteTaskSchedule],
@@ -339,7 +350,7 @@ describe("apiRouter write routes", () => {
       "rejects %s schedule requests without SCHEDULES_WRITE",
       async (_, method, path, service) => {
         expect.hasAssertions();
-        await expectScopeRejection({ method, path, service });
+        await expectScheduleWriteScopeRejection({ method, path, service });
       },
     );
   });
