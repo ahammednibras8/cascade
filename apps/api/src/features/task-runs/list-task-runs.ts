@@ -1,16 +1,23 @@
-import { prisma, type Prisma } from "@cascade/database";
+import { prisma, type Prisma, type TaskRunStatus as DbTaskRunStatus } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
-import { createListCursor, parseListPagination } from "../../lib/list-pagination.js";
-import { isUuid } from "../../lib/route-params.js";
+import {
+  type InvalidListQueryResult,
+  invalidListQuery,
+  parseDecodedListCursor,
+  parseListQueryPagination,
+  parseOptionalListDate,
+  parseOptionalListEnum,
+  parseOptionalListUuid,
+  resolveListPage,
+} from "../../lib/list-query.js";
+import type { ListPagination } from "../../lib/list-pagination.js";
 
 const RUN_CURSOR_KIND = "runs-created-at-desc";
 
 const taskRunStatuses = ["PENDING", "EXECUTING", "COMPLETED", "FAILED", "CANCELED"] as const;
 
-type TaskRunStatus = (typeof taskRunStatuses)[number];
-
 type RunListFilters = {
-  status: TaskRunStatus | null;
+  status: DbTaskRunStatus | null;
   taskId: string | null;
   createdAfter: Date | null;
   createdBefore: Date | null;
@@ -21,9 +28,11 @@ type RunListCursor = {
   id: string;
 };
 
-type ListTaskRunsInput = {
-  auth: ApiAuthContext;
-  query: Record<string, unknown>;
+type ListTaskRunsInput = { auth: ApiAuthContext; query: Record<string, unknown> };
+
+type ParsedRunListQuery = {
+  pagination: ListPagination;
+  filters: RunListFilters;
 };
 
 export async function listTaskRuns(input: ListTaskRunsInput) {
@@ -36,14 +45,14 @@ export async function listTaskRuns(input: ListTaskRunsInput) {
   const cursor = parseRunListCursor(query.pagination.cursor);
 
   if (!cursor.ok) {
-    return invalidQuery("cursor is invalid");
+    return invalidListQuery("cursor is invalid");
   }
 
   const filterWhere = createFilterWhere(input.auth, query.filters);
   const where = createTaskRunWhere(filterWhere, cursor.value);
 
-  const [records, totalCount] = await Promise.all([
-    prisma.taskRun.findMany({
+  const { items, pagination } = await resolveListPage({
+    records: prisma.taskRun.findMany({
       where,
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: query.pagination.limit + 1,
@@ -83,38 +92,20 @@ export async function listTaskRuns(input: ListTaskRunsInput) {
         },
       },
     }),
-    prisma.taskRun.count({
+    totalCount: prisma.taskRun.count({
       where: filterWhere,
     }),
-  ]);
-
-  const hasMore = records.length > query.pagination.limit;
-  const runs = records.slice(0, query.pagination.limit);
-  const lastRun = runs.at(-1);
+    limit: query.pagination.limit,
+    cursorKind: RUN_CURSOR_KIND,
+    mapRecord: toTaskRunListItem,
+    getCursorValues: (run) => [run.createdAt.toISOString(), run.id],
+  });
 
   return {
     ok: true as const,
     status: 200 as const,
-    taskRuns: runs.map((run) => ({
-      id: run.id,
-      status: run.status,
-      createdAt: run.createdAt.toISOString(),
-      startedAt: run.startedAt?.toISOString() ?? null,
-      lastHeartbeatAt: run.lastHeartbeatAt?.toISOString() ?? null,
-      completedAt: run.completedAt?.toISOString() ?? null,
-      task: run.task,
-      attemptsCount: run._count.attempts,
-      eventsCount: run._count.events,
-    })),
-    pagination: {
-      limit: query.pagination.limit,
-      nextCursor:
-        hasMore && lastRun
-          ? createListCursor(RUN_CURSOR_KIND, [lastRun.createdAt.toISOString(), lastRun.id])
-          : null,
-      hasMore,
-      totalCount,
-    },
+    taskRuns: items,
+    pagination,
   };
 }
 
@@ -155,37 +146,17 @@ function createFilterWhere(
   };
 }
 
-function parseRunListCursor(cursor: string[] | null):
-  | {
-      ok: true;
-      value: RunListCursor | null;
-    }
-  | {
-      ok: false;
-    } {
-  if (!cursor) {
-    return {
-      ok: true,
-      value: null,
-    };
-  }
+function parseRunListCursor(cursor: string[] | null) {
+  return parseDecodedListCursor<RunListCursor>(cursor, ([createdAtValue, id]) => {
+    const createdAt = parseCursorDate(createdAtValue);
 
-  const createdAt = parseCursorDate(cursor[0]);
-  const id = cursor[1];
-
-  if (!createdAt || !id) {
-    return {
-      ok: false,
-    };
-  }
-
-  return {
-    ok: true,
-    value: {
-      createdAt,
-      id,
-    },
-  };
+    return createdAt && id
+      ? {
+          createdAt,
+          id,
+        }
+      : null;
+  });
 }
 
 function createTaskRunWhere(
@@ -214,56 +185,42 @@ function createTaskRunWhere(
   };
 }
 
-function parseRunListQuery(query: Record<string, unknown>):
-  | {
-      ok: true;
-      pagination: {
-        limit: number;
-        cursor: string[] | null;
-      };
-      filters: RunListFilters;
-    }
-  | {
-      ok: false;
-      status: 400;
-      error: {
-        code: "INVALID_LIST_QUERY";
-        message: string;
-      };
-    } {
-  const pagination = parseListPagination({
+function parseRunListQuery(
+  query: Record<string, unknown>,
+): ({ ok: true } & ParsedRunListQuery) | InvalidListQueryResult {
+  const pagination = parseListQueryPagination({
     query,
     cursorKind: RUN_CURSOR_KIND,
     cursorValueCount: 2,
   });
 
   if (!pagination.ok) {
-    return {
-      ok: false,
-      status: 400,
-      error: pagination.error,
-    };
+    return pagination;
   }
 
-  const status = parseStatus(query.status);
+  const status = parseOptionalListEnum(
+    query.status,
+    taskRunStatuses,
+    "status must be one of PENDING, EXECUTING, COMPLETED, FAILED, or CANCELED",
+  );
 
   if (!status.ok) {
     return status;
   }
 
-  const taskId = parseTaskId(query.taskId);
+  const taskId = parseOptionalListUuid(query.taskId, "taskId must be a valid UUID");
 
   if (!taskId.ok) {
     return taskId;
   }
 
-  const createdAfter = parseDate(query.createdAfter, "createdAfter");
+  const createdAfter = parseOptionalListDate(query.createdAfter, "createdAfter");
 
   if (!createdAfter.ok) {
     return createdAfter;
   }
 
-  const createdBefore = parseDate(query.createdBefore, "createdBefore");
+  const createdBefore = parseOptionalListDate(query.createdBefore, "createdBefore");
 
   if (!createdBefore.ok) {
     return createdBefore;
@@ -274,7 +231,7 @@ function parseRunListQuery(query: Record<string, unknown>):
     createdBefore.value &&
     createdAfter.value.getTime() > createdBefore.value.getTime()
   ) {
-    return invalidQuery("createdAfter must be before or equal to createdBefore");
+    return invalidListQuery("createdAfter must be before or equal to createdBefore");
   }
 
   return {
@@ -289,105 +246,6 @@ function parseRunListQuery(query: Record<string, unknown>):
   };
 }
 
-function parseStatus(value: unknown):
-  | {
-      ok: true;
-      value: TaskRunStatus | null;
-    }
-  | {
-      ok: false;
-      status: 400;
-      error: {
-        code: "INVALID_LIST_QUERY";
-        message: string;
-      };
-    } {
-  if (value === undefined) {
-    return {
-      ok: true,
-      value: null,
-    };
-  }
-
-  if (typeof value !== "string" || !taskRunStatuses.includes(value as TaskRunStatus)) {
-    return invalidQuery("status must be one of PENDING, EXECUTING, COMPLETED, FAILED, or CANCELED");
-  }
-
-  return {
-    ok: true,
-    value: value as TaskRunStatus,
-  };
-}
-
-function parseTaskId(value: unknown):
-  | {
-      ok: true;
-      value: string | null;
-    }
-  | {
-      ok: false;
-      status: 400;
-      error: {
-        code: "INVALID_LIST_QUERY";
-        message: string;
-      };
-    } {
-  if (value === undefined) {
-    return {
-      ok: true,
-      value: null,
-    };
-  }
-
-  if (typeof value !== "string" || !isUuid(value)) {
-    return invalidQuery("taskId must be a valid UUID");
-  }
-
-  return {
-    ok: true,
-    value,
-  };
-}
-
-function parseDate(
-  value: unknown,
-  name: "createdAfter" | "createdBefore",
-):
-  | {
-      ok: true;
-      value: Date | null;
-    }
-  | {
-      ok: false;
-      status: 400;
-      error: {
-        code: "INVALID_LIST_QUERY";
-        message: string;
-      };
-    } {
-  if (value === undefined) {
-    return {
-      ok: true,
-      value: null,
-    };
-  }
-
-  if (typeof value !== "string") {
-    return invalidQuery(`${name} must be a valid ISO 8601 timestamp`);
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return invalidQuery(`${name} must be a valid ISO 8601 timestamp`);
-  }
-
-  return {
-    ok: true,
-    value: date,
-  };
-}
-
 function parseCursorDate(value: string | undefined) {
   if (!value) {
     return null;
@@ -398,13 +256,42 @@ function parseCursorDate(value: string | undefined) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function invalidQuery(message: string) {
+function toTaskRunListItem(run: {
+  id: string;
+  status: DbTaskRunStatus;
+  createdAt: Date;
+  startedAt: Date | null;
+  lastHeartbeatAt: Date | null;
+  completedAt: Date | null;
+  task: {
+    id: string;
+    slug: string;
+    name: string;
+    environment: {
+      id: string;
+      slug: string;
+      name: string;
+      project: {
+        id: string;
+        slug: string;
+        name: string;
+      };
+    };
+  };
+  _count: {
+    attempts: number;
+    events: number;
+  };
+}) {
   return {
-    ok: false as const,
-    status: 400 as const,
-    error: {
-      code: "INVALID_LIST_QUERY" as const,
-      message,
-    },
+    id: run.id,
+    status: run.status,
+    createdAt: run.createdAt.toISOString(),
+    startedAt: run.startedAt?.toISOString() ?? null,
+    lastHeartbeatAt: run.lastHeartbeatAt?.toISOString() ?? null,
+    completedAt: run.completedAt?.toISOString() ?? null,
+    task: run.task,
+    attemptsCount: run._count.attempts,
+    eventsCount: run._count.events,
   };
 }

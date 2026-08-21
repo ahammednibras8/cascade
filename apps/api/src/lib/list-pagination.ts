@@ -7,7 +7,7 @@ type CursorPayload = {
   values: string[];
 };
 
-type ListPagination = {
+export type ListPagination = {
   limit: number;
   cursor: string[] | null;
 };

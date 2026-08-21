@@ -1,7 +1,15 @@
-import { Prisma, prisma } from "@cascade/database";
+import { Prisma, prisma, type DeploymentStatus } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
-import { createListCursor, parseListPagination } from "../../lib/list-pagination.js";
-import { isUuid } from "../../lib/route-params.js";
+import {
+  type InvalidListQueryResult,
+  invalidListQuery,
+  parseDecodedListCursor,
+  parseListQueryPagination,
+  parseOptionalListSearch,
+  parseOptionalListUuid,
+  resolveListPage,
+} from "../../lib/list-query.js";
+import type { ListPagination } from "../../lib/list-pagination.js";
 
 const TASK_CURSOR_KIND = "tasks-slug-asc";
 
@@ -16,10 +24,7 @@ type TaskListCursor = {
 };
 
 type ParsedTaskListQuery = {
-  pagination: {
-    limit: number;
-    cursor: string[] | null;
-  };
+  pagination: ListPagination;
   search: string | null;
   deploymentId: string | null;
 };
@@ -34,14 +39,14 @@ export async function listTasks(input: ListTasksInput) {
   const cursor = parseTaskListCursor(parsedQuery.pagination.cursor);
 
   if (!cursor.ok) {
-    return invalidQuery("cursor is invalid");
+    return invalidListQuery("cursor is invalid");
   }
 
   const filterWhere = createFilterWhere(input.auth, parsedQuery);
   const where = createTaskListWhere(filterWhere, cursor.value);
 
-  const [records, totalCount] = await Promise.all([
-    prisma.task.findMany({
+  const { items, pagination } = await resolveListPage({
+    records: prisma.task.findMany({
       where,
       orderBy: [{ slug: "asc" }, { id: "asc" }],
       take: parsedQuery.pagination.limit + 1,
@@ -67,38 +72,20 @@ export async function listTasks(input: ListTasksInput) {
         },
       },
     }),
-    prisma.task.count({
+    totalCount: prisma.task.count({
       where: filterWhere,
     }),
-  ]);
-
-  const hasMore = records.length > parsedQuery.pagination.limit;
-  const tasks = records.slice(0, parsedQuery.pagination.limit);
-  const lastTask = tasks.at(-1);
+    limit: parsedQuery.pagination.limit,
+    cursorKind: TASK_CURSOR_KIND,
+    mapRecord: toTaskListItem,
+    getCursorValues: (task) => [task.slug, task.id],
+  });
 
   return {
     ok: true as const,
     status: 200 as const,
-    tasks: tasks.map((task) => ({
-      id: task.id,
-      slug: task.slug,
-      name: task.name,
-      description: task.description,
-      deployment: task.deployment,
-      runsCount: task._count.runs,
-      schedulesCount: task._count.schedules,
-      createdAt: task.createdAt.toISOString(),
-      updatedAt: task.updatedAt.toISOString(),
-    })),
-    pagination: {
-      limit: parsedQuery.pagination.limit,
-      nextCursor:
-        hasMore && lastTask
-          ? createListCursor(TASK_CURSOR_KIND, [lastTask.slug, lastTask.id])
-          : null,
-      hasMore,
-      totalCount,
-    },
+    tasks: items,
+    pagination,
   };
 }
 
@@ -137,37 +124,15 @@ function createFilterWhere(
   };
 }
 
-function parseTaskListCursor(cursor: string[] | null):
-  | {
-      ok: true;
-      value: TaskListCursor | null;
-    }
-  | {
-      ok: false;
-    } {
-  if (!cursor) {
-    return {
-      ok: true,
-      value: null,
-    };
-  }
-
-  const slug = cursor[0];
-  const id = cursor[1];
-
-  if (!slug || !id) {
-    return {
-      ok: false,
-    };
-  }
-
-  return {
-    ok: true,
-    value: {
-      slug,
-      id,
-    },
-  };
+function parseTaskListCursor(cursor: string[] | null) {
+  return parseDecodedListCursor<TaskListCursor>(cursor, ([slug, id]) =>
+    slug && id
+      ? {
+          slug,
+          id,
+        }
+      : null,
+  );
 }
 
 function createTaskListWhere(
@@ -200,39 +165,29 @@ function createTaskListWhere(
   };
 }
 
-function parseTaskListQuery(query: Record<string, unknown>):
-  | ({
-      ok: true;
-    } & ParsedTaskListQuery)
-  | {
-      ok: false;
-      status: 400;
-      error: {
-        code: "INVALID_LIST_QUERY";
-        message: string;
-      };
-    } {
-  const pagination = parseListPagination({
+function parseTaskListQuery(
+  query: Record<string, unknown>,
+): ({ ok: true } & ParsedTaskListQuery) | InvalidListQueryResult {
+  const pagination = parseListQueryPagination({
     query,
     cursorKind: TASK_CURSOR_KIND,
     cursorValueCount: 2,
   });
 
   if (!pagination.ok) {
-    return {
-      ok: false,
-      status: 400,
-      error: pagination.error,
-    };
+    return pagination;
   }
 
-  const search = parseSearch(query.search);
+  const search = parseOptionalListSearch(query.search);
 
   if (!search.ok) {
     return search;
   }
 
-  const deploymentId = parseDeploymentId(query.deploymentId);
+  const deploymentId = parseOptionalListUuid(
+    query.deploymentId,
+    "deploymentId must be a valid UUID",
+  );
 
   if (!deploymentId.ok) {
     return deploymentId;
@@ -246,73 +201,32 @@ function parseTaskListQuery(query: Record<string, unknown>):
   };
 }
 
-function parseSearch(value: unknown):
-  | {
-      ok: true;
-      value: string | null;
-    }
-  | {
-      ok: false;
-      status: 400;
-      error: {
-        code: "INVALID_LIST_QUERY";
-        message: string;
-      };
-    } {
-  if (value === undefined) {
-    return {
-      ok: true,
-      value: null,
-    };
-  }
-
-  if (typeof value !== "string" || value.trim().length === 0 || value.length > 100) {
-    return invalidQuery("search must contain between 1 and 100 characters");
-  }
-
-  return {
-    ok: true,
-    value: value.trim(),
+function toTaskListItem(task: {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  deployment: {
+    id: string;
+    version: string;
+    status: DeploymentStatus;
+  } | null;
+  _count: {
+    runs: number;
+    schedules: number;
   };
-}
-
-function parseDeploymentId(value: unknown):
-  | {
-      ok: true;
-      value: string | null;
-    }
-  | {
-      ok: false;
-      status: 400;
-      error: {
-        code: "INVALID_LIST_QUERY";
-        message: string;
-      };
-    } {
-  if (value === undefined) {
-    return {
-      ok: true,
-      value: null,
-    };
-  }
-
-  if (typeof value !== "string" || !isUuid(value)) {
-    return invalidQuery("deploymentId must be a valid UUID");
-  }
-
+  createdAt: Date;
+  updatedAt: Date;
+}) {
   return {
-    ok: true,
-    value,
-  };
-}
-
-function invalidQuery(message: string) {
-  return {
-    ok: false as const,
-    status: 400 as const,
-    error: {
-      code: "INVALID_LIST_QUERY" as const,
-      message,
-    },
+    id: task.id,
+    slug: task.slug,
+    name: task.name,
+    description: task.description,
+    deployment: task.deployment,
+    runsCount: task._count.runs,
+    schedulesCount: task._count.schedules,
+    createdAt: task.createdAt.toISOString(),
+    updatedAt: task.updatedAt.toISOString(),
   };
 }
