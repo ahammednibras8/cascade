@@ -1,5 +1,6 @@
 import { Prisma, prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
+import { failure, success } from "../../lib/service-result.js";
 import { parseDeploymentBody } from "./deployment-request.js";
 
 type CreateDeploymentInput = {
@@ -169,22 +170,17 @@ export async function createDeployment(input: CreateDeploymentInput) {
     });
   } catch (error) {
     if (isDeploymentVersionConflict(error)) {
-      return {
-        ok: false as const,
-        status: 409,
-        error: {
-          code: "DEPLOYMENT_VERSION_EXISTS",
-          message: "A deployment with this version already exists in the environment",
-        },
-      };
+      return failure(
+        409,
+        "DEPLOYMENT_VERSION_EXISTS",
+        "A deployment with this version already exists in the environment",
+      );
     }
 
     throw error;
   }
 
-  return {
-    ok: true as const,
-    status: 201,
+  return success(201, {
     deployment: {
       id: deployment.id,
       environmentId: deployment.environmentId,
@@ -194,5 +190,5 @@ export async function createDeployment(input: CreateDeploymentInput) {
       tasks: deployment.tasks,
       createdAt: deployment.createdAt.toISOString(),
     },
-  };
+  });
 }

@@ -6,6 +6,7 @@ import {
 } from "../../auth/api-key.js";
 import { prisma, type ApiKeyScope } from "@cascade/database";
 import { isApiKeyScope } from "../../auth/api-key-scopes.js";
+import { failure, success } from "../../lib/service-result.js";
 import { toPublicApiKey } from "./api-key-response.js";
 
 type CreateApiKeyInput = {
@@ -17,34 +18,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function invalidBody(code: string, message: string) {
-  return {
-    ok: false as const,
-    status: 400 as const,
-    error: {
-      code,
-      message,
-    },
-  };
-}
-
 function parseCreateApiKeyBody(body: unknown) {
   if (!isRecord(body)) {
-    return invalidBody("INVALID_BODY", "Body must be an object");
+    return failure(400, "INVALID_BODY", "Body must be an object");
   }
 
   if (typeof body.name !== "string") {
-    return invalidBody("INVALID_API_KEY_NAME", "name must be a non-empty string");
+    return failure(400, "INVALID_API_KEY_NAME", "name must be a non-empty string");
   }
 
   const name = body.name.trim();
 
   if (name.length === 0 || name.length > 120) {
-    return invalidBody("INVALID_API_KEY_NAME", "name must be between 1 and 120 characters");
+    return failure(400, "INVALID_API_KEY_NAME", "name must be between 1 and 120 characters");
   }
 
   if (!Array.isArray(body.scopes) || body.scopes.length === 0) {
-    return invalidBody("INVALID_API_KEY_SCOPES", "scopes must be a non-empty array");
+    return failure(400, "INVALID_API_KEY_SCOPES", "scopes must be a non-empty array");
   }
 
   const scopes: ApiKeyScope[] = [];
@@ -52,11 +42,11 @@ function parseCreateApiKeyBody(body: unknown) {
 
   for (const scope of body.scopes) {
     if (!isApiKeyScope(scope)) {
-      return invalidBody("INVALID_API_KEY_SCOPE", "scopes contains an unknown permission");
+      return failure(400, "INVALID_API_KEY_SCOPE", "scopes contains an unknown permission");
     }
 
     if (seenScopes.has(scope)) {
-      return invalidBody("INVALID_API_KEY_SCOPES", "scopes must not contain duplicates");
+      return failure(400, "INVALID_API_KEY_SCOPES", "scopes must not contain duplicates");
     }
 
     seenScopes.add(scope);
@@ -110,10 +100,8 @@ export async function createApiKey(input: CreateApiKeyInput) {
     },
   });
 
-  return {
-    ok: true as const,
-    status: 201 as const,
+  return success(201, {
     apiKey: toPublicApiKey(apiKey),
     token,
-  };
+  });
 }

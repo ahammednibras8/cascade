@@ -1,5 +1,6 @@
 import { createListCursor, type ListPagination, parseListPagination } from "./list-pagination.js";
 import { isUuid } from "./route-params.js";
+import { failure } from "./service-result.js";
 
 export type InvalidListQueryResult = {
   ok: false;
@@ -21,11 +22,7 @@ type ResolveListPageInput<TRecord, TItem> = {
 };
 
 export function invalidListQuery(message: string): InvalidListQueryResult {
-  return {
-    ok: false,
-    status: 400,
-    error: { code: "INVALID_LIST_QUERY", message },
-  };
+  return failure(400, "INVALID_LIST_QUERY", message);
 }
 
 export function parseListQueryPagination(input: {

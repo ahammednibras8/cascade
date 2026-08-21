@@ -1,6 +1,7 @@
 import { Prisma, prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
+import { failure, success } from "../../lib/service-result.js";
 import { parseTaskScheduleBody } from "./task-schedule-request.js";
 import { maybeStoreJsonValue } from "@cascade/storage";
 
@@ -12,27 +13,13 @@ type UpdateTaskScheduleInput = {
 
 export async function updateTaskSchedule(input: UpdateTaskScheduleInput) {
   if (!isUuid(input.scheduleId)) {
-    return {
-      ok: false as const,
-      status: 400 as const,
-      error: {
-        code: "INVALID_SCHEDULE_ID",
-        message: "scheduleId must be a valid UUID",
-      },
-    };
+    return failure(400, "INVALID_SCHEDULE_ID", "scheduleId must be a valid UUID");
   }
 
   const parsedBody = parseTaskScheduleBody(input.body);
 
   if (!parsedBody.ok) {
-    return {
-      ok: false as const,
-      status: 400 as const,
-      error: {
-        code: parsedBody.code,
-        message: parsedBody.message,
-      },
-    };
+    return failure(400, parsedBody.code, parsedBody.message);
   }
 
   const schedule = await prisma.taskSchedule.findFirst({
@@ -53,14 +40,7 @@ export async function updateTaskSchedule(input: UpdateTaskScheduleInput) {
   });
 
   if (!schedule) {
-    return {
-      ok: false as const,
-      status: 404 as const,
-      error: {
-        code: "SCHEDULE_NOT_FOUND",
-        message: "Schedule was not found in this environment",
-      },
-    };
+    return failure(404, "SCHEDULE_NOT_FOUND", "Schedule was not found in this environment");
   }
 
   const payloadProvided = Object.hasOwn(parsedBody.body, "payload");
@@ -109,19 +89,14 @@ export async function updateTaskSchedule(input: UpdateTaskScheduleInput) {
   });
 
   if (updated.count !== 1) {
-    return {
-      ok: false as const,
-      status: 409 as const,
-      error: {
-        code: "SCHEDULE_STATE_CONFLICT",
-        message: "Schedule changed before it could be updated; retry the request",
-      },
-    };
+    return failure(
+      409,
+      "SCHEDULE_STATE_CONFLICT",
+      "Schedule changed before it could be updated; retry the request",
+    );
   }
 
-  return {
-    ok: true as const,
-    status: 200 as const,
+  return success(200, {
     schedule: {
       id: schedule.id,
       name: parsedBody.name ?? schedule.name,
@@ -134,5 +109,5 @@ export async function updateTaskSchedule(input: UpdateTaskScheduleInput) {
       hasPayload: payloadProvided ? parsedBody.body.payload !== null : schedule.payload !== null,
       revision: schedule.revision + 1,
     },
-  };
+  });
 }

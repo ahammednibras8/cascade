@@ -1,4 +1,5 @@
 import { parseTaskExecutionConfig, type TaskExecutionConfig } from "@cascade/core";
+import { failure } from "../../lib/service-result.js";
 
 type DeploymentTaskInput = {
   slug: string;
@@ -19,14 +20,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function invalidDeploymentBody(code: string, message: string) {
-  return {
-    ok: false as const,
-    status: 400,
-    error: {
-      code,
-      message,
-    },
-  };
+  return failure(400, code, message);
 }
 
 function getTrimmedString(value: unknown) {

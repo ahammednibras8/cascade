@@ -1,6 +1,7 @@
 import { prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
+import { failure, success } from "../../lib/service-result.js";
 import { toPublicApiKey } from "./api-key-response.js";
 
 type RevokeApiKeyInput = {
@@ -21,25 +22,11 @@ const publicApiKeySelect = {
 
 export async function revokeApiKey(input: RevokeApiKeyInput) {
   if (!isUuid(input.apiKeyId)) {
-    return {
-      ok: false as const,
-      status: 400 as const,
-      error: {
-        code: "INVALID_API_KEY_ID",
-        message: "apiKeyId must be a UUID",
-      },
-    };
+    return failure(400, "INVALID_API_KEY_ID", "apiKeyId must be a UUID");
   }
 
   if (input.apiKeyId === input.auth.apiKeyId) {
-    return {
-      ok: false as const,
-      status: 409 as const,
-      error: {
-        code: "CANNOT_REVOKE_CURRENT_API_KEY",
-        message: "An API key cannot revoke itself",
-      },
-    };
+    return failure(409, "CANNOT_REVOKE_CURRENT_API_KEY", "An API key cannot revoke itself");
   }
 
   const existingApiKey = await prisma.apiKey.findFirst({
@@ -51,22 +38,13 @@ export async function revokeApiKey(input: RevokeApiKeyInput) {
   });
 
   if (!existingApiKey) {
-    return {
-      ok: false as const,
-      status: 404 as const,
-      error: {
-        code: "API_KEY_NOT_FOUND",
-        message: "API key was not found",
-      },
-    };
+    return failure(404, "API_KEY_NOT_FOUND", "API key was not found");
   }
 
   if (existingApiKey.revokedAt) {
-    return {
-      ok: true as const,
-      status: 200 as const,
+    return success(200, {
       apiKey: toPublicApiKey(existingApiKey),
-    };
+    });
   }
 
   const revokedApiKey = await prisma.apiKey.update({
@@ -79,9 +57,7 @@ export async function revokeApiKey(input: RevokeApiKeyInput) {
     select: publicApiKeySelect,
   });
 
-  return {
-    ok: true as const,
-    status: 200 as const,
+  return success(200, {
     apiKey: toPublicApiKey(revokedApiKey),
-  };
+  });
 }

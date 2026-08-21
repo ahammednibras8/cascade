@@ -1,17 +1,11 @@
 import { Prisma, prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
+import { failure, success } from "../../lib/service-result.js";
 
 export async function getTask(input: { auth: ApiAuthContext; taskId: string | undefined }) {
   if (!isUuid(input.taskId)) {
-    return {
-      ok: false as const,
-      status: 400 as const,
-      error: {
-        code: "INVALID_TASK_ID",
-        message: "taskId must be a valid UUID",
-      },
-    };
+    return failure(400, "INVALID_TASK_ID", "taskId must be a valid UUID");
   }
 
   const task = await prisma.task.findFirst({
@@ -92,19 +86,10 @@ export async function getTask(input: { auth: ApiAuthContext; taskId: string | un
   });
 
   if (!task) {
-    return {
-      ok: false as const,
-      status: 404 as const,
-      error: {
-        code: "TASK_NOT_FOUND",
-        message: "Task was not found in this environment",
-      },
-    };
+    return failure(404, "TASK_NOT_FOUND", "Task was not found in this environment");
   }
 
-  return {
-    ok: true as const,
-    status: 200 as const,
+  return success(200, {
     task: {
       id: task.id,
       slug: task.slug,
@@ -144,5 +129,5 @@ export async function getTask(input: { auth: ApiAuthContext; taskId: string | un
         completedAt: run.completedAt?.toISOString() ?? null,
       })),
     },
-  };
+  });
 }

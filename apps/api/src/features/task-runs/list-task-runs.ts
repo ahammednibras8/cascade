@@ -11,6 +11,7 @@ import {
   resolveListPage,
 } from "../../lib/list-query.js";
 import type { ListPagination } from "../../lib/list-pagination.js";
+import { success } from "../../lib/service-result.js";
 
 const RUN_CURSOR_KIND = "runs-created-at-desc";
 
@@ -101,12 +102,10 @@ export async function listTaskRuns(input: ListTaskRunsInput) {
     getCursorValues: (run) => [run.createdAt.toISOString(), run.id],
   });
 
-  return {
-    ok: true as const,
-    status: 200 as const,
+  return success(200, {
     taskRuns: items,
     pagination,
-  };
+  });
 }
 
 function createFilterWhere(

@@ -1,6 +1,7 @@
 import { Prisma } from "@cascade/database";
 import { IDEMPOTENCY_KEY_MAX_LENGTH } from "../../../lib/idempotency.js";
 import { isUuid } from "../../../lib/route-params.js";
+import { failure } from "../../../lib/service-result.js";
 import type { TriggerTaskRunFailure } from "./types.js";
 
 type TaskReferenceResult =
@@ -18,14 +19,7 @@ function createFailure(
   code: string,
   message: string,
 ): TriggerTaskRunFailure {
-  return {
-    ok: false,
-    status,
-    error: {
-      code,
-      message,
-    },
-  };
+  return failure(status, code, message);
 }
 
 function isValidTaskSlug(value: string | undefined): value is string {

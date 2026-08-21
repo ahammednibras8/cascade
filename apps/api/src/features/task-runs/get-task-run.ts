@@ -1,14 +1,11 @@
 import { prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
+import { failure, success } from "../../lib/service-result.js";
 
 export async function getTaskRun(input: { auth: ApiAuthContext; runId: string | undefined }) {
   if (!isUuid(input.runId)) {
-    return {
-      ok: false as const,
-      status: 400 as const,
-      error: { code: "INVALID_RUN_ID", message: "runId must be a valid UUID" },
-    };
+    return failure(400, "INVALID_RUN_ID", "runId must be a valid UUID");
   }
 
   const run = await prisma.taskRun.findFirst({
@@ -74,16 +71,10 @@ export async function getTaskRun(input: { auth: ApiAuthContext; runId: string | 
   });
 
   if (!run) {
-    return {
-      ok: false as const,
-      status: 404 as const,
-      error: { code: "RUN_NOT_FOUND", message: "Task run was not found in this environment" },
-    };
+    return failure(404, "RUN_NOT_FOUND", "Task run was not found in this environment");
   }
 
-  return {
-    ok: true as const,
-    status: 200 as const,
+  return success(200, {
     taskRun: {
       id: run.id,
       status: run.status,
@@ -113,5 +104,5 @@ export async function getTaskRun(input: { auth: ApiAuthContext; runId: string | 
         createdAt: attempt.createdAt.toISOString(),
       })),
     },
-  };
+  });
 }

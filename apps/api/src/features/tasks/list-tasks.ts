@@ -10,6 +10,7 @@ import {
   resolveListPage,
 } from "../../lib/list-query.js";
 import type { ListPagination } from "../../lib/list-pagination.js";
+import { success } from "../../lib/service-result.js";
 
 const TASK_CURSOR_KIND = "tasks-slug-asc";
 
@@ -81,12 +82,10 @@ export async function listTasks(input: ListTasksInput) {
     getCursorValues: (task) => [task.slug, task.id],
   });
 
-  return {
-    ok: true as const,
-    status: 200 as const,
+  return success(200, {
     tasks: items,
     pagination,
-  };
+  });
 }
 
 function createFilterWhere(

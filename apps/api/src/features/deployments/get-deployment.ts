@@ -1,20 +1,14 @@
 import { prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
+import { failure, success } from "../../lib/service-result.js";
 
 export async function getDeployment(input: {
   auth: ApiAuthContext;
   deploymentId: string | undefined;
 }) {
   if (!isUuid(input.deploymentId)) {
-    return {
-      ok: false as const,
-      status: 400 as const,
-      error: {
-        code: "INVALID_DEPLOYMENT_ID",
-        message: "deploymentId must be a valid UUID",
-      },
-    };
+    return failure(400, "INVALID_DEPLOYMENT_ID", "deploymentId must be a valid UUID");
   }
 
   const deployment = await prisma.deployment.findFirst({
@@ -77,19 +71,10 @@ export async function getDeployment(input: {
   });
 
   if (!deployment) {
-    return {
-      ok: false as const,
-      status: 404 as const,
-      error: {
-        code: "DEPLOYMENT_NOT_FOUND",
-        message: "Deployment was not found in this environment",
-      },
-    };
+    return failure(404, "DEPLOYMENT_NOT_FOUND", "Deployment was not found in this environment");
   }
 
-  return {
-    ok: true as const,
-    status: 200 as const,
+  return success(200, {
     deployment: {
       id: deployment.id,
       environmentId: deployment.environmentId,
@@ -124,5 +109,5 @@ export async function getDeployment(input: {
         schedulesCount: task._count.schedules,
       })),
     },
-  };
+  });
 }

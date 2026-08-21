@@ -1,6 +1,7 @@
 import { prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
+import { failure, success } from "../../lib/service-result.js";
 
 type GetTaskScheduleInput = {
   auth: ApiAuthContext;
@@ -9,14 +10,7 @@ type GetTaskScheduleInput = {
 
 export async function getTaskSchedule(input: GetTaskScheduleInput) {
   if (!isUuid(input.scheduleId)) {
-    return {
-      ok: false as const,
-      status: 400 as const,
-      error: {
-        code: "INVALID_SCHEDULE_ID",
-        message: "scheduleId must be a valid UUID",
-      },
-    };
+    return failure(400, "INVALID_SCHEDULE_ID", "scheduleId must be a valid UUID");
   }
 
   const schedule = await prisma.taskSchedule.findFirst({
@@ -52,19 +46,10 @@ export async function getTaskSchedule(input: GetTaskScheduleInput) {
   });
 
   if (!schedule) {
-    return {
-      ok: false as const,
-      status: 404 as const,
-      error: {
-        code: "SCHEDULE_NOT_FOUND",
-        message: "Schedule was not found in this environment",
-      },
-    };
+    return failure(404, "SCHEDULE_NOT_FOUND", "Schedule was not found in this environment");
   }
 
-  return {
-    ok: true as const,
-    status: 200 as const,
+  return success(200, {
     schedule: {
       id: schedule.id,
       taskId: schedule.taskId,
@@ -82,5 +67,5 @@ export async function getTaskSchedule(input: GetTaskScheduleInput) {
       updatedAt: schedule.updatedAt.toISOString(),
       task: schedule.task,
     },
-  };
+  });
 }

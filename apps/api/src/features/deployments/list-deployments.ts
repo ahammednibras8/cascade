@@ -1,5 +1,6 @@
 import { prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
+import { success } from "../../lib/service-result.js";
 
 export async function listDeployments(input: { auth: ApiAuthContext }) {
   const deployments = await prisma.deployment.findMany({
@@ -36,9 +37,7 @@ export async function listDeployments(input: { auth: ApiAuthContext }) {
     },
   });
 
-  return {
-    ok: true as const,
-    status: 200 as const,
+  return success(200, {
     deployments: deployments.map((deployment) => ({
       id: deployment.id,
       environmentId: deployment.environmentId,
@@ -54,5 +53,5 @@ export async function listDeployments(input: { auth: ApiAuthContext }) {
       tasksCount: deployment._count.tasks,
       runsCount: deployment._count.runs,
     })),
-  };
+  });
 }

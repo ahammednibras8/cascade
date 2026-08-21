@@ -1,5 +1,6 @@
 import { prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
+import { success } from "../../lib/service-result.js";
 
 export async function listTaskSchedules(input: { auth: ApiAuthContext }) {
   const schedules = await prisma.taskSchedule.findMany({
@@ -44,9 +45,7 @@ export async function listTaskSchedules(input: { auth: ApiAuthContext }) {
     },
   });
 
-  return {
-    ok: true as const,
-    status: 200 as const,
+  return success(200, {
     schedules: schedules.map((schedule) => ({
       id: schedule.id,
       taskId: schedule.taskId,
@@ -64,5 +63,5 @@ export async function listTaskSchedules(input: { auth: ApiAuthContext }) {
       updatedAt: schedule.updatedAt.toISOString(),
       task: schedule.task,
     })),
-  };
+  });
 }

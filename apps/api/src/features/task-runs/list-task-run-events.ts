@@ -1,6 +1,7 @@
 import { prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
+import { failure, success } from "../../lib/service-result.js";
 
 export async function listTaskRunEvents(input: {
   auth: ApiAuthContext;
@@ -8,11 +9,7 @@ export async function listTaskRunEvents(input: {
   afterEventId?: string;
 }) {
   if (!isUuid(input.runId)) {
-    return {
-      ok: false as const,
-      status: 400 as const,
-      error: { code: "INVALID_RUN_ID", message: "runId must be a valid UUID" },
-    };
+    return failure(400, "INVALID_RUN_ID", "runId must be a valid UUID");
   }
 
   const run = await prisma.taskRun.findFirst({
@@ -24,11 +21,7 @@ export async function listTaskRunEvents(input: {
   });
 
   if (!run) {
-    return {
-      ok: false as const,
-      status: 404 as const,
-      error: { code: "RUN_NOT_FOUND", message: "Task run was not found in this environment" },
-    };
+    return failure(404, "RUN_NOT_FOUND", "Task run was not found in this environment");
   }
 
   let cursor: {
@@ -38,14 +31,7 @@ export async function listTaskRunEvents(input: {
 
   if (input.afterEventId) {
     if (!isUuid(input.afterEventId)) {
-      return {
-        ok: false as const,
-        status: 400 as const,
-        error: {
-          code: "INVALID_EVENT_CURSOR",
-          message: "after must be a valid event UUID",
-        },
-      };
+      return failure(400, "INVALID_EVENT_CURSOR", "after must be a valid event UUID");
     }
 
     cursor = await prisma.taskEvent.findFirst({
@@ -60,14 +46,7 @@ export async function listTaskRunEvents(input: {
     });
 
     if (!cursor) {
-      return {
-        ok: false as const,
-        status: 400 as const,
-        error: {
-          code: "INVALID_EVENT_CURSOR",
-          message: "after must identity an event in this task run",
-        },
-      };
+      return failure(400, "INVALID_EVENT_CURSOR", "after must identity an event in this task run");
     }
   }
 
@@ -111,9 +90,7 @@ export async function listTaskRunEvents(input: {
   const hasMore = eventPage.length > 100;
   const events = eventPage.slice(0, 100);
 
-  return {
-    ok: true as const,
-    status: 200 as const,
+  return success(200, {
     events: events.map((event) => ({
       id: event.id,
       taskAttemptId: event.taskAttemptId,
@@ -128,5 +105,5 @@ export async function listTaskRunEvents(input: {
     })),
     nextCursor: events.at(-1)?.id ?? input.afterEventId ?? null,
     hasMore,
-  };
+  });
 }

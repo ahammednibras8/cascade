@@ -1,6 +1,7 @@
 import { prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
+import { failure, success } from "../../lib/service-result.js";
 import { getNextCronRunAt } from "@cascade/core";
 
 type ResumeTaskScheduleInput = {
@@ -43,14 +44,7 @@ function getNextRunAt(now: Date, schedule: ScheduleTiming): Date | null {
 
 export async function resumeTaskSchedule(input: ResumeTaskScheduleInput) {
   if (!isUuid(input.scheduleId)) {
-    return {
-      ok: false as const,
-      status: 400 as const,
-      error: {
-        code: "INVALID_SCHEDULE_ID",
-        message: "scheduleId must be a valid UUID",
-      },
-    };
+    return failure(400, "INVALID_SCHEDULE_ID", "scheduleId must be a valid UUID");
   }
 
   const schedule = await prisma.taskSchedule.findFirst({
@@ -72,40 +66,28 @@ export async function resumeTaskSchedule(input: ResumeTaskScheduleInput) {
   });
 
   if (!schedule) {
-    return {
-      ok: false as const,
-      status: 404 as const,
-      error: {
-        code: "SCHEDULE_NOT_FOUND",
-        message: "Schedule was not found in this environment",
-      },
-    };
+    return failure(404, "SCHEDULE_NOT_FOUND", "Schedule was not found in this environment");
   }
 
   if (schedule.enabled) {
-    return {
-      ok: true as const,
-      status: 200 as const,
+    return success(200, {
       schedule: {
         id: schedule.id,
         enabled: true,
         alreadyResumed: true,
         nextRunAt: schedule.nextRunAt.toISOString(),
       },
-    };
+    });
   }
 
   const nextRunAt = getNextRunAt(new Date(), schedule);
 
   if (!nextRunAt) {
-    return {
-      ok: false as const,
-      status: 409 as const,
-      error: {
-        code: "INVALID_SCHEDULE_RULE",
-        message: "Schedule has an invalid rule and cannot be resumed",
-      },
-    };
+    return failure(
+      409,
+      "INVALID_SCHEDULE_RULE",
+      "Schedule has an invalid rule and cannot be resumed",
+    );
   }
 
   const resumed = await prisma.taskSchedule.updateMany({
@@ -127,24 +109,19 @@ export async function resumeTaskSchedule(input: ResumeTaskScheduleInput) {
   });
 
   if (resumed.count !== 1) {
-    return {
-      ok: false as const,
-      status: 409 as const,
-      error: {
-        code: "SCHEDULE_STATE_CONFLICT",
-        message: "Schedule state changed before it could be resumed; retry the request",
-      },
-    };
+    return failure(
+      409,
+      "SCHEDULE_STATE_CONFLICT",
+      "Schedule state changed before it could be resumed; retry the request",
+    );
   }
 
-  return {
-    ok: true as const,
-    status: 200 as const,
+  return success(200, {
     schedule: {
       id: schedule.id,
       enabled: true,
       alreadyResumed: false,
       nextRunAt: nextRunAt.toISOString(),
     },
-  };
+  });
 }

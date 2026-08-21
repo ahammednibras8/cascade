@@ -1,5 +1,6 @@
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
+import { failure, success, type ServiceFailure } from "../../lib/service-result.js";
 import { createTaskRunEvent, prisma, type Prisma } from "@cascade/database";
 import { enqueueTaskRun } from "../../queue/task-runs.js";
 
@@ -21,14 +22,7 @@ type ReplayTaskRunSuccess = {
   };
 };
 
-type ReplayTaskRunFailure = {
-  ok: false;
-  status: 400 | 404 | 409;
-  error: {
-    code: string;
-    message: string;
-  };
-};
+type ReplayTaskRunFailure = ServiceFailure<400 | 404 | 409>;
 
 export type ReplayTaskRunResult = ReplayTaskRunSuccess | ReplayTaskRunFailure;
 
@@ -40,14 +34,7 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
   const { auth, runId } = input;
 
   if (!isUuid(runId)) {
-    return {
-      ok: false,
-      status: 400,
-      error: {
-        code: "INVALID_RUN_ID",
-        message: "runId must be a valid UUID",
-      },
-    };
+    return failure(400, "INVALID_RUN_ID", "runId must be a valid UUID");
   }
 
   const sourceRun = await prisma.taskRun.findFirst({
@@ -68,36 +55,23 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
   });
 
   if (!sourceRun) {
-    return {
-      ok: false,
-      status: 404,
-      error: {
-        code: "RUN_NOT_FOUND",
-        message: "Task run was not found in this environment",
-      },
-    };
+    return failure(404, "RUN_NOT_FOUND", "Task run was not found in this environment");
   }
 
   if (sourceRun.executionConfig === null) {
-    return {
-      ok: false,
-      status: 409,
-      error: {
-        code: "RUN_EXECUTION_CONFIG_MISSING",
-        message: "This legacy run has no execution configuration snapshot and cannot be replayed",
-      },
-    };
+    return failure(
+      409,
+      "RUN_EXECUTION_CONFIG_MISSING",
+      "This legacy run has no execution configuration snapshot and cannot be replayed",
+    );
   }
 
   if (!isReplayableStatus(sourceRun.status)) {
-    return {
-      ok: false,
-      status: 409,
-      error: {
-        code: "RUN_NOT_REPLAYABLE",
-        message: `Cannot replay a run with status ${sourceRun.status}`,
-      },
-    };
+    return failure(
+      409,
+      "RUN_NOT_REPLAYABLE",
+      `Cannot replay a run with status ${sourceRun.status}`,
+    );
   }
 
   const replayedRun = await prisma.$transaction(async (tx) => {
@@ -157,9 +131,7 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
     deploymentId: replayedRun.deploymentId,
   });
 
-  return {
-    ok: true,
-    status: 202,
+  return success(202, {
     taskRun: {
       id: replayedRun.id,
       taskId: replayedRun.taskId,
@@ -168,5 +140,5 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
       createdAt: replayedRun.createdAt.toISOString(),
       replayedFromRunId: sourceRun.id,
     },
-  };
+  });
 }

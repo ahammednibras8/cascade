@@ -1,6 +1,7 @@
 import type { TraceContext } from "@cascade/core";
 import type { Prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../../auth/api-key.js";
+import type { ServiceFailure, ServiceSuccess } from "../../../lib/service-result.js";
 
 export const taskRunSelect = {
   id: true,
@@ -41,30 +42,24 @@ export type TriggerTaskRunInput = {
   trace?: TraceContext | undefined;
 };
 
-type TriggerTaskRunSuccess = {
-  ok: true;
-  status: 200 | 202;
-  idempotentReplayed: boolean;
-  taskRun: {
-    id: string;
-    taskId: string;
-    taskSlug: string;
-    taskName: string;
-    status: string;
-    payload: unknown;
-    createdAt: string;
-    idempotentReplay: boolean;
-    traceparent: string;
-  };
-};
+type TriggerTaskRunSuccess = ServiceSuccess<
+  200 | 202,
+  {
+    idempotentReplayed: boolean;
+    taskRun: {
+      id: string;
+      taskId: string;
+      taskSlug: string;
+      taskName: string;
+      status: string;
+      payload: unknown;
+      createdAt: string;
+      idempotentReplay: boolean;
+      traceparent: string;
+    };
+  }
+>;
 
-export type TriggerTaskRunFailure = {
-  ok: false;
-  status: 400 | 404 | 409;
-  error: {
-    code: string;
-    message: string;
-  };
-};
+export type TriggerTaskRunFailure = ServiceFailure<400 | 404 | 409>;
 
 export type TriggerTaskRunResult = TriggerTaskRunSuccess | TriggerTaskRunFailure;

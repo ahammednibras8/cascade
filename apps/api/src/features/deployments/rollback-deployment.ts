@@ -1,6 +1,7 @@
 import { Prisma, prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
+import { failure, success, type ServiceFailure } from "../../lib/service-result.js";
 
 type RollbackDeploymentInput = {
   auth: ApiAuthContext;
@@ -20,14 +21,7 @@ type RollbackDeploymentSuccess = {
   };
 };
 
-type RollbackDeploymentFailure = {
-  ok: false;
-  status: 400 | 404 | 409;
-  error: {
-    code: string;
-    message: string;
-  };
-};
+type RollbackDeploymentFailure = ServiceFailure<400 | 404 | 409>;
 
 export type RollbackDeploymentResult = RollbackDeploymentSuccess | RollbackDeploymentFailure;
 
@@ -50,14 +44,7 @@ export async function rollbackDeployment(
   input: RollbackDeploymentInput,
 ): Promise<RollbackDeploymentResult> {
   if (!isUuid(input.deploymentId)) {
-    return {
-      ok: false,
-      status: 400,
-      error: {
-        code: "INVALID_DEPLOYMENT_ID",
-        message: "deploymentId must be a valid UUID",
-      },
-    };
+    return failure(400, "INVALID_DEPLOYMENT_ID", "deploymentId must be a valid UUID");
   }
 
   const deployment = await prisma.deployment.findFirst({
@@ -83,48 +70,27 @@ export async function rollbackDeployment(
   });
 
   if (!deployment) {
-    return {
-      ok: false,
-      status: 404,
-      error: {
-        code: "DEPLOYMENT_NOT_FOUND",
-        message: "Deployment was not found in this environment",
-      },
-    };
+    return failure(404, "DEPLOYMENT_NOT_FOUND", "Deployment was not found in this environment");
   }
 
   if (deployment.status === "ACTIVE") {
-    return {
-      ok: false,
-      status: 409,
-      error: {
-        code: "DEPLOYMENT_ALREADY_ACTIVE",
-        message: "Deployment is already active",
-      },
-    };
+    return failure(409, "DEPLOYMENT_ALREADY_ACTIVE", "Deployment is already active");
   }
 
   if (deployment.status !== "INACTIVE") {
-    return {
-      ok: false,
-      status: 409,
-      error: {
-        code: "DEPLOYMENT_NOT_ROLLBACKABLE",
-        message: `Cannot roll back a deployment with status ${deployment.status}`,
-      },
-    };
+    return failure(
+      409,
+      "DEPLOYMENT_NOT_ROLLBACKABLE",
+      `Cannot roll back a deployment with status ${deployment.status}`,
+    );
   }
 
   if (deployment.manifestTasks.length === 0) {
-    return {
-      ok: false,
-      status: 409,
-      error: {
-        code: "DEPLOYMENT_MANIFEST_MISSING",
-        message:
-          "This deployment was created before task manifests were stored and cannot be rolled back",
-      },
-    };
+    return failure(
+      409,
+      "DEPLOYMENT_MANIFEST_MISSING",
+      "This deployment was created before task manifests were stored and cannot be rolled back",
+    );
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -242,19 +208,14 @@ export async function rollbackDeployment(
   });
 
   if (!result) {
-    return {
-      ok: false,
-      status: 409,
-      error: {
-        code: "DEPLOYMENT_STATE_CHANGED",
-        message: "Deployment state changed before it could be rolled back",
-      },
-    };
+    return failure(
+      409,
+      "DEPLOYMENT_STATE_CHANGED",
+      "Deployment state changed before it could be rolled back",
+    );
   }
 
-  return {
-    ok: true,
-    status: 200,
+  return success(200, {
     deployment: {
       id: deployment.id,
       status: "ACTIVE",
@@ -263,5 +224,5 @@ export async function rollbackDeployment(
       schedulesUpdated: result.schedulesUpdated,
       schedulesPaused: result.schedulesPaused,
     },
-  };
+  });
 }

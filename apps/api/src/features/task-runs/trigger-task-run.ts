@@ -2,6 +2,7 @@ import { recordTaskRunTriggered } from "@cascade/telemetry";
 import { prisma, type Prisma } from "@cascade/database";
 import { getPayload } from "../../lib/trigger-payload.js";
 import { hashTriggerRequest, hashValue, isUniqueConstraintError } from "../../lib/idempotency.js";
+import { success } from "../../lib/service-result.js";
 import { enqueueTaskRun } from "../../queue/task-runs.js";
 import {
   createTriggeredTaskRun,
@@ -161,9 +162,7 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
     recordTaskRunTriggered();
   }
 
-  return {
-    ok: true,
-    status: created ? 202 : 200,
+  return success(created ? 202 : 200, {
     idempotentReplayed: !created,
     taskRun: {
       id: taskRun.id,
@@ -179,5 +178,5 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
         triggerTrace,
       }),
     },
-  };
+  });
 }

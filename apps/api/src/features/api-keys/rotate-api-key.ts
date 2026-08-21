@@ -6,6 +6,7 @@ import {
   type ApiAuthContext,
 } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
+import { failure, success } from "../../lib/service-result.js";
 import { toPublicApiKey } from "./api-key-response.js";
 
 type RotateApiKeyInput = {
@@ -26,25 +27,11 @@ const publicApiKeySelect = {
 
 export async function rotateApiKey(input: RotateApiKeyInput) {
   if (!isUuid(input.apiKeyId)) {
-    return {
-      ok: false as const,
-      status: 400 as const,
-      error: {
-        code: "INVALID_API_KEY_ID",
-        message: "apiKeyId must be a UUID",
-      },
-    };
+    return failure(400, "INVALID_API_KEY_ID", "apiKeyId must be a UUID");
   }
 
   if (input.apiKeyId === input.auth.apiKeyId) {
-    return {
-      ok: false as const,
-      status: 409 as const,
-      error: {
-        code: "CANNOT_ROTATE_CURRENT_API_KEY",
-        message: "An API key cannot rotate itself",
-      },
-    };
+    return failure(409, "CANNOT_ROTATE_CURRENT_API_KEY", "An API key cannot rotate itself");
   }
 
   const existingApiKey = await prisma.apiKey.findFirst({
@@ -56,25 +43,11 @@ export async function rotateApiKey(input: RotateApiKeyInput) {
   });
 
   if (!existingApiKey) {
-    return {
-      ok: false as const,
-      status: 404 as const,
-      error: {
-        code: "API_KEY_NOT_FOUND",
-        message: "API key was not found",
-      },
-    };
+    return failure(404, "API_KEY_NOT_FOUND", "API key was not found");
   }
 
   if (existingApiKey.revokedAt) {
-    return {
-      ok: false as const,
-      status: 409 as const,
-      error: {
-        code: "API_KEY_ALREADY_REVOKED",
-        message: "A revoked API key cannot be rotated",
-      },
-    };
+    return failure(409, "API_KEY_ALREADY_REVOKED", "A revoked API key cannot be rotated");
   }
 
   const environment = await prisma.environment.findUniqueOrThrow({
@@ -118,20 +91,11 @@ export async function rotateApiKey(input: RotateApiKeyInput) {
   });
 
   if (!rotatedApiKey) {
-    return {
-      ok: false as const,
-      status: 409 as const,
-      error: {
-        code: "API_KEY_ALREADY_REVOKED",
-        message: "A revoked API key cannot be rotated",
-      },
-    };
+    return failure(409, "API_KEY_ALREADY_REVOKED", "A revoked API key cannot be rotated");
   }
 
-  return {
-    ok: true as const,
-    status: 201 as const,
+  return success(201, {
     apiKey: toPublicApiKey(rotatedApiKey),
     token,
-  };
+  });
 }

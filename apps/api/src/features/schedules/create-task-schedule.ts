@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { getPayload } from "../../lib/trigger-payload.js";
 import { isUuid } from "../../lib/route-params.js";
 import { parseTaskScheduleBody } from "./task-schedule-request.js";
+import { failure, success } from "../../lib/service-result.js";
 
 type CreateTaskScheduleInput = {
   auth: ApiAuthContext;
@@ -50,10 +51,6 @@ const SCHEDULE_SELECT = {
   payload: true,
   createdAt: true,
 };
-
-function failure(status: 400 | 404, code: string, message: string): CreateTaskScheduleResult {
-  return { ok: false, status, error: { code, message } };
-}
 
 function toScheduleResponse(schedule: {
   id: string;
@@ -141,9 +138,7 @@ export async function createTaskSchedule(
     select: SCHEDULE_SELECT,
   });
 
-  return {
-    ok: true,
-    status: 201,
+  return success(201, {
     schedule: toScheduleResponse(schedule),
-  };
+  });
 }

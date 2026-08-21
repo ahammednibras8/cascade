@@ -1,6 +1,7 @@
 import { createTaskRunEvent, Prisma, prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
+import { failure, success, type ServiceFailure } from "../../lib/service-result.js";
 
 type CancelTaskRunInput = {
   auth: ApiAuthContext;
@@ -19,14 +20,7 @@ type CancelTaskRunSuccess = {
   };
 };
 
-type CancelTaskRunFailure = {
-  ok: false;
-  status: 400 | 404 | 409;
-  error: {
-    code: string;
-    message: string;
-  };
-};
+type CancelTaskRunFailure = ServiceFailure<400 | 404 | 409>;
 
 export type CancelTaskRunResult = CancelTaskRunSuccess | CancelTaskRunFailure;
 
@@ -56,14 +50,7 @@ export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTa
   const { auth, runId } = input;
 
   if (!isUuid(runId)) {
-    return {
-      ok: false,
-      status: 400,
-      error: {
-        code: "INVALID_RUN_ID",
-        message: "runId must be a valid UUID",
-      },
-    };
+    return failure(400, "INVALID_RUN_ID", "runId must be a valid UUID");
   }
 
   const run = await prisma.taskRun.findFirst({
@@ -92,20 +79,11 @@ export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTa
   });
 
   if (!run) {
-    return {
-      ok: false,
-      status: 404,
-      error: {
-        code: "RUN_NOT_FOUND",
-        message: "Task run was not found in this environment",
-      },
-    };
+    return failure(404, "RUN_NOT_FOUND", "Task run was not found in this environment");
   }
 
   if (run.status === "CANCELED") {
-    return {
-      ok: true,
-      status: 200,
+    return success(200, {
       taskRun: {
         id: run.id,
         taskId: run.taskId,
@@ -113,18 +91,11 @@ export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTa
         canceled: true,
         alreadyCanceled: true,
       },
-    };
+    });
   }
 
   if (run.status === "COMPLETED" || run.status === "FAILED") {
-    return {
-      ok: false,
-      status: 409,
-      error: {
-        code: "RUN_NOT_CANCELABLE",
-        message: `Cannot cancel a run with status ${run.status}`,
-      },
-    };
+    return failure(409, "RUN_NOT_CANCELABLE", `Cannot cancel a run with status ${run.status}`);
   }
 
   const now = new Date();
@@ -186,19 +157,14 @@ export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTa
   });
 
   if (!canceled) {
-    return {
-      ok: false,
-      status: 409,
-      error: {
-        code: "RUN_NOT_CANCELABLE",
-        message: "Task run status changed before it could be canceled",
-      },
-    };
+    return failure(
+      409,
+      "RUN_NOT_CANCELABLE",
+      "Task run status changed before it could be canceled",
+    );
   }
 
-  return {
-    ok: true,
-    status: 200,
+  return success(200, {
     taskRun: {
       id: run.id,
       taskId: run.taskId,
@@ -206,5 +172,5 @@ export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTa
       canceled: true,
       alreadyCanceled: false,
     },
-  };
+  });
 }
