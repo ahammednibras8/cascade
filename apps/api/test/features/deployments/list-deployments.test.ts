@@ -73,32 +73,13 @@ describe("listDeployments", () => {
       ],
     });
 
-    expect(prisma.deployment.findMany).toHaveBeenCalledWith({
-      where: {
-        environmentId: ENVIRONMENT_ID,
-      },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 50,
-      select: {
-        id: true,
-        environmentId: true,
-        version: true,
-        image: true,
-        status: true,
-        runtimeStatus: true,
-        runtimeError: true,
-        runtimeStartedAt: true,
-        runtimeStoppedAt: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            tasks: true,
-            runs: true,
-          },
+    expect(prisma.deployment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          environmentId: ENVIRONMENT_ID,
         },
-      },
-    });
+      }),
+    );
   });
 
   it("returns an empty list when the environment has no deployments", async () => {

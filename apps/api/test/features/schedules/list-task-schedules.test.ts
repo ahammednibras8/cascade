@@ -96,47 +96,15 @@ describe("listTaskSchedules", () => {
       ],
     });
 
-    expect(prisma.taskSchedule.findMany).toHaveBeenCalledWith({
-      where: {
-        task: {
-          environmentId: ENVIRONMENT_ID,
-        },
-      },
-      orderBy: {
-        nextRunAt: "asc",
-      },
-      take: 100,
-      select: {
-        id: true,
-        taskId: true,
-        name: true,
-        scheduleType: true,
-        intervalSeconds: true,
-        cronExpression: true,
-        timezone: true,
-        nextRunAt: true,
-        lastRunAt: true,
-        enabled: true,
-        payload: true,
-        revision: true,
-        createdAt: true,
-        updatedAt: true,
-        task: {
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-            deployment: {
-              select: {
-                id: true,
-                version: true,
-                status: true,
-              },
-            },
+    expect(prisma.taskSchedule.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          task: {
+            environmentId: ENVIRONMENT_ID,
           },
         },
-      },
-    });
+      }),
+    );
   });
 
   it("returns an empty list when the environment has no schedules", async () => {

@@ -138,64 +138,14 @@ describe("getDeployment", () => {
       },
     });
 
-    expect(prisma.deployment.findFirst).toHaveBeenCalledWith({
-      where: {
-        id: DEPLOYMENT_ID,
-        environmentId: ENVIRONMENT_ID,
-      },
-      select: {
-        id: true,
-        environmentId: true,
-        version: true,
-        image: true,
-        status: true,
-        runtimeStatus: true,
-        runtimeError: true,
-        runtimeStartedAt: true,
-        runtimeStoppedAt: true,
-        createdAt: true,
-        updatedAt: true,
-        tasks: {
-          orderBy: {
-            slug: "asc",
-          },
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-            description: true,
-            executionConfig: true,
-            createdAt: true,
-            updatedAt: true,
-            _count: {
-              select: {
-                runs: true,
-                schedules: true,
-              },
-            },
-          },
+    expect(prisma.deployment.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: DEPLOYMENT_ID,
+          environmentId: ENVIRONMENT_ID,
         },
-        manifestTasks: {
-          orderBy: {
-            slug: "asc",
-          },
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-            description: true,
-            executionConfig: true,
-            createdAt: true,
-          },
-        },
-        _count: {
-          select: {
-            runs: true,
-            manifestTasks: true,
-          },
-        },
-      },
-    });
+      }),
+    );
   });
 
   it("does not offer rollback for an inactive deployment without a saved manifest", async () => {

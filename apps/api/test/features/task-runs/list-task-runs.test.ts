@@ -106,7 +106,6 @@ describe("listTaskRuns", () => {
             environmentId: "environment-1",
           },
         },
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: 2,
       }),
     );

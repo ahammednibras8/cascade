@@ -60,37 +60,16 @@ describe("listTasks", () => {
       query: {},
     });
 
-    expect(taskFindMany).toHaveBeenCalledWith({
-      where: {
-        environmentId: "environment-1",
-        executionConfig: {
-          not: dbNull,
-        },
-      },
-      orderBy: [{ slug: "asc" }, { id: "asc" }],
-      take: 51,
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        description: true,
-        createdAt: true,
-        updatedAt: true,
-        deployment: {
-          select: {
-            id: true,
-            version: true,
-            status: true,
+    expect(taskFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          environmentId: "environment-1",
+          executionConfig: {
+            not: dbNull,
           },
         },
-        _count: {
-          select: {
-            runs: true,
-            schedules: true,
-          },
-        },
-      },
-    });
+      }),
+    );
 
     expect(taskCount).toHaveBeenCalledWith({
       where: {

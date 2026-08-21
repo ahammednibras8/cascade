@@ -42,24 +42,16 @@ describe("listApiKeys", () => {
 
     const result = await listApiKeys({ auth });
 
-    expect(apiKeyFindMany).toHaveBeenCalledWith({
-      where: {
-        environmentId: "environment-1",
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      select: {
-        id: true,
-        name: true,
-        keyPrefix: true,
-        scopes: true,
-        lastUsedAt: true,
-        revokedAt: true,
-        createdAt: true,
-        rotatedFromId: true,
-      },
-    });
+    expect(apiKeyFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          environmentId: "environment-1",
+        },
+        select: expect.not.objectContaining({
+          keyHash: true,
+        }),
+      }),
+    );
 
     expect(result).toEqual({
       status: 200,

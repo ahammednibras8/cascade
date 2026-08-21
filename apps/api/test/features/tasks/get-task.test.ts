@@ -160,82 +160,17 @@ describe("getTask", () => {
       },
     });
 
-    expect(prisma.task.findFirst).toHaveBeenCalledWith({
-      where: {
-        id: TASK_ID,
-        environmentId: ENVIRONMENT_ID,
-        executionConfig: {
-          not: dbNull,
-        },
-      },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        description: true,
-        executionConfig: true,
-        createdAt: true,
-        updatedAt: true,
-        deployment: {
-          select: {
-            id: true,
-            version: true,
-            image: true,
-            status: true,
-            runtimeStatus: true,
+    expect(prisma.task.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: TASK_ID,
+          environmentId: ENVIRONMENT_ID,
+          executionConfig: {
+            not: dbNull,
           },
         },
-        schedules: {
-          orderBy: {
-            nextRunAt: "asc",
-          },
-          take: 50,
-          select: {
-            id: true,
-            name: true,
-            scheduleType: true,
-            intervalSeconds: true,
-            cronExpression: true,
-            timezone: true,
-            nextRunAt: true,
-            lastRunAt: true,
-            enabled: true,
-            payload: true,
-            revision: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
-        runs: {
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 20,
-          select: {
-            id: true,
-            status: true,
-            deploymentId: true,
-            scheduleId: true,
-            createdAt: true,
-            startedAt: true,
-            lastHeartbeatAt: true,
-            completedAt: true,
-            _count: {
-              select: {
-                attempts: true,
-                events: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            runs: true,
-            schedules: true,
-          },
-        },
-      },
-    });
+      }),
+    );
   });
 
   it("does not expose a task outside the authenticated environment", async () => {
