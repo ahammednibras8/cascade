@@ -1,7 +1,13 @@
 import { beforeEach, expect, it, vi } from "vitest";
 
 const cascadeDashboardApiRequest = vi.hoisted(() =>
-  vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
+  vi.fn<
+    (
+      request: Request,
+      path: string,
+      init?: RequestInit & { responseSchema?: unknown },
+    ) => Promise<unknown>
+  >(),
 );
 
 const requireDashboardCapability = vi.hoisted(() =>
@@ -122,6 +128,9 @@ it("returns a deployment from the Cascade API", async () => {
   expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
     expect.any(Request),
     `/api/deployments/${DEPLOYMENT_ID}`,
+    expect.objectContaining({
+      responseSchema: expect.any(Object),
+    }),
   );
 });
 
@@ -139,6 +148,9 @@ it("URL-encodes the deployment ID before requesting the API", async () => {
   expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
     expect.any(Request),
     "/api/deployments/deployment%2Fwith%20spaces",
+    expect.objectContaining({
+      responseSchema: expect.any(Object),
+    }),
   );
 });
 
@@ -198,9 +210,10 @@ it("sends a deployment deactivation request to the API", async () => {
   expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
     expect.any(Request),
     `/api/deployments/${DEPLOYMENT_ID}/deactivate`,
-    {
+    expect.objectContaining({
       method: "POST",
-    },
+      responseSchema: expect.any(Object),
+    }),
   );
   expect(requireDashboardCapability).toHaveBeenCalledWith(
     expect.any(Request),
@@ -267,9 +280,10 @@ it("sends a deployment rollback request to the API", async () => {
   expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
     expect.any(Request),
     `/api/deployments/${DEPLOYMENT_ID}/rollback`,
-    {
+    expect.objectContaining({
       method: "POST",
-    },
+      responseSchema: expect.any(Object),
+    }),
   );
   expect(requireDashboardCapability).toHaveBeenCalledWith(
     expect.any(Request),

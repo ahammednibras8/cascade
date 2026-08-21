@@ -21,7 +21,7 @@ describe("apiContracts", () => {
 
   it("requires explicit idempotency semantics on trigger mutations", () => {
     const mutationContracts = Object.values(apiContracts).filter(
-      (contract) => contract.kind === "mutation",
+      (contract) => contract.kind === "mutation" && contract.path.endsWith("/trigger"),
     );
 
     expect(mutationContracts).not.toHaveLength(0);
@@ -29,7 +29,10 @@ describe("apiContracts", () => {
       true,
     );
     expect(
-      mutationContracts.every((contract) => contract.idempotencyHeader === "Idempotency-Key"),
+      mutationContracts.every(
+        (contract) =>
+          "idempotencyHeader" in contract && contract.idempotencyHeader === "Idempotency-Key",
+      ),
     ).toBe(true);
   });
 

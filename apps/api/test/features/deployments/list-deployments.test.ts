@@ -1,3 +1,4 @@
+import { ListDeploymentsResponseSchema } from "@cascade/api-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ApiAuthContext } from "../../../src/auth/api-key.js";
 
@@ -15,6 +16,7 @@ const auth = {
 
 const prisma = vi.hoisted(() => ({
   deployment: {
+    count: vi.fn<(args: unknown) => Promise<number>>(),
     findMany: vi.fn<(args: unknown) => Promise<unknown[]>>(),
   },
 }));
@@ -31,6 +33,7 @@ describe("listDeployments", () => {
   });
 
   it("lists deployments from the authenticated environment", async () => {
+    prisma.deployment.count.mockResolvedValue(1);
     prisma.deployment.findMany.mockResolvedValue([
       {
         id: "deployment-1",
@@ -51,7 +54,10 @@ describe("listDeployments", () => {
       },
     ]);
 
-    await expect(listDeployments({ auth })).resolves.toEqual({
+    const result = await listDeployments({ auth, query: {} });
+
+    expect(() => ListDeploymentsResponseSchema.parse(result)).not.toThrow();
+    expect(result).toEqual({
       ok: true,
       status: 200,
       deployments: [
@@ -71,6 +77,12 @@ describe("listDeployments", () => {
           runsCount: 7,
         },
       ],
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 1,
+      },
     });
 
     expect(prisma.deployment.findMany).toHaveBeenCalledWith(
@@ -80,15 +92,30 @@ describe("listDeployments", () => {
         },
       }),
     );
+    expect(prisma.deployment.count).toHaveBeenCalledWith({
+      where: {
+        environmentId: ENVIRONMENT_ID,
+      },
+    });
   });
 
   it("returns an empty list when the environment has no deployments", async () => {
+    prisma.deployment.count.mockResolvedValue(0);
     prisma.deployment.findMany.mockResolvedValue([]);
 
-    await expect(listDeployments({ auth })).resolves.toEqual({
+    const result = await listDeployments({ auth, query: {} });
+
+    expect(() => ListDeploymentsResponseSchema.parse(result)).not.toThrow();
+    expect(result).toEqual({
       ok: true,
       status: 200,
       deployments: [],
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 0,
+      },
     });
   });
 });

@@ -73,7 +73,7 @@ function deploymentDetail(overrides: Record<string, unknown> = {}) {
   };
 }
 
-describe("deployment read routes", () => {
+describe("deployment creation routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -114,6 +114,12 @@ describe("deployment read routes", () => {
     });
     expect(createDeployment).not.toHaveBeenCalled();
   });
+});
+
+describe("deployment read routes", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it("lists deployments for a key with DEPLOYMENTS_WRITE", async () => {
     const deployments = [deploymentListItem()];
@@ -122,16 +128,31 @@ describe("deployment read routes", () => {
       ok: true,
       status: 200,
       deployments,
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 1,
+      },
     });
 
-    const response = await httpRequest(createApp()).get("/api/deployments");
+    const response = await httpRequest(createApp()).get("/api/deployments?limit=25");
 
     expect(response.status).toBe(200);
     expect(listDeployments).toHaveBeenCalledWith({
       auth: AUTH_CONTEXT,
+      query: {
+        limit: "25",
+      },
     });
     expect(response.body).toEqual({
       deployments,
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 1,
+      },
     });
   });
 

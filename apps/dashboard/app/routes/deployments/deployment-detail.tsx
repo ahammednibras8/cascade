@@ -1,10 +1,14 @@
+import {
+  DeactivateDeploymentResponseSchema,
+  DeploymentDetailResponseSchema,
+  RollbackDeploymentResponseSchema,
+} from "@cascade/api-contracts";
 import type { Route } from "./+types/deployment-detail";
 import {
   DeploymentDetailView,
   DeploymentNotFound,
 } from "~/features/deployments/deployment-detail-view";
 import { isDeploymentNotFoundError } from "~/features/deployments/errors";
-import type { Deployment } from "~/features/deployments/types";
 import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
 import { requireDashboardCapability } from "~/lib/auth/dashboard-permissions.server";
@@ -24,9 +28,13 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const deploymentId = params.deploymentId;
 
   try {
-    const response = await cascadeDashboardApiRequest<{
-      deployment: Deployment;
-    }>(request, `/api/deployments/${encodeURIComponent(deploymentId)}`);
+    const response = await cascadeDashboardApiRequest(
+      request,
+      `/api/deployments/${encodeURIComponent(deploymentId)}`,
+      {
+        responseSchema: DeploymentDetailResponseSchema,
+      },
+    );
 
     return {
       deployment: response.deployment,
@@ -53,25 +61,44 @@ export async function action({ params, request }: Route.ActionArgs) {
   const deploymentId = encodeURIComponent(params.deploymentId);
 
   try {
-    const response = await cascadeDashboardApiRequest<{
-      deployment: {
-        id: string;
-        status: "ACTIVE" | "INACTIVE";
-      };
-    }>(request, `/api/deployments/${deploymentId}/${intent}`, {
-      method: "POST",
-    });
-
-    return {
-      ok: true,
-      intent,
-      deployment: response.deployment,
-    };
+    return await callDeploymentAction(request, deploymentId, intent);
   } catch (error) {
     throw new Response(getActionFailureMessage(intent), {
       status: getActionFailureStatus(error),
     });
   }
+}
+
+async function callDeploymentAction(
+  request: Request,
+  deploymentId: string,
+  intent: DeploymentActionIntent,
+) {
+  const path = `/api/deployments/${deploymentId}/${intent}`;
+
+  if (intent === "deactivate") {
+    const response = await cascadeDashboardApiRequest(request, path, {
+      method: "POST",
+      responseSchema: DeactivateDeploymentResponseSchema,
+    });
+
+    return {
+      ok: true as const,
+      intent,
+      deployment: response.deployment,
+    };
+  }
+
+  const response = await cascadeDashboardApiRequest(request, path, {
+    method: "POST",
+    responseSchema: RollbackDeploymentResponseSchema,
+  });
+
+  return {
+    ok: true as const,
+    intent,
+    deployment: response.deployment,
+  };
 }
 
 function getDeploymentActionIntent(formData: FormData): DeploymentActionIntent {

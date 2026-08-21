@@ -14,12 +14,13 @@ export const deploymentRoutes: ExpressRouter = Router();
 deploymentRoutes.get(
   "/deployments",
   requireApiKeyScope(ApiKeyScope.DEPLOYMENTS_WRITE),
-  authenticatedRoute(async ({ auth, response }) => {
-    const result = await listDeployments({ auth });
+  authenticatedRoute(async ({ auth, request, response }) => {
+    const result = await listDeployments({ auth, query: request.query });
 
-    response.status(result.status).json({
-      deployments: result.deployments,
-    });
+    writeJsonResult(response, result, ({ deployments, pagination }) => ({
+      deployments,
+      pagination,
+    }));
   }),
 );
 

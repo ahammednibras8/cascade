@@ -1,3 +1,4 @@
+import { RollbackDeploymentResponseSchema } from "@cascade/api-contracts";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { ApiAuthContext } from "../../../src/auth/api-key.js";
 
@@ -136,7 +137,10 @@ beforeEach(() => {
 it("activates the target deployment and restores its immutable task manifest", async () => {
   mocks.prisma.deployment.findFirst.mockResolvedValue(inactiveDeployment());
 
-  await expect(rollback()).resolves.toEqual({
+  const result = await rollback();
+
+  expect(() => RollbackDeploymentResponseSchema.parse(result)).not.toThrow();
+  expect(result).toEqual({
     ok: true,
     status: 200,
     deployment: {

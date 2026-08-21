@@ -1,3 +1,4 @@
+import { DeploymentDetailResponseSchema } from "@cascade/api-contracts";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { ApiAuthContext } from "../../../src/auth/api-key.js";
 
@@ -89,12 +90,13 @@ it("returns a deployment, its current tasks, and its saved manifest", async () =
     ],
   });
 
-  await expect(
-    getDeployment({
-      auth,
-      deploymentId: DEPLOYMENT_ID,
-    }),
-  ).resolves.toEqual({
+  const result = await getDeployment({
+    auth,
+    deploymentId: DEPLOYMENT_ID,
+  });
+
+  expect(() => DeploymentDetailResponseSchema.parse(result)).not.toThrow();
+  expect(result).toEqual({
     ok: true,
     status: 200,
     deployment: {
@@ -168,12 +170,13 @@ it("does not offer rollback for an inactive deployment without a saved manifest"
     tasks: [],
   });
 
-  await expect(
-    getDeployment({
-      auth,
-      deploymentId: DEPLOYMENT_ID,
-    }),
-  ).resolves.toMatchObject({
+  const result = await getDeployment({
+    auth,
+    deploymentId: DEPLOYMENT_ID,
+  });
+
+  expect(() => DeploymentDetailResponseSchema.parse(result)).not.toThrow();
+  expect(result).toMatchObject({
     ok: true,
     status: 200,
     deployment: {

@@ -1,3 +1,4 @@
+import { DeactivateDeploymentResponseSchema } from "@cascade/api-contracts";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { ApiAuthContext } from "../../../src/auth/api-key.js";
 
@@ -85,12 +86,13 @@ beforeEach(() => {
 it("deactivates an active deployment, pauses schedules, and detaches tasks", async () => {
   mocks.prisma.deployment.findFirst.mockResolvedValue(activeDeployment());
 
-  await expect(
-    deactivateDeployment({
-      auth,
-      deploymentId: DEPLOYMENT_ID,
-    }),
-  ).resolves.toEqual({
+  const result = await deactivateDeployment({
+    auth,
+    deploymentId: DEPLOYMENT_ID,
+  });
+
+  expect(() => DeactivateDeploymentResponseSchema.parse(result)).not.toThrow();
+  expect(result).toEqual({
     ok: true,
     status: 200,
     deployment: {

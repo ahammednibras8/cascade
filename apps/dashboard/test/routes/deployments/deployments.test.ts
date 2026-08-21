@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const cascadeDashboardApiRequest = vi.hoisted(() =>
-  vi.fn<(request: Request, path: string) => Promise<unknown>>(),
+  vi.fn<
+    (
+      request: Request,
+      path: string,
+      init?: RequestInit & { responseSchema?: unknown },
+    ) => Promise<unknown>
+  >(),
 );
 
 vi.mock("~/lib/api/cascade-api.server", () => ({
@@ -51,6 +57,12 @@ describe("deployments loader", () => {
 
     cascadeDashboardApiRequest.mockResolvedValue({
       deployments,
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 2,
+      },
     });
 
     await expect(
@@ -62,12 +74,21 @@ describe("deployments loader", () => {
     expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
       expect.any(Request),
       "/api/deployments",
+      expect.objectContaining({
+        responseSchema: expect.any(Object),
+      }),
     );
   });
 
   it("returns an empty list when the API has no deployments", async () => {
     cascadeDashboardApiRequest.mockResolvedValue({
       deployments: [],
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 0,
+      },
     });
 
     await expect(
