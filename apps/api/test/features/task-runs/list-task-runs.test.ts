@@ -1,3 +1,4 @@
+import { ListTaskRunsResponseSchema } from "@cascade/api-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const prisma = vi.hoisted(() => ({
@@ -89,6 +90,7 @@ describe("listTaskRuns", () => {
       throw new Error("Expected successful result");
     }
 
+    expect(() => ListTaskRunsResponseSchema.parse(result)).not.toThrow();
     expect(typeof result.pagination.nextCursor).toBe("string");
 
     expect(prisma.taskRun.count).toHaveBeenCalledWith({
@@ -137,6 +139,7 @@ describe("listTaskRuns", () => {
         nextCursor: null,
       },
     });
+    expect(() => ListTaskRunsResponseSchema.parse(result)).not.toThrow();
 
     expect(prisma.taskRun.findMany).toHaveBeenCalledWith(
       expect.objectContaining({

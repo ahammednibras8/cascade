@@ -1,3 +1,4 @@
+import { TriggerTaskRunResponseSchema } from "@cascade/api-contracts";
 import { beforeEach, expect, it, vi } from "vitest";
 import { hashTriggerRequest } from "../../../src/lib/idempotency.js";
 import {
@@ -69,6 +70,7 @@ it("creates a pending task run, writes a trigger event, and enqueues the run", a
 
   const result = await triggerByTaskId();
 
+  expect(() => TriggerTaskRunResponseSchema.parse(result)).not.toThrow();
   expectPendingTaskRunResponse(result);
   expectPayloadStored();
   expectTaskRunCreated();
@@ -102,6 +104,7 @@ it("returns an existing run for a matching idempotent replay", async () => {
 
   const success = expectTriggerSucceeded(result);
 
+  expect(() => TriggerTaskRunResponseSchema.parse(success)).not.toThrow();
   expect(success.status).toBe(200);
   expect(success.idempotentReplayed).toBe(true);
   expect(success.taskRun.idempotentReplay).toBe(true);
@@ -236,6 +239,7 @@ it("continues an incoming traceparent when triggering a task", async () => {
 
   const success = expectTriggerSucceeded(result);
 
+  expect(() => TriggerTaskRunResponseSchema.parse(success)).not.toThrow();
   expect(parseTraceparent).toHaveBeenCalledWith(incomingTraceparent);
   expect(createRootTraceContext).not.toHaveBeenCalled();
   expect(createChildTraceContext).toHaveBeenCalledWith({
@@ -268,6 +272,7 @@ it("creates a pending task run when triggering by task slug", async () => {
 
   const success = expectTriggerSucceeded(result);
 
+  expect(() => TriggerTaskRunResponseSchema.parse(success)).not.toThrow();
   expect(success.status).toBe(202);
   expectTaskLookupBySlug();
   expectTaskRunCreated({

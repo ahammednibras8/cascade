@@ -1,30 +1,11 @@
+import { ListTaskRunsResponseSchema, type ListTaskRunsResponse } from "@cascade/api-contracts";
 import type { Route } from "./+types/runs";
 import { RunsListView } from "~/features/runs/runs-list-view";
 import type { TaskRunListItem } from "~/features/runs/types";
 import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
 
-type ApiTaskRunListItem = {
-  id: string;
-  status: string;
-  createdAt: string;
-  startedAt: string | null;
-  lastHeartbeatAt: string | null;
-  completedAt: string | null;
-  task: {
-    slug: string;
-    name: string;
-    environment: {
-      slug: string;
-      project: {
-        slug: string;
-        name: string;
-      };
-    };
-  };
-  attemptsCount: number;
-  eventsCount: number;
-};
+type ApiTaskRunListItem = ListTaskRunsResponse["taskRuns"][number];
 
 export function meta() {
   return [{ title: "Runs | Cascade" }];
@@ -33,9 +14,9 @@ export function meta() {
 export async function loader({ request }: Route.LoaderArgs) {
   await requireDashboardUser(request);
 
-  const response = await cascadeDashboardApiRequest<{
-    taskRuns: ApiTaskRunListItem[];
-  }>(request, "/api/runs");
+  const response = await cascadeDashboardApiRequest(request, "/api/runs", {
+    responseSchema: ListTaskRunsResponseSchema,
+  });
 
   return {
     runs: response.taskRuns.map(toTaskRunListItem),

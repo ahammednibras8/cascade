@@ -1,3 +1,8 @@
+import {
+  ApiErrorResponseSchema,
+  parseApiResponse,
+  type ApiResponseSchema,
+} from "@cascade/api-contracts";
 import { createDashboardApiAuthorizationForRequest } from "../auth/dashboard-api-authorization.server";
 
 const DASHBOARD_API_AUTH_HEADER = "x-cascade-dashboard-authorization";
@@ -20,6 +25,10 @@ type CascadeErrorBody = {
   };
 };
 
+type CascadeDashboardApiRequestInit<TResponse> = RequestInit & {
+  responseSchema?: ApiResponseSchema<TResponse>;
+};
+
 async function readResponseBody(response: Response) {
   const text = await response.text();
 
@@ -35,6 +44,12 @@ async function readResponseBody(response: Response) {
 }
 
 function getErrorMessage(status: number, body: unknown) {
+  const parsedBody = ApiErrorResponseSchema.safeParse(body);
+
+  if (parsedBody.success) {
+    return `Cascade API request failed (${status} ${parsedBody.data.error.code}): ${parsedBody.data.error.message}`;
+  }
+
   const errorBody = body as CascadeErrorBody;
   const apiMessage = errorBody.error?.message;
   const apiCode = errorBody.error?.code;
@@ -67,14 +82,15 @@ function getApiUrl(): string {
 export async function cascadeDashboardApiRequest<T>(
   request: Request,
   path: string,
-  init: RequestInit = {},
+  init: CascadeDashboardApiRequestInit<T> = {},
 ): Promise<T> {
   const authorization = await createDashboardApiAuthorizationForRequest(request);
+  const { responseSchema, ...fetchInit } = init;
 
   const response = await fetch(`${getApiUrl()}${path}`, {
-    ...init,
+    ...fetchInit,
     headers: {
-      ...init.headers,
+      ...fetchInit.headers,
       [DASHBOARD_API_AUTH_HEADER]: authorization,
     },
   });
@@ -85,7 +101,7 @@ export async function cascadeDashboardApiRequest<T>(
     throw new CascadeApiError(response.status, body, getErrorMessage(response.status, body));
   }
 
-  return body as T;
+  return responseSchema ? parseApiResponse(responseSchema, body) : (body as T);
 }
 
 export async function cascadeDashboardApiStreamRequest(

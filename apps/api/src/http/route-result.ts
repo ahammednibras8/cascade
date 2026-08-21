@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Request, RequestHandler, Response } from "express";
 import type { ApiAuthContext } from "../auth/api-key.js";
 import { getAuthOrRespond } from "../routes/route-auth.js";
 import { asyncHandler } from "./async-handler.js";
@@ -26,7 +26,9 @@ type WriteJsonResultOptions = {
   headers?: Record<string, string>;
 };
 
-export function authenticatedRoute(handler: (input: AuthenticatedRouteInput) => Promise<void>) {
+export function authenticatedRoute(
+  handler: (input: AuthenticatedRouteInput) => Promise<void>,
+): RequestHandler {
   return asyncHandler(async (request, response) => {
     const auth = getAuthOrRespond(request, response);
 

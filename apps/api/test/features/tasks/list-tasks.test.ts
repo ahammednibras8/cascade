@@ -1,3 +1,4 @@
+import { ListTasksResponseSchema } from "@cascade/api-contracts";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { ApiAuthContext } from "../../../src/auth/api-key.js";
 
@@ -59,6 +60,7 @@ it("lists tasks only from the authenticated environment", async () => {
     query: {},
   });
 
+  expect(() => ListTasksResponseSchema.parse(result)).not.toThrow();
   expect(taskFindMany).toHaveBeenCalledWith(
     expect.objectContaining({
       where: {
@@ -112,12 +114,13 @@ it("returns an empty task list when the environment has no tasks", async () => {
   taskCount.mockResolvedValue(0);
   taskFindMany.mockResolvedValue([]);
 
-  await expect(
-    listTasks({
-      auth,
-      query: {},
-    }),
-  ).resolves.toEqual({
+  const result = await listTasks({
+    auth,
+    query: {},
+  });
+
+  expect(() => ListTasksResponseSchema.parse(result)).not.toThrow();
+  expect(result).toEqual({
     ok: true,
     status: 200,
     tasks: [],

@@ -34,11 +34,23 @@ describe("tasks loader", () => {
           updatedAt: "2026-01-02T00:00:00.000Z",
         },
       ],
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 1,
+      },
     });
 
     const result = await loader({ request: new Request("http://dashboard.test/tasks") } as never);
 
-    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(expect.any(Request), "/api/tasks");
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/tasks",
+      expect.objectContaining({
+        responseSchema: expect.any(Object),
+      }),
+    );
 
     expect(result).toEqual({
       tasks: [
@@ -64,6 +76,12 @@ describe("tasks loader", () => {
   it("returns an empty list when the API has no tasks", async () => {
     cascadeDashboardApiRequest.mockResolvedValue({
       tasks: [],
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 0,
+      },
     });
 
     await expect(

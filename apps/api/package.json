@@ -11,6 +11,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@cascade/api-contracts": "workspace:*",
     "@cascade/core": "workspace:*",
     "@cascade/database": "workspace:*",
     "@cascade/storage": "workspace:*",

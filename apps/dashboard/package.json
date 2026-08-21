@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage --passWithNoTests"
   },
   "dependencies": {
+    "@cascade/api-contracts": "workspace:*",
     "@cascade/core": "workspace:*",
     "@cascade/database": "workspace:*",
     "@radix-ui/themes": "^3.3.0",

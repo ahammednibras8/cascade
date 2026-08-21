@@ -69,6 +69,7 @@ it("triggers a task run by task slug", async () => {
     async (_url, _init) =>
       new Response(
         JSON.stringify({
+          idempotentReplayed: false,
           taskRun: {
             id: "run-1",
             taskId: "task-1",
@@ -130,6 +131,7 @@ it("uses the active OpenTelemetry traceparent when triggering a task", async () 
     async () =>
       new Response(
         JSON.stringify({
+          idempotentReplayed: false,
           taskRun: {
             id: "run-1",
             taskId: "task-1",

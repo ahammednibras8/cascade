@@ -27,6 +27,10 @@
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
+    "packages/api-contracts": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
     "packages/database": {
       "entry": ["prisma/seed/**/*.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts", "prisma/**/*.ts"]
