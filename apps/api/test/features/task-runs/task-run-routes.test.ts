@@ -1,16 +1,20 @@
 import httpRequest from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  AUTH_CONTEXT,
-  RUN_ID,
-  TASK_ID,
+  cancelTaskRun,
   createApp,
   getTaskRun,
   listTaskRunEvents,
-  streamTaskRunEvents,
-  streamEnvironmentRuns,
   listTaskRuns,
-} from "../tasks/support/tasks-router-harness.js";
+  replayTaskRun,
+  streamEnvironmentRuns,
+  streamTaskRunEvents,
+} from "./support/task-run-route-harness.js";
+import { AUTH_CONTEXT, RUN_ID, TASK_ID } from "../support/route-test-app.js";
+import {
+  createCancelTaskRunSuccess,
+  createReplayTaskRunSuccess,
+} from "./support/task-run-route-fixtures.js";
 
 describe("task run read routes", () => {
   beforeEach(() => {
@@ -245,6 +249,18 @@ describe("task run read routes", () => {
         message: "status must be one of PENDING, EXECUTING, COMPLETED, FAILED, or CANCELED",
       },
     });
+  });
+
+  it.each([
+    ["cancel", cancelTaskRun, createCancelTaskRunSuccess(), 200],
+    ["replay", replayTaskRun, createReplayTaskRunSuccess(), 202],
+  ] as const)("passes %s run requests to the service", async (action, service, result, status) => {
+    service.mockResolvedValue(result);
+
+    const response = await httpRequest(createApp()).post(`/api/runs/${RUN_ID}/${action}`).send();
+
+    expect(response.status).toBe(status);
+    expect(service).toHaveBeenCalledWith({ auth: AUTH_CONTEXT, runId: RUN_ID });
   });
 
   it("opens an authenticated event stream and forwards Last-Event-ID", async () => {

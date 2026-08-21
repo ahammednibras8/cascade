@@ -1,10 +1,7 @@
 import httpRequest from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  AUTH_CONTEXT,
-  createApp,
-  rollbackDeployment,
-} from "../tasks/support/tasks-router-harness.js";
+import { createApp, rollbackDeployment } from "./support/deployment-route-harness.js";
+import { AUTH_CONTEXT } from "../support/route-test-app.js";
 
 const DEPLOYMENT_ID = "44444444-4444-4444-8444-444444444444";
 

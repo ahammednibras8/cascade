@@ -1,11 +1,17 @@
 import httpRequest from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  AUTH_CONTEXT,
+  createDeployment,
   createApp,
   getDeployment,
   listDeployments,
-} from "../tasks/support/tasks-router-harness.js";
+} from "./support/deployment-route-harness.js";
+import { AUTH_CONTEXT } from "../support/route-test-app.js";
+import {
+  createDeploymentBody,
+  createDeploymentSuccess,
+  createDeploymentVersionExistsFailure,
+} from "./support/deployment-route-fixtures.js";
 
 const DEPLOYMENT_ID = "44444444-4444-4444-8444-444444444444";
 
@@ -70,6 +76,43 @@ function deploymentDetail(overrides: Record<string, unknown> = {}) {
 describe("deployment read routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("passes deployment registration requests to the deployment service", async () => {
+    createDeployment.mockResolvedValue(createDeploymentSuccess());
+
+    const body = createDeploymentBody();
+    const response = await httpRequest(createApp()).post("/api/deployments").send(body);
+
+    expect(response.status).toBe(201);
+    expect(createDeployment).toHaveBeenCalledWith({ auth: AUTH_CONTEXT, body });
+    expect(response.body.deployment.id).toBe("deployment-1");
+  });
+
+  it("returns deployment version conflicts from the deployment service", async () => {
+    createDeployment.mockResolvedValue(createDeploymentVersionExistsFailure());
+
+    const response = await httpRequest(createApp())
+      .post("/api/deployments")
+      .send(createDeploymentBody({ version: "local-worker-test-001" }));
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe("DEPLOYMENT_VERSION_EXISTS");
+  });
+
+  it("rejects deployment creation without DEPLOYMENTS_WRITE", async () => {
+    const response = await httpRequest(createApp({ scopes: [] }))
+      .post("/api/deployments")
+      .send(createDeploymentBody());
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "API key is missing the required permission",
+      },
+    });
+    expect(createDeployment).not.toHaveBeenCalled();
   });
 
   it("lists deployments for a key with DEPLOYMENTS_WRITE", async () => {

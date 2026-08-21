@@ -1,13 +1,13 @@
 import httpRequest from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  AUTH_CONTEXT,
   createApp,
   createApiKey,
   listApiKeys,
   revokeApiKey,
   rotateApiKey,
-} from "../tasks/support/tasks-router-harness.js";
+} from "./support/api-key-route-harness.js";
+import { AUTH_CONTEXT } from "../support/route-test-app.js";
 
 const API_KEY_ID = "33333333-3333-4333-8333-333333333333";
 const CREATED_AT = "2026-08-03T00:00:00.000Z";
