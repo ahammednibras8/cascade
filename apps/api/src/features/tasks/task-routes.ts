@@ -2,7 +2,14 @@ import { ApiKeyScope } from "@cascade/database";
 import { withActiveSpan } from "@cascade/telemetry";
 import { Router, type Request, type Response, type Router as ExpressRouter } from "express";
 import { requireApiKeyScope, type ApiAuthContext } from "../../auth/api-key.js";
-import { asyncHandler } from "../../http/async-handler.js";
+import {
+  authenticatedRoute,
+  type RouteJsonResult,
+  type RouteSuccessResult,
+  writeEmptyResult,
+  writeErrorResult,
+  writeJsonResult,
+} from "../../http/route-result.js";
 import { getIdempotencyKey } from "../../lib/idempotency.js";
 import { getSingleParam } from "../../lib/route-params.js";
 import { createTaskSchedule } from "../schedules/create-task-schedule.js";
@@ -15,7 +22,6 @@ import { pauseTaskSchedule } from "../schedules/pause-task-schedule.js";
 import { resumeTaskSchedule } from "../schedules/resume-task-schedule.js";
 import { triggerTaskRun } from "../task-runs/trigger-task-run.js";
 import { updateTaskSchedule } from "../schedules/update-task-schedule.js";
-import { getAuthOrRespond } from "../../routes/route-auth.js";
 
 export const taskRoutes: ExpressRouter = Router();
 
@@ -25,7 +31,7 @@ taskRoutes.get(
   authenticatedRoute(async ({ auth, request, response }) => {
     const result = await listTasks({ auth, query: request.query });
 
-    writeJsonResult<TaskListSuccess>(response, result, ({ tasks, pagination }) => ({
+    writeJsonResult(response, result, ({ tasks, pagination }) => ({
       tasks,
       pagination,
     }));
@@ -103,7 +109,7 @@ taskRoutes.delete(
       scheduleId: getScheduleId(request),
     });
 
-    writeDeleteResult(response, result);
+    writeEmptyResult(response, result);
   }),
 );
 
@@ -167,26 +173,6 @@ taskRoutes.post(
   }),
 );
 
-type AuthenticatedRouteInput = {
-  auth: ApiAuthContext;
-  request: Request;
-  response: Response;
-};
-
-type RouteErrorResult = {
-  ok: false;
-  status: number;
-  error: unknown;
-};
-
-type RouteSuccessResult = {
-  ok: true;
-  status: number;
-};
-
-type RouteJsonResult<TSuccess extends RouteSuccessResult> = TSuccess | RouteErrorResult;
-type DeleteScheduleResult = Awaited<ReturnType<typeof deleteTaskSchedule>>;
-type TaskListSuccess = Extract<Awaited<ReturnType<typeof listTasks>>, { ok: true }>;
 type TriggerTaskRunRouteResult = Awaited<ReturnType<typeof triggerTaskRun>>;
 
 type ScheduleRouteSuccess = RouteSuccessResult & {
@@ -207,39 +193,8 @@ type TaskReference =
       value: string | undefined;
     };
 
-function authenticatedRoute(handler: (input: AuthenticatedRouteInput) => Promise<void>) {
-  return asyncHandler(async (request, response) => {
-    const auth = getAuthOrRespond(request, response);
-
-    if (!auth) {
-      return;
-    }
-
-    await handler({ auth, request, response });
-  });
-}
-
 function getScheduleId(request: Request) {
   return getSingleParam(request.params.scheduleId);
-}
-
-function writeErrorResult(response: Response, result: RouteErrorResult) {
-  response.status(result.status).json({
-    error: result.error,
-  });
-}
-
-function writeJsonResult<TSuccess extends RouteSuccessResult>(
-  response: Response,
-  result: RouteJsonResult<TSuccess>,
-  body: (result: TSuccess) => Record<string, unknown>,
-) {
-  if (!result.ok) {
-    writeErrorResult(response, result);
-    return;
-  }
-
-  response.status(result.status).json(body(result));
 }
 
 function writeScheduleResult(response: Response, result: RouteJsonResult<ScheduleRouteSuccess>) {
@@ -248,15 +203,6 @@ function writeScheduleResult(response: Response, result: RouteJsonResult<Schedul
 
 function writeTaskResult(response: Response, result: RouteJsonResult<TaskRouteSuccess>) {
   writeJsonResult(response, result, ({ task }) => ({ task }));
-}
-
-function writeDeleteResult(response: Response, result: DeleteScheduleResult) {
-  if (!result.ok) {
-    writeErrorResult(response, result);
-    return;
-  }
-
-  response.status(result.status).send();
 }
 
 async function triggerTaskFromRoute(input: {
