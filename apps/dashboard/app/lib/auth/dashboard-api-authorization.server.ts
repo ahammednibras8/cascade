@@ -3,7 +3,7 @@ import { getDashboardSession } from "./dashboard-session.server";
 import { getDashboardWorkspaceContext } from "../workspace/dashboard-workspace.server";
 
 function getDashboardApiAuthSecret() {
-  const secret = process.env.DASHBOARD_API_AUTH_SECRET;
+  const secret = process.env["DASHBOARD_API_AUTH_SECRET"];
 
   if (!secret || secret.length < 32) {
     throw new Error("DASHBOARD_API_AUTH_SECRET must be at least 32 characters");

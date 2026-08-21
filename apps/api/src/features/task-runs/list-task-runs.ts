@@ -198,7 +198,7 @@ function parseRunListQuery(
   }
 
   const status = parseOptionalListEnum(
-    query.status,
+    query["status"],
     taskRunStatuses,
     "status must be one of PENDING, EXECUTING, COMPLETED, FAILED, or CANCELED",
   );
@@ -207,19 +207,19 @@ function parseRunListQuery(
     return status;
   }
 
-  const taskId = parseOptionalListUuid(query.taskId, "taskId must be a valid UUID");
+  const taskId = parseOptionalListUuid(query["taskId"], "taskId must be a valid UUID");
 
   if (!taskId.ok) {
     return taskId;
   }
 
-  const createdAfter = parseOptionalListDate(query.createdAfter, "createdAfter");
+  const createdAfter = parseOptionalListDate(query["createdAfter"], "createdAfter");
 
   if (!createdAfter.ok) {
     return createdAfter;
   }
 
-  const createdBefore = parseOptionalListDate(query.createdBefore, "createdBefore");
+  const createdBefore = parseOptionalListDate(query["createdBefore"], "createdBefore");
 
   if (!createdBefore.ok) {
     return createdBefore;

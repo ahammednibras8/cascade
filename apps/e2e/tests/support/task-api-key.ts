@@ -3,11 +3,11 @@ import { createHash } from "node:crypto";
 const DEFAULT_E2E_TASK_API_KEY = "csc_e2e_task_test_key";
 
 export function getE2eTaskApiKey() {
-  return process.env.E2E_TASK_API_KEY ?? DEFAULT_E2E_TASK_API_KEY;
+  return process.env["E2E_TASK_API_KEY"] ?? DEFAULT_E2E_TASK_API_KEY;
 }
 
 function hashApiKey(apiKey: string) {
-  const pepper = process.env.API_KEY_PEPPER;
+  const pepper = process.env["API_KEY_PEPPER"];
 
   if (!pepper) {
     throw new Error("API_KEY_PEPPER is required");

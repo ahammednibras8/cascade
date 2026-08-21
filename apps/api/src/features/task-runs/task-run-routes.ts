@@ -31,7 +31,7 @@ taskRunRoutes.get(
   authenticatedRoute(async ({ auth, request, response }) => {
     const result = await getTaskRun({
       auth,
-      runId: getSingleParam(request.params.runId),
+      runId: getSingleParam(request.params["runId"]),
     });
 
     writeJsonResult(response, result, ({ taskRun }) => ({ taskRun }));
@@ -42,7 +42,7 @@ taskRunRoutes.get(
   "/runs/:runId/events",
   requireApiKeyScope(ApiKeyScope.RUNS_READ),
   authenticatedRoute(async ({ auth, request, response }) => {
-    const afterQuery = request.query.after;
+    const afterQuery = request.query["after"];
 
     const afterEventId =
       typeof afterQuery === "string"
@@ -53,7 +53,7 @@ taskRunRoutes.get(
 
     const result = await listTaskRunEvents({
       auth,
-      runId: getSingleParam(request.params.runId),
+      runId: getSingleParam(request.params["runId"]),
       ...(afterEventId ? { afterEventId } : {}),
     });
 
@@ -73,7 +73,7 @@ taskRunRoutes.get(
       request,
       response,
       auth,
-      runId: getSingleParam(request.params.runId),
+      runId: getSingleParam(request.params["runId"]),
     });
 
     if (!result.ok) {
@@ -104,7 +104,7 @@ taskRunRoutes.post(
   authenticatedRoute(async ({ auth, request, response }) => {
     const result = await cancelTaskRun({
       auth,
-      runId: getSingleParam(request.params.runId),
+      runId: getSingleParam(request.params["runId"]),
     });
 
     writeJsonResult(response, result, ({ taskRun }) => ({ taskRun }));
@@ -117,7 +117,7 @@ taskRunRoutes.post(
   authenticatedRoute(async ({ auth, request, response }) => {
     const result = await replayTaskRun({
       auth,
-      runId: getSingleParam(request.params.runId),
+      runId: getSingleParam(request.params["runId"]),
     });
 
     writeJsonResult(response, result, ({ taskRun }) => ({ taskRun }));

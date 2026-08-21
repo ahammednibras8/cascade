@@ -62,7 +62,7 @@ export async function updateTaskSchedule(input: UpdateTaskScheduleInput) {
   }
 
   if (payloadProvided) {
-    const payload = parsedBody.body.payload;
+    const payload = parsedBody.body["payload"];
 
     if (payload === null) {
       data.payload = Prisma.DbNull;
@@ -106,7 +106,7 @@ export async function updateTaskSchedule(input: UpdateTaskScheduleInput) {
       timezone: parsedBody.rule.timezone,
       nextRunAt: parsedBody.rule.nextRunAt.toISOString(),
       enabled: schedule.enabled,
-      hasPayload: payloadProvided ? parsedBody.body.payload !== null : schedule.payload !== null,
+      hasPayload: payloadProvided ? parsedBody.body["payload"] !== null : schedule.payload !== null,
       revision: schedule.revision + 1,
     },
   });

@@ -40,7 +40,7 @@ describe("createApiKey", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    process.env.API_KEY_PEPPER = "test-api-key-pepper";
+    process.env["API_KEY_PEPPER"] = "test-api-key-pepper";
 
     environmentFindUniqueOrThrow.mockResolvedValue({
       slug: "dev",

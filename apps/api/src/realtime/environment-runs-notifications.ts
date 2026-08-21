@@ -34,7 +34,7 @@ const environmentRunsNotifications =
 export const environmentRunsNotificationSubscriber =
   environmentRunsNotifications.notificationSubscriber;
 
-if (process.env.NODE_ENV !== "production") {
+if (process.env["NODE_ENV"] !== "production") {
   globalForEnvironmentRunsNotifications.environmentRunsNotifications = environmentRunsNotifications;
 }
 

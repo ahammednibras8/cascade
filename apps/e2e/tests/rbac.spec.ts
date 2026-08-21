@@ -1,8 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { createExecutionConfig } from "./support/execution-config.js";
 
-process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
+process.env["DATABASE_URL"] ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
 function getCookieValue(setCookie: string) {
   const firstPart = setCookie.split(";")[0];
@@ -23,23 +23,23 @@ function getCookieValue(setCookie: string) {
   };
 }
 
-test("viewer can read the dashboard but cannot mutate resources", async ({ browser }, testInfo) => {
+function getBaseUrl(testInfo: TestInfo) {
   const baseURL = testInfo.project.use.baseURL;
 
   if (typeof baseURL !== "string") {
     throw new Error("Playwright base URL is required");
   }
 
-  const { prisma } = await import("@cascade/database");
-  const { commitDashboardSession, createDashboardSession } =
-    await import("../../dashboard/app/lib/auth/dashboard-session.server.js");
+  return baseURL;
+}
 
+async function createViewerFixture() {
+  const { prisma } = await import("@cascade/database");
   const suffix = randomUUID().slice(0, 8);
-  const userEmail = `e2e-viewer-${suffix}@example.test`;
 
   const user = await prisma.user.create({
     data: {
-      email: userEmail,
+      email: `e2e-viewer-${suffix}@example.test`,
       displayName: "E2E Viewer",
     },
   });
@@ -114,7 +114,22 @@ test("viewer can read the dashboard but cannot mutate resources", async ({ brows
     },
   });
 
-  const session = await createDashboardSession(user.id);
+  return {
+    prisma,
+    project,
+    organization,
+    user,
+    environment,
+    run,
+    schedule,
+  };
+}
+
+async function createViewerContext(browser: Browser, baseURL: string, userId: string) {
+  const { commitDashboardSession, createDashboardSession } =
+    await import("../../dashboard/app/lib/auth/dashboard-session.server.js");
+
+  const session = await createDashboardSession(userId);
   const cookie = getCookieValue(await commitDashboardSession(session.token));
 
   const context = await browser.newContext({
@@ -133,103 +148,132 @@ test("viewer can read the dashboard but cannot mutate resources", async ({ brows
     },
   ]);
 
+  return context;
+}
+
+async function selectWorkspace(page: Page, environmentId: string) {
+  await page.goto("/");
+
+  const workspaceSelect = page.getByRole("combobox", {
+    name: "Project and environment",
+  });
+
+  await workspaceSelect.selectOption(environmentId);
+
+  await page.locator('form[action="/workspace/select"]').evaluate((form) => {
+    (form as { requestSubmit(): void }).requestSubmit();
+  });
+
+  await page.waitForLoadState("networkidle");
+
+  await expect(workspaceSelect).toHaveValue(environmentId);
+}
+
+async function expectViewerRunAccess(
+  page: Page,
+  fixture: Awaited<ReturnType<typeof createViewerFixture>>,
+) {
+  await page.goto(`/runs/${fixture.run.id}`);
+
+  await expect(page.getByRole("heading", { name: "Run detail" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cancel run" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Replay run" })).toHaveCount(0);
+
+  const cancelResponse = await page.evaluate(async (runId) => {
+    const response = await fetch(`/runs/${runId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        intent: "cancel",
+      }),
+    });
+
+    return {
+      status: response.status,
+    };
+  }, fixture.run.id);
+
+  expect(cancelResponse.status).toBe(403);
+
+  await expect(
+    fixture.prisma.taskRun.findUniqueOrThrow({
+      where: {
+        id: fixture.run.id,
+      },
+      select: {
+        status: true,
+      },
+    }),
+  ).resolves.toEqual({
+    status: "PENDING",
+  });
+}
+
+async function expectViewerScheduleAccess(
+  page: Page,
+  fixture: Awaited<ReturnType<typeof createViewerFixture>>,
+) {
+  await page.goto("/schedules");
+
+  await expect(page.getByRole("heading", { name: "Schedules" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "New schedule" })).toHaveCount(0);
+
+  const scheduleRow = page.getByRole("row").filter({
+    hasText: fixture.schedule.id,
+  });
+
+  await expect(scheduleRow).toBeVisible();
+  await expect(scheduleRow.getByRole("button")).toHaveCount(0);
+  await expect(scheduleRow.getByRole("link", { name: "Edit schedule" })).toHaveCount(0);
+}
+
+async function expectViewerApiKeyAccess(page: Page) {
+  await page.goto("/");
+
+  await expect(page.getByRole("link", { name: "Manage API keys" })).toHaveCount(0);
+
+  const apiKeysResponse = await page.goto("/api-keys");
+
+  expect(apiKeysResponse?.status()).toBe(403);
+}
+
+async function cleanupViewerFixture(fixture: Awaited<ReturnType<typeof createViewerFixture>>) {
+  await fixture.prisma.project.delete({
+    where: {
+      id: fixture.project.id,
+    },
+  });
+
+  await fixture.prisma.organization.delete({
+    where: {
+      id: fixture.organization.id,
+    },
+  });
+
+  await fixture.prisma.user.delete({
+    where: {
+      id: fixture.user.id,
+    },
+  });
+
+  await fixture.prisma.$disconnect();
+}
+
+test("viewer can read the dashboard but cannot mutate resources", async ({ browser }, testInfo) => {
+  const baseURL = getBaseUrl(testInfo);
+  const fixture = await createViewerFixture();
+  const context = await createViewerContext(browser, baseURL, fixture.user.id);
   const page = await context.newPage();
 
   try {
-    await page.goto("/");
-
-    const workspaceSelect = page.getByRole("combobox", {
-      name: "Project and environment",
-    });
-
-    await workspaceSelect.selectOption(environment.id);
-
-    await page.locator('form[action="/workspace/select"]').evaluate((form) => {
-      (form as { requestSubmit(): void }).requestSubmit();
-    });
-
-    await page.waitForLoadState("networkidle");
-
-    await expect(workspaceSelect).toHaveValue(environment.id);
-
-    await page.goto(`/runs/${run.id}`);
-
-    await expect(page.getByRole("heading", { name: "Run detail" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Cancel run" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Replay run" })).toHaveCount(0);
-
-    const cancelResponse = await page.evaluate(async (runId) => {
-      const response = await fetch(`/runs/${runId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          intent: "cancel",
-        }),
-      });
-
-      return {
-        status: response.status,
-      };
-    }, run.id);
-
-    expect(cancelResponse.status).toBe(403);
-
-    await expect(
-      prisma.taskRun.findUniqueOrThrow({
-        where: {
-          id: run.id,
-        },
-        select: {
-          status: true,
-        },
-      }),
-    ).resolves.toEqual({
-      status: "PENDING",
-    });
-
-    await page.goto("/schedules");
-
-    await expect(page.getByRole("heading", { name: "Schedules" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "New schedule" })).toHaveCount(0);
-
-    const scheduleRow = page.getByRole("row").filter({
-      hasText: schedule.id,
-    });
-
-    await expect(scheduleRow).toBeVisible();
-    await expect(scheduleRow.getByRole("button")).toHaveCount(0);
-    await expect(scheduleRow.getByRole("link", { name: "Edit schedule" })).toHaveCount(0);
-
-    await page.goto("/");
-
-    await expect(page.getByRole("link", { name: "Manage API keys" })).toHaveCount(0);
-
-    const apiKeysResponse = await page.goto("/api-keys");
-
-    expect(apiKeysResponse?.status()).toBe(403);
+    await selectWorkspace(page, fixture.environment.id);
+    await expectViewerRunAccess(page, fixture);
+    await expectViewerScheduleAccess(page, fixture);
+    await expectViewerApiKeyAccess(page);
   } finally {
     await context.close();
-
-    await prisma.project.delete({
-      where: {
-        id: project.id,
-      },
-    });
-
-    await prisma.organization.delete({
-      where: {
-        id: organization.id,
-      },
-    });
-
-    await prisma.user.delete({
-      where: {
-        id: user.id,
-      },
-    });
-
-    await prisma.$disconnect();
+    await cleanupViewerFixture(fixture);
   }
 });

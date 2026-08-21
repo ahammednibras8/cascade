@@ -27,19 +27,19 @@ export function parseCronSchedule(value: unknown): CronSchedule | null {
     return null;
   }
 
-  if (typeof value.expression !== "string") {
+  if (typeof value["expression"] !== "string") {
     return null;
   }
 
-  const expression = value.expression.trim().replace(/\s+/g, " ");
+  const expression = value["expression"].trim().replace(/\s+/g, " ");
 
   if (expression.split(" ").length !== 5) {
     return null;
   }
 
   const timezone =
-    typeof value.timezone === "string" && value.timezone.trim().length > 0
-      ? value.timezone.trim()
+    typeof value["timezone"] === "string" && value["timezone"].trim().length > 0
+      ? value["timezone"].trim()
       : DEFAULT_SCHEDULE_TIMEZONE;
 
   if (!isValidTimezone(timezone)) {

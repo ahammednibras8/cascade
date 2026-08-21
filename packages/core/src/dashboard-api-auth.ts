@@ -41,6 +41,14 @@ function safelyCompare(left: string, right: string) {
   return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
+function isNonEmptyString(value: unknown) {
+  return typeof value === "string" && value.length > 0;
+}
+
+function isInteger(value: unknown) {
+  return typeof value === "number" && Number.isInteger(value);
+}
+
 function isClaims(value: unknown): value is DashboardApiAuthorizationClaims {
   if (!value || typeof value !== "object") {
     return false;
@@ -49,18 +57,12 @@ function isClaims(value: unknown): value is DashboardApiAuthorizationClaims {
   const candidate = value as Record<string, unknown>;
 
   return (
-    typeof candidate.userId === "string" &&
-    candidate.userId.length > 0 &&
-    typeof candidate.organizationId === "string" &&
-    candidate.organizationId.length > 0 &&
-    typeof candidate.projectId === "string" &&
-    candidate.projectId.length > 0 &&
-    typeof candidate.environmentId === "string" &&
-    candidate.environmentId.length > 0 &&
-    typeof candidate.issuedAt === "number" &&
-    Number.isInteger(candidate.issuedAt) &&
-    typeof candidate.expiresAt === "number" &&
-    Number.isInteger(candidate.expiresAt)
+    isNonEmptyString(candidate["userId"]) &&
+    isNonEmptyString(candidate["organizationId"]) &&
+    isNonEmptyString(candidate["projectId"]) &&
+    isNonEmptyString(candidate["environmentId"]) &&
+    isInteger(candidate["issuedAt"]) &&
+    isInteger(candidate["expiresAt"])
   );
 }
 

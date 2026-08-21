@@ -177,14 +177,14 @@ function parseTaskListQuery(
     return pagination;
   }
 
-  const search = parseOptionalListSearch(query.search);
+  const search = parseOptionalListSearch(query["search"]);
 
   if (!search.ok) {
     return search;
   }
 
   const deploymentId = parseOptionalListUuid(
-    query.deploymentId,
+    query["deploymentId"],
     "deploymentId must be a valid UUID",
   );
 

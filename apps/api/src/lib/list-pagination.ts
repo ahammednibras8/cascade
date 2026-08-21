@@ -36,13 +36,13 @@ export function parseListPagination({
   cursorKind,
   cursorValueCount,
 }: ParseListPaginationInput): ListPaginationParseResult {
-  const limitResult = parseLimit(query.limit);
+  const limitResult = parseLimit(query["limit"]);
 
   if (!limitResult.ok) {
     return limitResult;
   }
 
-  const cursorResult = parseCursor(query.cursor, cursorKind, cursorValueCount);
+  const cursorResult = parseCursor(query["cursor"], cursorKind, cursorValueCount);
 
   if (!cursorResult.ok) {
     return cursorResult;

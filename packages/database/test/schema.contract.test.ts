@@ -7,7 +7,7 @@ config({
   path: fileURLToPath(new URL("../../../.env", import.meta.url)),
 });
 
-const describeWithDatabase = process.env.DATABASE_URL ? describe : describe.skip;
+const describeWithDatabase = process.env["DATABASE_URL"] ? describe : describe.skip;
 const trackedProjectIds = new Set<string>();
 const EXECUTION_CONFIG = {
   schemaVersion: 1,

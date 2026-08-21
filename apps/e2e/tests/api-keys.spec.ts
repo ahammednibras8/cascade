@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { getDashboardTestEnvironment } from "./support/dashboard-environment.js";
 import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
-process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
+process.env["DATABASE_URL"] ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
 const createdApiKeyNames: string[] = [];
 
@@ -59,7 +59,7 @@ test("dashboard creates a scoped API key that can call the API", async ({ page, 
 
   expect(token).toMatch(/^csc_/);
 
-  const apiUrl = process.env.CASCADE_API_URL ?? "http://localhost:3001";
+  const apiUrl = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
   const response = await request.get(`${apiUrl}/api/api-keys`, {
     headers: {
@@ -132,7 +132,7 @@ test("dashboard rotation immediately invalidates the old API key", async ({ page
   expect(newToken).toMatch(/^csc_/);
   expect(newToken).not.toBe(oldToken);
 
-  const apiUrl = process.env.CASCADE_API_URL ?? "http://localhost:3001";
+  const apiUrl = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
   const oldKeyResponse = await request.get(`${apiUrl}/api/api-keys`, {
     headers: {
@@ -185,7 +185,7 @@ test("dashboard revocation immediately invalidates an API key", async ({ page, r
   await expect(row).not.toHaveText("Rotate");
   await expect(row).not.toHaveText("Revoke");
 
-  const apiUrl = process.env.CASCADE_API_URL ?? "http://localhost:3001";
+  const apiUrl = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
   const response = await request.get(`${apiUrl}/api/api-keys`, {
     headers: {
@@ -223,7 +223,7 @@ test("a key can use only its selected permission", async ({ page, request }) => 
   await expect(row).toBeVisible();
   await expect(row).toContainText("RUNS_READ");
 
-  const apiUrl = process.env.CASCADE_API_URL ?? "http://localhost:3001";
+  const apiUrl = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
   const runsResponse = await request.get(`${apiUrl}/api/runs`, {
     headers: {

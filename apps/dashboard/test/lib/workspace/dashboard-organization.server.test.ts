@@ -10,10 +10,10 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-const originalSecret = process.env.DASHBOARD_SESSION_SECRET;
+const originalSecret = process.env["DASHBOARD_SESSION_SECRET"];
 
-process.env.NODE_ENV = "test";
-process.env.DASHBOARD_SESSION_SECRET = "test-dashboard-session-secret-that-is-long-enough";
+process.env["NODE_ENV"] = "test";
+process.env["DASHBOARD_SESSION_SECRET"] = "test-dashboard-session-secret-that-is-long-enough";
 
 const { commitActiveDashboardOrganization, getDashboardOrganizationContext } =
   await import("../../../app/lib/workspace/dashboard-organization.server.js");
@@ -23,7 +23,7 @@ const USER_ID = "11111111-1111-4111-8111-111111111111";
 describe("dashboard organization context", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.DASHBOARD_SESSION_SECRET = "test-dashboard-session-secret-that-is-long-enough";
+    process.env["DASHBOARD_SESSION_SECRET"] = "test-dashboard-session-secret-that-is-long-enough";
 
     prisma.organizationMember.findMany.mockResolvedValue([
       {
@@ -46,7 +46,7 @@ describe("dashboard organization context", () => {
   });
 
   afterEach(() => {
-    process.env.DASHBOARD_SESSION_SECRET = originalSecret;
+    process.env["DASHBOARD_SESSION_SECRET"] = originalSecret;
   });
 
   it("uses the signed selected organization when the user belongs to it", async () => {

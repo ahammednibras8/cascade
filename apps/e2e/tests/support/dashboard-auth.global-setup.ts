@@ -35,7 +35,7 @@ function getCookieValue(setCookie: string) {
 }
 
 export default async function setup(_config: FullConfig) {
-  process.env.NODE_ENV = "test";
+  process.env["NODE_ENV"] = "test";
 
   const storageStatePath = getRequiredEnvironmentVariable("PLAYWRIGHT_DASHBOARD_STORAGE_STATE");
   const baseUrl = new URL(getRequiredEnvironmentVariable("PLAYWRIGHT_BASE_URL"));

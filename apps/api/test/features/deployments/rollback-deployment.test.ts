@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import type { ApiAuthContext } from "../../../src/auth/api-key.js";
 
 type TransactionClient = {
@@ -109,191 +109,185 @@ function failure(status: 400 | 404 | 409, code: string, message: string) {
   };
 }
 
-describe("rollbackDeployment", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+beforeEach(() => {
+  vi.clearAllMocks();
 
-    mocks.prisma.$transaction.mockImplementation(async (callback) =>
-      callback({
-        deployment: {
-          updateMany: mocks.deploymentUpdateMany,
-        },
-        task: {
-          updateMany: mocks.taskUpdateMany,
-          upsert: mocks.taskUpsert,
-        },
-        taskSchedule: {
-          updateMany: mocks.taskScheduleUpdateMany,
-        },
-      }),
-    );
-
-    mocks.deploymentUpdateMany.mockResolvedValue({ count: 1 });
-    mocks.taskUpdateMany.mockResolvedValue({ count: 2 });
-    mocks.taskUpsert.mockResolvedValue({ id: TASK_ID });
-    mocks.taskScheduleUpdateMany.mockResolvedValue({ count: 3 });
-  });
-
-  it("activates the target deployment and restores its immutable task manifest", async () => {
-    mocks.prisma.deployment.findFirst.mockResolvedValue(inactiveDeployment());
-
-    await expect(rollback()).resolves.toEqual({
-      ok: true,
-      status: 200,
+  mocks.prisma.$transaction.mockImplementation(async (callback) =>
+    callback({
       deployment: {
+        updateMany: mocks.deploymentUpdateMany,
+      },
+      task: {
+        updateMany: mocks.taskUpdateMany,
+        upsert: mocks.taskUpsert,
+      },
+      taskSchedule: {
+        updateMany: mocks.taskScheduleUpdateMany,
+      },
+    }),
+  );
+
+  mocks.deploymentUpdateMany.mockResolvedValue({ count: 1 });
+  mocks.taskUpdateMany.mockResolvedValue({ count: 2 });
+  mocks.taskUpsert.mockResolvedValue({ id: TASK_ID });
+  mocks.taskScheduleUpdateMany.mockResolvedValue({ count: 3 });
+});
+
+it("activates the target deployment and restores its immutable task manifest", async () => {
+  mocks.prisma.deployment.findFirst.mockResolvedValue(inactiveDeployment());
+
+  await expect(rollback()).resolves.toEqual({
+    ok: true,
+    status: 200,
+    deployment: {
+      id: DEPLOYMENT_ID,
+      status: "ACTIVE",
+      tasksRestored: 1,
+      tasksDetached: 2,
+      schedulesUpdated: 3,
+      schedulesPaused: 3,
+    },
+  });
+
+  expect(mocks.prisma.deployment.findFirst).toHaveBeenCalledWith(
+    expect.objectContaining({
+      where: {
         id: DEPLOYMENT_ID,
-        status: "ACTIVE",
-        tasksRestored: 1,
-        tasksDetached: 2,
-        schedulesUpdated: 3,
-        schedulesPaused: 3,
-      },
-    });
-
-    expect(mocks.prisma.deployment.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          id: DEPLOYMENT_ID,
-          environmentId: ENVIRONMENT_ID,
-        },
-      }),
-    );
-
-    expect(mocks.deploymentUpdateMany).toHaveBeenNthCalledWith(1, {
-      where: {
-        id: DEPLOYMENT_ID,
         environmentId: ENVIRONMENT_ID,
-        status: "INACTIVE",
       },
-      data: {
-        status: "ACTIVE",
-        runtimeStatus: "PENDING",
-        runtimeContainerId: null,
-        runtimeError: null,
-        runtimeStartedAt: null,
-        runtimeStoppedAt: null,
+    }),
+  );
+
+  expect(mocks.deploymentUpdateMany).toHaveBeenNthCalledWith(1, {
+    where: {
+      id: DEPLOYMENT_ID,
+      environmentId: ENVIRONMENT_ID,
+      status: "INACTIVE",
+    },
+    data: {
+      status: "ACTIVE",
+      runtimeStatus: "PENDING",
+      runtimeContainerId: null,
+      runtimeError: null,
+      runtimeStartedAt: null,
+      runtimeStoppedAt: null,
+    },
+  });
+  expect(mocks.deploymentUpdateMany).toHaveBeenNthCalledWith(2, {
+    where: {
+      environmentId: ENVIRONMENT_ID,
+      id: {
+        not: DEPLOYMENT_ID,
       },
-    });
-    expect(mocks.deploymentUpdateMany).toHaveBeenNthCalledWith(2, {
-      where: {
+      status: "ACTIVE",
+    },
+    data: {
+      status: "INACTIVE",
+    },
+  });
+
+  expect(mocks.taskScheduleUpdateMany).toHaveBeenNthCalledWith(1, {
+    where: {
+      enabled: true,
+      task: omittedTaskWhere,
+    },
+    data: {
+      enabled: false,
+      lockedAt: null,
+      revision: {
+        increment: 1,
+      },
+    },
+  });
+  expect(mocks.taskUpdateMany).toHaveBeenCalledWith({
+    where: omittedTaskWhere,
+    data: {
+      deploymentId: null,
+      executionConfig: mocks.dbNull,
+    },
+  });
+  expect(mocks.taskUpsert).toHaveBeenCalledWith({
+    where: {
+      environmentId_slug: {
         environmentId: ENVIRONMENT_ID,
-        id: {
-          not: DEPLOYMENT_ID,
-        },
-        status: "ACTIVE",
+        slug: "hello",
       },
-      data: {
-        status: "INACTIVE",
-      },
-    });
-
-    expect(mocks.taskScheduleUpdateMany).toHaveBeenNthCalledWith(1, {
-      where: {
-        enabled: true,
-        task: omittedTaskWhere,
-      },
-      data: {
-        enabled: false,
-        lockedAt: null,
-        revision: {
-          increment: 1,
-        },
-      },
-    });
-    expect(mocks.taskUpdateMany).toHaveBeenCalledWith({
-      where: omittedTaskWhere,
-      data: {
-        deploymentId: null,
-        executionConfig: mocks.dbNull,
-      },
-    });
-    expect(mocks.taskUpsert).toHaveBeenCalledWith({
-      where: {
-        environmentId_slug: {
-          environmentId: ENVIRONMENT_ID,
-          slug: "hello",
-        },
-      },
-      create: {
-        environmentId: ENVIRONMENT_ID,
-        deploymentId: DEPLOYMENT_ID,
-        ...manifestTask,
-      },
-      update: {
-        deploymentId: DEPLOYMENT_ID,
-        name: "Hello",
-        description: "Greets a user",
-        executionConfig: EXECUTION_CONFIG,
-      },
-      select: {
-        id: true,
-      },
-    });
-    expect(mocks.taskScheduleUpdateMany).toHaveBeenNthCalledWith(2, {
-      where: {
-        taskId: {
-          in: [TASK_ID],
-        },
-      },
-      data: {
-        lockedAt: null,
-        revision: {
-          increment: 1,
-        },
-      },
-    });
-  });
-
-  it("rejects an invalid deployment ID before querying the database", async () => {
-    await expect(rollback("not-a-uuid")).resolves.toEqual(
-      failure(400, "INVALID_DEPLOYMENT_ID", "deploymentId must be a valid UUID"),
-    );
-
-    expect(mocks.prisma.deployment.findFirst).not.toHaveBeenCalled();
-    expectNoTransaction();
-  });
-
-  it.each([
-    {
-      name: "deployment outside the authenticated environment",
-      deployment: null,
-      expected: failure(
-        404,
-        "DEPLOYMENT_NOT_FOUND",
-        "Deployment was not found in this environment",
-      ),
     },
-    {
-      name: "already active deployment",
-      deployment: inactiveDeployment({ status: "ACTIVE" }),
-      expected: failure(409, "DEPLOYMENT_ALREADY_ACTIVE", "Deployment is already active"),
+    create: {
+      environmentId: ENVIRONMENT_ID,
+      deploymentId: DEPLOYMENT_ID,
+      ...manifestTask,
     },
-    {
-      name: "legacy deployment without an immutable manifest",
-      deployment: inactiveDeployment({ manifestTasks: [] }),
-      expected: failure(
-        409,
-        "DEPLOYMENT_MANIFEST_MISSING",
-        "This deployment was created before task manifests were stored and cannot be rolled back",
-      ),
+    update: {
+      deploymentId: DEPLOYMENT_ID,
+      name: "Hello",
+      description: "Greets a user",
+      executionConfig: EXECUTION_CONFIG,
     },
-  ])("rejects $name", async ({ deployment, expected }) => {
-    mocks.prisma.deployment.findFirst.mockResolvedValue(deployment);
-
-    await expect(rollback()).resolves.toEqual(expected);
-    expectNoTransaction();
+    select: {
+      id: true,
+    },
   });
-
-  it("returns a conflict when another request changes target deployment state first", async () => {
-    mocks.prisma.deployment.findFirst.mockResolvedValue(inactiveDeployment());
-    mocks.deploymentUpdateMany.mockResolvedValueOnce({ count: 0 });
-
-    await expect(rollback()).resolves.toEqual(
-      failure(
-        409,
-        "DEPLOYMENT_STATE_CHANGED",
-        "Deployment state changed before it could be rolled back",
-      ),
-    );
+  expect(mocks.taskScheduleUpdateMany).toHaveBeenNthCalledWith(2, {
+    where: {
+      taskId: {
+        in: [TASK_ID],
+      },
+    },
+    data: {
+      lockedAt: null,
+      revision: {
+        increment: 1,
+      },
+    },
   });
+});
+
+it("rejects an invalid deployment ID before querying the database", async () => {
+  await expect(rollback("not-a-uuid")).resolves.toEqual(
+    failure(400, "INVALID_DEPLOYMENT_ID", "deploymentId must be a valid UUID"),
+  );
+
+  expect(mocks.prisma.deployment.findFirst).not.toHaveBeenCalled();
+  expectNoTransaction();
+});
+
+it.each([
+  {
+    name: "deployment outside the authenticated environment",
+    deployment: null,
+    expected: failure(404, "DEPLOYMENT_NOT_FOUND", "Deployment was not found in this environment"),
+  },
+  {
+    name: "already active deployment",
+    deployment: inactiveDeployment({ status: "ACTIVE" }),
+    expected: failure(409, "DEPLOYMENT_ALREADY_ACTIVE", "Deployment is already active"),
+  },
+  {
+    name: "legacy deployment without an immutable manifest",
+    deployment: inactiveDeployment({ manifestTasks: [] }),
+    expected: failure(
+      409,
+      "DEPLOYMENT_MANIFEST_MISSING",
+      "This deployment was created before task manifests were stored and cannot be rolled back",
+    ),
+  },
+])("rejects $name", async ({ deployment, expected }) => {
+  mocks.prisma.deployment.findFirst.mockResolvedValue(deployment);
+
+  await expect(rollback()).resolves.toEqual(expected);
+  expectNoTransaction();
+});
+
+it("returns a conflict when another request changes target deployment state first", async () => {
+  mocks.prisma.deployment.findFirst.mockResolvedValue(inactiveDeployment());
+  mocks.deploymentUpdateMany.mockResolvedValueOnce({ count: 0 });
+
+  await expect(rollback()).resolves.toEqual(
+    failure(
+      409,
+      "DEPLOYMENT_STATE_CHANGED",
+      "Deployment state changed before it could be rolled back",
+    ),
+  );
 });

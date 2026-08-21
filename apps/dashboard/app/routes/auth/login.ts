@@ -8,7 +8,7 @@ import {
 } from "~/lib/auth/dashboard-session.server";
 
 function isDevAuthEnabled() {
-  return process.env.DASHBOARD_AUTH_MODE?.trim() === "dev";
+  return process.env["DASHBOARD_AUTH_MODE"]?.trim() === "dev";
 }
 
 function normalizeReturnTo(value: string | null) {

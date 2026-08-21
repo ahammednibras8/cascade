@@ -26,38 +26,49 @@ type ReplayTaskRunFailure = ServiceFailure<400 | 404 | 409>;
 
 export type ReplayTaskRunResult = ReplayTaskRunSuccess | ReplayTaskRunFailure;
 
+const sourceRunSelect = {
+  id: true,
+  taskId: true,
+  deploymentId: true,
+  status: true,
+  payload: true,
+  executionConfig: true,
+} as const satisfies Prisma.TaskRunSelect;
+
+const replayedRunSelect = {
+  id: true,
+  taskId: true,
+  deploymentId: true,
+  status: true,
+  payload: true,
+  createdAt: true,
+} as const satisfies Prisma.TaskRunSelect;
+
+type SourceRun = Prisma.TaskRunGetPayload<{
+  select: typeof sourceRunSelect;
+}>;
+
+type ReplayedRun = Prisma.TaskRunGetPayload<{
+  select: typeof replayedRunSelect;
+}>;
+
 function isReplayableStatus(status: string) {
   return status === "COMPLETED" || status === "FAILED" || status === "CANCELED";
 }
 
-export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTaskRunResult> {
-  const { auth, runId } = input;
-
-  if (!isUuid(runId)) {
-    return failure(400, "INVALID_RUN_ID", "runId must be a valid UUID");
-  }
-
-  const sourceRun = await prisma.taskRun.findFirst({
+async function findSourceRun(input: { auth: ApiAuthContext; runId: string }) {
+  return prisma.taskRun.findFirst({
     where: {
-      id: runId,
+      id: input.runId,
       task: {
-        environmentId: auth.environmentId,
+        environmentId: input.auth.environmentId,
       },
     },
-    select: {
-      id: true,
-      taskId: true,
-      deploymentId: true,
-      status: true,
-      payload: true,
-      executionConfig: true,
-    },
+    select: sourceRunSelect,
   });
+}
 
-  if (!sourceRun) {
-    return failure(404, "RUN_NOT_FOUND", "Task run was not found in this environment");
-  }
-
+function getReplayValidationFailure(sourceRun: SourceRun): ReplayTaskRunFailure | null {
   if (sourceRun.executionConfig === null) {
     return failure(
       409,
@@ -74,63 +85,77 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
     );
   }
 
-  const replayedRun = await prisma.$transaction(async (tx) => {
-    const data: Prisma.TaskRunUncheckedCreateInput = {
-      taskId: sourceRun.taskId,
-      deploymentId: sourceRun.deploymentId,
-      status: "PENDING",
-      executionConfig: sourceRun.executionConfig as Prisma.InputJsonValue,
-    };
+  return null;
+}
 
-    if (sourceRun.payload !== null) {
-      data.payload = sourceRun.payload as Prisma.InputJsonValue;
-    }
+function buildReplayRunData(sourceRun: SourceRun): Prisma.TaskRunUncheckedCreateInput {
+  const data: Prisma.TaskRunUncheckedCreateInput = {
+    taskId: sourceRun.taskId,
+    deploymentId: sourceRun.deploymentId,
+    status: "PENDING",
+    executionConfig: sourceRun.executionConfig as Prisma.InputJsonValue,
+  };
 
+  if (sourceRun.payload !== null) {
+    data.payload = sourceRun.payload as Prisma.InputJsonValue;
+  }
+
+  return data;
+}
+
+async function createReplayedRun(auth: ApiAuthContext, sourceRun: SourceRun): Promise<ReplayedRun> {
+  return prisma.$transaction(async (tx) => {
     const run = await tx.taskRun.create({
-      data,
-      select: {
-        id: true,
-        taskId: true,
-        deploymentId: true,
-        status: true,
-        payload: true,
-        createdAt: true,
-      },
+      data: buildReplayRunData(sourceRun),
+      select: replayedRunSelect,
     });
 
-    await createTaskRunEvent(tx, {
-      taskRunId: run.id,
-      type: "task.run.replayed",
-      level: "INFO",
-      message: "Task run manually replayed",
-      data: {
-        apiKeyId: auth.apiKeyId,
-        sourceRunId: sourceRun.id,
-        sourceStatus: sourceRun.status,
-      },
-    });
-
-    await createTaskRunEvent(tx, {
-      taskRunId: sourceRun.id,
-      type: "task.run.replay.created",
-      level: "INFO",
-      message: "Manual replay created a new task run",
-      data: {
-        apiKeyId: auth.apiKeyId,
-        replayedRunId: run.id,
-      },
-    });
+    await writeReplayEvents(tx, auth, sourceRun, run);
 
     return run;
   });
+}
 
+async function writeReplayEvents(
+  tx: Prisma.TransactionClient,
+  auth: ApiAuthContext,
+  sourceRun: SourceRun,
+  run: ReplayedRun,
+) {
+  await createTaskRunEvent(tx, {
+    taskRunId: run.id,
+    type: "task.run.replayed",
+    level: "INFO",
+    message: "Task run manually replayed",
+    data: {
+      apiKeyId: auth.apiKeyId,
+      sourceRunId: sourceRun.id,
+      sourceStatus: sourceRun.status,
+    },
+  });
+
+  await createTaskRunEvent(tx, {
+    taskRunId: sourceRun.id,
+    type: "task.run.replay.created",
+    level: "INFO",
+    message: "Manual replay created a new task run",
+    data: {
+      apiKeyId: auth.apiKeyId,
+      replayedRunId: run.id,
+    },
+  });
+}
+
+async function enqueueReplayedRun(auth: ApiAuthContext, replayedRun: ReplayedRun) {
   await enqueueTaskRun({
     runId: replayedRun.id,
     taskId: replayedRun.taskId,
     environmentId: auth.environmentId,
     deploymentId: replayedRun.deploymentId,
   });
+}
 
+function createReplaySuccess(sourceRun: SourceRun, replayedRun: ReplayedRun): ReplayTaskRunSuccess {
   return success(202, {
     taskRun: {
       id: replayedRun.id,
@@ -141,4 +166,31 @@ export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTa
       replayedFromRunId: sourceRun.id,
     },
   });
+}
+
+export async function replayTaskRun(input: ReplayTaskRunInput): Promise<ReplayTaskRunResult> {
+  if (!isUuid(input.runId)) {
+    return failure(400, "INVALID_RUN_ID", "runId must be a valid UUID");
+  }
+
+  const sourceRun = await findSourceRun({
+    auth: input.auth,
+    runId: input.runId,
+  });
+
+  if (!sourceRun) {
+    return failure(404, "RUN_NOT_FOUND", "Task run was not found in this environment");
+  }
+
+  const validationFailure = getReplayValidationFailure(sourceRun);
+
+  if (validationFailure) {
+    return validationFailure;
+  }
+
+  const replayedRun = await createReplayedRun(input.auth, sourceRun);
+
+  await enqueueReplayedRun(input.auth, replayedRun);
+
+  return createReplaySuccess(sourceRun, replayedRun);
 }

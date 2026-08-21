@@ -19,7 +19,7 @@ const API_KEY_RANDOM_BYTES = 32;
 const API_KEY_PREFIX_LENGTH = 16;
 
 function getApiKeyPepper() {
-  const pepper = process.env.API_KEY_PEPPER;
+  const pepper = process.env["API_KEY_PEPPER"];
 
   if (!pepper) {
     throw new Error("API_KEY_PEPPER is required");

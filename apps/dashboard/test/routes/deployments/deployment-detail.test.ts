@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 
 const cascadeDashboardApiRequest = vi.hoisted(() =>
   vi.fn<(request: Request, path: string, init?: RequestInit) => Promise<unknown>>(),
@@ -96,203 +96,201 @@ function actionArgs(intent: string, deploymentId = DEPLOYMENT_ID) {
   } as never;
 }
 
-describe("deployment detail loader", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    requireDashboardCapability.mockResolvedValue({});
-    getDashboardWorkspaceContext.mockResolvedValue({
-      activeOrganization: {
-        role: "OWNER",
-      },
-    });
-  });
-
-  it("returns a deployment from the Cascade API", async () => {
-    const result = deployment();
-
-    cascadeDashboardApiRequest.mockResolvedValue({
-      deployment: result,
-    });
-
-    await expect(loader(routeArgs())).resolves.toEqual({
-      deployment: result,
-      deploymentId: DEPLOYMENT_ID,
+beforeEach(() => {
+  vi.clearAllMocks();
+  requireDashboardCapability.mockResolvedValue({});
+  getDashboardWorkspaceContext.mockResolvedValue({
+    activeOrganization: {
       role: "OWNER",
-    });
+    },
+  });
+});
 
-    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
-      expect.any(Request),
-      `/api/deployments/${DEPLOYMENT_ID}`,
-    );
+it("returns a deployment from the Cascade API", async () => {
+  const result = deployment();
+
+  cascadeDashboardApiRequest.mockResolvedValue({
+    deployment: result,
   });
 
-  it("URL-encodes the deployment ID before requesting the API", async () => {
-    const deploymentId = "deployment/with spaces";
-
-    cascadeDashboardApiRequest.mockResolvedValue({
-      deployment: deployment({
-        id: deploymentId,
-      }),
-    });
-
-    await loader(routeArgs(deploymentId));
-
-    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
-      expect.any(Request),
-      "/api/deployments/deployment%2Fwith%20spaces",
-    );
+  await expect(loader(routeArgs())).resolves.toEqual({
+    deployment: result,
+    deploymentId: DEPLOYMENT_ID,
+    role: "OWNER",
   });
 
-  it("returns null when the deployment does not exist", async () => {
-    cascadeDashboardApiRequest.mockRejectedValue({
-      status: 404,
-      responseBody: {
-        error: {
-          code: "DEPLOYMENT_NOT_FOUND",
-        },
-      },
-    });
+  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+    expect.any(Request),
+    `/api/deployments/${DEPLOYMENT_ID}`,
+  );
+});
 
-    await expect(loader(routeArgs())).resolves.toEqual({
-      deployment: null,
-      deploymentId: DEPLOYMENT_ID,
-      role: "OWNER",
-    });
+it("URL-encodes the deployment ID before requesting the API", async () => {
+  const deploymentId = "deployment/with spaces";
+
+  cascadeDashboardApiRequest.mockResolvedValue({
+    deployment: deployment({
+      id: deploymentId,
+    }),
   });
 
-  it("rethrows API failures other than DEPLOYMENT_NOT_FOUND", async () => {
-    const error = {
-      status: 500,
-      responseBody: {
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-        },
+  await loader(routeArgs(deploymentId));
+
+  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+    expect.any(Request),
+    "/api/deployments/deployment%2Fwith%20spaces",
+  );
+});
+
+it("returns null when the deployment does not exist", async () => {
+  cascadeDashboardApiRequest.mockRejectedValue({
+    status: 404,
+    responseBody: {
+      error: {
+        code: "DEPLOYMENT_NOT_FOUND",
       },
-    };
-
-    cascadeDashboardApiRequest.mockRejectedValue(error);
-
-    await expect(loader(routeArgs())).rejects.toBe(error);
+    },
   });
 
-  it("sends a deployment deactivation request to the API", async () => {
-    cascadeDashboardApiRequest.mockResolvedValue({
-      deployment: {
-        id: DEPLOYMENT_ID,
-        status: "INACTIVE",
-        tasksDetached: 2,
-        schedulesPaused: 1,
-      },
-    });
+  await expect(loader(routeArgs())).resolves.toEqual({
+    deployment: null,
+    deploymentId: DEPLOYMENT_ID,
+    role: "OWNER",
+  });
+});
 
-    await expect(action(actionArgs("deactivate"))).resolves.toEqual({
-      ok: true,
-      intent: "deactivate",
-      deployment: {
-        id: DEPLOYMENT_ID,
-        status: "INACTIVE",
-        tasksDetached: 2,
-        schedulesPaused: 1,
+it("rethrows API failures other than DEPLOYMENT_NOT_FOUND", async () => {
+  const error = {
+    status: 500,
+    responseBody: {
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
       },
-    });
+    },
+  };
 
-    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
-      expect.any(Request),
-      `/api/deployments/${DEPLOYMENT_ID}/deactivate`,
-      {
-        method: "POST",
-      },
-    );
-    expect(requireDashboardCapability).toHaveBeenCalledWith(
-      expect.any(Request),
-      "DEPLOYMENTS_MANAGE",
-    );
+  cascadeDashboardApiRequest.mockRejectedValue(error);
+
+  await expect(loader(routeArgs())).rejects.toBe(error);
+});
+
+it("sends a deployment deactivation request to the API", async () => {
+  cascadeDashboardApiRequest.mockResolvedValue({
+    deployment: {
+      id: DEPLOYMENT_ID,
+      status: "INACTIVE",
+      tasksDetached: 2,
+      schedulesPaused: 1,
+    },
   });
 
-  it("rejects an invalid deployment action before calling the API", async () => {
-    await expect(action(actionArgs("delete"))).rejects.toMatchObject({
-      status: 400,
-    });
-
-    expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
-    expect(requireDashboardCapability).toHaveBeenCalledWith(
-      expect.any(Request),
-      "DEPLOYMENTS_MANAGE",
-    );
+  await expect(action(actionArgs("deactivate"))).resolves.toEqual({
+    ok: true,
+    intent: "deactivate",
+    deployment: {
+      id: DEPLOYMENT_ID,
+      status: "INACTIVE",
+      tasksDetached: 2,
+      schedulesPaused: 1,
+    },
   });
 
-  it("returns the API failure status when deactivation fails", async () => {
-    cascadeDashboardApiRequest.mockRejectedValue({
-      status: 409,
-      responseBody: {
-        error: {
-          code: "DEPLOYMENT_ALREADY_INACTIVE",
-        },
-      },
-    });
+  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+    expect.any(Request),
+    `/api/deployments/${DEPLOYMENT_ID}/deactivate`,
+    {
+      method: "POST",
+    },
+  );
+  expect(requireDashboardCapability).toHaveBeenCalledWith(
+    expect.any(Request),
+    "DEPLOYMENTS_MANAGE",
+  );
+});
 
-    await expect(action(actionArgs("deactivate"))).rejects.toMatchObject({
-      status: 409,
-    });
-    expect(requireDashboardCapability).toHaveBeenCalledWith(
-      expect.any(Request),
-      "DEPLOYMENTS_MANAGE",
-    );
+it("rejects an invalid deployment action before calling the API", async () => {
+  await expect(action(actionArgs("delete"))).rejects.toMatchObject({
+    status: 400,
   });
 
-  it("sends a deployment rollback request to the API", async () => {
-    cascadeDashboardApiRequest.mockResolvedValue({
-      deployment: {
-        id: DEPLOYMENT_ID,
-        status: "ACTIVE",
-        tasksRestored: 2,
-        tasksDetached: 1,
-        schedulesUpdated: 2,
-        schedulesPaused: 1,
-      },
-    });
+  expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
+  expect(requireDashboardCapability).toHaveBeenCalledWith(
+    expect.any(Request),
+    "DEPLOYMENTS_MANAGE",
+  );
+});
 
-    await expect(action(actionArgs("rollback"))).resolves.toEqual({
-      ok: true,
-      intent: "rollback",
-      deployment: {
-        id: DEPLOYMENT_ID,
-        status: "ACTIVE",
-        tasksRestored: 2,
-        tasksDetached: 1,
-        schedulesUpdated: 2,
-        schedulesPaused: 1,
+it("returns the API failure status when deactivation fails", async () => {
+  cascadeDashboardApiRequest.mockRejectedValue({
+    status: 409,
+    responseBody: {
+      error: {
+        code: "DEPLOYMENT_ALREADY_INACTIVE",
       },
-    });
-
-    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
-      expect.any(Request),
-      `/api/deployments/${DEPLOYMENT_ID}/rollback`,
-      {
-        method: "POST",
-      },
-    );
-    expect(requireDashboardCapability).toHaveBeenCalledWith(
-      expect.any(Request),
-      "DEPLOYMENTS_MANAGE",
-    );
+    },
   });
 
-  it("does not call the API when deployment management permission is denied", async () => {
-    requireDashboardCapability.mockRejectedValueOnce(
-      new Response("Forbidden", {
-        status: 403,
-      }),
-    );
+  await expect(action(actionArgs("deactivate"))).rejects.toMatchObject({
+    status: 409,
+  });
+  expect(requireDashboardCapability).toHaveBeenCalledWith(
+    expect.any(Request),
+    "DEPLOYMENTS_MANAGE",
+  );
+});
 
-    await expect(action(actionArgs("deactivate"))).rejects.toMatchObject({
+it("sends a deployment rollback request to the API", async () => {
+  cascadeDashboardApiRequest.mockResolvedValue({
+    deployment: {
+      id: DEPLOYMENT_ID,
+      status: "ACTIVE",
+      tasksRestored: 2,
+      tasksDetached: 1,
+      schedulesUpdated: 2,
+      schedulesPaused: 1,
+    },
+  });
+
+  await expect(action(actionArgs("rollback"))).resolves.toEqual({
+    ok: true,
+    intent: "rollback",
+    deployment: {
+      id: DEPLOYMENT_ID,
+      status: "ACTIVE",
+      tasksRestored: 2,
+      tasksDetached: 1,
+      schedulesUpdated: 2,
+      schedulesPaused: 1,
+    },
+  });
+
+  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+    expect.any(Request),
+    `/api/deployments/${DEPLOYMENT_ID}/rollback`,
+    {
+      method: "POST",
+    },
+  );
+  expect(requireDashboardCapability).toHaveBeenCalledWith(
+    expect.any(Request),
+    "DEPLOYMENTS_MANAGE",
+  );
+});
+
+it("does not call the API when deployment management permission is denied", async () => {
+  requireDashboardCapability.mockRejectedValueOnce(
+    new Response("Forbidden", {
       status: 403,
-    });
+    }),
+  );
 
-    expect(requireDashboardCapability).toHaveBeenCalledWith(
-      expect.any(Request),
-      "DEPLOYMENTS_MANAGE",
-    );
-    expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
+  await expect(action(actionArgs("deactivate"))).rejects.toMatchObject({
+    status: 403,
   });
+
+  expect(requireDashboardCapability).toHaveBeenCalledWith(
+    expect.any(Request),
+    "DEPLOYMENTS_MANAGE",
+  );
+  expect(cascadeDashboardApiRequest).not.toHaveBeenCalled();
 });

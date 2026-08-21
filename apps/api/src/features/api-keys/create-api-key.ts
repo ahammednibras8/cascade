@@ -23,24 +23,24 @@ function parseCreateApiKeyBody(body: unknown) {
     return failure(400, "INVALID_BODY", "Body must be an object");
   }
 
-  if (typeof body.name !== "string") {
+  if (typeof body["name"] !== "string") {
     return failure(400, "INVALID_API_KEY_NAME", "name must be a non-empty string");
   }
 
-  const name = body.name.trim();
+  const name = body["name"].trim();
 
   if (name.length === 0 || name.length > 120) {
     return failure(400, "INVALID_API_KEY_NAME", "name must be between 1 and 120 characters");
   }
 
-  if (!Array.isArray(body.scopes) || body.scopes.length === 0) {
+  if (!Array.isArray(body["scopes"]) || body["scopes"].length === 0) {
     return failure(400, "INVALID_API_KEY_SCOPES", "scopes must be a non-empty array");
   }
 
   const scopes: ApiKeyScope[] = [];
   const seenScopes = new Set<string>();
 
-  for (const scope of body.scopes) {
+  for (const scope of body["scopes"]) {
     if (!isApiKeyScope(scope)) {
       return failure(400, "INVALID_API_KEY_SCOPE", "scopes contains an unknown permission");
     }

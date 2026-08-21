@@ -66,7 +66,7 @@ function parseTaskName(value: unknown, slug: string) {
 }
 
 function parseDeploymentTask(task: Record<string, unknown>) {
-  const slug = getTrimmedString(task.slug);
+  const slug = getTrimmedString(task["slug"]);
 
   if (!slug || slug.length > MAX_TASK_SLUG_LENGTH) {
     return invalidDeploymentBody(
@@ -75,19 +75,19 @@ function parseDeploymentTask(task: Record<string, unknown>) {
     );
   }
 
-  const name = parseTaskName(task.name, slug);
+  const name = parseTaskName(task["name"], slug);
 
   if (typeof name !== "string") {
     return name;
   }
 
-  const description = parseTaskDescription(task.description);
+  const description = parseTaskDescription(task["description"]);
 
   if (description !== null && typeof description !== "string") {
     return description;
   }
 
-  const executionConfig = parseTaskExecutionConfig(task.executionConfig);
+  const executionConfig = parseTaskExecutionConfig(task["executionConfig"]);
 
   if (!executionConfig) {
     return invalidDeploymentBody(
@@ -155,7 +155,7 @@ export function parseDeploymentBody(body: unknown) {
     return invalidDeploymentBody("INVALID_BODY", "Body must be an object");
   }
 
-  const version = getTrimmedString(body.version);
+  const version = getTrimmedString(body["version"]);
 
   if (!version || version.length > MAX_DEPLOYMENT_VERSION_LENGTH) {
     return invalidDeploymentBody(
@@ -164,7 +164,7 @@ export function parseDeploymentBody(body: unknown) {
     );
   }
 
-  const image = getTrimmedString(body.image);
+  const image = getTrimmedString(body["image"]);
 
   if (!image || image.length > MAX_DEPLOYMENT_IMAGE_LENGTH || /\s/.test(image)) {
     return invalidDeploymentBody(
@@ -173,7 +173,7 @@ export function parseDeploymentBody(body: unknown) {
     );
   }
 
-  const tasks = parseDeploymentTasks(body.tasks);
+  const tasks = parseDeploymentTasks(body["tasks"]);
 
   if (!tasks.ok) {
     return tasks;

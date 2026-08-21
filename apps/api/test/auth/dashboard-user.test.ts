@@ -57,7 +57,7 @@ describe("dashboard-user API authentication", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    process.env.DASHBOARD_API_AUTH_SECRET = SECRET;
+    process.env["DASHBOARD_API_AUTH_SECRET"] = SECRET;
 
     prisma.organizationMember.findUnique.mockResolvedValue({
       role: "DEVELOPER",

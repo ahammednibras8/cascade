@@ -9,7 +9,7 @@ export type DashboardOrganization = {
 };
 
 function getDashboardSessionSecret() {
-  const secret = process.env.DASHBOARD_SESSION_SECRET;
+  const secret = process.env["DASHBOARD_SESSION_SECRET"];
 
   if (!secret || secret.length < 32) {
     throw new Error("DASHBOARD_SESSION_SECRET must be at least 32 characters");
@@ -19,7 +19,7 @@ function getDashboardSessionSecret() {
 }
 
 function getActiveOrganizationCookie() {
-  const production = process.env.NODE_ENV === "production";
+  const production = process.env["NODE_ENV"] === "production";
 
   return createCookie(
     production ? "__Host-cascade-active-organization" : "cascade-active-organization",

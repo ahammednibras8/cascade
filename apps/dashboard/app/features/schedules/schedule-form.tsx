@@ -88,12 +88,6 @@ function ScheduleForm({
   submittingLabel: string;
 }) {
   const payloadIsStoredExternally = schedule ? isObjectStorageRef(schedule.payload) : false;
-  const initialPayload =
-    schedule?.payload === null || payloadIsStoredExternally
-      ? ""
-      : schedule?.payload === undefined
-        ? ""
-        : JSON.stringify(schedule.payload, null, 2);
 
   return (
     <Form method="post" className="space-y-5 rounded-lg border border-gray-200 bg-white p-6">
@@ -101,37 +95,73 @@ function ScheduleForm({
       <TextInput name="name" label="Name" defaultValue={schedule?.name} />
       <ScheduleRuleFields schedule={schedule} />
       <PayloadField
-        initialPayload={initialPayload}
+        initialPayload={getInitialPayload(schedule, payloadIsStoredExternally)}
         isStoredExternally={payloadIsStoredExternally}
         label={schedule ? "Replacement payload JSON" : "Payload JSON"}
       />
 
-      {schedule ? (
-        <label className="flex items-center gap-2 text-sm text-gray-800">
-          <input type="checkbox" name="clearPayload" value="true" />
-          Clear the payload
-        </label>
-      ) : null}
-
-      {actionData?.ok === false ? (
-        <p role="alert" className="text-sm text-red-700">
-          {actionData.error.message}
-        </p>
-      ) : null}
-
-      <button
-        type="submit"
+      <ClearPayloadField schedule={schedule} />
+      <ActionError actionData={actionData} />
+      <SubmitButton
         disabled={isSubmitting || tasks?.length === 0}
-        className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSubmitting ? submittingLabel : submitLabel}
-      </button>
-
-      {tasks?.length === 0 ? (
-        <p className="text-sm text-amber-700">Register a task before creating a schedule.</p>
-      ) : null}
+        label={isSubmitting ? submittingLabel : submitLabel}
+      />
+      <EmptyTasksMessage tasks={tasks} />
     </Form>
   );
+}
+
+function getInitialPayload(schedule: Schedule | undefined, payloadIsStoredExternally: boolean) {
+  if (!schedule || schedule.payload === null || payloadIsStoredExternally) {
+    return "";
+  }
+
+  return JSON.stringify(schedule.payload, null, 2);
+}
+
+function ClearPayloadField({ schedule }: { schedule: Schedule | undefined }) {
+  if (!schedule) {
+    return null;
+  }
+
+  return (
+    <label className="flex items-center gap-2 text-sm text-gray-800">
+      <input type="checkbox" name="clearPayload" value="true" />
+      Clear the payload
+    </label>
+  );
+}
+
+function ActionError({ actionData }: { actionData: ScheduleActionData }) {
+  if (actionData?.ok !== false) {
+    return null;
+  }
+
+  return (
+    <p role="alert" className="text-sm text-red-700">
+      {actionData.error.message}
+    </p>
+  );
+}
+
+function SubmitButton({ disabled, label }: { disabled: boolean; label: string }) {
+  return (
+    <button
+      type="submit"
+      disabled={disabled}
+      className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {label}
+    </button>
+  );
+}
+
+function EmptyTasksMessage({ tasks }: { tasks: ScheduleTask[] | undefined }) {
+  if (tasks?.length !== 0) {
+    return null;
+  }
+
+  return <p className="text-sm text-amber-700">Register a task before creating a schedule.</p>;
 }
 
 function TaskSelect({ tasks }: { tasks: ScheduleTask[] }) {

@@ -212,12 +212,12 @@ async function readDeactivationState(input: {
   ]);
 
   return {
-    deploymentStatus: deployment?.status ?? null,
-    taskDeploymentId: task?.deploymentId ?? null,
-    taskExecutionConfig: task?.executionConfig ?? null,
-    scheduleEnabled: schedule?.enabled ?? null,
-    scheduleRevision: schedule?.revision ?? null,
-    scheduleLockedAt: schedule?.lockedAt ?? null,
+    deploymentStatus: valueOrNull(deployment?.status),
+    taskDeploymentId: valueOrNull(task?.deploymentId),
+    taskExecutionConfig: valueOrNull(task?.executionConfig),
+    scheduleEnabled: valueOrNull(schedule?.enabled),
+    scheduleRevision: valueOrNull(schedule?.revision),
+    scheduleLockedAt: valueOrNull(schedule?.lockedAt),
   };
 }
 
@@ -276,14 +276,18 @@ async function readRollbackState(input: Parameters<typeof expectDeploymentRolled
   ]);
 
   return {
-    targetStatus: target?.status ?? null,
-    currentStatus: current?.status ?? null,
-    restoredTaskDeploymentId: restoredTask?.deploymentId ?? null,
-    restoredTaskExecutionConfig: restoredTask?.executionConfig ?? null,
-    omittedTaskDeploymentId: omittedTask?.deploymentId ?? null,
-    omittedTaskExecutionConfig: omittedTask?.executionConfig ?? null,
-    omittedScheduleEnabled: omittedSchedule?.enabled ?? null,
-    omittedScheduleRevision: omittedSchedule?.revision ?? null,
-    omittedScheduleLockedAt: omittedSchedule?.lockedAt ?? null,
+    targetStatus: valueOrNull(target?.status),
+    currentStatus: valueOrNull(current?.status),
+    restoredTaskDeploymentId: valueOrNull(restoredTask?.deploymentId),
+    restoredTaskExecutionConfig: valueOrNull(restoredTask?.executionConfig),
+    omittedTaskDeploymentId: valueOrNull(omittedTask?.deploymentId),
+    omittedTaskExecutionConfig: valueOrNull(omittedTask?.executionConfig),
+    omittedScheduleEnabled: valueOrNull(omittedSchedule?.enabled),
+    omittedScheduleRevision: valueOrNull(omittedSchedule?.revision),
+    omittedScheduleLockedAt: valueOrNull(omittedSchedule?.lockedAt),
   };
+}
+
+function valueOrNull<T>(value: T | null | undefined): T | null {
+  return value ?? null;
 }

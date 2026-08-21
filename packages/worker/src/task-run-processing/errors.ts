@@ -8,17 +8,17 @@ export function serializeTaskRunError(error: unknown): Prisma.InputJsonValue {
     };
 
     if (error.stack) {
-      data.stack = error.stack;
+      data["stack"] = error.stack;
     }
 
     const errorWithCode = error as { code?: unknown; timeoutMs?: unknown };
 
     if (typeof errorWithCode.code === "string") {
-      data.code = errorWithCode.code;
+      data["code"] = errorWithCode.code;
     }
 
     if (typeof errorWithCode.timeoutMs === "number") {
-      data.timeoutMs = errorWithCode.timeoutMs;
+      data["timeoutMs"] = errorWithCode.timeoutMs;
     }
 
     return data;

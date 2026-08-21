@@ -25,6 +25,7 @@ type ParsedScheduleRule =
     };
 
 type ParsedStartAt = { ok: true; startAt: Date | undefined } | { ok: false; message: string };
+type UtcTimestampMatch = RegExpExecArray;
 
 export type ParsedScheduleBody =
   | {
@@ -47,6 +48,33 @@ function invalidRule(code: string, message: string): ParsedScheduleBody {
   return { ok: false, code, message };
 }
 
+function isValidUtcTimestampParts(startAt: Date, match: UtcTimestampMatch) {
+  return (
+    startAt.getUTCFullYear() === Number(match[1]) &&
+    startAt.getUTCMonth() + 1 === Number(match[2]) &&
+    startAt.getUTCDate() === Number(match[3]) &&
+    startAt.getUTCHours() === Number(match[4]) &&
+    startAt.getUTCMinutes() === Number(match[5]) &&
+    startAt.getUTCSeconds() === Number(match[6])
+  );
+}
+
+function parseUtcIsoTimestamp(value: string) {
+  const match = UTC_ISO_TIMESTAMP_PATTERN.exec(value);
+
+  if (!match) {
+    return null;
+  }
+
+  const startAt = new Date(value);
+
+  if (Number.isNaN(startAt.getTime()) || !isValidUtcTimestampParts(startAt, match)) {
+    return null;
+  }
+
+  return startAt;
+}
+
 function parseStartAt(value: unknown): ParsedStartAt {
   if (value === undefined || value === null) {
     return { ok: true, startAt: undefined };
@@ -56,20 +84,9 @@ function parseStartAt(value: unknown): ParsedStartAt {
     return { ok: false, message: "startAt must be a valid UTC ISO 8601 timestamp" };
   }
 
-  const match = UTC_ISO_TIMESTAMP_PATTERN.exec(value);
-  const startAt = match ? new Date(value) : null;
+  const startAt = parseUtcIsoTimestamp(value);
 
-  if (
-    !match ||
-    !startAt ||
-    Number.isNaN(startAt.getTime()) ||
-    startAt.getUTCFullYear() !== Number(match[1]) ||
-    startAt.getUTCMonth() + 1 !== Number(match[2]) ||
-    startAt.getUTCDate() !== Number(match[3]) ||
-    startAt.getUTCHours() !== Number(match[4]) ||
-    startAt.getUTCMinutes() !== Number(match[5]) ||
-    startAt.getUTCSeconds() !== Number(match[6])
-  ) {
+  if (!startAt) {
     return { ok: false, message: "startAt must be a valid UTC ISO 8601 timestamp" };
   }
 
@@ -112,14 +129,14 @@ function parseIntervalRule(
   body: Record<string, unknown>,
   startAt: Date | undefined,
 ): ParsedScheduleBody {
-  if (body.cronExpression !== undefined || body.timezone !== undefined) {
+  if (body["cronExpression"] !== undefined || body["timezone"] !== undefined) {
     return invalidRule(
       "INVALID_SCHEDULE_RULE",
       "INTERVAL schedules must not include cronExpression or timezone",
     );
   }
 
-  const intervalSeconds = body.intervalSeconds;
+  const intervalSeconds = body["intervalSeconds"];
 
   if (
     typeof intervalSeconds !== "number" ||
@@ -151,13 +168,13 @@ function parseCronRule(
   body: Record<string, unknown>,
   startAt: Date | undefined,
 ): ParsedScheduleBody {
-  if (body.intervalSeconds !== undefined) {
+  if (body["intervalSeconds"] !== undefined) {
     return invalidRule("INVALID_SCHEDULE_RULE", "CRON schedules must not include intervalSeconds");
   }
 
   const cronSchedule = parseCronSchedule({
-    expression: body.cronExpression,
-    timezone: body.timezone,
+    expression: body["cronExpression"],
+    timezone: body["timezone"],
   });
 
   if (!cronSchedule) {
@@ -190,19 +207,19 @@ export function parseTaskScheduleBody(body: unknown): ParsedScheduleBody {
     return invalidRule("INVALID_BODY", "Body must be an object");
   }
 
-  const scheduleType = parseScheduleType(body.scheduleType);
+  const scheduleType = parseScheduleType(body["scheduleType"]);
 
   if (!scheduleType) {
     return invalidRule("INVALID_SCHEDULE_TYPE", "scheduleType must be INTERVAL or CRON");
   }
 
-  const parsedName = parseName(body.name);
+  const parsedName = parseName(body["name"]);
 
   if (!parsedName.ok) {
     return parsedName;
   }
 
-  const parsedStartAt = parseStartAt(body.startAt);
+  const parsedStartAt = parseStartAt(body["startAt"]);
 
   if (!parsedStartAt.ok) {
     return invalidRule("INVALID_START_AT", parsedStartAt.message);

@@ -18,7 +18,7 @@ import { asyncHandler } from "./http/async-handler.js";
 import { checkApiReadiness } from "./health/api-readiness.js";
 
 const app = express();
-const port = Number(process.env.API_PORT ?? 3001);
+const port = Number(process.env["API_PORT"] ?? 3001);
 let shuttingDown = false;
 const sockets = new Set<Socket>();
 

@@ -3,7 +3,7 @@ import { getDashboardOrganizationContext } from "./dashboard-organization.server
 import { prisma } from "@cascade/database";
 
 function getDashboardSessionSecret() {
-  const secret = process.env.DASHBOARD_SESSION_SECRET;
+  const secret = process.env["DASHBOARD_SESSION_SECRET"];
 
   if (!secret || secret.length < 32) {
     throw new Error("DASHBOARD_SESSION_SECRET must be atleast 32 characters");
@@ -13,7 +13,7 @@ function getDashboardSessionSecret() {
 }
 
 function getActiveEnvironmentCookie() {
-  const production = process.env.NODE_ENV === "production";
+  const production = process.env["NODE_ENV"] === "production";
 
   return createCookie(
     production ? "__Host-cascade-active-environment" : "cascade-active-environment",

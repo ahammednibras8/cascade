@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import type { ApiAuthContext } from "../../../src/auth/api-key.js";
 
 type RunStatus = "PENDING" | "EXECUTING" | "COMPLETED" | "FAILED" | "CANCELED";
@@ -109,234 +109,232 @@ function createReplayedRun(overrides: Partial<ReplayedRun> = {}): ReplayedRun {
   };
 }
 
-describe("replayTaskRun", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+beforeEach(() => {
+  vi.clearAllMocks();
 
-    txTaskRunCreate.mockResolvedValue(createReplayedRun());
-    createTaskRunEvent.mockResolvedValue({
-      id: "44444444-4444-4444-8444-444444444444",
-    });
-    enqueueTaskRun.mockResolvedValue(undefined);
-
-    prisma.$transaction.mockImplementation(async (callback) =>
-      callback({
-        taskRun: {
-          create: txTaskRunCreate,
-        },
-      }),
-    );
+  txTaskRunCreate.mockResolvedValue(createReplayedRun());
+  createTaskRunEvent.mockResolvedValue({
+    id: "44444444-4444-4444-8444-444444444444",
   });
+  enqueueTaskRun.mockResolvedValue(undefined);
 
-  it("rejects invalid run ids", async () => {
-    const result = await replayTaskRun({
-      auth,
-      runId: "not-a-uuid",
-    });
-
-    expect(result).toEqual({
-      ok: false,
-      status: 400,
-      error: {
-        code: "INVALID_RUN_ID",
-        message: "runId must be a valid UUID",
-      },
-    });
-
-    expect(prisma.taskRun.findFirst).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(enqueueTaskRun).not.toHaveBeenCalled();
-  });
-
-  it("rejects runs outside the authenticated environment", async () => {
-    prisma.taskRun.findFirst.mockResolvedValue(null);
-
-    const result = await replayTaskRun({
-      auth,
-      runId: SOURCE_RUN_ID,
-    });
-
-    expect(result).toEqual({
-      ok: false,
-      status: 404,
-      error: {
-        code: "RUN_NOT_FOUND",
-        message: "Task run was not found in this environment",
-      },
-    });
-
-    expect(prisma.taskRun.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          id: SOURCE_RUN_ID,
-          task: {
-            environmentId: auth.environmentId,
-          },
-        },
-      }),
-    );
-
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(enqueueTaskRun).not.toHaveBeenCalled();
-  });
-
-  it("rejects pending runs", async () => {
-    prisma.taskRun.findFirst.mockResolvedValue(
-      createSourceRun({
-        status: "PENDING",
-      }),
-    );
-
-    const result = await replayTaskRun({
-      auth,
-      runId: SOURCE_RUN_ID,
-    });
-
-    expect(result).toEqual({
-      ok: false,
-      status: 409,
-      error: {
-        code: "RUN_NOT_REPLAYABLE",
-        message: "Cannot replay a run with status PENDING",
-      },
-    });
-
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(enqueueTaskRun).not.toHaveBeenCalled();
-  });
-
-  it("rejects legacy runs without execution config snapshots", async () => {
-    prisma.taskRun.findFirst.mockResolvedValue(
-      createSourceRun({
-        executionConfig: null,
-      }),
-    );
-
-    const result = await replayTaskRun({
-      auth,
-      runId: SOURCE_RUN_ID,
-    });
-
-    expect(result).toEqual({
-      ok: false,
-      status: 409,
-      error: {
-        code: "RUN_EXECUTION_CONFIG_MISSING",
-        message: "This legacy run has no execution configuration snapshot and cannot be replayed",
-      },
-    });
-
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(enqueueTaskRun).not.toHaveBeenCalled();
-  });
-
-  it("creates a new pending run from a failed source run and enqueues it", async () => {
-    prisma.taskRun.findFirst.mockResolvedValue(
-      createSourceRun({
-        status: "FAILED",
-      }),
-    );
-
-    const result = await replayTaskRun({
-      auth,
-      runId: SOURCE_RUN_ID,
-    });
-
-    expect(result).toEqual({
-      ok: true,
-      status: 202,
+  prisma.$transaction.mockImplementation(async (callback) =>
+    callback({
       taskRun: {
-        id: REPLAYED_RUN_ID,
-        taskId: TASK_ID,
-        status: "PENDING",
-        payload: {
-          message: "hello",
+        create: txTaskRunCreate,
+      },
+    }),
+  );
+});
+
+it("rejects invalid run ids", async () => {
+  const result = await replayTaskRun({
+    auth,
+    runId: "not-a-uuid",
+  });
+
+  expect(result).toEqual({
+    ok: false,
+    status: 400,
+    error: {
+      code: "INVALID_RUN_ID",
+      message: "runId must be a valid UUID",
+    },
+  });
+
+  expect(prisma.taskRun.findFirst).not.toHaveBeenCalled();
+  expect(prisma.$transaction).not.toHaveBeenCalled();
+  expect(enqueueTaskRun).not.toHaveBeenCalled();
+});
+
+it("rejects runs outside the authenticated environment", async () => {
+  prisma.taskRun.findFirst.mockResolvedValue(null);
+
+  const result = await replayTaskRun({
+    auth,
+    runId: SOURCE_RUN_ID,
+  });
+
+  expect(result).toEqual({
+    ok: false,
+    status: 404,
+    error: {
+      code: "RUN_NOT_FOUND",
+      message: "Task run was not found in this environment",
+    },
+  });
+
+  expect(prisma.taskRun.findFirst).toHaveBeenCalledWith(
+    expect.objectContaining({
+      where: {
+        id: SOURCE_RUN_ID,
+        task: {
+          environmentId: auth.environmentId,
         },
-        createdAt: "2026-01-01T00:00:00.000Z",
-        replayedFromRunId: SOURCE_RUN_ID,
       },
-    });
+    }),
+  );
 
-    expect(txTaskRunCreate).toHaveBeenCalledWith({
-      data: {
-        taskId: TASK_ID,
-        deploymentId: "deployment-1",
-        status: "PENDING",
-        executionConfig: EXECUTION_CONFIG,
-        payload: {
-          message: "hello",
-        },
-      },
-      select: {
-        id: true,
-        taskId: true,
-        deploymentId: true,
-        status: true,
-        payload: true,
-        createdAt: true,
-      },
-    });
+  expect(prisma.$transaction).not.toHaveBeenCalled();
+  expect(enqueueTaskRun).not.toHaveBeenCalled();
+});
 
-    expect(createTaskRunEvent).toHaveBeenNthCalledWith(1, expect.anything(), {
-      taskRunId: REPLAYED_RUN_ID,
-      type: "task.run.replayed",
-      level: "INFO",
-      message: "Task run manually replayed",
-      data: {
-        apiKeyId: auth.apiKeyId,
-        sourceRunId: SOURCE_RUN_ID,
-        sourceStatus: "FAILED",
-      },
-    });
+it("rejects pending runs", async () => {
+  prisma.taskRun.findFirst.mockResolvedValue(
+    createSourceRun({
+      status: "PENDING",
+    }),
+  );
 
-    expect(createTaskRunEvent).toHaveBeenNthCalledWith(2, expect.anything(), {
-      taskRunId: SOURCE_RUN_ID,
-      type: "task.run.replay.created",
-      level: "INFO",
-      message: "Manual replay created a new task run",
-      data: {
-        apiKeyId: auth.apiKeyId,
-        replayedRunId: REPLAYED_RUN_ID,
-      },
-    });
+  const result = await replayTaskRun({
+    auth,
+    runId: SOURCE_RUN_ID,
+  });
 
-    expect(enqueueTaskRun).toHaveBeenCalledWith({
-      runId: REPLAYED_RUN_ID,
+  expect(result).toEqual({
+    ok: false,
+    status: 409,
+    error: {
+      code: "RUN_NOT_REPLAYABLE",
+      message: "Cannot replay a run with status PENDING",
+    },
+  });
+
+  expect(prisma.$transaction).not.toHaveBeenCalled();
+  expect(enqueueTaskRun).not.toHaveBeenCalled();
+});
+
+it("rejects legacy runs without execution config snapshots", async () => {
+  prisma.taskRun.findFirst.mockResolvedValue(
+    createSourceRun({
+      executionConfig: null,
+    }),
+  );
+
+  const result = await replayTaskRun({
+    auth,
+    runId: SOURCE_RUN_ID,
+  });
+
+  expect(result).toEqual({
+    ok: false,
+    status: 409,
+    error: {
+      code: "RUN_EXECUTION_CONFIG_MISSING",
+      message: "This legacy run has no execution configuration snapshot and cannot be replayed",
+    },
+  });
+
+  expect(prisma.$transaction).not.toHaveBeenCalled();
+  expect(enqueueTaskRun).not.toHaveBeenCalled();
+});
+
+it("creates a new pending run from a failed source run and enqueues it", async () => {
+  prisma.taskRun.findFirst.mockResolvedValue(
+    createSourceRun({
+      status: "FAILED",
+    }),
+  );
+
+  const result = await replayTaskRun({
+    auth,
+    runId: SOURCE_RUN_ID,
+  });
+
+  expect(result).toEqual({
+    ok: true,
+    status: 202,
+    taskRun: {
+      id: REPLAYED_RUN_ID,
       taskId: TASK_ID,
-      environmentId: auth.environmentId,
+      status: "PENDING",
+      payload: {
+        message: "hello",
+      },
+      createdAt: "2026-01-01T00:00:00.000Z",
+      replayedFromRunId: SOURCE_RUN_ID,
+    },
+  });
+
+  expect(txTaskRunCreate).toHaveBeenCalledWith({
+    data: {
+      taskId: TASK_ID,
       deploymentId: "deployment-1",
-    });
+      status: "PENDING",
+      executionConfig: EXECUTION_CONFIG,
+      payload: {
+        message: "hello",
+      },
+    },
+    select: {
+      id: true,
+      taskId: true,
+      deploymentId: true,
+      status: true,
+      payload: true,
+      createdAt: true,
+    },
   });
 
-  it("can replay completed runs", async () => {
-    prisma.taskRun.findFirst.mockResolvedValue(
-      createSourceRun({
-        status: "COMPLETED",
-      }),
-    );
-
-    const result = await replayTaskRun({
-      auth,
-      runId: SOURCE_RUN_ID,
-    });
-
-    expect(result.ok).toBe(true);
-    expect(enqueueTaskRun).toHaveBeenCalledOnce();
+  expect(createTaskRunEvent).toHaveBeenNthCalledWith(1, expect.anything(), {
+    taskRunId: REPLAYED_RUN_ID,
+    type: "task.run.replayed",
+    level: "INFO",
+    message: "Task run manually replayed",
+    data: {
+      apiKeyId: auth.apiKeyId,
+      sourceRunId: SOURCE_RUN_ID,
+      sourceStatus: "FAILED",
+    },
   });
 
-  it("can replay canceled runs", async () => {
-    prisma.taskRun.findFirst.mockResolvedValue(
-      createSourceRun({
-        status: "CANCELED",
-      }),
-    );
-
-    const result = await replayTaskRun({
-      auth,
-      runId: SOURCE_RUN_ID,
-    });
-
-    expect(result.ok).toBe(true);
-    expect(enqueueTaskRun).toHaveBeenCalledOnce();
+  expect(createTaskRunEvent).toHaveBeenNthCalledWith(2, expect.anything(), {
+    taskRunId: SOURCE_RUN_ID,
+    type: "task.run.replay.created",
+    level: "INFO",
+    message: "Manual replay created a new task run",
+    data: {
+      apiKeyId: auth.apiKeyId,
+      replayedRunId: REPLAYED_RUN_ID,
+    },
   });
+
+  expect(enqueueTaskRun).toHaveBeenCalledWith({
+    runId: REPLAYED_RUN_ID,
+    taskId: TASK_ID,
+    environmentId: auth.environmentId,
+    deploymentId: "deployment-1",
+  });
+});
+
+it("can replay completed runs", async () => {
+  prisma.taskRun.findFirst.mockResolvedValue(
+    createSourceRun({
+      status: "COMPLETED",
+    }),
+  );
+
+  const result = await replayTaskRun({
+    auth,
+    runId: SOURCE_RUN_ID,
+  });
+
+  expect(result.ok).toBe(true);
+  expect(enqueueTaskRun).toHaveBeenCalledOnce();
+});
+
+it("can replay canceled runs", async () => {
+  prisma.taskRun.findFirst.mockResolvedValue(
+    createSourceRun({
+      status: "CANCELED",
+    }),
+  );
+
+  const result = await replayTaskRun({
+    auth,
+    runId: SOURCE_RUN_ID,
+  });
+
+  expect(result.ok).toBe(true);
+  expect(enqueueTaskRun).toHaveBeenCalledOnce();
 });

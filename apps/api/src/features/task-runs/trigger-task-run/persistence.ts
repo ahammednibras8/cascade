@@ -67,23 +67,23 @@ function buildTriggerEventData(input: CreateTriggeredTaskRunInput) {
   };
 
   if (input.auth.apiKeyId) {
-    data.apiKeyId = input.auth.apiKeyId;
+    data["apiKeyId"] = input.auth.apiKeyId;
   }
 
   if (input.auth.principalId) {
-    data.principalId = input.auth.principalId;
+    data["principalId"] = input.auth.principalId;
   }
 
   if (input.triggerTrace.parentSpanId) {
-    data.parentSpanId = input.triggerTrace.parentSpanId;
+    data["parentSpanId"] = input.triggerTrace.parentSpanId;
   }
 
   if (input.idempotencyKeyHash) {
-    data.idempotencyKeyHash = input.idempotencyKeyHash;
+    data["idempotencyKeyHash"] = input.idempotencyKeyHash;
   }
 
   if (input.delayUntil) {
-    data.delayUntil = input.delayUntil.toISOString();
+    data["delayUntil"] = input.delayUntil.toISOString();
   }
 
   return data;

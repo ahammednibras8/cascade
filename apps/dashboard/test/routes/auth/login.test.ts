@@ -37,7 +37,7 @@ const { loader } = await import("../../../app/routes/auth/login.js");
 describe("login route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.DASHBOARD_AUTH_MODE;
+    delete process.env["DASHBOARD_AUTH_MODE"];
   });
 
   it("starts OIDC login and preserves the internal return path", async () => {
@@ -57,7 +57,7 @@ describe("login route", () => {
   });
 
   it("creates a local dashboard session when dev auth is enabled", async () => {
-    process.env.DASHBOARD_AUTH_MODE = "dev";
+    process.env["DASHBOARD_AUTH_MODE"] = "dev";
     findOrCreateDevDashboardUser.mockResolvedValue({
       id: "user-1",
       email: "local-dashboard@example.test",
@@ -83,7 +83,7 @@ describe("login route", () => {
   });
 
   it("does not redirect dev auth to an external return URL", async () => {
-    process.env.DASHBOARD_AUTH_MODE = "dev";
+    process.env["DASHBOARD_AUTH_MODE"] = "dev";
     findOrCreateDevDashboardUser.mockResolvedValue({
       id: "user-1",
       email: "local-dashboard@example.test",

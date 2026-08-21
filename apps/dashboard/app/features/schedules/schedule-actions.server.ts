@@ -91,21 +91,21 @@ function parseScheduleRequestBody(formData: FormData, clearPayload: boolean) {
   const body: Record<string, unknown> = { scheduleType };
 
   if (typeof name === "string" && name.trim()) {
-    body.name = name.trim();
+    body["name"] = name.trim();
   }
 
   if (scheduleType === "INTERVAL") {
-    body.intervalSeconds = Number(formData.get("intervalSeconds"));
+    body["intervalSeconds"] = Number(formData.get("intervalSeconds"));
   } else {
-    body.cronExpression = formData.get("cronExpression");
-    body.timezone = formData.get("timezone");
+    body["cronExpression"] = formData.get("cronExpression");
+    body["timezone"] = formData.get("timezone");
   }
 
   if (clearPayload) {
-    body.payload = null;
+    body["payload"] = null;
   } else if (typeof payloadJson === "string" && payloadJson.trim()) {
     try {
-      body.payload = JSON.parse(payloadJson);
+      body["payload"] = JSON.parse(payloadJson);
     } catch {
       return jsonFailure(400, "INVALID_PAYLOAD_JSON", "Payload must be valid JSON");
     }

@@ -14,7 +14,7 @@ export type ApiReadiness = {
 };
 
 function getDependencyTimeoutMs() {
-  const rawValue = process.env.HEALTHCHECK_DEPENDENCY_TIMEOUT_MS;
+  const rawValue = process.env["HEALTHCHECK_DEPENDENCY_TIMEOUT_MS"];
 
   if (rawValue === undefined) {
     return DEFAULT_DEPENDENCY_TIMEOUT_MS;

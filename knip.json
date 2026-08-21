@@ -55,5 +55,6 @@
       "entry": ["tests/**/*.ts"],
       "project": ["**/*.ts"]
     }
-  }
+  },
+  "treatConfigHintsAsErrors": true
 }

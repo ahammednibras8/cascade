@@ -1,7 +1,103 @@
-import { prisma } from "@cascade/database";
+import { prisma, type Prisma } from "@cascade/database";
 import type { ApiAuthContext } from "../../auth/api-key.js";
 import { isUuid } from "../../lib/route-params.js";
 import { failure, success } from "../../lib/service-result.js";
+
+const taskRunDetailSelect = {
+  id: true,
+  status: true,
+  deploymentId: true,
+  scheduleId: true,
+  payload: true,
+  output: true,
+  error: true,
+  delayUntil: true,
+  startedAt: true,
+  lastHeartbeatAt: true,
+  completedAt: true,
+  createdAt: true,
+  updatedAt: true,
+  traceId: true,
+  triggerSpanId: true,
+  task: {
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      environment: {
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          project: {
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  },
+  _count: {
+    select: { attempts: true, events: true },
+  },
+  attempts: {
+    orderBy: {
+      attemptNumber: "asc",
+    },
+    select: {
+      id: true,
+      attemptNumber: true,
+      status: true,
+      error: true,
+      startedAt: true,
+      completedAt: true,
+      createdAt: true,
+    },
+  },
+} satisfies Prisma.TaskRunSelect;
+
+type TaskRunDetail = Prisma.TaskRunGetPayload<{
+  select: typeof taskRunDetailSelect;
+}>;
+
+function mapTaskRunAttempt(attempt: TaskRunDetail["attempts"][number]) {
+  return {
+    id: attempt.id,
+    attemptNumber: attempt.attemptNumber,
+    status: attempt.status,
+    error: attempt.error,
+    startedAt: attempt.startedAt?.toISOString() ?? null,
+    completedAt: attempt.completedAt?.toISOString() ?? null,
+    createdAt: attempt.createdAt.toISOString(),
+  };
+}
+
+function mapTaskRunDetail(run: TaskRunDetail) {
+  return {
+    id: run.id,
+    status: run.status,
+    deploymentId: run.deploymentId,
+    scheduleId: run.scheduleId,
+    payload: run.payload,
+    output: run.output,
+    error: run.error,
+    delayUntil: run.delayUntil?.toISOString() ?? null,
+    startedAt: run.startedAt?.toISOString() ?? null,
+    lastHeartbeatAt: run.lastHeartbeatAt?.toISOString() ?? null,
+    completedAt: run.completedAt?.toISOString() ?? null,
+    createdAt: run.createdAt.toISOString(),
+    updatedAt: run.updatedAt?.toISOString(),
+    task: run.task,
+    attemptsCount: run._count.attempts,
+    eventsCount: run._count.events,
+    traceId: run.traceId,
+    triggerSpanId: run.triggerSpanId,
+    attempts: run.attempts.map(mapTaskRunAttempt),
+  };
+}
 
 export async function getTaskRun(input: { auth: ApiAuthContext; runId: string | undefined }) {
   if (!isUuid(input.runId)) {
@@ -13,61 +109,7 @@ export async function getTaskRun(input: { auth: ApiAuthContext; runId: string | 
       id: input.runId,
       task: { environmentId: input.auth.environmentId },
     },
-    select: {
-      id: true,
-      status: true,
-      deploymentId: true,
-      scheduleId: true,
-      payload: true,
-      output: true,
-      error: true,
-      delayUntil: true,
-      startedAt: true,
-      lastHeartbeatAt: true,
-      completedAt: true,
-      createdAt: true,
-      updatedAt: true,
-      traceId: true,
-      triggerSpanId: true,
-      task: {
-        select: {
-          id: true,
-          slug: true,
-          name: true,
-          environment: {
-            select: {
-              id: true,
-              slug: true,
-              name: true,
-              project: {
-                select: {
-                  id: true,
-                  slug: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      _count: {
-        select: { attempts: true, events: true },
-      },
-      attempts: {
-        orderBy: {
-          attemptNumber: "asc",
-        },
-        select: {
-          id: true,
-          attemptNumber: true,
-          status: true,
-          error: true,
-          startedAt: true,
-          completedAt: true,
-          createdAt: true,
-        },
-      },
-    },
+    select: taskRunDetailSelect,
   });
 
   if (!run) {
@@ -75,34 +117,6 @@ export async function getTaskRun(input: { auth: ApiAuthContext; runId: string | 
   }
 
   return success(200, {
-    taskRun: {
-      id: run.id,
-      status: run.status,
-      deploymentId: run.deploymentId,
-      scheduleId: run.scheduleId,
-      payload: run.payload,
-      output: run.output,
-      error: run.error,
-      delayUntil: run.delayUntil?.toISOString() ?? null,
-      startedAt: run.startedAt?.toISOString() ?? null,
-      lastHeartbeatAt: run.lastHeartbeatAt?.toISOString() ?? null,
-      completedAt: run.completedAt?.toISOString() ?? null,
-      createdAt: run.createdAt.toISOString(),
-      updatedAt: run.updatedAt?.toISOString(),
-      task: run.task,
-      attemptsCount: run._count.attempts,
-      eventsCount: run._count.events,
-      traceId: run.traceId,
-      triggerSpanId: run.triggerSpanId,
-      attempts: run.attempts.map((attempt) => ({
-        id: attempt.id,
-        attemptNumber: attempt.attemptNumber,
-        status: attempt.status,
-        error: attempt.error,
-        startedAt: attempt.startedAt?.toISOString() ?? null,
-        completedAt: attempt.completedAt?.toISOString() ?? null,
-        createdAt: attempt.createdAt.toISOString(),
-      })),
-    },
+    taskRun: mapTaskRunDetail(run),
   });
 }

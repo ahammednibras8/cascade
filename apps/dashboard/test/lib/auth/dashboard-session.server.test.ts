@@ -12,12 +12,12 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-const originalSessionSecret = process.env.DASHBOARD_SESSION_SECRET;
-const originalNodeEnv = process.env.NODE_ENV;
+const originalSessionSecret = process.env["DASHBOARD_SESSION_SECRET"];
+const originalNodeEnv = process.env["NODE_ENV"];
 const testSessionSecret = "test-dashboard-session-secret-that-is-long-enough";
 
-process.env.DASHBOARD_SESSION_SECRET = testSessionSecret;
-process.env.NODE_ENV = "test";
+process.env["DASHBOARD_SESSION_SECRET"] = testSessionSecret;
+process.env["NODE_ENV"] = "test";
 
 const {
   commitDashboardSession,
@@ -32,14 +32,14 @@ const SESSION_ID = "22222222-2222-4222-8222-222222222222";
 
 describe("dashboard sessions", () => {
   beforeEach(() => {
-    process.env.DASHBOARD_SESSION_SECRET = testSessionSecret;
-    process.env.NODE_ENV = "test";
+    process.env["DASHBOARD_SESSION_SECRET"] = testSessionSecret;
+    process.env["NODE_ENV"] = "test";
     vi.clearAllMocks();
   });
 
   afterEach(() => {
-    process.env.DASHBOARD_SESSION_SECRET = originalSessionSecret;
-    process.env.NODE_ENV = originalNodeEnv;
+    process.env["DASHBOARD_SESSION_SECRET"] = originalSessionSecret;
+    process.env["NODE_ENV"] = originalNodeEnv;
   });
 
   it("creates a random token but stores only its HMAC hash", async () => {

@@ -18,10 +18,10 @@ vi.mock("../../../app/lib/workspace/dashboard-organization.server.js", () => ({
   getDashboardOrganizationContext,
 }));
 
-const originalSecret = process.env.DASHBOARD_SESSION_SECRET;
+const originalSecret = process.env["DASHBOARD_SESSION_SECRET"];
 
-process.env.NODE_ENV = "test";
-process.env.DASHBOARD_SESSION_SECRET = "test-dashboard-session-secret-that-is-long-enough";
+process.env["NODE_ENV"] = "test";
+process.env["DASHBOARD_SESSION_SECRET"] = "test-dashboard-session-secret-that-is-long-enough";
 
 const { commitActiveDashboardEnvironment, getDashboardWorkspaceContext } =
   await import("../../../app/lib/workspace/dashboard-workspace.server.js");
@@ -29,7 +29,7 @@ const { commitActiveDashboardEnvironment, getDashboardWorkspaceContext } =
 describe("dashboard workspace context", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.DASHBOARD_SESSION_SECRET = "test-dashboard-session-secret-that-is-long-enough";
+    process.env["DASHBOARD_SESSION_SECRET"] = "test-dashboard-session-secret-that-is-long-enough";
 
     getDashboardOrganizationContext.mockResolvedValue({
       organizations: [],
@@ -66,9 +66,9 @@ describe("dashboard workspace context", () => {
 
   afterEach(() => {
     if (originalSecret === undefined) {
-      delete process.env.DASHBOARD_SESSION_SECRET;
+      delete process.env["DASHBOARD_SESSION_SECRET"];
     } else {
-      process.env.DASHBOARD_SESSION_SECRET = originalSecret;
+      process.env["DASHBOARD_SESSION_SECRET"] = originalSecret;
     }
   });
 

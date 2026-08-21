@@ -11,7 +11,7 @@ vi.mock("../../../app/lib/auth/dashboard-api-authorization.server.js", () => ({
 const { cascadeDashboardApiRequest, cascadeDashboardApiStreamRequest } =
   await import("../../../app/lib/api/cascade-api.server.js");
 
-const originalApiUrl = process.env.CASCADE_API_URL;
+const originalApiUrl = process.env["CASCADE_API_URL"];
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -30,13 +30,13 @@ describe("cascadeDashboardApiRequest", () => {
     vi.stubGlobal("fetch", fetchMock);
     createDashboardApiAuthorizationForRequest.mockResolvedValue("signed-human-dashboard-auth");
 
-    process.env.CASCADE_API_URL = "http://localhost:3001/";
+    process.env["CASCADE_API_URL"] = "http://localhost:3001/";
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
 
-    process.env.CASCADE_API_URL = originalApiUrl;
+    process.env["CASCADE_API_URL"] = originalApiUrl;
   });
 
   it("calls the Cascade API with signed dashboard-user authorization", async () => {
@@ -95,13 +95,13 @@ describe("cascadeDashboardApiStreamRequest", () => {
     vi.stubGlobal("fetch", fetchMock);
     createDashboardApiAuthorizationForRequest.mockResolvedValue("signed-human-dashboard-auth");
 
-    process.env.CASCADE_API_URL = "http://localhost:3001/";
+    process.env["CASCADE_API_URL"] = "http://localhost:3001/";
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
 
-    process.env.CASCADE_API_URL = originalApiUrl;
+    process.env["CASCADE_API_URL"] = originalApiUrl;
   });
 
   it("calls the Cascade API SSE endpoint with signed dashboard-user authorization", async () => {

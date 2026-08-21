@@ -25,6 +25,35 @@ type RollbackDeploymentFailure = ServiceFailure<400 | 404 | 409>;
 
 export type RollbackDeploymentResult = RollbackDeploymentSuccess | RollbackDeploymentFailure;
 
+const rollbackDeploymentSelect = {
+  id: true,
+  status: true,
+  manifestTasks: {
+    orderBy: {
+      slug: "asc",
+    },
+    select: {
+      slug: true,
+      name: true,
+      description: true,
+      executionConfig: true,
+    },
+  },
+} as const satisfies Prisma.DeploymentSelect;
+
+type RollbackDeployment = Prisma.DeploymentGetPayload<{
+  select: typeof rollbackDeploymentSelect;
+}>;
+
+type RollbackTransaction = Prisma.TransactionClient;
+
+type RollbackStats = {
+  tasksRestored: number;
+  tasksDetached: number;
+  schedulesUpdated: number;
+  schedulesPaused: number;
+};
+
 function getOmittedTaskWhere(input: {
   environmentId: string;
   restoredSlugs: string[];
@@ -40,39 +69,19 @@ function getOmittedTaskWhere(input: {
   };
 }
 
-export async function rollbackDeployment(
-  input: RollbackDeploymentInput,
-): Promise<RollbackDeploymentResult> {
-  if (!isUuid(input.deploymentId)) {
-    return failure(400, "INVALID_DEPLOYMENT_ID", "deploymentId must be a valid UUID");
-  }
-
-  const deployment = await prisma.deployment.findFirst({
+async function findRollbackDeployment(input: { auth: ApiAuthContext; deploymentId: string }) {
+  return prisma.deployment.findFirst({
     where: {
       id: input.deploymentId,
       environmentId: input.auth.environmentId,
     },
-    select: {
-      id: true,
-      status: true,
-      manifestTasks: {
-        orderBy: {
-          slug: "asc",
-        },
-        select: {
-          slug: true,
-          name: true,
-          description: true,
-          executionConfig: true,
-        },
-      },
-    },
+    select: rollbackDeploymentSelect,
   });
+}
 
-  if (!deployment) {
-    return failure(404, "DEPLOYMENT_NOT_FOUND", "Deployment was not found in this environment");
-  }
-
+function getRollbackValidationFailure(
+  deployment: RollbackDeployment,
+): RollbackDeploymentFailure | null {
   if (deployment.status === "ACTIVE") {
     return failure(409, "DEPLOYMENT_ALREADY_ACTIVE", "Deployment is already active");
   }
@@ -93,118 +102,207 @@ export async function rollbackDeployment(
     );
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const activated = await tx.deployment.updateMany({
-      where: {
-        id: deployment.id,
-        environmentId: input.auth.environmentId,
-        status: "INACTIVE",
+  return null;
+}
+
+async function activateDeployment(input: {
+  tx: RollbackTransaction;
+  deployment: RollbackDeployment;
+  environmentId: string;
+}) {
+  return input.tx.deployment.updateMany({
+    where: {
+      id: input.deployment.id,
+      environmentId: input.environmentId,
+      status: "INACTIVE",
+    },
+    data: {
+      status: "ACTIVE",
+      runtimeStatus: "PENDING",
+      runtimeContainerId: null,
+      runtimeError: null,
+      runtimeStartedAt: null,
+      runtimeStoppedAt: null,
+    },
+  });
+}
+
+async function deactivateOtherDeployments(input: {
+  tx: RollbackTransaction;
+  deployment: RollbackDeployment;
+  environmentId: string;
+}) {
+  await input.tx.deployment.updateMany({
+    where: {
+      environmentId: input.environmentId,
+      id: {
+        not: input.deployment.id,
       },
-      data: {
-        status: "ACTIVE",
-        runtimeStatus: "PENDING",
-        runtimeContainerId: null,
-        runtimeError: null,
-        runtimeStartedAt: null,
-        runtimeStoppedAt: null,
+      status: "ACTIVE",
+    },
+    data: {
+      status: "INACTIVE",
+    },
+  });
+}
+
+async function pauseOmittedSchedules(
+  tx: RollbackTransaction,
+  omittedTaskWhere: Prisma.TaskWhereInput,
+) {
+  return tx.taskSchedule.updateMany({
+    where: {
+      enabled: true,
+      task: omittedTaskWhere,
+    },
+    data: {
+      enabled: false,
+      lockedAt: null,
+      revision: {
+        increment: 1,
       },
-    });
+    },
+  });
+}
+
+async function detachOmittedTasks(
+  tx: RollbackTransaction,
+  omittedTaskWhere: Prisma.TaskWhereInput,
+) {
+  return tx.task.updateMany({
+    where: omittedTaskWhere,
+    data: {
+      deploymentId: null,
+      executionConfig: Prisma.DbNull,
+    },
+  });
+}
+
+async function restoreManifestTasks(input: {
+  tx: RollbackTransaction;
+  deployment: RollbackDeployment;
+  environmentId: string;
+}) {
+  return Promise.all(
+    input.deployment.manifestTasks.map((task) =>
+      input.tx.task.upsert({
+        where: {
+          environmentId_slug: {
+            environmentId: input.environmentId,
+            slug: task.slug,
+          },
+        },
+        create: {
+          environmentId: input.environmentId,
+          deploymentId: input.deployment.id,
+          slug: task.slug,
+          name: task.name,
+          description: task.description,
+          executionConfig: task.executionConfig as Prisma.InputJsonValue,
+        },
+        update: {
+          deploymentId: input.deployment.id,
+          name: task.name,
+          description: task.description,
+          executionConfig: task.executionConfig as Prisma.InputJsonValue,
+        },
+        select: {
+          id: true,
+        },
+      }),
+    ),
+  );
+}
+
+async function unlockRestoredSchedules(
+  tx: RollbackTransaction,
+  restoredTasks: Array<{ id: string }>,
+) {
+  return tx.taskSchedule.updateMany({
+    where: {
+      taskId: {
+        in: restoredTasks.map((task) => task.id),
+      },
+    },
+    data: {
+      lockedAt: null,
+      revision: {
+        increment: 1,
+      },
+    },
+  });
+}
+
+function createRollbackStats(input: {
+  restoredTasks: Array<{ id: string }>;
+  tasksDetached: number;
+  schedulesUpdated: number;
+  schedulesPaused: number;
+}): RollbackStats {
+  return {
+    tasksRestored: input.restoredTasks.length,
+    tasksDetached: input.tasksDetached,
+    schedulesUpdated: input.schedulesUpdated,
+    schedulesPaused: input.schedulesPaused,
+  };
+}
+
+async function rollbackDeploymentInTransaction(input: {
+  deployment: RollbackDeployment;
+  environmentId: string;
+}) {
+  return prisma.$transaction(async (tx): Promise<RollbackStats | null> => {
+    const activated = await activateDeployment({ tx, ...input });
 
     if (activated.count !== 1) {
       return null;
     }
 
-    await tx.deployment.updateMany({
-      where: {
-        environmentId: input.auth.environmentId,
-        id: {
-          not: deployment.id,
-        },
-        status: "ACTIVE",
-      },
-      data: {
-        status: "INACTIVE",
-      },
-    });
+    await deactivateOtherDeployments({ tx, ...input });
 
-    const restoredSlugs = deployment.manifestTasks.map((task) => task.slug);
     const omittedTaskWhere = getOmittedTaskWhere({
-      environmentId: input.auth.environmentId,
-      restoredSlugs,
+      environmentId: input.environmentId,
+      restoredSlugs: input.deployment.manifestTasks.map((task) => task.slug),
     });
+    const pausedSchedules = await pauseOmittedSchedules(tx, omittedTaskWhere);
+    const detachedTasks = await detachOmittedTasks(tx, omittedTaskWhere);
+    const restoredTasks = await restoreManifestTasks({ tx, ...input });
+    const updatedSchedules = await unlockRestoredSchedules(tx, restoredTasks);
 
-    const pausedSchedules = await tx.taskSchedule.updateMany({
-      where: {
-        enabled: true,
-        task: omittedTaskWhere,
-      },
-      data: {
-        enabled: false,
-        lockedAt: null,
-        revision: {
-          increment: 1,
-        },
-      },
-    });
-
-    const detachedTasks = await tx.task.updateMany({
-      where: omittedTaskWhere,
-      data: {
-        deploymentId: null,
-        executionConfig: Prisma.DbNull,
-      },
-    });
-
-    const restoredTasks = await Promise.all(
-      deployment.manifestTasks.map((task) =>
-        tx.task.upsert({
-          where: {
-            environmentId_slug: {
-              environmentId: input.auth.environmentId,
-              slug: task.slug,
-            },
-          },
-          create: {
-            environmentId: input.auth.environmentId,
-            deploymentId: deployment.id,
-            slug: task.slug,
-            name: task.name,
-            description: task.description,
-            executionConfig: task.executionConfig as Prisma.InputJsonValue,
-          },
-          update: {
-            deploymentId: deployment.id,
-            name: task.name,
-            description: task.description,
-            executionConfig: task.executionConfig as Prisma.InputJsonValue,
-          },
-          select: {
-            id: true,
-          },
-        }),
-      ),
-    );
-
-    const updatedSchedules = await tx.taskSchedule.updateMany({
-      where: {
-        taskId: {
-          in: restoredTasks.map((task) => task.id),
-        },
-      },
-      data: {
-        lockedAt: null,
-        revision: {
-          increment: 1,
-        },
-      },
-    });
-
-    return {
-      tasksRestored: restoredTasks.length,
+    return createRollbackStats({
+      restoredTasks,
       tasksDetached: detachedTasks.count,
       schedulesUpdated: updatedSchedules.count,
       schedulesPaused: pausedSchedules.count,
-    };
+    });
+  });
+}
+
+export async function rollbackDeployment(
+  input: RollbackDeploymentInput,
+): Promise<RollbackDeploymentResult> {
+  if (!isUuid(input.deploymentId)) {
+    return failure(400, "INVALID_DEPLOYMENT_ID", "deploymentId must be a valid UUID");
+  }
+
+  const deployment = await findRollbackDeployment({
+    auth: input.auth,
+    deploymentId: input.deploymentId,
+  });
+
+  if (!deployment) {
+    return failure(404, "DEPLOYMENT_NOT_FOUND", "Deployment was not found in this environment");
+  }
+
+  const validationFailure = getRollbackValidationFailure(deployment);
+
+  if (validationFailure) {
+    return validationFailure;
+  }
+
+  const result = await rollbackDeploymentInTransaction({
+    deployment,
+    environmentId: input.auth.environmentId,
   });
 
   if (!result) {

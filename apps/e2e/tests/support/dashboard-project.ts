@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { getDashboardTestOrganization } from "./dashboard-environment.js";
 
-process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
+process.env["DATABASE_URL"] ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
 const createdProjectIds: string[] = [];
 

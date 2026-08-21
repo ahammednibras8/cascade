@@ -63,7 +63,7 @@ function getOidcConfiguration() {
 }
 
 function getOidcTransactionCookie() {
-  const production = process.env.NODE_ENV === "production";
+  const production = process.env["NODE_ENV"] === "production";
 
   return createCookie(production ? "__Host-cascade-oidc" : "cascade-oidc", {
     httpOnly: true,
@@ -164,7 +164,7 @@ export async function completeOidcLogin(request: Request): Promise<OidcCompletio
   const record = claims as Record<string, unknown>;
   const subject = getRequiredClaim(record, "sub");
   const email = getRequiredClaim(record, "email");
-  const name = record.name;
+  const name = record["name"];
 
   return {
     profile: {
@@ -186,9 +186,9 @@ function isOidcTransaction(value: unknown): value is OidcTransaction {
   const candidate = value as Record<string, unknown>;
 
   return (
-    typeof candidate.state === "string" &&
-    typeof candidate.nonce === "string" &&
-    typeof candidate.codeVerifier === "string" &&
-    typeof candidate.returnTo === "string"
+    typeof candidate["state"] === "string" &&
+    typeof candidate["nonce"] === "string" &&
+    typeof candidate["codeVerifier"] === "string" &&
+    typeof candidate["returnTo"] === "string"
   );
 }

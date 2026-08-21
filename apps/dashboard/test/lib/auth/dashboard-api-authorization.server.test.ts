@@ -24,7 +24,7 @@ describe("dashboard API authorization", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    process.env.DASHBOARD_API_AUTH_SECRET = SECRET;
+    process.env["DASHBOARD_API_AUTH_SECRET"] = SECRET;
 
     getDashboardSession.mockResolvedValue({
       id: "session-1",

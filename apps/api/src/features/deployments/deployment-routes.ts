@@ -29,7 +29,7 @@ deploymentRoutes.get(
   authenticatedRoute(async ({ auth, request, response }) => {
     const result = await getDeployment({
       auth,
-      deploymentId: getSingleParam(request.params.deploymentId),
+      deploymentId: getSingleParam(request.params["deploymentId"]),
     });
 
     writeJsonResult(response, result, ({ deployment }) => ({ deployment }));
@@ -42,7 +42,7 @@ deploymentRoutes.post(
   authenticatedRoute(async ({ auth, request, response }) => {
     const result = await deactivateDeployment({
       auth,
-      deploymentId: getSingleParam(request.params.deploymentId),
+      deploymentId: getSingleParam(request.params["deploymentId"]),
     });
 
     writeJsonResult(response, result, ({ deployment }) => ({ deployment }));
@@ -55,7 +55,7 @@ deploymentRoutes.post(
   authenticatedRoute(async ({ auth, request, response }) => {
     const result = await rollbackDeployment({
       auth,
-      deploymentId: getSingleParam(request.params.deploymentId),
+      deploymentId: getSingleParam(request.params["deploymentId"]),
     });
 
     writeJsonResult(response, result, ({ deployment }) => ({ deployment }));

@@ -55,7 +55,7 @@ apikeyRoutes.post(
   authenticatedRoute(async ({ auth, request, response }) => {
     const result = await revokeApiKey({
       auth,
-      apiKeyId: getSingleParam(request.params.apiKeyId),
+      apiKeyId: getSingleParam(request.params["apiKeyId"]),
     });
 
     writeJsonResult(response, result, ({ apiKey }) => ({ apiKey }));
@@ -68,7 +68,7 @@ apikeyRoutes.post(
   authenticatedRoute(async ({ auth, request, response }) => {
     const result = await rotateApiKey({
       auth,
-      apiKeyId: getSingleParam(request.params.apiKeyId),
+      apiKeyId: getSingleParam(request.params["apiKeyId"]),
     });
 
     writeJsonResult(

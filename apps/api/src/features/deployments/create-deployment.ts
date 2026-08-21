@@ -8,6 +8,9 @@ type CreateDeploymentInput = {
   body: unknown;
 };
 
+type ParsedDeployment = Extract<ReturnType<typeof parseDeploymentBody>, { ok: true }>["deployment"];
+type DeploymentTransaction = Prisma.TransactionClient;
+
 function isDeploymentVersionConflict(error: unknown) {
   if (
     typeof error !== "object" ||
@@ -42,6 +45,181 @@ function getOmittedTaskWhere(input: {
   };
 }
 
+async function deactivateCurrentDeployment(tx: DeploymentTransaction, environmentId: string) {
+  await tx.deployment.updateMany({
+    where: {
+      environmentId,
+      status: "ACTIVE",
+    },
+    data: {
+      status: "INACTIVE",
+    },
+  });
+}
+
+async function createDeploymentRecord(
+  tx: DeploymentTransaction,
+  environmentId: string,
+  deployment: ParsedDeployment,
+) {
+  return tx.deployment.create({
+    data: {
+      environmentId,
+      version: deployment.version,
+      image: deployment.image,
+      status: "ACTIVE",
+      manifestTasks: {
+        create: deployment.tasks.map((task) => ({
+          slug: task.slug,
+          name: task.name,
+          description: task.description,
+          executionConfig: task.executionConfig as Prisma.InputJsonValue,
+        })),
+      },
+    },
+  });
+}
+
+async function pauseOmittedTaskSchedules(
+  tx: DeploymentTransaction,
+  omittedTaskWhere: Prisma.TaskWhereInput,
+) {
+  await tx.taskSchedule.updateMany({
+    where: {
+      task: omittedTaskWhere,
+    },
+    data: {
+      enabled: false,
+      revision: {
+        increment: 1,
+      },
+      lockedAt: null,
+    },
+  });
+}
+
+async function detachOmittedTasks(
+  tx: DeploymentTransaction,
+  omittedTaskWhere: Prisma.TaskWhereInput,
+) {
+  await tx.task.updateMany({
+    where: omittedTaskWhere,
+    data: {
+      deploymentId: null,
+      executionConfig: Prisma.DbNull,
+    },
+  });
+}
+
+async function upsertDeploymentTasks(input: {
+  tx: DeploymentTransaction;
+  environmentId: string;
+  deploymentId: string;
+  deployment: ParsedDeployment;
+}) {
+  return Promise.all(
+    input.deployment.tasks.map((task) =>
+      input.tx.task.upsert({
+        where: {
+          environmentId_slug: {
+            environmentId: input.environmentId,
+            slug: task.slug,
+          },
+        },
+        create: {
+          environmentId: input.environmentId,
+          deploymentId: input.deploymentId,
+          slug: task.slug,
+          name: task.name,
+          description: task.description,
+          executionConfig: task.executionConfig as Prisma.InputJsonValue,
+        },
+        update: {
+          deploymentId: input.deploymentId,
+          name: task.name,
+          description: task.description,
+          executionConfig: task.executionConfig as Prisma.InputJsonValue,
+        },
+        select: {
+          id: true,
+        },
+      }),
+    ),
+  );
+}
+
+async function unlockTaskSchedules(
+  tx: DeploymentTransaction,
+  deployedTasks: Array<{ id: string }>,
+) {
+  await tx.taskSchedule.updateMany({
+    where: {
+      taskId: {
+        in: deployedTasks.map((task) => task.id),
+      },
+    },
+    data: {
+      revision: {
+        increment: 1,
+      },
+      lockedAt: null,
+    },
+  });
+}
+
+function loadDeploymentWithTasks(tx: DeploymentTransaction, deploymentId: string) {
+  return tx.deployment.findUniqueOrThrow({
+    where: {
+      id: deploymentId,
+    },
+    include: {
+      tasks: {
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+        },
+        orderBy: {
+          slug: "asc",
+        },
+      },
+    },
+  });
+}
+
+async function createDeploymentInTransaction(input: {
+  environmentId: string;
+  deployment: ParsedDeployment;
+}) {
+  return prisma.$transaction(async (tx) => {
+    await deactivateCurrentDeployment(tx, input.environmentId);
+
+    const createdDeployment = await createDeploymentRecord(
+      tx,
+      input.environmentId,
+      input.deployment,
+    );
+    const omittedTaskWhere = getOmittedTaskWhere({
+      environmentId: input.environmentId,
+      deployedSlugs: input.deployment.tasks.map((task) => task.slug),
+    });
+
+    await pauseOmittedTaskSchedules(tx, omittedTaskWhere);
+    await detachOmittedTasks(tx, omittedTaskWhere);
+
+    const deployedTasks = await upsertDeploymentTasks({
+      tx,
+      environmentId: input.environmentId,
+      deploymentId: createdDeployment.id,
+      deployment: input.deployment,
+    });
+
+    await unlockTaskSchedules(tx, deployedTasks);
+
+    return loadDeploymentWithTasks(tx, createdDeployment.id);
+  });
+}
+
 export async function createDeployment(input: CreateDeploymentInput) {
   const parsed = parseDeploymentBody(input.body);
 
@@ -49,124 +227,22 @@ export async function createDeployment(input: CreateDeploymentInput) {
     return parsed;
   }
 
-  let deployment;
-
   try {
-    deployment = await prisma.$transaction(async (tx) => {
-      await tx.deployment.updateMany({
-        where: {
-          environmentId: input.auth.environmentId,
-          status: "ACTIVE",
-        },
-        data: {
-          status: "INACTIVE",
-        },
-      });
+    const deployment = await createDeploymentInTransaction({
+      environmentId: input.auth.environmentId,
+      deployment: parsed.deployment,
+    });
 
-      const createdDeployment = await tx.deployment.create({
-        data: {
-          environmentId: input.auth.environmentId,
-          version: parsed.deployment.version,
-          image: parsed.deployment.image,
-          status: "ACTIVE",
-          manifestTasks: {
-            create: parsed.deployment.tasks.map((task) => ({
-              slug: task.slug,
-              name: task.name,
-              description: task.description,
-              executionConfig: task.executionConfig as Prisma.InputJsonValue,
-            })),
-          },
-        },
-      });
-
-      const omittedTaskWhere = getOmittedTaskWhere({
-        environmentId: input.auth.environmentId,
-        deployedSlugs: parsed.deployment.tasks.map((task) => task.slug),
-      });
-
-      await tx.taskSchedule.updateMany({
-        where: {
-          task: omittedTaskWhere,
-        },
-        data: {
-          enabled: false,
-          revision: {
-            increment: 1,
-          },
-          lockedAt: null,
-        },
-      });
-
-      await tx.task.updateMany({
-        where: omittedTaskWhere,
-        data: {
-          deploymentId: null,
-          executionConfig: Prisma.DbNull,
-        },
-      });
-
-      const deployedTasks = await Promise.all(
-        parsed.deployment.tasks.map((task) =>
-          tx.task.upsert({
-            where: {
-              environmentId_slug: {
-                environmentId: input.auth.environmentId,
-                slug: task.slug,
-              },
-            },
-            create: {
-              environmentId: input.auth.environmentId,
-              deploymentId: createdDeployment.id,
-              slug: task.slug,
-              name: task.name,
-              description: task.description,
-              executionConfig: task.executionConfig as Prisma.InputJsonValue,
-            },
-            update: {
-              deploymentId: createdDeployment.id,
-              name: task.name,
-              description: task.description,
-              executionConfig: task.executionConfig as Prisma.InputJsonValue,
-            },
-            select: {
-              id: true,
-            },
-          }),
-        ),
-      );
-
-      await tx.taskSchedule.updateMany({
-        where: {
-          taskId: {
-            in: deployedTasks.map((task) => task.id),
-          },
-        },
-        data: {
-          revision: {
-            increment: 1,
-          },
-          lockedAt: null,
-        },
-      });
-
-      return tx.deployment.findUniqueOrThrow({
-        where: {
-          id: createdDeployment.id,
-        },
-        include: {
-          tasks: {
-            select: {
-              id: true,
-              slug: true,
-              name: true,
-            },
-            orderBy: {
-              slug: "asc",
-            },
-          },
-        },
-      });
+    return success(201, {
+      deployment: {
+        id: deployment.id,
+        environmentId: deployment.environmentId,
+        version: deployment.version,
+        image: deployment.image,
+        status: deployment.status,
+        tasks: deployment.tasks,
+        createdAt: deployment.createdAt.toISOString(),
+      },
     });
   } catch (error) {
     if (isDeploymentVersionConflict(error)) {
@@ -179,16 +255,4 @@ export async function createDeployment(input: CreateDeploymentInput) {
 
     throw error;
   }
-
-  return success(201, {
-    deployment: {
-      id: deployment.id,
-      environmentId: deployment.environmentId,
-      version: deployment.version,
-      image: deployment.image,
-      status: deployment.status,
-      tasks: deployment.tasks,
-      createdAt: deployment.createdAt.toISOString(),
-    },
-  });
 }

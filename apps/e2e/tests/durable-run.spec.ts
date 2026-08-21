@@ -7,10 +7,10 @@ import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 import { ensureE2eTaskApiKey, getE2eTaskApiKey } from "./support/task-api-key.js";
 
 const databaseURL =
-  process.env.DATABASE_URL ?? "postgresql://cascade:cascade@localhost:15432/cascade";
-const apiURL = process.env.CASCADE_API_URL ?? "http://localhost:3001";
+  process.env["DATABASE_URL"] ?? "postgresql://cascade:cascade@localhost:15432/cascade";
+const apiURL = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
-process.env.DATABASE_URL = databaseURL;
+process.env["DATABASE_URL"] = databaseURL;
 
 const createdProjectIds: string[] = [];
 

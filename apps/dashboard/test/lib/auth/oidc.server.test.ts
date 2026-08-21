@@ -12,12 +12,12 @@ const oidc = vi.hoisted(() => ({
 
 vi.mock("openid-client", () => oidc);
 
-process.env.NODE_ENV = "test";
-process.env.DASHBOARD_SESSION_SECRET = "test-dashboard-session-secret-that-is-long-enough";
-process.env.OIDC_ISSUER_URL = "https://identity.example.test";
-process.env.OIDC_CLIENT_ID = "cascade-dashboard";
-process.env.OIDC_CLIENT_SECRET = "oidc-client-secret";
-process.env.OIDC_REDIRECT_URI = "http://dashboard.test/auth/callback";
+process.env["NODE_ENV"] = "test";
+process.env["DASHBOARD_SESSION_SECRET"] = "test-dashboard-session-secret-that-is-long-enough";
+process.env["OIDC_ISSUER_URL"] = "https://identity.example.test";
+process.env["OIDC_CLIENT_ID"] = "cascade-dashboard";
+process.env["OIDC_CLIENT_SECRET"] = "oidc-client-secret";
+process.env["OIDC_REDIRECT_URI"] = "http://dashboard.test/auth/callback";
 
 const { completeOidcLogin, OidcAuthenticationError, startOidcLogin } =
   await import("../../../app/lib/auth/oidc.server.js");

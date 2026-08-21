@@ -23,7 +23,7 @@ export const HEALTHCHECK_DEPENDENCY_TIMEOUT_MS = getPositiveIntegerEnv(
   2_000,
 );
 
-export const WORKER_HEALTH_HOST = process.env.WORKER_HEALTH_HOST ?? "0.0.0.0";
+export const WORKER_HEALTH_HOST = process.env["WORKER_HEALTH_HOST"] ?? "0.0.0.0";
 
 export const QUEUE_CONCURRENCY_RETRY_MS = getPositiveIntegerEnv("QUEUE_CONCURRENCY_RETRY_MS", 1000);
 
@@ -52,7 +52,7 @@ export const TASK_RUN_CANCELLATION_POLL_INTERVAL_MS = getPositiveIntegerEnv(
 export type WorkerRole = "control" | "deployment" | "local";
 
 function getWorkerRole(): WorkerRole {
-  const role = process.env.CASCADE_WORKER_ROLE ?? "local";
+  const role = process.env["CASCADE_WORKER_ROLE"] ?? "local";
 
   if (role === "control" || role === "deployment" || role === "local") {
     return role;

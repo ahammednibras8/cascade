@@ -28,7 +28,7 @@ const VIEWER_SCOPES: ApiKeyScope[] = [ApiKeyScope.TASKS_READ, ApiKeyScope.RUNS_R
 const DASHBOARD_API_AUTH_HEADER = "x-cascade-dashboard-authorization";
 
 function getDashboardApiAuthSecret() {
-  const secret = process.env.DASHBOARD_API_AUTH_SECRET;
+  const secret = process.env["DASHBOARD_API_AUTH_SECRET"];
 
   if (!secret || secret.length < 32) {
     throw new Error("DASHBOARD_API_AUTH_SECRET must be at least 32 characters");

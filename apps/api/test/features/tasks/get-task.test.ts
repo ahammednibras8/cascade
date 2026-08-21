@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import type { ApiAuthContext } from "../../../src/auth/api-key.js";
 
 const TASK_ID = "11111111-1111-4111-8111-111111111111";
@@ -44,20 +44,78 @@ const auth = {
   scopes: [],
 } satisfies ApiAuthContext;
 
-describe("getTask", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+it("returns task configuration, deployment, schedules, and recent runs", async () => {
+  prisma.task.findFirst.mockResolvedValue({
+    id: TASK_ID,
+    slug: "hello",
+    name: "Hello",
+    description: "Greets a user",
+    executionConfig: EXECUTION_CONFIG,
+    createdAt: CREATED_AT,
+    updatedAt: UPDATED_AT,
+    deployment: {
+      id: "deployment-1",
+      version: "v1",
+      image: "ghcr.io/cascade/worker:v1",
+      status: "ACTIVE",
+      runtimeStatus: "RUNNING",
+    },
+    _count: {
+      runs: 4,
+      schedules: 2,
+    },
+    schedules: [
+      {
+        id: "schedule-1",
+        name: "Every hour",
+        scheduleType: "INTERVAL",
+        intervalSeconds: 3_600,
+        cronExpression: null,
+        timezone: "UTC",
+        nextRunAt: CREATED_AT,
+        lastRunAt: null,
+        enabled: true,
+        payload: {
+          source: "test",
+        },
+        revision: 1,
+        createdAt: CREATED_AT,
+        updatedAt: UPDATED_AT,
+      },
+    ],
+    runs: [
+      {
+        id: "run-1",
+        status: "COMPLETED",
+        deploymentId: "deployment-1",
+        scheduleId: "schedule-1",
+        createdAt: CREATED_AT,
+        startedAt: CREATED_AT,
+        lastHeartbeatAt: UPDATED_AT,
+        completedAt: UPDATED_AT,
+        _count: {
+          attempts: 1,
+          events: 3,
+        },
+      },
+    ],
   });
 
-  it("returns task configuration, deployment, schedules, and recent runs", async () => {
-    prisma.task.findFirst.mockResolvedValue({
+  await expect(getTask({ auth, taskId: TASK_ID })).resolves.toEqual({
+    ok: true,
+    status: 200,
+    task: {
       id: TASK_ID,
       slug: "hello",
       name: "Hello",
       description: "Greets a user",
       executionConfig: EXECUTION_CONFIG,
-      createdAt: CREATED_AT,
-      updatedAt: UPDATED_AT,
+      createdAt: CREATED_AT.toISOString(),
+      updatedAt: UPDATED_AT.toISOString(),
       deployment: {
         id: "deployment-1",
         version: "v1",
@@ -65,10 +123,8 @@ describe("getTask", () => {
         status: "ACTIVE",
         runtimeStatus: "RUNNING",
       },
-      _count: {
-        runs: 4,
-        schedules: 2,
-      },
+      runsCount: 4,
+      schedulesCount: 2,
       schedules: [
         {
           id: "schedule-1",
@@ -77,125 +133,67 @@ describe("getTask", () => {
           intervalSeconds: 3_600,
           cronExpression: null,
           timezone: "UTC",
-          nextRunAt: CREATED_AT,
+          nextRunAt: CREATED_AT.toISOString(),
           lastRunAt: null,
           enabled: true,
-          payload: {
-            source: "test",
-          },
+          hasPayload: true,
           revision: 1,
-          createdAt: CREATED_AT,
-          updatedAt: UPDATED_AT,
+          createdAt: CREATED_AT.toISOString(),
+          updatedAt: UPDATED_AT.toISOString(),
         },
       ],
-      runs: [
+      recentRuns: [
         {
           id: "run-1",
           status: "COMPLETED",
           deploymentId: "deployment-1",
           scheduleId: "schedule-1",
-          createdAt: CREATED_AT,
-          startedAt: CREATED_AT,
-          lastHeartbeatAt: UPDATED_AT,
-          completedAt: UPDATED_AT,
-          _count: {
-            attempts: 1,
-            events: 3,
-          },
+          attemptsCount: 1,
+          eventsCount: 3,
+          createdAt: CREATED_AT.toISOString(),
+          startedAt: CREATED_AT.toISOString(),
+          lastHeartbeatAt: UPDATED_AT.toISOString(),
+          completedAt: UPDATED_AT.toISOString(),
         },
       ],
-    });
+    },
+  });
 
-    await expect(getTask({ auth, taskId: TASK_ID })).resolves.toEqual({
-      ok: true,
-      status: 200,
-      task: {
+  expect(prisma.task.findFirst).toHaveBeenCalledWith(
+    expect.objectContaining({
+      where: {
         id: TASK_ID,
-        slug: "hello",
-        name: "Hello",
-        description: "Greets a user",
-        executionConfig: EXECUTION_CONFIG,
-        createdAt: CREATED_AT.toISOString(),
-        updatedAt: UPDATED_AT.toISOString(),
-        deployment: {
-          id: "deployment-1",
-          version: "v1",
-          image: "ghcr.io/cascade/worker:v1",
-          status: "ACTIVE",
-          runtimeStatus: "RUNNING",
+        environmentId: ENVIRONMENT_ID,
+        executionConfig: {
+          not: dbNull,
         },
-        runsCount: 4,
-        schedulesCount: 2,
-        schedules: [
-          {
-            id: "schedule-1",
-            name: "Every hour",
-            scheduleType: "INTERVAL",
-            intervalSeconds: 3_600,
-            cronExpression: null,
-            timezone: "UTC",
-            nextRunAt: CREATED_AT.toISOString(),
-            lastRunAt: null,
-            enabled: true,
-            hasPayload: true,
-            revision: 1,
-            createdAt: CREATED_AT.toISOString(),
-            updatedAt: UPDATED_AT.toISOString(),
-          },
-        ],
-        recentRuns: [
-          {
-            id: "run-1",
-            status: "COMPLETED",
-            deploymentId: "deployment-1",
-            scheduleId: "schedule-1",
-            attemptsCount: 1,
-            eventsCount: 3,
-            createdAt: CREATED_AT.toISOString(),
-            startedAt: CREATED_AT.toISOString(),
-            lastHeartbeatAt: UPDATED_AT.toISOString(),
-            completedAt: UPDATED_AT.toISOString(),
-          },
-        ],
       },
-    });
+    }),
+  );
+});
 
-    expect(prisma.task.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          id: TASK_ID,
-          environmentId: ENVIRONMENT_ID,
-          executionConfig: {
-            not: dbNull,
-          },
-        },
-      }),
-    );
+it("does not expose a task outside the authenticated environment", async () => {
+  prisma.task.findFirst.mockResolvedValue(null);
+
+  await expect(getTask({ auth, taskId: TASK_ID })).resolves.toEqual({
+    ok: false,
+    status: 404,
+    error: {
+      code: "TASK_NOT_FOUND",
+      message: "Task was not found in this environment",
+    },
+  });
+});
+
+it("rejects an invalid task ID before querying the database", async () => {
+  await expect(getTask({ auth, taskId: "not-a-uuid" })).resolves.toEqual({
+    ok: false,
+    status: 400,
+    error: {
+      code: "INVALID_TASK_ID",
+      message: "taskId must be a valid UUID",
+    },
   });
 
-  it("does not expose a task outside the authenticated environment", async () => {
-    prisma.task.findFirst.mockResolvedValue(null);
-
-    await expect(getTask({ auth, taskId: TASK_ID })).resolves.toEqual({
-      ok: false,
-      status: 404,
-      error: {
-        code: "TASK_NOT_FOUND",
-        message: "Task was not found in this environment",
-      },
-    });
-  });
-
-  it("rejects an invalid task ID before querying the database", async () => {
-    await expect(getTask({ auth, taskId: "not-a-uuid" })).resolves.toEqual({
-      ok: false,
-      status: 400,
-      error: {
-        code: "INVALID_TASK_ID",
-        message: "taskId must be a valid UUID",
-      },
-    });
-
-    expect(prisma.task.findFirst).not.toHaveBeenCalled();
-  });
+  expect(prisma.task.findFirst).not.toHaveBeenCalled();
 });

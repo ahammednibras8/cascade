@@ -33,7 +33,7 @@ describe("API key auth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    process.env.API_KEY_PEPPER = "test-api-key-pepper";
+    process.env["API_KEY_PEPPER"] = "test-api-key-pepper";
 
     prisma.apiKey.updateMany.mockResolvedValue({ count: 1 });
   });

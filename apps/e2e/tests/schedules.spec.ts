@@ -4,7 +4,7 @@ import { getDashboardTestEnvironment } from "./support/dashboard-environment.js"
 import { createExecutionConfig } from "./support/execution-config.js";
 import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
-process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
+process.env["DATABASE_URL"] ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
 const createdTaskIds: string[] = [];
 

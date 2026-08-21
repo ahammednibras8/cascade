@@ -44,7 +44,7 @@ taskRoutes.get(
   authenticatedRoute(async ({ auth, request, response }) => {
     const result = await getTask({
       auth,
-      taskId: getSingleParam(request.params.taskId),
+      taskId: getSingleParam(request.params["taskId"]),
     });
 
     writeTaskResult(response, result);
@@ -137,7 +137,7 @@ taskRoutes.post(
       response,
       taskReference: {
         kind: "slug",
-        value: getSingleParam(request.params.taskSlug),
+        value: getSingleParam(request.params["taskSlug"]),
       },
     });
   }),
@@ -153,7 +153,7 @@ taskRoutes.post(
       response,
       taskReference: {
         kind: "id",
-        value: getSingleParam(request.params.taskId),
+        value: getSingleParam(request.params["taskId"]),
       },
     });
   }),
@@ -165,7 +165,7 @@ taskRoutes.post(
   authenticatedRoute(async ({ auth, request, response }) => {
     const result = await createTaskSchedule({
       auth,
-      taskId: getSingleParam(request.params.taskId),
+      taskId: getSingleParam(request.params["taskId"]),
       body: request.body,
     });
 
@@ -194,7 +194,7 @@ type TaskReference =
     };
 
 function getScheduleId(request: Request) {
-  return getSingleParam(request.params.scheduleId);
+  return getSingleParam(request.params["scheduleId"]);
 }
 
 function writeScheduleResult(response: Response, result: RouteJsonResult<ScheduleRouteSuccess>) {

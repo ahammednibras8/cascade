@@ -51,7 +51,7 @@ function getErrorMessage(status: number, body: unknown) {
 }
 
 function getApiUrl(): string {
-  const apiUrl = process.env.CASCADE_API_URL;
+  const apiUrl = process.env["CASCADE_API_URL"];
 
   if (!apiUrl) {
     throw new Error("CASCADE_API_URL is required");

@@ -67,6 +67,125 @@ function getLastEventId(request: StreamTaskRunEventsInput["request"]) {
   return value || undefined;
 }
 
+function createStreamState() {
+  return {
+    closed: false,
+    ready: false,
+    pendingNotificationIds: [] as string[],
+    recentEventIds: new Set<string>(),
+    recentEventOrder: [] as string[],
+    unsubscribe: undefined as (() => Promise<void>) | undefined,
+  };
+}
+
+function createEventSender(input: {
+  response: StreamTaskRunEventsInput["response"];
+  state: ReturnType<typeof createStreamState>;
+}) {
+  return (eventId: string) => {
+    if (
+      input.state.closed ||
+      !rememberRecentEvent(input.state.recentEventIds, input.state.recentEventOrder, eventId)
+    ) {
+      return;
+    }
+
+    writeRunEvent(input.response, eventId);
+  };
+}
+
+function writeStreamHeaders(response: StreamTaskRunEventsInput["response"]) {
+  response.set({
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "Content-Type": "text/event-stream",
+    "X-Accel-Buffering": "no",
+  });
+  response.status(200);
+  response.flushHeaders?.();
+  response.write(": connected\n\n");
+}
+
+function startHeartbeat(
+  input: StreamTaskRunEventsInput,
+  state: ReturnType<typeof createStreamState>,
+) {
+  const heartbeat = setInterval(() => {
+    if (!state.closed) {
+      input.response.write(": heartbeat\n\n");
+    }
+  }, SSE_HEARTBEAT_INTERVAL_MS);
+
+  heartbeat.unref();
+  input.request.on("close", () => {
+    clearInterval(heartbeat);
+  });
+}
+
+async function collectReplayEventIds(input: {
+  dependencies: StreamDependencies;
+  auth: ApiAuthContext;
+  runId: string;
+  initialPage: Awaited<ReturnType<typeof listTaskRunEvents>> & { ok: true };
+  lastEventId: string | undefined;
+  unsubscribe: () => Promise<void>;
+}): Promise<{ ok: true; eventIds: string[] } | Exclude<StreamTaskRunEventsResult, { ok: true }>> {
+  const eventIds = input.initialPage.events.map((event) => event.id);
+  let cursor = input.initialPage.nextCursor ?? input.lastEventId;
+  let hasMore = input.initialPage.hasMore;
+
+  do {
+    const page = await input.dependencies.listTaskRunEvents({
+      auth: input.auth,
+      runId: input.runId,
+      ...(cursor ? { afterEventId: cursor } : {}),
+    });
+
+    if (!page.ok) {
+      await input.unsubscribe();
+
+      return page;
+    }
+
+    eventIds.push(...page.events.map((event) => event.id));
+    cursor = page.nextCursor ?? cursor;
+    hasMore = page.hasMore;
+  } while (hasMore);
+
+  return { ok: true, eventIds };
+}
+
+function registerCloseHandler(input: {
+  request: StreamTaskRunEventsInput["request"];
+  state: ReturnType<typeof createStreamState>;
+}) {
+  input.request.on("close", () => {
+    input.state.closed = true;
+
+    void input.state.unsubscribe?.().catch((error: unknown) => {
+      process.stderr.write(
+        `Failed to unsubscribe run event stream: ${error instanceof Error ? error.stack : String(error)}\n`,
+      );
+    });
+  });
+}
+
+function flushBufferedEvents(input: {
+  replayedEventIds: string[];
+  state: ReturnType<typeof createStreamState>;
+  sendEvent: (eventId: string) => void;
+}) {
+  for (const eventId of input.replayedEventIds) {
+    input.sendEvent(eventId);
+  }
+
+  input.state.ready = true;
+
+  for (const eventId of input.state.pendingNotificationIds) {
+    input.sendEvent(eventId);
+  }
+}
+
 export function createTaskRunEventStream(dependencies: StreamDependencies) {
   return async function streamTaskRunEvents(
     input: StreamTaskRunEventsInput,
@@ -98,117 +217,63 @@ export function createTaskRunEventStream(dependencies: StreamDependencies) {
       };
     }
 
-    let closed = false;
-    let ready = false;
-    let unsubscribe: (() => Promise<void>) | undefined;
-
-    const pendingNotificationIds: string[] = [];
-    const recentEventIds = new Set<string>();
-    const recentEventOrder: string[] = [];
-
-    const sendEvent = (eventId: string) => {
-      if (closed || !rememberRecentEvent(recentEventIds, recentEventOrder, eventId)) {
-        return;
-      }
-
-      writeRunEvent(input.response, eventId);
-    };
+    const state = createStreamState();
+    const sendEvent = createEventSender({ response: input.response, state });
 
     const handleNotification = ({ eventId }: { eventId: string }) => {
-      if (closed) {
+      if (state.closed) {
         return;
       }
 
-      if (!ready) {
-        pendingNotificationIds.push(eventId);
+      if (!state.ready) {
+        state.pendingNotificationIds.push(eventId);
         return;
       }
 
       sendEvent(eventId);
     };
 
-    input.request.on("close", () => {
-      closed = true;
-
-      void unsubscribe?.().catch((error: unknown) => {
-        process.stderr.write(
-          `Failed to unsubscribe run event stream: ${error instanceof Error ? error.stack : String(error)}\n`,
-        );
-      });
-    });
+    registerCloseHandler({ request: input.request, state });
 
     try {
       // Subscribe before the second DB read, That closes the race where an event is created after the initial read but before Redis subscription begins
-      unsubscribe = await dependencies.subscribe(runId, handleNotification);
+      state.unsubscribe = await dependencies.subscribe(runId, handleNotification);
 
-      if (closed) {
-        await unsubscribe();
+      if (state.closed) {
+        await state.unsubscribe();
         return {
           ok: true,
         };
       }
 
-      const replayedEventIds = initialPage.events.map((event) => event.id);
-      let cursor = initialPage.nextCursor ?? lastEventId;
-      let hasMore = initialPage.hasMore;
-
       // Read once after subscribing, even if the first page had no more results
       // This captures an event created between the first read and subscription
-      do {
-        const page = await dependencies.listTaskRunEvents({
-          auth: input.auth,
-          runId,
-          ...(cursor ? { afterEventId: cursor } : {}),
-        });
-
-        if (!page.ok) {
-          await unsubscribe();
-
-          return page;
-        }
-
-        replayedEventIds.push(...page.events.map((event) => event.id));
-        cursor = page.nextCursor ?? cursor;
-        hasMore = page.hasMore;
-      } while (hasMore);
-
-      input.response.set({
-        "Cache-Control": "no-cache, no-transform",
-        Connection: "keep-alive",
-        "Content-Type": "text/event-stream",
-        "X-Accel-Buffering": "no",
+      const replay = await collectReplayEventIds({
+        dependencies,
+        auth: input.auth,
+        runId,
+        initialPage,
+        lastEventId,
+        unsubscribe: state.unsubscribe,
       });
-      input.response.status(200);
-      input.response.flushHeaders?.();
-      input.response.write(": connected\n\n");
 
-      for (const eventId of replayedEventIds) {
-        sendEvent(eventId);
+      if (!replay.ok) {
+        return replay;
       }
 
-      ready = true;
-
-      for (const eventId of pendingNotificationIds) {
-        sendEvent(eventId);
-      }
-
-      const heartbeat = setInterval(() => {
-        if (!closed) {
-          input.response.write(": heartbeat\n\n");
-        }
-      }, SSE_HEARTBEAT_INTERVAL_MS);
-
-      heartbeat.unref();
-
-      input.request.on("close", () => {
-        clearInterval(heartbeat);
+      writeStreamHeaders(input.response);
+      flushBufferedEvents({
+        replayedEventIds: replay.eventIds,
+        state,
+        sendEvent,
       });
+      startHeartbeat(input, state);
 
       return {
         ok: true,
       };
     } catch (error) {
-      await unsubscribe?.().catch(() => {});
+      await state.unsubscribe?.().catch(() => {});
       throw error;
     }
   };

@@ -24,6 +24,27 @@ type CancelTaskRunFailure = ServiceFailure<400 | 404 | 409>;
 
 export type CancelTaskRunResult = CancelTaskRunSuccess | CancelTaskRunFailure;
 
+const cancelRunSelect = {
+  id: true,
+  taskId: true,
+  status: true,
+  attempts: {
+    orderBy: {
+      attemptNumber: "desc",
+    },
+    take: 1,
+    select: {
+      id: true,
+      status: true,
+      attemptNumber: true,
+    },
+  },
+} as const satisfies Prisma.TaskRunSelect;
+
+type CancelableRun = Prisma.TaskRunGetPayload<{
+  select: typeof cancelRunSelect;
+}>;
+
 function createCancelError(input: {
   apiKeyId: string | undefined;
   principalId: string | undefined;
@@ -36,68 +57,41 @@ function createCancelError(input: {
   };
 
   if (input.apiKeyId) {
-    error.apiKeyId = input.apiKeyId;
+    error["apiKeyId"] = input.apiKeyId;
   }
 
   if (input.principalId) {
-    error.principalId = input.principalId;
+    error["principalId"] = input.principalId;
   }
 
   return error;
 }
 
-export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTaskRunResult> {
-  const { auth, runId } = input;
-
-  if (!isUuid(runId)) {
-    return failure(400, "INVALID_RUN_ID", "runId must be a valid UUID");
-  }
-
-  const run = await prisma.taskRun.findFirst({
-    where: {
-      id: runId,
-      task: {
-        environmentId: auth.environmentId,
-      },
-    },
-    select: {
-      id: true,
-      taskId: true,
-      status: true,
-      attempts: {
-        orderBy: {
-          attemptNumber: "desc",
-        },
-        take: 1,
-        select: {
-          id: true,
-          status: true,
-          attemptNumber: true,
-        },
-      },
+function createCancelSuccess(run: CancelableRun, alreadyCanceled: boolean): CancelTaskRunSuccess {
+  return success(200, {
+    taskRun: {
+      id: run.id,
+      taskId: run.taskId,
+      status: "CANCELED",
+      canceled: true,
+      alreadyCanceled,
     },
   });
+}
 
-  if (!run) {
-    return failure(404, "RUN_NOT_FOUND", "Task run was not found in this environment");
-  }
-
-  if (run.status === "CANCELED") {
-    return success(200, {
-      taskRun: {
-        id: run.id,
-        taskId: run.taskId,
-        status: run.status,
-        canceled: true,
-        alreadyCanceled: true,
+async function findCancelableRun(input: { auth: ApiAuthContext; runId: string }) {
+  return prisma.taskRun.findFirst({
+    where: {
+      id: input.runId,
+      task: {
+        environmentId: input.auth.environmentId,
       },
-    });
-  }
+    },
+    select: cancelRunSelect,
+  });
+}
 
-  if (run.status === "COMPLETED" || run.status === "FAILED") {
-    return failure(409, "RUN_NOT_CANCELABLE", `Cannot cancel a run with status ${run.status}`);
-  }
-
+async function applyRunCancellation(auth: ApiAuthContext, run: CancelableRun) {
   const now = new Date();
   const latestAttempt = run.attempts[0];
   const error = createCancelError({
@@ -106,7 +100,7 @@ export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTa
     previousStatus: run.status,
   });
 
-  const canceled = await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const updateRun = await tx.taskRun.updateMany({
       where: {
         id: run.id,
@@ -155,6 +149,31 @@ export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTa
 
     return true;
   });
+}
+
+export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTaskRunResult> {
+  if (!isUuid(input.runId)) {
+    return failure(400, "INVALID_RUN_ID", "runId must be a valid UUID");
+  }
+
+  const run = await findCancelableRun({
+    auth: input.auth,
+    runId: input.runId,
+  });
+
+  if (!run) {
+    return failure(404, "RUN_NOT_FOUND", "Task run was not found in this environment");
+  }
+
+  if (run.status === "CANCELED") {
+    return createCancelSuccess(run, true);
+  }
+
+  if (run.status === "COMPLETED" || run.status === "FAILED") {
+    return failure(409, "RUN_NOT_CANCELABLE", `Cannot cancel a run with status ${run.status}`);
+  }
+
+  const canceled = await applyRunCancellation(input.auth, run);
 
   if (!canceled) {
     return failure(
@@ -164,13 +183,5 @@ export async function cancelTaskRun(input: CancelTaskRunInput): Promise<CancelTa
     );
   }
 
-  return success(200, {
-    taskRun: {
-      id: run.id,
-      taskId: run.taskId,
-      status: "CANCELED",
-      canceled: true,
-      alreadyCanceled: false,
-    },
-  });
+  return createCancelSuccess(run, false);
 }

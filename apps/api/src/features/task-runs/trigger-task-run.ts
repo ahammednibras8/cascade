@@ -11,8 +11,11 @@ import {
 import { getTaskRunTraceparent, getTriggerTrace } from "./trigger-task-run/trace.js";
 import {
   taskSelect,
+  type TriggerTask,
   type TriggerTaskRunInput,
+  type TriggerTaskRunFailure,
   type TriggerTaskRunResult,
+  type TriggeredTaskRun,
 } from "./trigger-task-run/types.js";
 import {
   createIdempotencyConflict,
@@ -46,17 +49,17 @@ function getIdempotencyHashes(input: {
   };
 }
 
-export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<TriggerTaskRunResult> {
-  const { auth, taskId, taskSlug, body, idempotencyKey } = input;
-
+async function loadTriggerTask(
+  input: Pick<TriggerTaskRunInput, "auth" | "taskId" | "taskSlug">,
+): Promise<{ ok: true; task: TriggerTask } | { ok: false; failure: TriggerTaskRunFailure }> {
   const taskReference = getTaskReferenceWhere({
-    taskId,
-    taskSlug,
-    environmentId: auth.environmentId,
+    taskId: input.taskId,
+    taskSlug: input.taskSlug,
+    environmentId: input.auth.environmentId,
   });
 
   if (!taskReference.ok) {
-    return taskReference.failure;
+    return { ok: false, failure: taskReference.failure };
   }
 
   const task = await prisma.task.findFirst({
@@ -65,21 +68,158 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
   });
 
   if (!task) {
-    return createTaskNotFoundFailure();
+    return { ok: false, failure: createTaskNotFoundFailure() };
   }
 
   if (task.executionConfig === null) {
-    return createTaskExecutionConfigMissingFailure();
+    return { ok: false, failure: createTaskExecutionConfigMissingFailure() };
   }
 
-  const payload = getPayload(body);
-  const delayUntilResult = getDelayUntil(body);
+  return { ok: true, task };
+}
+
+async function createOrLoadTaskRun(input: {
+  triggerInput: TriggerTaskRunInput;
+  task: TriggerTask;
+  payload: Prisma.InputJsonValue | undefined;
+  delayUntil: Date | undefined;
+  idempotencyKeyHash: string | undefined;
+  idempotencyRequestHash: string | undefined;
+  triggerTrace: ReturnType<typeof getTriggerTrace>;
+}): Promise<
+  | { ok: true; taskRun: TriggeredTaskRun; created: boolean }
+  | { ok: false; failure: TriggerTaskRunFailure }
+> {
+  const { task, idempotencyKeyHash, idempotencyRequestHash } = input;
+  const existingRun = idempotencyKeyHash
+    ? await findExistingIdempotentTaskRun(task.id, idempotencyKeyHash)
+    : null;
+
+  if (existingRun) {
+    return getExistingTaskRunResult(existingRun, idempotencyRequestHash);
+  }
+
+  try {
+    return {
+      ok: true,
+      taskRun: await createTriggeredTaskRun({
+        auth: input.triggerInput.auth,
+        task,
+        payload: input.payload,
+        delayUntil: input.delayUntil,
+        triggerTrace: input.triggerTrace,
+        idempotencyKeyHash,
+        idempotencyRequestHash,
+      }),
+      created: true,
+    };
+  } catch (error) {
+    return handleCreateConflict(error, input);
+  }
+}
+
+function getExistingTaskRunResult(
+  taskRun: TriggeredTaskRun,
+  idempotencyRequestHash: string | undefined,
+):
+  | { ok: true; taskRun: TriggeredTaskRun; created: false }
+  | { ok: false; failure: TriggerTaskRunFailure } {
+  if (taskRun.idempotencyRequestHash !== idempotencyRequestHash) {
+    return { ok: false, failure: createIdempotencyConflict() };
+  }
+
+  return { ok: true, taskRun, created: false };
+}
+
+async function handleCreateConflict(
+  error: unknown,
+  input: {
+    task: TriggerTask;
+    idempotencyKeyHash: string | undefined;
+    idempotencyRequestHash: string | undefined;
+  },
+): Promise<
+  | { ok: true; taskRun: TriggeredTaskRun; created: false }
+  | { ok: false; failure: TriggerTaskRunFailure }
+> {
+  const { task, idempotencyKeyHash, idempotencyRequestHash } = input;
+
+  if (!idempotencyKeyHash || !idempotencyRequestHash || !isUniqueConstraintError(error)) {
+    throw error;
+  }
+
+  const existingRun = await findExistingIdempotentTaskRun(task.id, idempotencyKeyHash);
+
+  if (!existingRun) {
+    throw error;
+  }
+
+  return getExistingTaskRunResult(existingRun, idempotencyRequestHash);
+}
+
+async function enqueueCreatedTaskRun(input: {
+  auth: TriggerTaskRunInput["auth"];
+  taskRun: TriggeredTaskRun;
+}) {
+  const delayMs = input.taskRun.delayUntil
+    ? Math.max(input.taskRun.delayUntil.getTime() - Date.now(), 0)
+    : 0;
+
+  await enqueueTaskRun(
+    {
+      runId: input.taskRun.id,
+      taskId: input.taskRun.taskId,
+      environmentId: input.auth.environmentId,
+      deploymentId: input.taskRun.deploymentId,
+    },
+    {
+      delayMs,
+    },
+  );
+
+  recordTaskRunTriggered();
+}
+
+function createTriggerSuccess(input: {
+  task: TriggerTask;
+  taskRun: TriggeredTaskRun;
+  triggerTrace: ReturnType<typeof getTriggerTrace>;
+  created: boolean;
+}) {
+  return success(input.created ? 202 : 200, {
+    idempotentReplayed: !input.created,
+    taskRun: {
+      id: input.taskRun.id,
+      taskId: input.taskRun.taskId,
+      taskSlug: input.task.slug,
+      taskName: input.task.name,
+      status: input.taskRun.status,
+      payload: input.taskRun.payload,
+      createdAt: input.taskRun.createdAt.toISOString(),
+      idempotentReplay: !input.created,
+      traceparent: getTaskRunTraceparent({
+        taskRun: input.taskRun,
+        triggerTrace: input.triggerTrace,
+      }),
+    },
+  });
+}
+
+export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<TriggerTaskRunResult> {
+  const loadedTask = await loadTriggerTask(input);
+
+  if (!loadedTask.ok) {
+    return loadedTask.failure;
+  }
+
+  const payload = getPayload(input.body);
+  const delayUntilResult = getDelayUntil(input.body);
 
   if (!delayUntilResult.ok) {
     return delayUntilResult.failure;
   }
 
-  const idempotencyKeyFailure = getIdempotencyKeyFailure(idempotencyKey);
+  const idempotencyKeyFailure = getIdempotencyKeyFailure(input.idempotencyKey);
 
   if (idempotencyKeyFailure) {
     return idempotencyKeyFailure;
@@ -91,92 +231,37 @@ export async function triggerTaskRun(input: TriggerTaskRunInput): Promise<Trigge
   });
 
   const { idempotencyKeyHash, idempotencyRequestHash } = getIdempotencyHashes({
-    idempotencyKey,
-    taskId: task.id,
+    idempotencyKey: input.idempotencyKey,
+    taskId: loadedTask.task.id,
     payload,
     delayUntil: delayUntilResult.delayUntil,
   });
 
-  let taskRun = idempotencyKeyHash
-    ? await findExistingIdempotentTaskRun(task.id, idempotencyKeyHash)
-    : null;
+  const taskRunResult = await createOrLoadTaskRun({
+    triggerInput: input,
+    task: loadedTask.task,
+    payload,
+    delayUntil: delayUntilResult.delayUntil,
+    idempotencyKeyHash,
+    idempotencyRequestHash,
+    triggerTrace,
+  });
 
-  let created = false;
-
-  if (taskRun) {
-    if (taskRun.idempotencyRequestHash !== idempotencyRequestHash) {
-      return createIdempotencyConflict();
-    }
-  } else {
-    created = true;
-
-    try {
-      taskRun = await createTriggeredTaskRun({
-        auth,
-        task,
-        payload,
-        delayUntil: delayUntilResult.delayUntil,
-        triggerTrace,
-        idempotencyKeyHash,
-        idempotencyRequestHash,
-      });
-    } catch (error) {
-      if (!idempotencyKeyHash || !idempotencyRequestHash || !isUniqueConstraintError(error)) {
-        throw error;
-      }
-
-      const existingRun = await findExistingIdempotentTaskRun(task.id, idempotencyKeyHash);
-
-      if (!existingRun) {
-        throw error;
-      }
-
-      if (existingRun.idempotencyRequestHash !== idempotencyRequestHash) {
-        return createIdempotencyConflict();
-      }
-
-      taskRun = existingRun;
-      created = false;
-    }
+  if (!taskRunResult.ok) {
+    return taskRunResult.failure;
   }
 
-  if (!taskRun) {
-    throw new Error("TaskRun was not created or loaded");
+  if (taskRunResult.created) {
+    await enqueueCreatedTaskRun({
+      auth: input.auth,
+      taskRun: taskRunResult.taskRun,
+    });
   }
 
-  if (created) {
-    const delayMs = taskRun.delayUntil ? Math.max(taskRun.delayUntil.getTime() - Date.now(), 0) : 0;
-
-    await enqueueTaskRun(
-      {
-        runId: taskRun.id,
-        taskId: taskRun.taskId,
-        environmentId: auth.environmentId,
-        deploymentId: taskRun.deploymentId,
-      },
-      {
-        delayMs,
-      },
-    );
-
-    recordTaskRunTriggered();
-  }
-
-  return success(created ? 202 : 200, {
-    idempotentReplayed: !created,
-    taskRun: {
-      id: taskRun.id,
-      taskId: taskRun.taskId,
-      taskSlug: task.slug,
-      taskName: task.name,
-      status: taskRun.status,
-      payload: taskRun.payload,
-      createdAt: taskRun.createdAt.toISOString(),
-      idempotentReplay: !created,
-      traceparent: getTaskRunTraceparent({
-        taskRun,
-        triggerTrace,
-      }),
-    },
+  return createTriggerSuccess({
+    task: loadedTask.task,
+    taskRun: taskRunResult.taskRun,
+    triggerTrace,
+    created: taskRunResult.created,
   });
 }

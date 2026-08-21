@@ -19,7 +19,7 @@ type EnqueueTaskRunOptions = {
 };
 
 function getQueueRedisUrl() {
-  const redisUrl = process.env.QUEUE_REDIS_URL;
+  const redisUrl = process.env["QUEUE_REDIS_URL"];
 
   if (!redisUrl) {
     throw new Error("QUEUE_REDIS_URL is required");
@@ -57,7 +57,7 @@ function getTaskRunDelayedQueueKey(deploymentId: string | null | undefined) {
 
 export const taskRunQueueRedis = globalForRedis.taskRunQueueRedis ?? createRedisClient();
 
-if (process.env.NODE_ENV !== "production") {
+if (process.env["NODE_ENV"] !== "production") {
   globalForRedis.taskRunQueueRedis = taskRunQueueRedis;
 }
 

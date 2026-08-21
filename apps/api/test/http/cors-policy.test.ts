@@ -4,8 +4,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { corsPolicy } from "../../src/http/cors-policy.js";
 import { errorHandler } from "../../src/http/error-handler.js";
 
-const originalCorsOrigins = process.env.API_CORS_ALLOWED_ORIGINS;
-const originalNodeEnv = process.env.NODE_ENV;
+const originalCorsOrigins = process.env["API_CORS_ALLOWED_ORIGINS"];
+const originalNodeEnv = process.env["NODE_ENV"];
 
 function createApp() {
   const app = express();
@@ -25,21 +25,21 @@ function createApp() {
 
 afterEach(() => {
   if (originalCorsOrigins === undefined) {
-    delete process.env.API_CORS_ALLOWED_ORIGINS;
+    delete process.env["API_CORS_ALLOWED_ORIGINS"];
   } else {
-    process.env.API_CORS_ALLOWED_ORIGINS = originalCorsOrigins;
+    process.env["API_CORS_ALLOWED_ORIGINS"] = originalCorsOrigins;
   }
 
   if (originalNodeEnv === undefined) {
-    delete process.env.NODE_ENV;
+    delete process.env["NODE_ENV"];
   } else {
-    process.env.NODE_ENV = originalNodeEnv;
+    process.env["NODE_ENV"] = originalNodeEnv;
   }
 });
 
 describe("corsPolicy", () => {
   it("allows a configured browser origin", async () => {
-    process.env.API_CORS_ALLOWED_ORIGINS = "http://localhost:3000";
+    process.env["API_CORS_ALLOWED_ORIGINS"] = "http://localhost:3000";
 
     const response = await httpRequest(createApp())
       .get("/api/test")
@@ -47,12 +47,12 @@ describe("corsPolicy", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers["access-control-allow-origin"]).toBe("http://localhost:3000");
-    expect(response.headers.vary).toContain("Origin");
+    expect(response.headers["vary"]).toContain("Origin");
     expect(response.headers["access-control-allow-credentials"]).toBeUndefined();
   });
 
   it("answers allowed preflight requests without requiring an API key", async () => {
-    process.env.API_CORS_ALLOWED_ORIGINS = "http://localhost:3000";
+    process.env["API_CORS_ALLOWED_ORIGINS"] = "http://localhost:3000";
 
     const response = await httpRequest(createApp())
       .options("/api/test")
@@ -70,7 +70,7 @@ describe("corsPolicy", () => {
   });
 
   it("rejects an unconfigured browser origin", async () => {
-    process.env.API_CORS_ALLOWED_ORIGINS = "http://localhost:3000";
+    process.env["API_CORS_ALLOWED_ORIGINS"] = "http://localhost:3000";
 
     const response = await httpRequest(createApp())
       .get("/api/test")
@@ -87,8 +87,8 @@ describe("corsPolicy", () => {
   });
 
   it("requires explicit origins in production", () => {
-    process.env.NODE_ENV = "production";
-    delete process.env.API_CORS_ALLOWED_ORIGINS;
+    process.env["NODE_ENV"] = "production";
+    delete process.env["API_CORS_ALLOWED_ORIGINS"];
 
     expect(() => createApp()).toThrow("API_CORS_ALLOWED_ORIGINS is required in production");
   });

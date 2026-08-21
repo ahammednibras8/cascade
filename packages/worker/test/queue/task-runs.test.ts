@@ -39,12 +39,12 @@ vi.mock("../../src/redis/promote-delayed-task-runs-command.js", () => ({
   runPromoteDelayedTaskRunsCommand,
 }));
 
-process.env.QUEUE_REDIS_URL = "redis://localhost:6379";
+process.env["QUEUE_REDIS_URL"] = "redis://localhost:6379";
 
 const { enqueueTaskRun, popTaskRunMessage } = await import("../../src/queue/task-runs.js");
 
-const originalQueueRedisUrl = process.env.QUEUE_REDIS_URL;
-const originalDeploymentId = process.env.CASCADE_DEPLOYMENT_ID;
+const originalQueueRedisUrl = process.env["QUEUE_REDIS_URL"];
+const originalDeploymentId = process.env["CASCADE_DEPLOYMENT_ID"];
 
 function createMessage(deploymentId: string | null = null): TaskRunQueueMessage {
   return {
@@ -59,8 +59,8 @@ describe("task run queue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    process.env.QUEUE_REDIS_URL = "redis://localhost:6379";
-    delete process.env.CASCADE_DEPLOYMENT_ID;
+    process.env["QUEUE_REDIS_URL"] = "redis://localhost:6379";
+    delete process.env["CASCADE_DEPLOYMENT_ID"];
 
     redisInstance.rpush.mockResolvedValue(1);
     redisInstance.zadd.mockResolvedValue(1);
@@ -71,8 +71,8 @@ describe("task run queue", () => {
   afterEach(() => {
     vi.restoreAllMocks();
 
-    process.env.QUEUE_REDIS_URL = originalQueueRedisUrl;
-    process.env.CASCADE_DEPLOYMENT_ID = originalDeploymentId;
+    process.env["QUEUE_REDIS_URL"] = originalQueueRedisUrl;
+    process.env["CASCADE_DEPLOYMENT_ID"] = originalDeploymentId;
   });
 
   it("pushes immediate messages to the deployment queue", async () => {
@@ -123,7 +123,7 @@ describe("task run queue", () => {
   });
 
   it("pops only from this worker deployment queue", async () => {
-    process.env.CASCADE_DEPLOYMENT_ID = "deployment-1";
+    process.env["CASCADE_DEPLOYMENT_ID"] = "deployment-1";
     redisInstance.blpop.mockResolvedValue(null);
 
     const poppedMessage = await popTaskRunMessage();
