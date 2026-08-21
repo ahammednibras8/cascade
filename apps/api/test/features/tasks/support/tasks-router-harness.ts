@@ -41,6 +41,7 @@ const routeMocks = vi.hoisted(() => ({
   listTasks: vi.fn<(input: unknown) => Promise<unknown>>(),
   listApiKeys: vi.fn<(input: unknown) => Promise<unknown>>(),
   listTaskSchedules: vi.fn<(input: unknown) => Promise<unknown>>(),
+  listTaskRuns: vi.fn<(input: unknown) => Promise<unknown>>(),
   revokeApiKey: vi.fn<(input: unknown) => Promise<unknown>>(),
   rotateApiKey: vi.fn<(input: unknown) => Promise<unknown>>(),
   resumeTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
@@ -49,11 +50,6 @@ const routeMocks = vi.hoisted(() => ({
   streamEnvironmentRuns: vi.fn<(input: unknown) => Promise<unknown>>(),
   pauseTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
   updateTaskSchedule: vi.fn<(input: unknown) => Promise<unknown>>(),
-  prisma: {
-    taskRun: {
-      findMany: vi.fn<(input: unknown) => Promise<unknown[]>>(),
-    },
-  },
 }));
 
 export const {
@@ -72,8 +68,8 @@ export const {
   listTasks,
   listApiKeys,
   listTaskSchedules,
+  listTaskRuns,
   pauseTaskSchedule,
-  prisma,
   replayTaskRun,
   rollbackDeployment,
   triggerTaskRun,
@@ -128,7 +124,6 @@ vi.mock("@cascade/database", () => ({
     DEPLOYMENTS_WRITE: "DEPLOYMENTS_WRITE",
     API_KEYS_MANAGE: "API_KEYS_MANAGE",
   },
-  prisma: routeMocks.prisma,
 }));
 
 vi.mock("../../../../src/features/api-keys/list-api-keys.js", () => ({
@@ -197,6 +192,10 @@ vi.mock("../../../../src/features/deployments/rollback-deployment.js", () => ({
 
 vi.mock("../../../../src/features/tasks/get-task.js", () => ({
   getTask: routeMocks.getTask,
+}));
+
+vi.mock("../../../../src/features/task-runs/list-task-runs.js", () => ({
+  listTaskRuns: routeMocks.listTaskRuns,
 }));
 
 const { apiRouter } = await import("../../../../src/routes/api-router.js");

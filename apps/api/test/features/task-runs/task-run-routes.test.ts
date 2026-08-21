@@ -7,9 +7,9 @@ import {
   createApp,
   getTaskRun,
   listTaskRunEvents,
-  prisma,
   streamTaskRunEvents,
   streamEnvironmentRuns,
+  listTaskRuns,
 } from "../tasks/support/tasks-router-harness.js";
 
 describe("task run read routes", () => {
@@ -137,78 +137,114 @@ describe("task run read routes", () => {
     });
   });
 
-  it("lists task runs for the authenticated environment", async () => {
-    prisma.taskRun.findMany.mockResolvedValue([
-      {
-        id: RUN_ID,
-        status: "COMPLETED",
-        createdAt: new Date("2026-01-01T00:00:00.000Z"),
-        startedAt: new Date("2026-01-01T00:00:01.000Z"),
-        lastHeartbeatAt: null,
-        completedAt: new Date("2026-01-01T00:00:05.000Z"),
-        task: {
-          id: TASK_ID,
-          slug: "hello",
-          name: "Hello",
-          environment: {
-            id: "environment-1",
-            slug: "dev",
-            name: "Development",
-            project: {
-              id: "project-1",
-              slug: "cascade",
-              name: "Cascade",
+  it("lists task runs with pagination metadata", async () => {
+    listTaskRuns.mockResolvedValue({
+      ok: true,
+      status: 200,
+      taskRuns: [
+        {
+          id: RUN_ID,
+          status: "COMPLETED",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          startedAt: "2026-01-01T00:00:01.000Z",
+          lastHeartbeatAt: null,
+          completedAt: "2026-01-01T00:00:05.000Z",
+          task: {
+            id: TASK_ID,
+            slug: "hello",
+            name: "Hello",
+            environment: {
+              id: "environment-1",
+              slug: "dev",
+              name: "Development",
+              project: {
+                id: "project-1",
+                slug: "cascade",
+                name: "Cascade",
+              },
             },
           },
+          attemptsCount: 1,
+          eventsCount: 4,
         },
-        _count: {
-          attempts: 1,
-          events: 4,
-        },
+      ],
+      pagination: {
+        limit: 25,
+        nextCursor: "next-run-cursor",
+        hasMore: true,
+        totalCount: 77,
       },
-    ]);
+    });
 
-    const response = await httpRequest(createApp()).get("/api/runs");
+    const response = await httpRequest(createApp()).get(
+      `/api/runs?limit=25&status=COMPLETED&taskId=${TASK_ID}`,
+    );
 
     expect(response.status).toBe(200);
-    expect(prisma.taskRun.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          task: {
-            environmentId: "environment-1",
-          },
-        },
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        take: 50,
-      }),
-    );
-    expect(response.body.taskRuns).toEqual([
-      {
-        id: RUN_ID,
+    expect(listTaskRuns).toHaveBeenCalledWith({
+      auth: AUTH_CONTEXT,
+      query: {
+        limit: "25",
         status: "COMPLETED",
-        createdAt: "2026-01-01T00:00:00.000Z",
-        startedAt: "2026-01-01T00:00:01.000Z",
-        lastHeartbeatAt: null,
-        completedAt: "2026-01-01T00:00:05.000Z",
-        task: {
-          id: TASK_ID,
-          slug: "hello",
-          name: "Hello",
-          environment: {
-            id: "environment-1",
-            slug: "dev",
-            name: "Development",
-            project: {
-              id: "project-1",
-              slug: "cascade",
-              name: "Cascade",
+        taskId: TASK_ID,
+      },
+    });
+    expect(response.body).toEqual({
+      taskRuns: [
+        {
+          id: RUN_ID,
+          status: "COMPLETED",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          startedAt: "2026-01-01T00:00:01.000Z",
+          lastHeartbeatAt: null,
+          completedAt: "2026-01-01T00:00:05.000Z",
+          task: {
+            id: TASK_ID,
+            slug: "hello",
+            name: "Hello",
+            environment: {
+              id: "environment-1",
+              slug: "dev",
+              name: "Development",
+              project: {
+                id: "project-1",
+                slug: "cascade",
+                name: "Cascade",
+              },
             },
           },
+          attemptsCount: 1,
+          eventsCount: 4,
         },
-        attemptsCount: 1,
-        eventsCount: 4,
+      ],
+      pagination: {
+        limit: 25,
+        nextCursor: "next-run-cursor",
+        hasMore: true,
+        totalCount: 77,
       },
-    ]);
+    });
+  });
+
+  it("returns list-query validation failures", async () => {
+    listTaskRuns.mockResolvedValue({
+      ok: false,
+      status: 400,
+      error: {
+        code: "INVALID_LIST_QUERY",
+        message: "status must be one of PENDING, EXECUTING, COMPLETED, FAILED, or CANCELED",
+      },
+    });
+
+    const response = await httpRequest(createApp()).get("/api/runs?status=UNKNOWN");
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      error: {
+        code: "INVALID_LIST_QUERY",
+        message: "status must be one of PENDING, EXECUTING, COMPLETED, FAILED, or CANCELED",
+      },
+    });
   });
 
   it("opens an authenticated event stream and forwards Last-Event-ID", async () => {

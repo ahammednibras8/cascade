@@ -1,5 +1,4 @@
 import { Router, type Router as ExpressRouter } from "express";
-import { prisma } from "@cascade/database";
 import { asyncHandler } from "../../http/async-handler.js";
 import { getSingleParam } from "../../lib/route-params.js";
 import { cancelTaskRun } from "./cancel-task-run.js";
@@ -11,6 +10,7 @@ import { ApiKeyScope } from "@cascade/database";
 import { requireApiKeyScope } from "../../auth/api-key.js";
 import { streamTaskRunEvents } from "../../realtime/run-event-stream.js";
 import { streamEnvironmentRuns } from "../../realtime/environment-runs-stream.js";
+import { listTaskRuns } from "./list-task-runs.js";
 
 export const taskRunRoutes: ExpressRouter = Router();
 
@@ -135,63 +135,21 @@ taskRunRoutes.get(
       return;
     }
 
-    const runs = await prisma.taskRun.findMany({
-      where: {
-        task: {
-          environmentId: auth.environmentId,
-        },
-      },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 50,
-      select: {
-        id: true,
-        status: true,
-        createdAt: true,
-        startedAt: true,
-        lastHeartbeatAt: true,
-        completedAt: true,
-        task: {
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-            environment: {
-              select: {
-                id: true,
-                slug: true,
-                name: true,
-                project: {
-                  select: {
-                    id: true,
-                    slug: true,
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            attempts: true,
-            events: true,
-          },
-        },
-      },
+    const result = await listTaskRuns({
+      auth,
+      query: request.query,
     });
 
+    if (!result.ok) {
+      response.status(result.status).json({
+        error: result.error,
+      });
+      return;
+    }
+
     response.json({
-      taskRuns: runs.map((run) => ({
-        id: run.id,
-        status: run.status,
-        createdAt: run.createdAt.toISOString(),
-        startedAt: run.startedAt?.toISOString() ?? null,
-        lastHeartbeatAt: run.lastHeartbeatAt?.toISOString() ?? null,
-        completedAt: run.completedAt?.toISOString() ?? null,
-        task: run.task,
-        attemptsCount: run._count.attempts,
-        eventsCount: run._count.events,
-      })),
+      taskRuns: result.taskRuns,
+      pagination: result.pagination,
     });
   }),
 );
