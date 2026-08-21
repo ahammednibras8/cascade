@@ -179,12 +179,39 @@ describe("apiRouter write routes", () => {
       const response = await appRequest().get("/api/tasks");
 
       expect(response.status).toBe(200);
-      expectAuthOnly(listTasks);
+      expect(listTasks).toHaveBeenCalledWith({
+        auth: AUTH_CONTEXT,
+        query: {},
+      });
       expect(response.body.tasks[0]).toMatchObject({
         id: "task-1",
         runsCount: 3,
         schedulesCount: 2,
         slug: "hello",
+      });
+      expect(response.body.pagination).toEqual({
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 1,
+      });
+    });
+
+    it("passes task list query parameters to the task list service", async () => {
+      listTasks.mockResolvedValue(createListTasksSuccess());
+
+      const response = await appRequest().get(
+        `/api/tasks?limit=25&search=hello&deploymentId=${TASK_ID}`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(listTasks).toHaveBeenCalledWith({
+        auth: AUTH_CONTEXT,
+        query: {
+          limit: "25",
+          search: "hello",
+          deploymentId: TASK_ID,
+        },
       });
     });
 

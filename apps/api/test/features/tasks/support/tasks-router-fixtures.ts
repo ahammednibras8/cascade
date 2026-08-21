@@ -158,6 +158,12 @@ export function createListTasksSuccess() {
         updatedAt: "2026-01-02T00:00:00.000Z",
       },
     ],
+    pagination: {
+      limit: 50,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 1,
+    },
   };
 }
 

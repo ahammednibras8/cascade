@@ -22,8 +22,13 @@ export const taskRoutes: ExpressRouter = Router();
 taskRoutes.get(
   "/tasks",
   requireApiKeyScope(ApiKeyScope.TASKS_READ),
-  authenticatedRoute(async ({ auth, response }) => {
-    writeJsonResult(response, await listTasks({ auth }), ({ tasks }) => ({ tasks }));
+  authenticatedRoute(async ({ auth, request, response }) => {
+    const result = await listTasks({ auth, query: request.query });
+
+    writeJsonResult<TaskListSuccess>(response, result, ({ tasks, pagination }) => ({
+      tasks,
+      pagination,
+    }));
   }),
 );
 
@@ -181,6 +186,7 @@ type RouteSuccessResult = {
 
 type RouteJsonResult<TSuccess extends RouteSuccessResult> = TSuccess | RouteErrorResult;
 type DeleteScheduleResult = Awaited<ReturnType<typeof deleteTaskSchedule>>;
+type TaskListSuccess = Extract<Awaited<ReturnType<typeof listTasks>>, { ok: true }>;
 type TriggerTaskRunRouteResult = Awaited<ReturnType<typeof triggerTaskRun>>;
 
 type ScheduleRouteSuccess = RouteSuccessResult & {
