@@ -70,6 +70,13 @@ describe("tasks loader", () => {
           updatedAt: "2026-01-02T00:00:00.000Z",
         },
       ],
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 1,
+      },
+      search: "",
     });
   });
 
@@ -88,6 +95,37 @@ describe("tasks loader", () => {
       loader({ request: new Request("http://dashboard.test/tasks") } as never),
     ).resolves.toEqual({
       tasks: [],
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 0,
+      },
+      search: "",
     });
+  });
+
+  it("forwards task search and cursor parameters to the Cascade API", async () => {
+    cascadeDashboardApiRequest.mockResolvedValue({
+      tasks: [],
+      pagination: {
+        limit: 25,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 0,
+      },
+    });
+
+    await loader({
+      request: new Request("http://dashboard.test/tasks?search=hello&limit=25&cursor=next-page"),
+    } as never);
+
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/tasks?search=hello&limit=25&cursor=next-page",
+      expect.objectContaining({
+        responseSchema: expect.any(Object),
+      }),
+    );
   });
 });

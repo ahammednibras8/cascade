@@ -191,3 +191,90 @@ test("shows registered tasks in the dashboard table", async ({ page }) => {
   await expect(runRow.locator("td").nth(2)).toHaveText("0");
   await expect(runRow.locator("td").nth(3)).toHaveText("0");
 });
+
+test("dashboard searches and paginates tasks", async ({ page }) => {
+  const prisma = await getPrisma();
+  const suffix = randomUUID().slice(0, 8);
+
+  const dashboardUser = await prisma.user.findUniqueOrThrow({
+    where: {
+      email: "playwright-dashboard@example.test",
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const organization = await prisma.organization.findFirstOrThrow({
+    where: {
+      members: {
+        some: {
+          userId: dashboardUser.id,
+        },
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const project = await prisma.project.create({
+    data: {
+      organizationId: organization.id,
+      slug: `e2e-task-pages-project-${suffix}`,
+      name: "E2E Task Pages Project",
+      environments: {
+        create: {
+          slug: `e2e-task-pages-dev-${suffix}`,
+          name: "E2E Task Pages Dev",
+          type: "DEVELOPMENT",
+        },
+      },
+    },
+    include: {
+      environments: true,
+    },
+  });
+
+  createdProjectIds.push(project.id);
+
+  const environment = project.environments[0];
+
+  if (!environment) {
+    throw new Error("Expected seeded environment");
+  }
+
+  const searchTerm = `e2e-task-page-${suffix}`;
+  const executionConfig = createExecutionConfig(searchTerm);
+
+  const taskNames = Array.from(
+    { length: 51 },
+    (_, index) => `E2E paginated task ${index + 1} ${suffix}`,
+  );
+
+  await prisma.task.createMany({
+    data: taskNames.map((name, index) => ({
+      environmentId: environment.id,
+      slug: `${searchTerm}-${String(index + 1).padStart(2, "0")}`,
+      name,
+      executionConfig,
+    })),
+  });
+
+  await selectDashboardWorkspace(page, environment.id);
+  await page.goto("/tasks");
+
+  await page.getByLabel("Search tasks").fill(searchTerm);
+  await page.getByRole("button", { name: "Filter tasks" }).click();
+
+  await expect(page.getByText(taskNames[0]!)).toBeVisible();
+  await expect(page.getByText(taskNames[50]!)).not.toBeVisible();
+  await expect(page.getByText("Showing 50 tasks on this page · 51 total")).toBeVisible();
+
+  await page.getByRole("link", { name: "Next page" }).click();
+
+  await expect(page).toHaveURL(/\/tasks\?.*search=.*cursor=/);
+  await expect(page.getByText(taskNames[50]!)).toBeVisible();
+  await expect(page.getByRole("link", { name: "First page" })).toBeVisible();
+  await expect(page.getByText("End of list")).toBeVisible();
+});

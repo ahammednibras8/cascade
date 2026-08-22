@@ -1,9 +1,12 @@
-import { Link } from "react-router";
+import type { ListTasksResponse } from "@cascade/api-contracts";
+import { Form, Link } from "react-router";
 import { StatusBadge } from "~/components/status-badge";
 import type { Task } from "./types";
 
 type TasksListViewProps = {
   tasks: Task[];
+  pagination: ListTasksResponse["pagination"];
+  search: string;
 };
 
 function formatDate(value: string) {
@@ -13,7 +16,7 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export function TasksListView({ tasks }: TasksListViewProps) {
+export function TasksListView({ tasks, pagination, search }: TasksListViewProps) {
   return (
     <main className="mx-auto max-w-7xl p-6">
       <div className="mb-6">
@@ -22,6 +25,7 @@ export function TasksListView({ tasks }: TasksListViewProps) {
         </Link>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">Tasks</h1>
         <p className="mt-2 text-gray-600">Tasks registered in the current environment.</p>
+        <TaskFilters search={search} />
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -49,6 +53,8 @@ export function TasksListView({ tasks }: TasksListViewProps) {
           </tbody>
         </table>
       </div>
+
+      <TaskPagination pagination={pagination} search={search} tasksCount={tasks.length} />
     </main>
   );
 }
@@ -81,4 +87,110 @@ function TaskRow({ task }: { task: Task }) {
       <td className="px-4 py-3 text-gray-700">{formatDate(task.updatedAt)}</td>
     </tr>
   );
+}
+
+function TaskFilters({ search }: { search: string }) {
+  const searchValue = new URLSearchParams(search).get("search") ?? "";
+
+  return (
+    <Form method="get" className="mt-4 flex flex-wrap items-end gap-3">
+      <div>
+        <label htmlFor="task-search" className="mb-1 block text-sm font-medium text-gray-700">
+          Search tasks
+        </label>
+        <input
+          id="task-search"
+          name="search"
+          type="search"
+          defaultValue={searchValue}
+          placeholder="Name or slug"
+          className="w-64 rounded-md border border-gray-300 px-3 py-2 text-sm"
+        />
+      </div>
+
+      <button
+        type="submit"
+        className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white"
+      >
+        Filter tasks
+      </button>
+
+      {searchValue ? (
+        <Link
+          to="/tasks"
+          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900"
+        >
+          Clear filters
+        </Link>
+      ) : null}
+    </Form>
+  );
+}
+
+function TaskPagination({
+  pagination,
+  search,
+  tasksCount,
+}: {
+  pagination: ListTasksResponse["pagination"];
+  search: string;
+  tasksCount: number;
+}) {
+  const hasCursor = new URLSearchParams(search).has("cursor");
+  const nextPagePath = pagination.nextCursor
+    ? createTaskPagePath(search, pagination.nextCursor)
+    : null;
+
+  if (pagination.totalCount === 0) {
+    return null;
+  }
+
+  return (
+    <nav
+      aria-label="Task pagination"
+      className="mt-4 flex items-center justify-between gap-4 text-sm"
+    >
+      <p className="text-gray-600">
+        Showing {tasksCount} task{tasksPlural(tasksCount)} on this page · {pagination.totalCount}{" "}
+        total
+      </p>
+
+      <div className="flex items-center gap-2">
+        {hasCursor ? (
+          <Link
+            to={createTaskPagePath(search, null)}
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 font-medium text-gray-900"
+          >
+            First page
+          </Link>
+        ) : null}
+
+        {nextPagePath ? (
+          <Link to={nextPagePath} className="rounded-md bg-black px-3 py-2 font-medium text-white">
+            Next page
+          </Link>
+        ) : (
+          <span className="px-3 py-2 text-gray-500">End of list</span>
+        )}
+      </div>
+    </nav>
+  );
+}
+
+function createTaskPagePath(search: string, cursor: string | null) {
+  const parameters = new URLSearchParams(search);
+
+  if (cursor) {
+    parameters.set("cursor", cursor);
+  } else {
+    parameters.delete("cursor");
+  }
+
+  const query = parameters.toString();
+
+  return query ? `/tasks?${query}` : "/tasks";
+}
+
+function tasksPlural(count: number) {
+  return count === 1 ? "" : "s";
 }
