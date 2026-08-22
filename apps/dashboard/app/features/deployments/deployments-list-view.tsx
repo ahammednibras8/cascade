@@ -2,12 +2,15 @@ import { Link } from "react-router";
 import { StatusBadge } from "~/components/status-badge";
 import { formatDeploymentDate } from "./format";
 import type { DeploymentListItem } from "./types";
+import type { ListDeploymentsResponse } from "@cascade/api-contracts";
 
 type DeploymentsListViewProps = {
   deployments: DeploymentListItem[];
+  pagination: ListDeploymentsResponse["pagination"];
+  search: string;
 };
 
-export function DeploymentsListView({ deployments }: DeploymentsListViewProps) {
+export function DeploymentsListView({ deployments, pagination, search }: DeploymentsListViewProps) {
   return (
     <main className="mx-auto max-w-7xl p-6">
       <div className="mb-6">
@@ -47,6 +50,11 @@ export function DeploymentsListView({ deployments }: DeploymentsListViewProps) {
           </tbody>
         </table>
       </div>
+      <DeploymentPagination
+        pagination={pagination}
+        search={search}
+        deploymentsCount={deployments.length}
+      />
     </main>
   );
 }
@@ -84,4 +92,72 @@ function DeploymentRow({ deployment }: { deployment: DeploymentListItem }) {
       </td>
     </tr>
   );
+}
+
+function DeploymentPagination({
+  pagination,
+  search,
+  deploymentsCount,
+}: {
+  pagination: ListDeploymentsResponse["pagination"];
+  search: string;
+  deploymentsCount: number;
+}) {
+  const hasCursor = new URLSearchParams(search).has("cursor");
+  const nextPagePath = pagination.nextCursor
+    ? createDeploymentPagePath(search, pagination.nextCursor)
+    : null;
+
+  if (pagination.totalCount === 0) {
+    return null;
+  }
+
+  return (
+    <nav
+      aria-label="Deployment pagination"
+      className="mt-4 flex items-center justify-between gap-4 text-sm"
+    >
+      <p className="text-gray-600">
+        Showing {deploymentsCount} deployment{deploymentsPlural(deploymentsCount)} on this page ·{" "}
+        {pagination.totalCount} total
+      </p>
+
+      <div className="flex items-center gap-2">
+        {hasCursor ? (
+          <Link
+            to={createDeploymentPagePath(search, null)}
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 font-medium text-gray-900"
+          >
+            First page
+          </Link>
+        ) : null}
+
+        {nextPagePath ? (
+          <Link to={nextPagePath} className="rounded-md bg-black px-3 py-2 font-medium text-white">
+            Next page
+          </Link>
+        ) : (
+          <span className="px-3 py-2 text-gray-500">End of list</span>
+        )}
+      </div>
+    </nav>
+  );
+}
+
+function createDeploymentPagePath(search: string, cursor: string | null) {
+  const parameters = new URLSearchParams(search);
+
+  if (cursor) {
+    parameters.set("cursor", cursor);
+  } else {
+    parameters.delete("cursor");
+  }
+
+  const query = parameters.toString();
+
+  return query ? `/deployments?${query}` : "/deployments";
+}
+
+function deploymentsPlural(count: number) {
+  return count === 1 ? "" : "s";
 }

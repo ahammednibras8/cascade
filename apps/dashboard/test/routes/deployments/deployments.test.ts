@@ -69,6 +69,13 @@ describe("deployments loader", () => {
       loader({ request: new Request("http://dashboard.test/deployments") } as never),
     ).resolves.toEqual({
       deployments,
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 2,
+      },
+      search: "",
     });
 
     expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
@@ -95,6 +102,37 @@ describe("deployments loader", () => {
       loader({ request: new Request("http://dashboard.test/deployments") } as never),
     ).resolves.toEqual({
       deployments: [],
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 0,
+      },
+      search: "",
     });
+  });
+
+  it("forwards the deployment cursor and limit to the Cascade API", async () => {
+    cascadeDashboardApiRequest.mockResolvedValue({
+      deployments: [],
+      pagination: {
+        limit: 25,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 0,
+      },
+    });
+
+    await loader({
+      request: new Request("http://dashboard.test/deployments?limit=25&cursor=next-page"),
+    } as never);
+
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/deployments?limit=25&cursor=next-page",
+      expect.objectContaining({
+        responseSchema: expect.any(Object),
+      }),
+    );
   });
 });

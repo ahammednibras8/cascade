@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { cleanupDashboardProjects, disconnectPrisma } from "./support/dashboard-project.js";
+import {
+  cleanupDashboardProjects,
+  createDashboardProject,
+  disconnectPrisma,
+} from "./support/dashboard-project.js";
 import {
   clickConfirmedButton,
   createDeploymentWithTask,
@@ -38,6 +42,51 @@ test("shows deployments and their worker runtime state", async ({ page }) => {
   await expect(row).toContainText("RUNNING");
   await expect(row.locator("td").nth(4)).toHaveText("1");
   await expect(row.locator("td").nth(5)).toHaveText("1");
+});
+
+test("dashboard paginates deployments", async ({ page }) => {
+  const { environment, prisma, suffix } = await createDashboardProject({
+    slugPrefix: "e2e-deployment-pages",
+    projectName: "E2E Deployment Pages Project",
+    environmentName: "E2E Deployment Pages Dev",
+  });
+
+  const versions = Array.from(
+    { length: 51 },
+    (_, index) => `e2e-pagination-${suffix}-${String(index + 1).padStart(2, "0")}`,
+  );
+
+  await prisma.deployment.createMany({
+    data: versions.map((version, index) => {
+      const createdAt = new Date(Date.UTC(2026, 0, 1, 0, 0, index));
+
+      return {
+        environmentId: environment.id,
+        version,
+        image: "ghcr.io/cascade/pagination-worker:e2e",
+        status: "ACTIVE",
+        runtimeStatus: "RUNNING",
+        createdAt,
+        updatedAt: createdAt,
+      };
+    }),
+  });
+
+  await selectDashboardWorkspace(page, environment.id);
+  await page.goto("/deployments");
+
+  await expect(page.getByRole("heading", { name: "Deployments" })).toBeVisible();
+
+  await expect(page.getByRole("link", { name: versions[50]! })).toBeVisible();
+  await expect(page.getByRole("link", { name: versions[0]! })).not.toBeVisible();
+  await expect(page.getByText("Showing 50 deployments on this page · 51 total")).toBeVisible();
+
+  await page.getByRole("link", { name: "Next page" }).click();
+
+  await expect(page).toHaveURL(/\/deployments\?cursor=/);
+  await expect(page.getByRole("link", { name: versions[0]! })).toBeVisible();
+  await expect(page.getByRole("link", { name: "First page" })).toBeVisible();
+  await expect(page.getByText("End of list")).toBeVisible();
 });
 
 test("opens deployment detail and shows its registered task configuration", async ({ page }) => {

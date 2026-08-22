@@ -1,4 +1,7 @@
-import { ListDeploymentsResponseSchema } from "@cascade/api-contracts";
+import {
+  ListDeploymentsResponseSchema,
+  type ListDeploymentsResponse,
+} from "@cascade/api-contracts";
 import type { Route } from "./+types/deployments";
 import { DeploymentsListView } from "~/features/deployments/deployments-list-view";
 import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
@@ -11,15 +14,29 @@ export function meta() {
 export async function loader({ request }: Route.LoaderArgs) {
   await requireDashboardUser(request);
 
-  const response = await cascadeDashboardApiRequest(request, "/api/deployments", {
-    responseSchema: ListDeploymentsResponseSchema,
-  });
+  const url = new URL(request.url);
+
+  const response = await cascadeDashboardApiRequest<ListDeploymentsResponse>(
+    request,
+    `/api/deployments${url.search}`,
+    {
+      responseSchema: ListDeploymentsResponseSchema,
+    },
+  );
 
   return {
     deployments: response.deployments,
+    pagination: response.pagination,
+    search: url.search,
   };
 }
 
 export default function Deployments({ loaderData }: Route.ComponentProps) {
-  return <DeploymentsListView deployments={loaderData.deployments} />;
+  return (
+    <DeploymentsListView
+      deployments={loaderData.deployments}
+      pagination={loaderData.pagination}
+      search={loaderData.search}
+    />
+  );
 }
