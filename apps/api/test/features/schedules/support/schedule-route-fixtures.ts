@@ -26,6 +26,12 @@ export function createListTaskSchedulesSuccess() {
   return {
     ok: true,
     status: 200,
+    pagination: {
+      limit: 50,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 1,
+    },
     schedules: [
       {
         id: "schedule-1",

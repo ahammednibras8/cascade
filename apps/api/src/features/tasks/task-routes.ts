@@ -54,9 +54,15 @@ taskRoutes.get(
 taskRoutes.get(
   "/schedules",
   requireApiKeyScope(ApiKeyScope.TASKS_READ),
-  authenticatedRoute(async ({ auth, response }) => {
-    writeJsonResult(response, await listTaskSchedules({ auth }), ({ schedules }) => ({
+  authenticatedRoute(async ({ auth, request, response }) => {
+    const result = await listTaskSchedules({
+      auth,
+      query: request.query,
+    });
+
+    writeJsonResult(response, result, ({ schedules, pagination }) => ({
       schedules,
+      pagination,
     }));
   }),
 );

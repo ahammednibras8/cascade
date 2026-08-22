@@ -5,6 +5,7 @@ import {
   ListTasksResponseSchema,
   TriggerTaskRunResponseSchema,
   apiContracts,
+  ListTaskSchedulesResponseSchema,
 } from "../src/index.js";
 
 describe("apiContracts", () => {
@@ -55,6 +56,9 @@ describe("response schemas", () => {
     expect(() => ListTasksResponseSchema.parse(createListTasksResponse())).not.toThrow();
     expect(() => ListTaskRunsResponseSchema.parse(createListTaskRunsResponse())).not.toThrow();
     expect(() => TriggerTaskRunResponseSchema.parse(createTriggerTaskRunResponse())).not.toThrow();
+    expect(() =>
+      ListTaskSchedulesResponseSchema.parse(createListTaskSchedulesResponse()),
+    ).not.toThrow();
   });
 });
 
@@ -139,6 +143,45 @@ function createTriggerTaskRunResponse() {
       createdAt: "2026-01-01T00:00:00.000Z",
       idempotentReplay: false,
       traceparent: "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
+    },
+  };
+}
+
+function createListTaskSchedulesResponse() {
+  return {
+    schedules: [
+      {
+        id: "schedule-1",
+        taskId: "task-1",
+        name: "Weekday morning",
+        scheduleType: "CRON",
+        intervalSeconds: null,
+        cronExpression: "0 9 * * 1-5",
+        timezone: "Asia/Kolkata",
+        nextRunAt: "2026-01-03T09:00:00.000Z",
+        lastRunAt: null,
+        enabled: true,
+        hasPayload: true,
+        revision: 1,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        task: {
+          id: "task-1",
+          slug: "hello",
+          name: "Hello",
+          deployment: {
+            id: "deployment-1",
+            version: "v1",
+            status: "ACTIVE",
+          },
+        },
+      },
+    ],
+    pagination: {
+      limit: 50,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 1,
     },
   };
 }

@@ -41,8 +41,11 @@ function schedulePath(suffix = "") {
   return `/api/schedules/${SCHEDULE_ID}${suffix}`;
 }
 
-function expectAuthOnly(service: RouteService) {
-  expect(service).toHaveBeenCalledWith({ auth: AUTH_CONTEXT });
+function expectListSchedulesRequest(service: RouteService, query: Record<string, string> = {}) {
+  expect(service).toHaveBeenCalledWith({
+    auth: AUTH_CONTEXT,
+    query,
+  });
 }
 
 function expectForbidden(response: { body: unknown; status: number }) {
@@ -94,11 +97,37 @@ describe("schedule routes", () => {
     const response = await appRequest().get("/api/schedules");
 
     expect(response.status).toBe(200);
-    expectAuthOnly(listTaskSchedules);
+    expectListSchedulesRequest(listTaskSchedules);
+
     expect(response.body.schedules[0]).toMatchObject({
       id: "schedule-1",
       scheduleType: "CRON",
       task: { slug: "hello" },
+    });
+
+    expect(response.body.pagination).toEqual({
+      limit: 50,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 1,
+    });
+  });
+
+  it("passes pagination and filters to the schedule list service", async () => {
+    listTaskSchedules.mockResolvedValue(createListTaskSchedulesSuccess());
+
+    const response = await appRequest().get(
+      `/api/schedules?limit=25&taskId=${TASK_ID}&enabled=true&scheduleType=CRON&nextRunAfter=2026-01-01T00:00:00.000Z&nextRunBefore=2026-01-31T00:00:00.000Z`,
+    );
+
+    expect(response.status).toBe(200);
+    expectListSchedulesRequest(listTaskSchedules, {
+      limit: "25",
+      taskId: TASK_ID,
+      enabled: "true",
+      scheduleType: "CRON",
+      nextRunAfter: "2026-01-01T00:00:00.000Z",
+      nextRunBefore: "2026-01-31T00:00:00.000Z",
     });
   });
 

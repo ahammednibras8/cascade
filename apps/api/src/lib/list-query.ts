@@ -82,6 +82,22 @@ export function parseOptionalListEnum<TValue extends string>(
     : invalidListQuery(message);
 }
 
+export function parseOptionalListBoolean(value: unknown, message: string): OptionalResult<boolean> {
+  if (value === undefined) {
+    return optionalValue(null);
+  }
+
+  if (value === "true") {
+    return optionalValue(true);
+  }
+
+  if (value === "false") {
+    return optionalValue(false);
+  }
+
+  return invalidListQuery(message);
+}
+
 export function parseOptionalListSearch(value: unknown): OptionalResult<string> {
   if (value === undefined) {
     return optionalValue(null);
