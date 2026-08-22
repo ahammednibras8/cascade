@@ -75,6 +75,12 @@ it("returns schedules from the Cascade API", async () => {
         },
       },
     ],
+    pagination: {
+      limit: 50,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 1,
+    },
   });
 
   await expect(
@@ -90,22 +96,72 @@ it("returns schedules from the Cascade API", async () => {
       }),
     ],
     role: "OWNER",
+    pagination: {
+      limit: 50,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 1,
+    },
+    search: "",
   });
 
-  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(expect.any(Request), "/api/schedules");
+  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+    expect.any(Request),
+    "/api/schedules",
+    expect.objectContaining({
+      responseSchema: expect.any(Object),
+    }),
+  );
 });
 
 it("returns an empty list when the API has no schedules", async () => {
   cascadeDashboardApiRequest.mockResolvedValue({
     schedules: [],
+    pagination: {
+      limit: 50,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 0,
+    },
   });
 
   await expect(
     loader({ request: new Request("http://dashboard.test/schedules") } as never),
   ).resolves.toEqual({
     schedules: [],
+    pagination: {
+      limit: 50,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 0,
+    },
+    search: "",
     role: "OWNER",
   });
+});
+
+it("forwards the current cursor and limit to the Cascade API", async () => {
+  cascadeDashboardApiRequest.mockResolvedValue({
+    schedules: [],
+    pagination: {
+      limit: 25,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 25,
+    },
+  });
+
+  await loader({
+    request: new Request("http://dashboard.test/schedules?limit=25&cursor=next-page"),
+  } as never);
+
+  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+    expect.any(Request),
+    "/api/schedules?limit=25&cursor=next-page",
+    expect.objectContaining({
+      responseSchema: expect.any(Object),
+    }),
+  );
 });
 
 it("calls the API pause endpoint", async () => {

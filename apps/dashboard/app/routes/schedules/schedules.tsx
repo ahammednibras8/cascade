@@ -1,6 +1,10 @@
 import type { Route } from "./+types/schedules";
 import { handleScheduleListAction } from "~/features/schedules/schedule-actions.server";
 import { SchedulesListView } from "~/features/schedules/schedules-list-view";
+import {
+  ListTaskSchedulesResponseSchema,
+  type ListTaskSchedulesResponse,
+} from "@cascade/api-contracts";
 import type { Schedule } from "~/features/schedules/types";
 import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
@@ -14,13 +18,20 @@ export function meta() {
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await requireDashboardUser(request);
   const workspace = await getDashboardWorkspaceContext(request, session.userId);
+  const url = new URL(request.url);
 
-  const response = await cascadeDashboardApiRequest<{
-    schedules: Schedule[];
-  }>(request, "/api/schedules");
+  const response = await cascadeDashboardApiRequest<ListTaskSchedulesResponse>(
+    request,
+    `/api/schedules${url.search}`,
+    {
+      responseSchema: ListTaskSchedulesResponseSchema,
+    },
+  );
 
   return {
-    schedules: response.schedules,
+    schedules: response.schedules as Schedule[],
+    pagination: response.pagination,
+    search: url.search,
     role: workspace.activeOrganization?.role ?? null,
   };
 }
@@ -31,5 +42,12 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function Schedules({ loaderData }: Route.ComponentProps) {
-  return <SchedulesListView schedules={loaderData.schedules} role={loaderData.role} />;
+  return (
+    <SchedulesListView
+      schedules={loaderData.schedules}
+      pagination={loaderData.pagination}
+      search={loaderData.search}
+      role={loaderData.role}
+    />
+  );
 }

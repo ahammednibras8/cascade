@@ -159,6 +159,59 @@ test("dashboard lists, pauses, and resumes a schedule", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("dashboard navigates to the next schedule page", async ({ page }) => {
+  const prisma = await getPrisma();
+  const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
+
+  const suffix = randomUUID().slice(0, 8);
+  const executionConfig = createExecutionConfig(`e2e-schedule-pagination-${suffix}`);
+
+  const task = await prisma.task.create({
+    data: {
+      environmentId: environment.id,
+      slug: `e2e-schedule-pagination-${suffix}`,
+      name: "E2E Schedule Pagination Task",
+      executionConfig,
+    },
+  });
+
+  createdTaskIds.push(task.id);
+
+  const scheduleNames = Array.from(
+    { length: 51 },
+    (_, index) => `E2E paginated schedule ${index + 1} ${suffix}`,
+  );
+
+  await prisma.taskSchedule.createMany({
+    data: scheduleNames.map((name, index) => ({
+      taskId: task.id,
+      name,
+      scheduleType: "INTERVAL",
+      intervalSeconds: 3600,
+      cronExpression: null,
+      timezone: "UTC",
+      enabled: false,
+      nextRunAt: new Date(Date.UTC(2020, 0, 1, 0, 0, index)),
+    })),
+  });
+
+  await page.goto("/schedules");
+
+  await expect(page.getByText(scheduleNames[0] as string)).toBeVisible();
+  await expect(page.getByText(scheduleNames[50] as string)).not.toBeVisible();
+
+  await expect(page.getByText("Showing 50 schedules on this page · 51 total")).toBeVisible();
+
+  await page.getByRole("link", { name: "Next page" }).click();
+
+  await expect(page).toHaveURL(/\/schedules\?cursor=/);
+  await expect(page.getByText(scheduleNames[50] as string)).toBeVisible();
+  await expect(page.getByRole("link", { name: "First page" })).toBeVisible();
+  await expect(page.getByText("End of list")).toBeVisible();
+});
+
 test("dashboard creates and edits a cron schedule", async ({ page }) => {
   const prisma = await getPrisma();
   const { environment } = await getDashboardTestEnvironment();
