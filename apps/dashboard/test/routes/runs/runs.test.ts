@@ -80,6 +80,13 @@ describe("runs loader", () => {
           completedAt: null,
         },
       ],
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 1,
+      },
+      search: "",
     });
   });
 
@@ -98,6 +105,37 @@ describe("runs loader", () => {
       loader({ request: new Request("http://dashboard.test/runs") } as never),
     ).resolves.toEqual({
       runs: [],
+      pagination: {
+        limit: 50,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 0,
+      },
+      search: "",
     });
+  });
+
+  it("forwards run status and cursor parameters to the Cascade API", async () => {
+    cascadeDashboardApiRequest.mockResolvedValue({
+      taskRuns: [],
+      pagination: {
+        limit: 25,
+        nextCursor: null,
+        hasMore: false,
+        totalCount: 0,
+      },
+    });
+
+    await loader({
+      request: new Request("http://dashboard.test/runs?status=FAILED&limit=25&cursor=next-page"),
+    } as never);
+
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      "/api/runs?status=FAILED&limit=25&cursor=next-page",
+      expect.objectContaining({
+        responseSchema: expect.any(Object),
+      }),
+    );
   });
 });

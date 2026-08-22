@@ -4,12 +4,15 @@ import { StatusBadge } from "~/components/status-badge";
 import type { EnvironmentRunsStreamState } from "~/lib/realtime/environment-runs-stream";
 import { environmentRunsStreamLabel, formatRunDate } from "./format";
 import type { TaskRunListItem } from "./types";
+import type { ListTaskRunsResponse } from "@cascade/api-contracts";
 
 type RunsListViewProps = {
   runs: TaskRunListItem[];
+  pagination: ListTaskRunsResponse["pagination"];
+  search: string;
 };
 
-export function RunsListView({ runs }: RunsListViewProps) {
+export function RunsListView({ runs, pagination, search }: RunsListViewProps) {
   const revalidator = useRevalidator();
   const [streamState, setStreamState] = useState<EnvironmentRunsStreamState>("connecting");
   const revalidate = revalidator.revalidate;
@@ -47,6 +50,9 @@ export function RunsListView({ runs }: RunsListViewProps) {
         <p className="text-sm text-gray-500">Cascade</p>
         <h1 className="text-3xl font-semibold tracking-tight">Task runs</h1>
         <p className="mt-2 text-gray-600">Latest durable task runs from Postgres</p>
+
+        <RunStatusFilters search={search} />
+
         <p className="mt-1 text-xs text-gray-500">
           {environmentRunsStreamLabel({ revalidatorState: revalidator.state, streamState })}
         </p>
@@ -86,6 +92,8 @@ export function RunsListView({ runs }: RunsListViewProps) {
           </tbody>
         </table>
       </div>
+
+      <RunPagination pagination={pagination} search={search} runsCount={runs.length} />
     </main>
   );
 }
@@ -117,4 +125,124 @@ function RunRow({ run }: { run: TaskRunListItem }) {
       <td className="px-4 py-3 text-gray-700">{formatRunDate(run.completedAt)}</td>
     </tr>
   );
+}
+
+const runStatuses = ["PENDING", "EXECUTING", "COMPLETED", "FAILED", "CANCELED"] as const;
+
+function RunStatusFilters({ search }: { search: string }) {
+  const activeStatus = new URLSearchParams(search).get("status");
+
+  return (
+    <nav aria-label="Run status filters" className="mt-4 flex flex-wrap items-center gap-2">
+      <span className="mr-1 text-sm font-medium text-gray-700">Status:</span>
+
+      <Link
+        to={createRunStatusPath(search, null)}
+        className={runStatusFilterClass(activeStatus === null)}
+      >
+        All statuses
+      </Link>
+
+      {runStatuses.map((status) => (
+        <Link
+          key={status}
+          to={createRunStatusPath(search, status)}
+          className={runStatusFilterClass(activeStatus === status)}
+        >
+          {status}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+function RunPagination({
+  pagination,
+  search,
+  runsCount,
+}: {
+  pagination: ListTaskRunsResponse["pagination"];
+  search: string;
+  runsCount: number;
+}) {
+  const hasCursor = new URLSearchParams(search).has("cursor");
+  const nextPagePath = pagination.nextCursor
+    ? createRunPagePath(search, pagination.nextCursor)
+    : null;
+
+  if (pagination.totalCount === 0) {
+    return null;
+  }
+
+  return (
+    <nav
+      aria-label="Run pagination"
+      className="mt-4 flex items-center justify-between gap-4 text-sm"
+    >
+      <p className="text-gray-600">
+        Showing {runsCount} run{runsPlural(runsCount)} on this page · {pagination.totalCount} total
+      </p>
+
+      <div className="flex items-center gap-2">
+        {hasCursor ? (
+          <Link
+            to={createRunPagePath(search, null)}
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 font-medium text-gray-900"
+          >
+            First page
+          </Link>
+        ) : null}
+
+        {nextPagePath ? (
+          <Link to={nextPagePath} className="rounded-md bg-black px-3 py-2 font-medium text-white">
+            Next page
+          </Link>
+        ) : (
+          <span className="px-3 py-2 text-gray-500">End of list</span>
+        )}
+      </div>
+    </nav>
+  );
+}
+
+function createRunStatusPath(search: string, status: string | null) {
+  const parameters = new URLSearchParams(search);
+
+  parameters.delete("cursor");
+
+  if (status) {
+    parameters.set("status", status);
+  } else {
+    parameters.delete("status");
+  }
+
+  return createRunsPath(parameters);
+}
+
+function createRunPagePath(search: string, cursor: string | null) {
+  const parameters = new URLSearchParams(search);
+
+  if (cursor) {
+    parameters.set("cursor", cursor);
+  } else {
+    parameters.delete("cursor");
+  }
+
+  return createRunsPath(parameters);
+}
+
+function createRunsPath(parameters: URLSearchParams) {
+  const query = parameters.toString();
+
+  return query ? `/runs?${query}` : "/runs";
+}
+
+function runStatusFilterClass(isActive: boolean) {
+  return isActive
+    ? "rounded-md bg-black px-3 py-2 text-xs font-medium text-white"
+    : "rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-900";
+}
+
+function runsPlural(count: number) {
+  return count === 1 ? "" : "s";
 }

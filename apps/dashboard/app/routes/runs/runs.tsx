@@ -14,12 +14,20 @@ export function meta() {
 export async function loader({ request }: Route.LoaderArgs) {
   await requireDashboardUser(request);
 
-  const response = await cascadeDashboardApiRequest(request, "/api/runs", {
-    responseSchema: ListTaskRunsResponseSchema,
-  });
+  const url = new URL(request.url);
+
+  const response = await cascadeDashboardApiRequest<ListTaskRunsResponse>(
+    request,
+    `/api/runs${url.search}`,
+    {
+      responseSchema: ListTaskRunsResponseSchema,
+    },
+  );
 
   return {
     runs: response.taskRuns.map(toTaskRunListItem),
+    pagination: response.pagination,
+    search: url.search,
   };
 }
 
@@ -42,5 +50,11 @@ function toTaskRunListItem(run: ApiTaskRunListItem): TaskRunListItem {
 }
 
 export default function Runs({ loaderData }: Route.ComponentProps) {
-  return <RunsListView runs={loaderData.runs} />;
+  return (
+    <RunsListView
+      runs={loaderData.runs}
+      pagination={loaderData.pagination}
+      search={loaderData.search}
+    />
+  );
 }
