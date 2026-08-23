@@ -34,6 +34,7 @@ export function SchedulesListView({ schedules, pagination, search, role }: Sched
           ) : null}
         </div>
         <p className="mt-2 text-gray-600">Task schedules in the current environment.</p>
+        <ScheduleFilters search={search} />
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -252,11 +253,97 @@ function createSchedulePagePath(search: string, cursor: string | null) {
     parameters.delete("cursor");
   }
 
-  const query = parameters.toString();
-
-  return query ? `/schedules?${query}` : "/schedules";
+  return createScheduleListPath(parameters);
 }
 
 function schedulesPlural(count: number) {
   return count === 1 ? "" : "s";
+}
+
+const scheduleTypes = ["INTERVAL", "CRON"] as const;
+
+function ScheduleFilters({ search }: { search: string }) {
+  const parameters = new URLSearchParams(search);
+  const enabled = parameters.get("enabled");
+  const scheduleType = parameters.get("scheduleType");
+
+  return (
+    <div className="mt-4 space-y-3">
+      <nav aria-label="Schedule state filters" className="flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-sm font-medium text-gray-700">State:</span>
+
+        <Link
+          to={createScheduleFilterPath(search, "enabled", null)}
+          className={scheduleFilterClass(enabled === null)}
+        >
+          All states
+        </Link>
+
+        <Link
+          to={createScheduleFilterPath(search, "enabled", "true")}
+          className={scheduleFilterClass(enabled === "true")}
+        >
+          Enabled
+        </Link>
+
+        <Link
+          to={createScheduleFilterPath(search, "enabled", "false")}
+          className={scheduleFilterClass(enabled === "false")}
+        >
+          Paused
+        </Link>
+      </nav>
+
+      <nav aria-label="Schedule type filters" className="flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-sm font-medium text-gray-700">Type:</span>
+
+        <Link
+          to={createScheduleFilterPath(search, "scheduleType", null)}
+          className={scheduleFilterClass(scheduleType === null)}
+        >
+          All types
+        </Link>
+
+        {scheduleTypes.map((type) => (
+          <Link
+            key={type}
+            to={createScheduleFilterPath(search, "scheduleType", type)}
+            className={scheduleFilterClass(scheduleType === type)}
+          >
+            {type}
+          </Link>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+function createScheduleFilterPath(
+  search: string,
+  name: "enabled" | "scheduleType",
+  value: string | null,
+) {
+  const parameters = new URLSearchParams(search);
+
+  parameters.delete("cursor");
+
+  if (value) {
+    parameters.set(name, value);
+  } else {
+    parameters.delete(name);
+  }
+
+  return createScheduleListPath(parameters);
+}
+
+function scheduleFilterClass(isActive: boolean) {
+  return isActive
+    ? "rounded-md bg-black px-3 py-2 text-xs font-medium text-white"
+    : "rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-900";
+}
+
+function createScheduleListPath(parameters: URLSearchParams) {
+  const query = parameters.toString();
+
+  return query ? `/schedules?${query}` : "/schedules";
 }

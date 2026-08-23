@@ -13,14 +13,8 @@ export async function selectDashboardWorkspace(page: Page, environmentId: string
   await workspaceSelect.selectOption(environmentId);
   await expect(workspaceSelect).toHaveValue(environmentId);
 
-  await page.locator('form[action="/workspace/select"]').evaluate((form) => {
-    (form as { requestSubmit(): void }).requestSubmit();
-  });
-  await page.waitForLoadState("networkidle");
-
-  await page.goto("/", {
-    waitUntil: "domcontentloaded",
-  });
+  await page.getByRole("button", { name: "Switch workspace" }).click();
+  await page.waitForLoadState("domcontentloaded");
 
   await expect(workspaceSelect).toHaveValue(environmentId);
 }

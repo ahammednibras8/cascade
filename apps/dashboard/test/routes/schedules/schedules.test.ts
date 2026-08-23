@@ -164,6 +164,30 @@ it("forwards the current cursor and limit to the Cascade API", async () => {
   );
 });
 
+it("forwards schedule state and type filters to the Cascade API", async () => {
+  cascadeDashboardApiRequest.mockResolvedValue({
+    schedules: [],
+    pagination: {
+      limit: 50,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 0,
+    },
+  });
+
+  await loader({
+    request: new Request("http://dashboard.test/schedules?enabled=false&scheduleType=CRON"),
+  } as never);
+
+  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+    expect.any(Request),
+    "/api/schedules?enabled=false&scheduleType=CRON",
+    expect.objectContaining({
+      responseSchema: expect.any(Object),
+    }),
+  );
+});
+
 it("calls the API pause endpoint", async () => {
   cascadeDashboardApiRequest.mockResolvedValue({
     schedule: {
