@@ -2,6 +2,8 @@ import { Form, Link, useNavigation } from "react-router";
 import { formatScheduleDate, formatScheduleRule } from "./format";
 import type { Schedule } from "./types";
 import { hasDashboardCapability, type DashboardRole } from "~/lib/auth/dashboard-permissions";
+import { CursorPagination } from "~/components/cursor-pagination";
+import { createListPath } from "~/lib/pagination/cursor-pagination";
 import type { ListTaskSchedulesResponse } from "@cascade/api-contracts";
 
 type SchedulesListViewProps = {
@@ -70,10 +72,13 @@ export function SchedulesListView({ schedules, pagination, search, role }: Sched
         </table>
       </div>
 
-      <SchedulePagination
-        pagination={pagination}
+      <CursorPagination
+        ariaLabel="Schedule pagination"
+        pathname="/schedules"
         search={search}
-        schedulesCount={schedules.length}
+        itemCount={schedules.length}
+        itemLabel="schedule"
+        pagination={pagination}
       />
     </main>
   );
@@ -194,72 +199,6 @@ function updateButtonClass(intent: "pause" | "resume") {
     : "rounded-md bg-emerald-700 px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50";
 }
 
-function SchedulePagination({
-  pagination,
-  search,
-  schedulesCount,
-}: {
-  pagination: ListTaskSchedulesResponse["pagination"];
-  search: string;
-  schedulesCount: number;
-}) {
-  const hasCursor = new URLSearchParams(search).has("cursor");
-  const nextPagePath = pagination.nextCursor
-    ? createSchedulePagePath(search, pagination.nextCursor)
-    : null;
-
-  if (pagination.totalCount === 0) {
-    return null;
-  }
-
-  return (
-    <nav
-      aria-label="Schedule pagination"
-      className="mt-4 flex items-center justify-between gap-4 text-sm"
-    >
-      <p className="text-gray-600">
-        Showing {schedulesCount} schedule{schedulesPlural(schedulesCount)} on this page ·{" "}
-        {pagination.totalCount} total
-      </p>
-
-      <div className="flex items-center gap-2">
-        {hasCursor ? (
-          <Link
-            to={createSchedulePagePath(search, null)}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 font-medium text-gray-900"
-          >
-            First page
-          </Link>
-        ) : null}
-
-        {nextPagePath ? (
-          <Link to={nextPagePath} className="rounded-md bg-black px-3 py-2 font-medium text-white">
-            Next page
-          </Link>
-        ) : (
-          <span className="px-3 py-2 text-gray-500">End of list</span>
-        )}
-      </div>
-    </nav>
-  );
-}
-
-function createSchedulePagePath(search: string, cursor: string | null) {
-  const parameters = new URLSearchParams(search);
-
-  if (cursor) {
-    parameters.set("cursor", cursor);
-  } else {
-    parameters.delete("cursor");
-  }
-
-  return createScheduleListPath(parameters);
-}
-
-function schedulesPlural(count: number) {
-  return count === 1 ? "" : "s";
-}
-
 const scheduleTypes = ["INTERVAL", "CRON"] as const;
 
 function ScheduleFilters({ search }: { search: string }) {
@@ -333,17 +272,11 @@ function createScheduleFilterPath(
     parameters.delete(name);
   }
 
-  return createScheduleListPath(parameters);
+  return createListPath("/schedules", parameters);
 }
 
 function scheduleFilterClass(isActive: boolean) {
   return isActive
     ? "rounded-md bg-black px-3 py-2 text-xs font-medium text-white"
     : "rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-900";
-}
-
-function createScheduleListPath(parameters: URLSearchParams) {
-  const query = parameters.toString();
-
-  return query ? `/schedules?${query}` : "/schedules";
 }

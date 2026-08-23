@@ -1,7 +1,8 @@
-import type { ListTasksResponse } from "@cascade/api-contracts";
 import { Form, Link } from "react-router";
 import { StatusBadge } from "~/components/status-badge";
 import type { Task } from "./types";
+import { CursorPagination } from "~/components/cursor-pagination";
+import type { ListTasksResponse } from "@cascade/api-contracts";
 
 type TasksListViewProps = {
   tasks: Task[];
@@ -54,7 +55,14 @@ export function TasksListView({ tasks, pagination, search }: TasksListViewProps)
         </table>
       </div>
 
-      <TaskPagination pagination={pagination} search={search} tasksCount={tasks.length} />
+      <CursorPagination
+        ariaLabel="Task pagination"
+        pathname="/tasks"
+        search={search}
+        itemCount={tasks.length}
+        itemLabel="task"
+        pagination={pagination}
+      />
     </main>
   );
 }
@@ -125,72 +133,4 @@ function TaskFilters({ search }: { search: string }) {
       ) : null}
     </Form>
   );
-}
-
-function TaskPagination({
-  pagination,
-  search,
-  tasksCount,
-}: {
-  pagination: ListTasksResponse["pagination"];
-  search: string;
-  tasksCount: number;
-}) {
-  const hasCursor = new URLSearchParams(search).has("cursor");
-  const nextPagePath = pagination.nextCursor
-    ? createTaskPagePath(search, pagination.nextCursor)
-    : null;
-
-  if (pagination.totalCount === 0) {
-    return null;
-  }
-
-  return (
-    <nav
-      aria-label="Task pagination"
-      className="mt-4 flex items-center justify-between gap-4 text-sm"
-    >
-      <p className="text-gray-600">
-        Showing {tasksCount} task{tasksPlural(tasksCount)} on this page · {pagination.totalCount}{" "}
-        total
-      </p>
-
-      <div className="flex items-center gap-2">
-        {hasCursor ? (
-          <Link
-            to={createTaskPagePath(search, null)}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 font-medium text-gray-900"
-          >
-            First page
-          </Link>
-        ) : null}
-
-        {nextPagePath ? (
-          <Link to={nextPagePath} className="rounded-md bg-black px-3 py-2 font-medium text-white">
-            Next page
-          </Link>
-        ) : (
-          <span className="px-3 py-2 text-gray-500">End of list</span>
-        )}
-      </div>
-    </nav>
-  );
-}
-
-function createTaskPagePath(search: string, cursor: string | null) {
-  const parameters = new URLSearchParams(search);
-
-  if (cursor) {
-    parameters.set("cursor", cursor);
-  } else {
-    parameters.delete("cursor");
-  }
-
-  const query = parameters.toString();
-
-  return query ? `/tasks?${query}` : "/tasks";
-}
-
-function tasksPlural(count: number) {
-  return count === 1 ? "" : "s";
 }
