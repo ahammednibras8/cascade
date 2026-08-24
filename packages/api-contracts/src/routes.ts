@@ -8,6 +8,7 @@ import {
 import { ListTaskRunsResponseSchema, TriggerTaskRunResponseSchema } from "./task-runs.js";
 import { ListTasksResponseSchema } from "./tasks.js";
 import { ListTaskSchedulesResponseSchema } from "./schedules.js";
+import { ListApiKeysResponseSchema } from "./api-keys.js";
 
 export type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 export type ApiRouteKind = "list" | "detail" | "mutation" | "stream";
@@ -46,6 +47,18 @@ export const apiContracts = {
     pagination: "required",
     responses: {
       200: ListTaskSchedulesResponseSchema,
+      400: ApiErrorResponseSchema,
+    },
+    errorCodes: ["INVALID_LIST_QUERY"],
+  },
+  listApiKeys: {
+    method: "GET",
+    path: "/api/api-keys",
+    kind: "list",
+    retrySafety: "safe",
+    pagination: "required",
+    responses: {
+      200: ListApiKeysResponseSchema,
       400: ApiErrorResponseSchema,
     },
     errorCodes: ["INVALID_LIST_QUERY"],

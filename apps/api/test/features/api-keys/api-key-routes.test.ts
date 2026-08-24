@@ -32,8 +32,15 @@ beforeEach(() => {
 
 it("lists API keys for an API-key manager", async () => {
   listApiKeys.mockResolvedValue({
+    ok: true,
     status: 200,
     apiKeys: [createPublicApiKey()],
+    pagination: {
+      limit: 50,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 1,
+    },
   });
 
   const response = await httpRequest(createApp()).get("/api/api-keys");
@@ -41,6 +48,7 @@ it("lists API keys for an API-key manager", async () => {
   expect(response.status).toBe(200);
   expect(listApiKeys).toHaveBeenCalledWith({
     auth: AUTH_CONTEXT,
+    query: {},
   });
   expect(response.body.apiKeys).toEqual([createPublicApiKey()]);
   expect(response.body.availableScopes).toEqual(
@@ -50,6 +58,31 @@ it("lists API keys for an API-key manager", async () => {
       }),
     ]),
   );
+});
+
+it("passes API-key list query parameters to the service", async () => {
+  listApiKeys.mockResolvedValue({
+    ok: true,
+    status: 200,
+    apiKeys: [],
+    pagination: {
+      limit: 25,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 0,
+    },
+  });
+
+  const response = await httpRequest(createApp()).get("/api/api-keys?limit=25&revoked=false");
+
+  expect(response.status).toBe(200);
+  expect(listApiKeys).toHaveBeenCalledWith({
+    auth: AUTH_CONTEXT,
+    query: {
+      limit: "25",
+      revoked: "false",
+    },
+  });
 });
 
 it("rejects API-key listing when the key lacks API_KEYS_MANAGE", async () => {

@@ -14,13 +14,17 @@ export const apikeyRoutes: ExpressRouter = Router();
 apikeyRoutes.get(
   "/api-keys",
   requireApiKeyScope(ApiKeyScope.API_KEYS_MANAGE),
-  authenticatedRoute(async ({ auth, response }) => {
-    const result = await listApiKeys({ auth });
-
-    response.status(result.status).json({
-      apiKeys: result.apiKeys,
-      availableScopes: apiKeyScopeDefinitions,
+  authenticatedRoute(async ({ auth, request, response }) => {
+    const result = await listApiKeys({
+      auth,
+      query: request.query,
     });
+
+    writeJsonResult(response, result, ({ apiKeys, pagination }) => ({
+      apiKeys,
+      availableScopes: apiKeyScopeDefinitions,
+      pagination,
+    }));
   }),
 );
 
