@@ -44,13 +44,25 @@ it("loads API keys and their available permissions", async () => {
         description: "Create a deployment and register its tasks",
       },
     ],
+    pagination: {
+      limit: 50,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 1,
+    },
   });
 
   const result = await loader({
     request: new Request("http://dashboard.test/api-keys"),
   } as never);
 
-  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(expect.any(Request), "/api/api-keys");
+  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+    expect.any(Request),
+    "/api/api-keys",
+    expect.objectContaining({
+      responseSchema: expect.any(Object),
+    }),
+  );
   expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "API_KEYS_MANAGE");
   expect(result).toEqual({
     apiKeys: [
@@ -72,6 +84,52 @@ it("loads API keys and their available permissions", async () => {
         description: "Create a deployment and register its tasks",
       },
     ],
+    pagination: {
+      limit: 50,
+      nextCursor: null,
+      hasMore: false,
+      totalCount: 1,
+    },
+    search: "",
+  });
+});
+
+it("forwards API-key pagination and revoked-state filters", async () => {
+  cascadeDashboardApiRequest.mockResolvedValue({
+    apiKeys: [],
+    availableScopes: [],
+    pagination: {
+      limit: 25,
+      nextCursor: "next-page",
+      hasMore: true,
+      totalCount: 26,
+    },
+  });
+
+  const result = await loader({
+    request: new Request(
+      "http://dashboard.test/api-keys?revoked=true&limit=25&cursor=previous-page",
+    ),
+  } as never);
+
+  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+    expect.any(Request),
+    "/api/api-keys?revoked=true&limit=25&cursor=previous-page",
+    expect.objectContaining({
+      responseSchema: expect.any(Object),
+    }),
+  );
+
+  expect(result).toEqual({
+    apiKeys: [],
+    availableScopes: [],
+    pagination: {
+      limit: 25,
+      nextCursor: "next-page",
+      hasMore: true,
+      totalCount: 26,
+    },
+    search: "?revoked=true&limit=25&cursor=previous-page",
   });
 });
 
