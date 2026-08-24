@@ -65,6 +65,7 @@ export async function createDeploymentWithTask(input: DeploymentFixtureInput) {
     await prisma.taskRun.create({
       data: {
         taskId: task.id,
+        environmentId: environment.id,
         deploymentId: deployment.id,
         status: "COMPLETED",
         executionConfig,
@@ -77,6 +78,7 @@ export async function createDeploymentWithTask(input: DeploymentFixtureInput) {
     ? await prisma.taskSchedule.create({
         data: {
           taskId: task.id,
+          environmentId: environment.id,
           name: `E2E schedule ${suffix}`,
           intervalSeconds: 3_600,
           nextRunAt: futureDate(),
@@ -147,6 +149,7 @@ export async function createRollbackDeploymentFixture() {
   const omittedSchedule = await prisma.taskSchedule.create({
     data: {
       taskId: omittedTask.id,
+      environmentId: environment.id,
       name: `E2E rollback schedule ${suffix}`,
       intervalSeconds: 3_600,
       nextRunAt: futureDate(),
