@@ -107,9 +107,7 @@ describe("listTaskSchedules", () => {
     expect(prisma.taskSchedule.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          task: {
-            environmentId: ENVIRONMENT_ID,
-          },
+          environmentId: ENVIRONMENT_ID,
         },
       }),
     );
@@ -168,9 +166,7 @@ describe("listTaskSchedules filters", () => {
         orderBy: [{ nextRunAt: "asc" }, { id: "asc" }],
         take: 26,
         where: {
-          task: {
-            environmentId: ENVIRONMENT_ID,
-          },
+          environmentId: ENVIRONMENT_ID,
           taskId: "11111111-1111-4111-8111-111111111111",
           enabled: false,
           scheduleType: "CRON",

@@ -113,9 +113,7 @@ function createFilterWhere(
   filters: RunListFilters,
 ): Prisma.TaskRunWhereInput {
   return {
-    task: {
-      environmentId: auth.environmentId,
-    },
+    environmentId: auth.environmentId,
     ...(filters.status
       ? {
           status: filters.status,

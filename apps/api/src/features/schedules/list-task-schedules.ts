@@ -202,9 +202,7 @@ function createScheduleFilterWhere(
   }
 
   return {
-    task: {
-      environmentId: auth.environmentId,
-    },
+    environmentId: auth.environmentId,
     ...(query.taskId ? { taskId: query.taskId } : {}),
     ...(query.enabled === null ? {} : { enabled: query.enabled }),
     ...(query.scheduleType ? { scheduleType: query.scheduleType } : {}),

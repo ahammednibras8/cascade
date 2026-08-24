@@ -95,18 +95,14 @@ describe("listTaskRuns", () => {
 
     expect(prisma.taskRun.count).toHaveBeenCalledWith({
       where: {
-        task: {
-          environmentId: "environment-1",
-        },
+        environmentId: "environment-1",
       },
     });
 
     expect(prisma.taskRun.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          task: {
-            environmentId: "environment-1",
-          },
+          environmentId: "environment-1",
         },
         take: 2,
       }),
@@ -144,9 +140,7 @@ describe("listTaskRuns", () => {
     expect(prisma.taskRun.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          task: {
-            environmentId: "environment-1",
-          },
+          environmentId: "environment-1",
           status: "FAILED",
           taskId: TASK_ID,
           createdAt: {
