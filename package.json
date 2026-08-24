@@ -84,10 +84,10 @@
     "knip": "6.32.2",
     "lefthook": "2.1.10",
     "oxfmt": "0.64.0",
-    "oxlint": "1.78.0",
-    "turbo": "2.10.9",
+    "oxlint": "1.79.0",
+    "turbo": "2.10.11",
     "typescript": "6.0.3",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   },
   "engines": {
     "node": ">=24.18.0 <25"
