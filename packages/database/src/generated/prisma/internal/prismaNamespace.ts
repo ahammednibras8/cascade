@@ -1772,6 +1772,7 @@ export type TaskScalarFieldEnum = (typeof TaskScalarFieldEnum)[keyof typeof Task
 export const TaskRunScalarFieldEnum = {
   id: 'id',
   taskId: 'taskId',
+  environmentId: 'environmentId',
   deploymentId: 'deploymentId',
   scheduleId: 'scheduleId',
   scheduledFor: 'scheduledFor',
@@ -1843,6 +1844,7 @@ export type RunEventOutboxScalarFieldEnum = (typeof RunEventOutboxScalarFieldEnu
 export const TaskScheduleScalarFieldEnum = {
   id: 'id',
   taskId: 'taskId',
+  environmentId: 'environmentId',
   name: 'name',
   payload: 'payload',
   scheduleType: 'scheduleType',
