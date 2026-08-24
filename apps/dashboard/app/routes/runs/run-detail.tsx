@@ -1,7 +1,12 @@
 import type { Route } from "./+types/run-detail";
 import { isRunNotFoundError } from "~/features/runs/errors";
 import { RunDetailView, RunNotFound } from "~/features/runs/run-detail-view";
-import { TaskRunDetailResponseSchema, TaskRunEventsResponseSchema } from "@cascade/api-contracts";
+import {
+  CancelTaskRunResponseSchema,
+  ReplayTaskRunResponseSchema,
+  TaskRunDetailResponseSchema,
+  TaskRunEventsResponseSchema,
+} from "@cascade/api-contracts";
 import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
 import { requireDashboardCapability } from "~/lib/auth/dashboard-permissions.server";
@@ -70,15 +75,17 @@ export async function action({ params, request }: Route.ActionArgs) {
 
   try {
     const runId = encodeURIComponent(params.runId);
-    const path = intent === "cancel" ? `/api/runs/${runId}/cancel` : `/api/runs/${runId}/replay`;
 
-    return await cascadeDashboardApiRequest<{
-      taskRun: {
-        id: string;
-        status: string;
-      };
-    }>(request, path, {
+    if (intent === "cancel") {
+      return await cascadeDashboardApiRequest(request, `/api/runs/${runId}/cancel`, {
+        method: "POST",
+        responseSchema: CancelTaskRunResponseSchema,
+      });
+    }
+
+    return await cascadeDashboardApiRequest(request, `/api/runs/${runId}/replay`, {
       method: "POST",
+      responseSchema: ReplayTaskRunResponseSchema,
     });
   } catch (error) {
     throw new Response("Could not update task run", {

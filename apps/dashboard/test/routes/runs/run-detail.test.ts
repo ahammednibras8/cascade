@@ -192,13 +192,29 @@ it("returns a not-found state when the API cannot find the run", async () => {
   );
 });
 
-it("sends a cancel request to the API", async () => {
-  cascadeDashboardApiRequest.mockResolvedValue({
-    taskRun: {
-      id: "run-1",
-      status: "CANCELED",
-    },
-  });
+it("sends validated cancel and replay requests to the API", async () => {
+  cascadeDashboardApiRequest
+    .mockResolvedValueOnce({
+      taskRun: {
+        id: "run-1",
+        taskId: "task-1",
+        status: "CANCELED",
+        canceled: true,
+        alreadyCanceled: false,
+      },
+    })
+    .mockResolvedValueOnce({
+      taskRun: {
+        id: "run-2",
+        taskId: "task-1",
+        status: "PENDING",
+        payload: {
+          message: "hello",
+        },
+        createdAt: "2026-08-24T10:00:00.000Z",
+        replayedFromRunId: "run-1",
+      },
+    });
 
   await action({
     params: {
@@ -212,24 +228,6 @@ it("sends a cancel request to the API", async () => {
     }),
   } as never);
 
-  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
-    expect.any(Request),
-    "/api/runs/run-1/cancel",
-    {
-      method: "POST",
-    },
-  );
-  expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "RUNS_MUTATE");
-});
-
-it("sends a replay request to the API", async () => {
-  cascadeDashboardApiRequest.mockResolvedValue({
-    taskRun: {
-      id: "run-2",
-      status: "PENDING",
-    },
-  });
-
   await action({
     params: {
       runId: "run-1",
@@ -242,14 +240,25 @@ it("sends a replay request to the API", async () => {
     }),
   } as never);
 
-  expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+  expect(cascadeDashboardApiRequest).toHaveBeenNthCalledWith(
+    1,
+    expect.any(Request),
+    "/api/runs/run-1/cancel",
+    expect.objectContaining({
+      method: "POST",
+      responseSchema: expect.any(Object),
+    }),
+  );
+
+  expect(cascadeDashboardApiRequest).toHaveBeenNthCalledWith(
+    2,
     expect.any(Request),
     "/api/runs/run-1/replay",
-    {
+    expect.objectContaining({
       method: "POST",
-    },
+      responseSchema: expect.any(Object),
+    }),
   );
-  expect(requireDashboardCapability).toHaveBeenCalledWith(expect.any(Request), "RUNS_MUTATE");
 });
 
 it("does not call the API when run mutation permission is denied", async () => {

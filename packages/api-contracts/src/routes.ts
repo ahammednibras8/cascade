@@ -10,6 +10,8 @@ import {
   TaskRunDetailResponseSchema,
   TaskRunEventsResponseSchema,
   TriggerTaskRunResponseSchema,
+  CancelTaskRunResponseSchema,
+  ReplayTaskRunResponseSchema,
 } from "./task-runs.js";
 import { ListTasksResponseSchema, TaskDetailResponseSchema } from "./tasks.js";
 import { ListTaskSchedulesResponseSchema, TaskScheduleDetailResponseSchema } from "./schedules.js";
@@ -127,6 +129,37 @@ export const apiContracts = {
       404: ApiErrorResponseSchema,
     },
     errorCodes: ["INVALID_RUN_ID", "INVALID_EVENT_CURSOR", "RUN_NOT_FOUND"],
+  },
+  cancelTaskRun: {
+    method: "POST",
+    path: "/api/runs/:runId/cancel",
+    kind: "mutation",
+    retrySafety: "unsafe",
+    responses: {
+      200: CancelTaskRunResponseSchema,
+      400: ApiErrorResponseSchema,
+      404: ApiErrorResponseSchema,
+      409: ApiErrorResponseSchema,
+    },
+    errorCodes: ["INVALID_RUN_ID", "RUN_NOT_FOUND", "RUN_NOT_CANCELABLE"],
+  },
+  replayTaskRun: {
+    method: "POST",
+    path: "/api/runs/:runId/replay",
+    kind: "mutation",
+    retrySafety: "unsafe",
+    responses: {
+      202: ReplayTaskRunResponseSchema,
+      400: ApiErrorResponseSchema,
+      404: ApiErrorResponseSchema,
+      409: ApiErrorResponseSchema,
+    },
+    errorCodes: [
+      "INVALID_RUN_ID",
+      "RUN_NOT_FOUND",
+      "RUN_EXECUTION_CONFIG_MISSING",
+      "RUN_NOT_REPLAYABLE",
+    ],
   },
   listDeployments: {
     method: "GET",

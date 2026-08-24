@@ -91,6 +91,27 @@ export const TaskRunEventsResponseSchema = z.object({
   hasMore: z.boolean(),
 });
 
+export const CancelTaskRunResponseSchema = z.object({
+  taskRun: z.object({
+    id: z.string().min(1),
+    taskId: z.string().min(1),
+    status: z.literal("CANCELED"),
+    canceled: z.literal(true),
+    alreadyCanceled: z.boolean(),
+  }),
+});
+
+export const ReplayTaskRunResponseSchema = z.object({
+  taskRun: z.object({
+    id: z.string().min(1),
+    taskId: z.string().min(1),
+    status: TaskRunStatusSchema,
+    payload: JsonValueSchema,
+    createdAt: IsoDateTimeStringSchema,
+    replayedFromRunId: z.string().min(1),
+  }),
+});
+
 export const ListTaskRunsResponseSchema = z.object({
   taskRuns: z.array(TaskRunListItemSchema),
   pagination: ListPaginationSchema,
@@ -115,3 +136,5 @@ export type ListTaskRunsResponse = z.infer<typeof ListTaskRunsResponseSchema>;
 export type TriggerTaskRunResponse = z.infer<typeof TriggerTaskRunResponseSchema>;
 export type TaskRunDetailResponse = z.infer<typeof TaskRunDetailResponseSchema>;
 export type TaskRunEventsResponse = z.infer<typeof TaskRunEventsResponseSchema>;
+export type CancelTaskRunResponse = z.infer<typeof CancelTaskRunResponseSchema>;
+export type ReplayTaskRunResponse = z.infer<typeof ReplayTaskRunResponseSchema>;
