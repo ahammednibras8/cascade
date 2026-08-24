@@ -11,7 +11,7 @@ import {
   TaskRunEventsResponseSchema,
   TriggerTaskRunResponseSchema,
 } from "./task-runs.js";
-import { ListTasksResponseSchema } from "./tasks.js";
+import { ListTasksResponseSchema, TaskDetailResponseSchema } from "./tasks.js";
 import { ListTaskSchedulesResponseSchema } from "./schedules.js";
 import { ListApiKeysResponseSchema } from "./api-keys.js";
 
@@ -43,6 +43,18 @@ export const apiContracts = {
       400: ApiErrorResponseSchema,
     },
     errorCodes: ["INVALID_LIST_QUERY"],
+  },
+  getTask: {
+    method: "GET",
+    path: "/api/tasks/:taskId",
+    kind: "detail",
+    retrySafety: "safe",
+    responses: {
+      200: TaskDetailResponseSchema,
+      400: ApiErrorResponseSchema,
+      404: ApiErrorResponseSchema,
+    },
+    errorCodes: ["INVALID_TASK_ID", "TASK_NOT_FOUND"],
   },
   listTaskSchedules: {
     method: "GET",

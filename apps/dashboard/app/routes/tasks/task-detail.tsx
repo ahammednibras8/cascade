@@ -1,8 +1,8 @@
 import { TaskDetailView, TaskNotFound } from "~/features/tasks/task-detail-view";
 import type { Route } from "./+types/task-detail";
 import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
-import type { TaskDetail } from "~/features/tasks/types";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
+import { TaskDetailResponseSchema } from "@cascade/api-contracts";
 
 export function meta() {
   return [{ title: "Task detail | Cascade" }];
@@ -14,9 +14,13 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const taskId = params.taskId;
 
   try {
-    const response = await cascadeDashboardApiRequest<{
-      task: TaskDetail;
-    }>(request, `/api/tasks/${encodeURIComponent(taskId)}`);
+    const response = await cascadeDashboardApiRequest(
+      request,
+      `/api/tasks/${encodeURIComponent(taskId)}`,
+      {
+        responseSchema: TaskDetailResponseSchema,
+      },
+    );
 
     return {
       task: response.task,

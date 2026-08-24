@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const cascadeDashboardApiRequest = vi.hoisted(() =>
-  vi.fn<(request: Request, path: string) => Promise<unknown>>(),
+  vi.fn<(request: Request, path: string, init?: unknown) => Promise<unknown>>(),
 );
 
 vi.mock("~/lib/api/cascade-api.server", () => ({
@@ -77,6 +77,25 @@ describe("task detail loader", () => {
     expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
       expect.any(Request),
       `/api/tasks/${TASK_ID}`,
+      expect.objectContaining({
+        responseSchema: expect.any(Object),
+      }),
+    );
+  });
+
+  it("validates task detail with the shared API response schema", async () => {
+    cascadeDashboardApiRequest.mockResolvedValue({
+      task: task(),
+    });
+
+    await loader(routeArgs());
+
+    expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      `/api/tasks/${TASK_ID}`,
+      expect.objectContaining({
+        responseSchema: expect.any(Object),
+      }),
     );
   });
 
@@ -94,6 +113,9 @@ describe("task detail loader", () => {
     expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
       expect.any(Request),
       "/api/tasks/task%2Fwith%20spaces",
+      expect.objectContaining({
+        responseSchema: expect.any(Object),
+      }),
     );
   });
 
