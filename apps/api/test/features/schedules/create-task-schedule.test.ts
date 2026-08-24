@@ -237,6 +237,7 @@ it("creates an interval schedule with payload and explicit startAt", async () =>
   expectScheduleCreate({
     id: SCHEDULE_ID,
     taskId: TASK_ID,
+    environmentId: ENVIRONMENT_ID,
     name: "Every minute",
     scheduleType: "INTERVAL",
     intervalSeconds: 60,
@@ -282,6 +283,7 @@ it("creates a cron schedule and calculates its first matching occurrence", async
   expectScheduleCreate({
     id: SCHEDULE_ID,
     taskId: TASK_ID,
+    environmentId: ENVIRONMENT_ID,
     name: "Weekday morning",
     scheduleType: "CRON",
     intervalSeconds: null,

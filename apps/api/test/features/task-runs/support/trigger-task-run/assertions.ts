@@ -115,6 +115,7 @@ export function expectTaskRunCreated(data: Record<string, unknown> = {}) {
       data: expect.objectContaining({
         id: RUN_ID,
         taskId: TASK_ID,
+        environmentId: auth.environmentId,
         status: "PENDING",
         traceId: TRACE_ID,
         triggerSpanId: SPAN_ID,

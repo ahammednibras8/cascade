@@ -163,6 +163,7 @@ function createDefaultTriggerBody() {
 export function createTask() {
   return {
     id: TASK_ID,
+    environmentId: auth.environmentId,
     slug: "hello",
     name: "Hello",
     deploymentId: "deployment-1",

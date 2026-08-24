@@ -88,9 +88,13 @@ function getReplayValidationFailure(sourceRun: SourceRun): ReplayTaskRunFailure 
   return null;
 }
 
-function buildReplayRunData(sourceRun: SourceRun): Prisma.TaskRunUncheckedCreateInput {
+function buildReplayRunData(
+  auth: ApiAuthContext,
+  sourceRun: SourceRun,
+): Prisma.TaskRunUncheckedCreateInput {
   const data: Prisma.TaskRunUncheckedCreateInput = {
     taskId: sourceRun.taskId,
+    environmentId: auth.environmentId,
     deploymentId: sourceRun.deploymentId,
     status: "PENDING",
     executionConfig: sourceRun.executionConfig as Prisma.InputJsonValue,
@@ -106,7 +110,7 @@ function buildReplayRunData(sourceRun: SourceRun): Prisma.TaskRunUncheckedCreate
 async function createReplayedRun(auth: ApiAuthContext, sourceRun: SourceRun): Promise<ReplayedRun> {
   return prisma.$transaction(async (tx) => {
     const run = await tx.taskRun.create({
-      data: buildReplayRunData(sourceRun),
+      data: buildReplayRunData(auth, sourceRun),
       select: replayedRunSelect,
     });
 

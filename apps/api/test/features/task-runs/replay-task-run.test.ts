@@ -259,6 +259,7 @@ it("creates a new pending run from a failed source run and enqueues it", async (
   expect(txTaskRunCreate).toHaveBeenCalledWith({
     data: {
       taskId: TASK_ID,
+      environmentId: auth.environmentId,
       deploymentId: "deployment-1",
       status: "PENDING",
       executionConfig: EXECUTION_CONFIG,

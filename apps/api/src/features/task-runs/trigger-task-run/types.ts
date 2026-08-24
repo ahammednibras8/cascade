@@ -20,6 +20,7 @@ export const taskSelect = {
   id: true,
   slug: true,
   name: true,
+  environmentId: true,
   deploymentId: true,
   executionConfig: true,
 } satisfies Prisma.TaskSelect;

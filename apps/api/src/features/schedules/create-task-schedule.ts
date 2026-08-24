@@ -115,6 +115,7 @@ export async function createTaskSchedule(
   const data: Prisma.TaskScheduleUncheckedCreateInput = {
     id: scheduleId,
     taskId,
+    environmentId: auth.environmentId,
     name: parsedBody.name ?? `${task.name} schedule`,
     scheduleType: parsedBody.rule.scheduleType,
     intervalSeconds: parsedBody.rule.intervalSeconds,

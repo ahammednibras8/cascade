@@ -37,6 +37,7 @@ function buildTaskRunCreateData(input: {
   const data: Prisma.TaskRunUncheckedCreateInput = {
     id: input.runId,
     taskId: input.task.id,
+    environmentId: input.task.environmentId,
     status: "PENDING",
     traceId: input.triggerTrace.traceId,
     triggerSpanId: input.triggerTrace.spanId,

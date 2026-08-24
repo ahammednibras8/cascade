@@ -149,6 +149,7 @@ async function disableSchedule(tx: ScheduleTransaction, schedule: DueSchedule, r
 function buildScheduledRunData(schedule: DueSchedule): Prisma.TaskRunUncheckedCreateInput {
   const data: Prisma.TaskRunUncheckedCreateInput = {
     taskId: schedule.taskId,
+    environmentId: schedule.task.environmentId,
     deploymentId: schedule.task.deploymentId,
     scheduleId: schedule.id,
     scheduledFor: schedule.nextRunAt,
