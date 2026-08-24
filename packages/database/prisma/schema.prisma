@@ -197,7 +197,8 @@ model ApiKey {
   rotatedFrom   ApiKey? @relation("ApiKeyRotation", fields: [rotatedFromId], references: [id])
   rotatedTo     ApiKey? @relation("ApiKeyRotation")
 
-  @@index([environmentId])
+  @@index([environmentId, createdAt, id])
+  @@index([environmentId, revokedAt, createdAt, id])
   @@index([keyPrefix])
 }
 
@@ -221,6 +222,7 @@ model Task {
   @@unique([environmentId, slug])
   @@index([environmentId])
   @@index([deploymentId])
+  @@index([environmentId, deploymentId, slug, id])
 }
 
 model TaskRun {
@@ -341,8 +343,8 @@ model TaskSchedule {
 
   runs TaskRun[]
 
-  @@index([taskId])
-  @@index([enabled, nextRunAt])
+  @@index([taskId, nextRunAt, id])
+  @@index([enabled, nextRunAt, id])
   @@index([lockedAt])
 }
 
@@ -370,6 +372,7 @@ model Deployment {
 
   @@unique([environmentId, version])
   @@index([environmentId, status])
+  @@index([environmentId, createdAt, id])
 }
 
 model DeploymentTask {
