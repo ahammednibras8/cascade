@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   ApiErrorResponseSchema,
+  ListTaskSchedulesResponseSchema,
   ListTaskRunsResponseSchema,
   ListTasksResponseSchema,
+  TaskRunDetailResponseSchema,
+  TaskRunEventsResponseSchema,
   TriggerTaskRunResponseSchema,
   apiContracts,
-  ListTaskSchedulesResponseSchema,
 } from "../src/index.js";
 
 describe("apiContracts", () => {
@@ -59,6 +61,8 @@ describe("response schemas", () => {
     expect(() =>
       ListTaskSchedulesResponseSchema.parse(createListTaskSchedulesResponse()),
     ).not.toThrow();
+    expect(() => TaskRunDetailResponseSchema.parse(createTaskRunDetailResponse())).not.toThrow();
+    expect(() => TaskRunEventsResponseSchema.parse(createTaskRunEventsResponse())).not.toThrow();
   });
 });
 
@@ -183,5 +187,84 @@ function createListTaskSchedulesResponse() {
       hasMore: false,
       totalCount: 1,
     },
+  };
+}
+
+function createTaskRunDetailResponse() {
+  return {
+    taskRun: {
+      id: "run-1",
+      status: "FAILED",
+      deploymentId: null,
+      scheduleId: null,
+      payload: {
+        message: "hello",
+      },
+      output: null,
+      error: {
+        code: "TASK_FAILED",
+      },
+      delayUntil: null,
+      startedAt: "2026-01-01T00:00:05.000Z",
+      lastHeartbeatAt: "2026-01-01T00:00:10.000Z",
+      completedAt: "2026-01-01T00:00:15.000Z",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:16.000Z",
+      task: {
+        id: "task-1",
+        slug: "hello",
+        name: "Hello",
+        environment: {
+          id: "environment-1",
+          slug: "dev",
+          name: "Development",
+          project: {
+            id: "project-1",
+            slug: "cascade",
+            name: "Cascade",
+          },
+        },
+      },
+      attemptsCount: 1,
+      eventsCount: 1,
+      traceId: "trace-1",
+      triggerSpanId: "span-1",
+      attempts: [
+        {
+          id: "attempt-1",
+          attemptNumber: 1,
+          status: "FAILED",
+          error: {
+            code: "TASK_FAILED",
+          },
+          startedAt: "2026-01-01T00:00:05.000Z",
+          completedAt: "2026-01-01T00:00:15.000Z",
+          createdAt: "2026-01-01T00:00:05.000Z",
+        },
+      ],
+    },
+  };
+}
+
+function createTaskRunEventsResponse() {
+  return {
+    events: [
+      {
+        id: "event-1",
+        taskAttemptId: "attempt-1",
+        type: "task.log",
+        level: "ERROR",
+        message: "Task failed",
+        data: {
+          retryable: false,
+        },
+        traceId: "trace-1",
+        spanId: "span-2",
+        parentSpanId: "span-1",
+        createdAt: "2026-01-01T00:00:12.000Z",
+      },
+    ],
+    nextCursor: null,
+    hasMore: false,
   };
 }

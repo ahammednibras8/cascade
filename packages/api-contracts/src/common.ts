@@ -51,6 +51,10 @@ export const TaskRunStatusSchema = z.enum([
   "CANCELED",
 ]);
 
+export const TaskAttemptStatusSchema = z.enum(["EXECUTING", "COMPLETED", "FAILED", "CANCELED"]);
+
+export const TaskEventLevelSchema = z.enum(["DEBUG", "INFO", "WARN", "ERROR"]);
+
 export const IsoDateTimeStringSchema = z.string().datetime();
 
 export const TaskExecutionConfigSchema = z.object({

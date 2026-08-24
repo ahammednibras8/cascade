@@ -87,6 +87,11 @@ it("returns the run and its events from the API", async () => {
             createdAt: "2026-01-01T00:00:05.000Z",
           },
         ],
+        deploymentId: null,
+        scheduleId: null,
+        delayUntil: null,
+        attemptsCount: 1,
+        eventsCount: 1,
       },
     })
     .mockResolvedValueOnce({
@@ -106,6 +111,8 @@ it("returns the run and its events from the API", async () => {
           parentSpanId: "span-1",
         },
       ],
+      nextCursor: null,
+      hasMore: false,
     });
 
   const result = await loader({
@@ -119,11 +126,17 @@ it("returns the run and its events from the API", async () => {
     1,
     expect.any(Request),
     "/api/runs/run-1",
+    expect.objectContaining({
+      responseSchema: expect.any(Object),
+    }),
   );
   expect(cascadeDashboardApiRequest).toHaveBeenNthCalledWith(
     2,
     expect.any(Request),
     "/api/runs/run-1/events",
+    expect.objectContaining({
+      responseSchema: expect.any(Object),
+    }),
   );
 
   expect(result.run).toMatchObject({
@@ -173,6 +186,9 @@ it("returns a not-found state when the API cannot find the run", async () => {
   expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
     expect.any(Request),
     "/api/runs/missing-run",
+    expect.objectContaining({
+      responseSchema: expect.any(Object),
+    }),
   );
 });
 

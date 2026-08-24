@@ -5,13 +5,18 @@ import {
   ListDeploymentsResponseSchema,
   RollbackDeploymentResponseSchema,
 } from "./deployments.js";
-import { ListTaskRunsResponseSchema, TriggerTaskRunResponseSchema } from "./task-runs.js";
+import {
+  ListTaskRunsResponseSchema,
+  TaskRunDetailResponseSchema,
+  TaskRunEventsResponseSchema,
+  TriggerTaskRunResponseSchema,
+} from "./task-runs.js";
 import { ListTasksResponseSchema } from "./tasks.js";
 import { ListTaskSchedulesResponseSchema } from "./schedules.js";
 import { ListApiKeysResponseSchema } from "./api-keys.js";
 
 export type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
-export type ApiRouteKind = "list" | "detail" | "mutation" | "stream";
+export type ApiRouteKind = "list" | "cursor-list" | "detail" | "mutation" | "stream";
 export type ApiRetrySafety = "safe" | "idempotency-key" | "unsafe";
 export type ApiResponseStatus = 200 | 202 | 400 | 401 | 403 | 404 | 409 | 500;
 
@@ -74,6 +79,30 @@ export const apiContracts = {
       400: ApiErrorResponseSchema,
     },
     errorCodes: ["INVALID_LIST_QUERY"],
+  },
+  getTaskRun: {
+    method: "GET",
+    path: "/api/runs/:runId",
+    kind: "detail",
+    retrySafety: "safe",
+    responses: {
+      200: TaskRunDetailResponseSchema,
+      400: ApiErrorResponseSchema,
+      404: ApiErrorResponseSchema,
+    },
+    errorCodes: ["INVALID_RUN_ID", "RUN_NOT_FOUND"],
+  },
+  listTaskRunEvents: {
+    method: "GET",
+    path: "/api/runs/:runId/events",
+    kind: "cursor-list",
+    retrySafety: "safe",
+    responses: {
+      200: TaskRunEventsResponseSchema,
+      400: ApiErrorResponseSchema,
+      404: ApiErrorResponseSchema,
+    },
+    errorCodes: ["INVALID_RUN_ID", "INVALID_EVENT_CURSOR", "RUN_NOT_FOUND"],
   },
   listDeployments: {
     method: "GET",

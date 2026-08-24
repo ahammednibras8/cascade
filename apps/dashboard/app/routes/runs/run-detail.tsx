@@ -1,13 +1,11 @@
 import type { Route } from "./+types/run-detail";
 import { isRunNotFoundError } from "~/features/runs/errors";
 import { RunDetailView, RunNotFound } from "~/features/runs/run-detail-view";
-import type { TaskRunDetail, TaskRunEvent } from "~/features/runs/types";
+import { TaskRunDetailResponseSchema, TaskRunEventsResponseSchema } from "@cascade/api-contracts";
 import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
 import { requireDashboardCapability } from "~/lib/auth/dashboard-permissions.server";
 import { getDashboardWorkspaceContext } from "~/lib/workspace/dashboard-workspace.server";
-
-type TaskRunWithoutEvents = Omit<TaskRunDetail, "events">;
 
 export function meta() {
   return [{ title: "Run detail | Cascade" }];
@@ -21,12 +19,21 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const runId = params.runId;
 
   try {
-    const runResponse = await cascadeDashboardApiRequest<{
-      taskRun: TaskRunWithoutEvents;
-    }>(request, `/api/runs/${encodeURIComponent(runId)}`);
-    const eventsResponse = await cascadeDashboardApiRequest<{
-      events: TaskRunEvent[];
-    }>(request, `/api/runs/${encodeURIComponent(runId)}/events`);
+    const runResponse = await cascadeDashboardApiRequest(
+      request,
+      `/api/runs/${encodeURIComponent(runId)}`,
+      {
+        responseSchema: TaskRunDetailResponseSchema,
+      },
+    );
+
+    const eventsResponse = await cascadeDashboardApiRequest(
+      request,
+      `/api/runs/${encodeURIComponent(runId)}/events`,
+      {
+        responseSchema: TaskRunEventsResponseSchema,
+      },
+    );
 
     return {
       run: {
