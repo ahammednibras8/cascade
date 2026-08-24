@@ -35,7 +35,7 @@ beforeEach(() => {
   requireDashboardCapability.mockResolvedValue({});
 });
 
-it("loads a single schedule", async () => {
+it("loads a single schedule using the shared API response schema", async () => {
   cascadeDashboardApiRequest.mockResolvedValue({
     schedule: {
       id: SCHEDULE_ID,
@@ -58,6 +58,9 @@ it("loads a single schedule", async () => {
   expect(cascadeDashboardApiRequest).toHaveBeenCalledWith(
     expect.any(Request),
     `/api/schedules/${SCHEDULE_ID}`,
+    expect.objectContaining({
+      responseSchema: expect.any(Object),
+    }),
   );
 });
 

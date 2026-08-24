@@ -5,7 +5,6 @@ import {
   ListTaskSchedulesResponseSchema,
   type ListTaskSchedulesResponse,
 } from "@cascade/api-contracts";
-import type { Schedule } from "~/features/schedules/types";
 import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
 import { requireDashboardCapability } from "~/lib/auth/dashboard-permissions.server";
@@ -29,7 +28,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   );
 
   return {
-    schedules: response.schedules as Schedule[],
+    schedules: response.schedules,
     pagination: response.pagination,
     search: url.search,
     role: workspace.activeOrganization?.role ?? null,

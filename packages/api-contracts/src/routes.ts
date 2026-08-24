@@ -12,7 +12,7 @@ import {
   TriggerTaskRunResponseSchema,
 } from "./task-runs.js";
 import { ListTasksResponseSchema, TaskDetailResponseSchema } from "./tasks.js";
-import { ListTaskSchedulesResponseSchema } from "./schedules.js";
+import { ListTaskSchedulesResponseSchema, TaskScheduleDetailResponseSchema } from "./schedules.js";
 import { ListApiKeysResponseSchema } from "./api-keys.js";
 
 export type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
@@ -67,6 +67,18 @@ export const apiContracts = {
       400: ApiErrorResponseSchema,
     },
     errorCodes: ["INVALID_LIST_QUERY"],
+  },
+  getTaskSchedule: {
+    method: "GET",
+    path: "/api/schedules/:scheduleId",
+    kind: "detail",
+    retrySafety: "safe",
+    responses: {
+      200: TaskScheduleDetailResponseSchema,
+      400: ApiErrorResponseSchema,
+      404: ApiErrorResponseSchema,
+    },
+    errorCodes: ["INVALID_SCHEDULE_ID", "SCHEDULE_NOT_FOUND"],
   },
   listApiKeys: {
     method: "GET",

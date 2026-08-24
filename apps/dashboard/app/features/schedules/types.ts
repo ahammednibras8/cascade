@@ -15,7 +15,7 @@ export type Schedule = {
   nextRunAt: string;
   lastRunAt: string | null;
   enabled: boolean;
-  hasPayload: boolean;
+  hasPayload?: boolean;
   revision: number;
   createdAt: string;
   updatedAt: string;

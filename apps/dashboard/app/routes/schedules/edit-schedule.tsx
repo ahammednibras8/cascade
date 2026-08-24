@@ -1,7 +1,7 @@
 import type { Route } from "./+types/edit-schedule";
 import { handleUpdateSchedule } from "~/features/schedules/schedule-actions.server";
 import { EditSchedulePage } from "~/features/schedules/schedule-form";
-import type { Schedule } from "~/features/schedules/types";
+import { TaskScheduleDetailResponseSchema } from "@cascade/api-contracts";
 import { cascadeDashboardApiRequest } from "~/lib/api/cascade-api.server";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
 import { requireDashboardCapability } from "~/lib/auth/dashboard-permissions.server";
@@ -13,9 +13,13 @@ export function meta() {
 export async function loader({ params, request }: Route.LoaderArgs) {
   await requireDashboardUser(request);
 
-  const response = await cascadeDashboardApiRequest<{
-    schedule: Schedule;
-  }>(request, `/api/schedules/${encodeURIComponent(params.scheduleId)}`);
+  const response = await cascadeDashboardApiRequest(
+    request,
+    `/api/schedules/${encodeURIComponent(params.scheduleId)}`,
+    {
+      responseSchema: TaskScheduleDetailResponseSchema,
+    },
+  );
 
   return {
     schedule: response.schedule,
