@@ -365,6 +365,9 @@ jobs:
             echo "API_KEY_PEPPER=$API_KEY_PEPPER"
           } > .env
 
+      - name: Apply database migrations
+        run: pnpm run db:deploy
+
       - name: Run E2E
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
