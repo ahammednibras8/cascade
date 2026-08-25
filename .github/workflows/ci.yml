@@ -16,14 +16,297 @@ concurrency:
 
 env:
   CI: true
+  NODE_OPTIONS: --conditions=development
   DATABASE_URL: postgresql://cascade:cascade@localhost:5432/cascade
   QUEUE_REDIS_URL: redis://localhost:6379
   API_KEY_PEPPER: ci-api-key-pepper
   CASCADE_API_URL: http://localhost:3001
 
 jobs:
-  quality:
-    name: Quality
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      pull-requests: read
+
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+      api: ${{ steps.filter.outputs.api }}
+      dashboard: ${{ steps.filter.outputs.dashboard }}
+      worker: ${{ steps.filter.outputs.worker }}
+      core: ${{ steps.filter.outputs.core }}
+      database: ${{ steps.filter.outputs.database }}
+      database_schema: ${{ steps.filter.outputs.database_schema }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+      infra: ${{ steps.filter.outputs.infra }}
+      github_actions: ${{ steps.filter.outputs.github_actions }}
+      root_config: ${{ steps.filter.outputs.root_config }}
+      lockfile: ${{ steps.filter.outputs.lockfile }}
+      shared: ${{ steps.filter.outputs.shared }}
+      full: ${{ github.event_name != 'pull_request' || steps.filter.outputs.database_schema == 'true' || steps.filter.outputs.github_actions == 'true' || steps.filter.outputs.root_config == 'true' || steps.filter.outputs.lockfile == 'true' || steps.filter.outputs.shared == 'true' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed files
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: .github/filters.yaml
+
+  database-check:
+    name: Database checks
+    needs: changes
+    if: >-
+      needs.changes.outputs.full == 'true' ||
+      needs.changes.outputs.database == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: cascade
+          POSTGRES_PASSWORD: cascade
+          POSTGRES_DB: cascade
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cascade -d cascade"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate database schema
+        run: pnpm run db:validate
+
+      - name: Verify generated Prisma client
+        run: pnpm run db:generate:check
+
+      - name: Apply database migrations
+        run: pnpm run db:deploy
+
+      - name: Run database tests
+        run: pnpm --filter @cascade/database test
+
+  api-test:
+    name: API tests
+    needs: changes
+    if: >-
+      needs.changes.outputs.full == 'true' ||
+      needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run API tests
+        run: pnpm --filter @cascade/api test
+
+  dashboard-test:
+    name: Dashboard tests
+    needs: changes
+    if: >-
+      needs.changes.outputs.full == 'true' ||
+      needs.changes.outputs.dashboard == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run dashboard tests
+        run: pnpm --filter @cascade/dashboard test
+
+  worker-test:
+    name: Worker tests
+    needs: changes
+    if: >-
+      needs.changes.outputs.full == 'true' ||
+      needs.changes.outputs.worker == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run worker tests
+        run: pnpm --filter @cascade/worker --filter @cascade/deployment-runner test
+
+  core-test:
+    name: Core tests
+    needs: changes
+    if: >-
+      needs.changes.outputs.full == 'true' ||
+      needs.changes.outputs.core == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run core tests
+        run: pnpm --filter @cascade/core test
+
+  shared-package-test:
+    name: Shared package tests
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run shared package tests
+        run: pnpm --filter @cascade/sdk --filter @cascade/storage test
+
+  helm-check:
+    name: Helm chart
+    needs: changes
+    if: >-
+      needs.changes.outputs.full == 'true' ||
+      needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Render Helm chart
+        run: pnpm run hosting:template
+
+  e2e:
+    name: End-to-end tests
+    needs: changes
+    if: >-
+      needs.changes.outputs.full == 'true' ||
+      needs.changes.outputs.api == 'true' ||
+      needs.changes.outputs.dashboard == 'true' ||
+      needs.changes.outputs.worker == 'true' ||
+      needs.changes.outputs.core == 'true' ||
+      needs.changes.outputs.database == 'true' ||
+      needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
@@ -71,33 +354,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check formatting
-        run: pnpm run fmt:check
-
-      - name: Lint
-        run: pnpm run lint:ci
-
-      - name: Typecheck
-        run: pnpm run check-types
-
-      - name: Check unused code and dependencies
-        run: pnpm run knip:prod
-
-      - name: Validate database schema
-        run: pnpm run db:validate
-
-      - name: Verify generated Prisma client
-        run: pnpm run db:generate:check
-
-      - name: Apply database migrations
-        run: pnpm run db:deploy
-
-      - name: Unit tests
-        run: pnpm run test:unit
-
-      - name: Render Helm chart
-        run: pnpm run hosting:template
-
       - name: Install Playwright browser
         run: pnpm --filter @cascade/e2e exec playwright install chromium --with-deps
 
@@ -108,6 +364,9 @@ jobs:
             echo "QUEUE_REDIS_URL=$QUEUE_REDIS_URL"
             echo "API_KEY_PEPPER=$API_KEY_PEPPER"
           } > .env
+
+      - name: Apply database migrations
+        run: pnpm run db:deploy
 
       - name: Run E2E
         env:
@@ -121,3 +380,105 @@ jobs:
           name: playwright-report
           path: apps/e2e/playwright-report/
           if-no-files-found: ignore
+
+  quality:
+    name: Quality
+    needs:
+      - changes
+      - format-lint
+      - typecheck
+      - database-check
+      - api-test
+      - dashboard-test
+      - worker-test
+      - core-test
+      - shared-package-test
+      - helm-check
+      - e2e
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Report prerequisite results
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: echo "$NEEDS_JSON"
+
+      - name: Fail when a prerequisite failed or was cancelled
+        if: >-
+          contains(needs.*.result, 'failure') ||
+          contains(needs.*.result, 'cancelled')
+        run: exit 1
+
+  format-lint:
+    name: Format and lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm run fmt:check
+
+      - name: Lint
+        run: pnpm run lint:ci
+
+      - name: Generate dashboard route types
+        run: pnpm --filter @cascade/dashboard exec react-router typegen
+
+      - name: Check unused code and dependencies
+        run: pnpm run knip:prod
+
+  typecheck:
+    name: Typecheck
+    needs: changes
+    if: >-
+      needs.changes.outputs.full == 'true' ||
+      needs.changes.outputs.api == 'true' ||
+      needs.changes.outputs.dashboard == 'true' ||
+      needs.changes.outputs.worker == 'true' ||
+      needs.changes.outputs.core == 'true' ||
+      needs.changes.outputs.database == 'true' ||
+      needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm run check-types
