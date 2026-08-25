@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -26,6 +27,9 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const isPublicLanding = location.pathname === "/";
+
   return (
     <html lang="en">
       <head>
@@ -38,7 +42,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Theme appearance="light" accentColor="bronze" grayColor="sand" radius="small">
           {children}
         </Theme>
-        <ScrollRestoration />
+        {isPublicLanding ? null : <ScrollRestoration />}
         <Scripts />
       </body>
     </html>
