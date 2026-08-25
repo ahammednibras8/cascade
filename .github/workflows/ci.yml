@@ -22,6 +22,43 @@ env:
   CASCADE_API_URL: http://localhost:3001
 
 jobs:
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      pull-requests: read
+
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+      api: ${{ steps.filter.outputs.api }}
+      dashboard: ${{ steps.filter.outputs.dashboard }}
+      worker: ${{ steps.filter.outputs.worker }}
+      core: ${{ steps.filter.outputs.core }}
+      database: ${{ steps.filter.outputs.database }}
+      database_schema: ${{ steps.filter.outputs.database_schema }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+      infra: ${{ steps.filter.outputs.infra }}
+      github_actions: ${{ steps.filter.outputs.github_actions }}
+      root_config: ${{ steps.filter.outputs.root_config }}
+      lockfile: ${{ steps.filter.outputs.lockfile }}
+      shared: ${{ steps.filter.outputs.shared }}
+      full: ${{ github.event_name != 'pull_request' || steps.filter.outputs.database_schema == 'true' || steps.filter.outputs.github_actions == 'true' || steps.filter.outputs.root_config == 'true' || steps.filter.outputs.lockfile == 'true' || steps.filter.outputs.shared == 'true' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed files
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: .github/filters.yaml
+
   quality:
     name: Quality
     runs-on: ubuntu-24.04

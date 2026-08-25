@@ -1,0 +1,54 @@
+docs:
+  - "docs/**"
+  - "README.md"
+
+api:
+  - "apps/api/**"
+
+dashboard:
+  - "apps/dashboard/**"
+
+worker:
+  - "packages/worker/**"
+  - "apps/deployment-runner/**"
+
+core:
+  - "packages/core/**"
+
+database:
+  - "packages/database/**"
+
+database_schema:
+  - "packages/database/prisma/**"
+
+e2e:
+  - "apps/e2e/**"
+
+infra:
+  - "hosting/**"
+  - "docker/**"
+  - "**/Dockerfile"
+  - ".dockerignore"
+
+github_actions:
+  - ".github/**"
+
+root_config:
+  - ".nvmrc"
+  - "package.json"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - "tsconfig*.json"
+  - "knip.json"
+  - "lefthook.yml"
+  - "scripts/**"
+
+lockfile:
+  - "pnpm-lock.yaml"
+
+shared:
+  - "packages/api-contracts/**"
+  - "packages/clickhouse/**"
+  - "packages/sdk/**"
+  - "packages/storage/**"
+  - "packages/telemetry/**"
