@@ -407,11 +407,6 @@ export type EnvironmentScalarRelationFilter = {
   isNot?: Prisma.EnvironmentWhereInput
 }
 
-export type EnvironmentNullableScalarRelationFilter = {
-  is?: Prisma.EnvironmentWhereInput | null
-  isNot?: Prisma.EnvironmentWhereInput | null
-}
-
 export type EnvironmentCreateNestedManyWithoutProjectInput = {
   create?: Prisma.XOR<Prisma.EnvironmentCreateWithoutProjectInput, Prisma.EnvironmentUncheckedCreateWithoutProjectInput> | Prisma.EnvironmentCreateWithoutProjectInput[] | Prisma.EnvironmentUncheckedCreateWithoutProjectInput[]
   connectOrCreate?: Prisma.EnvironmentCreateOrConnectWithoutProjectInput | Prisma.EnvironmentCreateOrConnectWithoutProjectInput[]
@@ -492,12 +487,10 @@ export type EnvironmentCreateNestedOneWithoutTaskRunsInput = {
   connect?: Prisma.EnvironmentWhereUniqueInput
 }
 
-export type EnvironmentUpdateOneWithoutTaskRunsNestedInput = {
+export type EnvironmentUpdateOneRequiredWithoutTaskRunsNestedInput = {
   create?: Prisma.XOR<Prisma.EnvironmentCreateWithoutTaskRunsInput, Prisma.EnvironmentUncheckedCreateWithoutTaskRunsInput>
   connectOrCreate?: Prisma.EnvironmentCreateOrConnectWithoutTaskRunsInput
   upsert?: Prisma.EnvironmentUpsertWithoutTaskRunsInput
-  disconnect?: Prisma.EnvironmentWhereInput | boolean
-  delete?: Prisma.EnvironmentWhereInput | boolean
   connect?: Prisma.EnvironmentWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.EnvironmentUpdateToOneWithWhereWithoutTaskRunsInput, Prisma.EnvironmentUpdateWithoutTaskRunsInput>, Prisma.EnvironmentUncheckedUpdateWithoutTaskRunsInput>
 }
@@ -508,12 +501,10 @@ export type EnvironmentCreateNestedOneWithoutTaskSchedulesInput = {
   connect?: Prisma.EnvironmentWhereUniqueInput
 }
 
-export type EnvironmentUpdateOneWithoutTaskSchedulesNestedInput = {
+export type EnvironmentUpdateOneRequiredWithoutTaskSchedulesNestedInput = {
   create?: Prisma.XOR<Prisma.EnvironmentCreateWithoutTaskSchedulesInput, Prisma.EnvironmentUncheckedCreateWithoutTaskSchedulesInput>
   connectOrCreate?: Prisma.EnvironmentCreateOrConnectWithoutTaskSchedulesInput
   upsert?: Prisma.EnvironmentUpsertWithoutTaskSchedulesInput
-  disconnect?: Prisma.EnvironmentWhereInput | boolean
-  delete?: Prisma.EnvironmentWhereInput | boolean
   connect?: Prisma.EnvironmentWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.EnvironmentUpdateToOneWithWhereWithoutTaskSchedulesInput, Prisma.EnvironmentUpdateWithoutTaskSchedulesInput>, Prisma.EnvironmentUncheckedUpdateWithoutTaskSchedulesInput>
 }

@@ -40,6 +40,7 @@ describe("task routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.headers["idempotent-replayed"]).toBe("true");
+      expect(response.body.idempotentReplayed).toBe(true);
       expect(triggerTaskRun).toHaveBeenCalledWith({
         auth: AUTH_CONTEXT,
         taskId: TASK_ID,

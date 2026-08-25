@@ -230,7 +230,7 @@ model Task {
 model TaskRun {
   id                     String        @id @default(uuid()) @db.Uuid
   taskId                 String        @db.Uuid
-  environmentId          String?       @db.Uuid
+  environmentId          String        @db.Uuid
   deploymentId           String?       @db.Uuid
   scheduleId             String?       @db.Uuid
   scheduledFor           DateTime?
@@ -251,7 +251,7 @@ model TaskRun {
   updatedAt              DateTime      @updatedAt
 
   task        Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  environment Environment?  @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environment Environment   @relation(fields: [environmentId], references: [id], onDelete: Cascade)
   deployment  Deployment?   @relation(fields: [deploymentId], references: [id], onDelete: SetNull)
   schedule    TaskSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
 
@@ -331,7 +331,7 @@ model RunEventOutbox {
 model TaskSchedule {
   id              String           @id @default(uuid()) @db.Uuid
   taskId          String           @db.Uuid
-  environmentId   String?          @db.Uuid
+  environmentId   String           @db.Uuid
   name            String
   payload         Json?
   scheduleType    TaskScheduleType @default(INTERVAL)
@@ -347,7 +347,7 @@ model TaskSchedule {
   updatedAt       DateTime         @updatedAt
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  environment Environment? @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environment Environment  @relation(fields: [environmentId], references: [id], onDelete: Cascade)
 
   runs          TaskRun[]
 

@@ -216,6 +216,7 @@ test("dashboard cancels a pending task run", async ({ page }) => {
   const pendingRun = await prisma.taskRun.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       status: "PENDING",
       executionConfig,
     },
@@ -262,6 +263,7 @@ test("dashboard replays a completed task run", async ({ page }) => {
   const sourceRun = await prisma.taskRun.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       status: "COMPLETED",
       executionConfig,
       completedAt: new Date(),

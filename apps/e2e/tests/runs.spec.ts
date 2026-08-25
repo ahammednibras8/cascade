@@ -57,6 +57,7 @@ test("shows task runs in the dashboard table", async ({ page }) => {
     const run = await prisma.taskRun.create({
       data: {
         taskId: task.id,
+        environmentId: environment.id,
         status: "PENDING",
         executionConfig,
         payload: {
@@ -114,6 +115,7 @@ test("dashboard paginates task runs", async ({ page }) => {
       data: runIds.map((id, index) => ({
         id,
         taskId: task.id,
+        environmentId: environment.id,
         status: "COMPLETED",
         executionConfig,
         createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, index)),
@@ -174,6 +176,7 @@ test("updates the runs list when realtime receives an environment event", async 
     const run = await prisma.taskRun.create({
       data: {
         taskId: task.id,
+        environmentId: environment.id,
         status: "PENDING",
         executionConfig,
         payload: {

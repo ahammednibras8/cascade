@@ -112,6 +112,7 @@ test("shows registered tasks in the dashboard table", async ({ page }) => {
   const run = await prisma.taskRun.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       deploymentId: deployment.id,
       status: "COMPLETED",
       executionConfig,
@@ -128,6 +129,7 @@ test("shows registered tasks in the dashboard table", async ({ page }) => {
   await prisma.taskSchedule.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       name: "E2E hourly schedule",
       intervalSeconds: 3600,
       nextRunAt: new Date(Date.now() + 60 * 60 * 1000),
@@ -266,6 +268,8 @@ test("dashboard searches and paginates tasks", async ({ page }) => {
 
   await page.getByLabel("Search tasks").fill(searchTerm);
   await page.getByRole("button", { name: "Filter tasks" }).click();
+
+  await expect(page).toHaveURL(new RegExp(`/tasks\\?search=${searchTerm}$`));
 
   await expect(page.getByText(taskNames[0]!)).toBeVisible();
   await expect(page.getByText(taskNames[50]!)).not.toBeVisible();

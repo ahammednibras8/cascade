@@ -80,6 +80,7 @@ test("shows run payload, output, error, attempts, and logs", async ({ page }) =>
   const run = await prisma.taskRun.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       status: "FAILED",
       executionConfig,
       payload: {
@@ -213,6 +214,7 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
   const run = await prisma.taskRun.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       status: "PENDING",
       executionConfig,
       payload: {

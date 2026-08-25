@@ -93,9 +93,9 @@ async function createProjectGraph(prisma: PrismaClient, suffix: string) {
   };
 }
 
-async function createTaskRunGraph(prisma: PrismaClient, taskId: string) {
+async function createTaskRunGraph(prisma: PrismaClient, taskId: string, environmentId: string) {
   const run = await prisma.taskRun.create({
-    data: { taskId, payload: { message: "hello" } },
+    data: { taskId, environmentId, payload: { message: "hello" } },
   });
 
   const attempt = await prisma.taskAttempt.create({
@@ -196,7 +196,7 @@ describeWithDatabase("Postgres schema contract", () => {
       }),
     );
 
-    const { attempt, event, run } = await createTaskRunGraph(prisma, task.id);
+    const { attempt, event, run } = await createTaskRunGraph(prisma, task.id, environment.id);
     expect(run.status).toBe("PENDING");
     expect(attempt.status).toBe("EXECUTING");
     expect(event.level).toBe("INFO");

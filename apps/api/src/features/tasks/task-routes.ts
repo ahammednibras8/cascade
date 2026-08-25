@@ -258,6 +258,7 @@ function writeTriggerTaskRunResult(response: Response, result: TriggerTaskRunRou
     .set("Idempotent-Replayed", result.idempotentReplayed ? "true" : "false")
     .set("traceparent", result.taskRun.traceparent)
     .json({
+      idempotentReplayed: result.idempotentReplayed,
       taskRun: result.taskRun,
     });
 }

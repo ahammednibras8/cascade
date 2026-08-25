@@ -97,6 +97,7 @@ async function createViewerFixture() {
   const run = await prisma.taskRun.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       status: "PENDING",
       executionConfig,
       payload: {
@@ -108,6 +109,7 @@ async function createViewerFixture() {
   const schedule = await prisma.taskSchedule.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       name: `E2E Viewer Schedule ${suffix}`,
       intervalSeconds: 3600,
       nextRunAt: new Date(Date.now() + 3_600_000),
