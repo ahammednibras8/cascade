@@ -108,18 +108,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check formatting
-        run: pnpm run fmt:check
-
-      - name: Lint
-        run: pnpm run lint:ci
-
-      - name: Typecheck
-        run: pnpm run check-types
-
-      - name: Check unused code and dependencies
-        run: pnpm run knip:prod
-
       - name: Validate database schema
         run: pnpm run db:validate
 
@@ -158,3 +146,36 @@ jobs:
           name: playwright-report
           path: apps/e2e/playwright-report/
           if-no-files-found: ignore
+
+  format-lint:
+    name: Format and lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm run fmt:check
+
+      - name: Lint
+        run: pnpm run lint:ci
+
+      - name: Check unused code and dependencies
+        run: pnpm run knip:prod
