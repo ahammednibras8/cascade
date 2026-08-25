@@ -16,7 +16,7 @@ test.afterAll(async () => {
 
 test("dashboard lists, pauses, and resumes a schedule", async ({ page }) => {
   const suffix = randomUUID().slice(0, 8);
-  const { prisma, task } = await createScheduleTaskFixture({
+  const { prisma, environment, task } = await createScheduleTaskFixture({
     page,
     suffix,
     slugPrefix: "e2e-schedule",
@@ -26,6 +26,7 @@ test("dashboard lists, pauses, and resumes a schedule", async ({ page }) => {
   const schedule = await prisma.taskSchedule.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       name: `E2E interval schedule ${suffix}`,
       scheduleType: "INTERVAL",
       intervalSeconds: 3600,
@@ -131,7 +132,7 @@ test("dashboard lists, pauses, and resumes a schedule", async ({ page }) => {
 
 test("dashboard navigates to the next schedule page", async ({ page }) => {
   const suffix = randomUUID().slice(0, 8);
-  const { prisma, task } = await createScheduleTaskFixture({
+  const { prisma, environment, task } = await createScheduleTaskFixture({
     page,
     suffix,
     slugPrefix: "e2e-schedule-pagination",
@@ -146,6 +147,7 @@ test("dashboard navigates to the next schedule page", async ({ page }) => {
   await prisma.taskSchedule.createMany({
     data: scheduleNames.map((name, index) => ({
       taskId: task.id,
+      environmentId: environment.id,
       name,
       scheduleType: "INTERVAL",
       intervalSeconds: 3600,
@@ -316,7 +318,7 @@ test("dashboard creates and edits a cron schedule", async ({ page }) => {
 
 test("dashboard filters schedules by state and type", async ({ page }) => {
   const suffix = randomUUID().slice(0, 8);
-  const { prisma, task } = await createScheduleTaskFixture({
+  const { prisma, environment, task } = await createScheduleTaskFixture({
     page,
     suffix,
     slugPrefix: "e2e-schedule-filter",
@@ -330,6 +332,7 @@ test("dashboard filters schedules by state and type", async ({ page }) => {
     data: [
       {
         taskId: task.id,
+        environmentId: environment.id,
         name: intervalScheduleName,
         scheduleType: "INTERVAL",
         intervalSeconds: 3600,
@@ -340,6 +343,7 @@ test("dashboard filters schedules by state and type", async ({ page }) => {
       },
       {
         taskId: task.id,
+        environmentId: environment.id,
         name: cronScheduleName,
         scheduleType: "CRON",
         intervalSeconds: null,
