@@ -10,14 +10,12 @@
   "module": "./dist/esm/index.js",
   "exports": {
     ".": {
-      "development": "./src/index.ts",
       "import": {
         "types": "./dist/esm/index.d.ts",
         "default": "./dist/esm/index.js"
       }
     },
     "./dashboard-api-auth": {
-      "development": "./src/dashboard-api-auth.ts",
       "import": {
         "types": "./dist/esm/dashboard-api-auth.d.ts",
         "default": "./dist/esm/dashboard-api-auth.js"

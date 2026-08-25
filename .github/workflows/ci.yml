@@ -295,8 +295,17 @@ jobs:
       - name: Render Helm chart
         run: pnpm run hosting:template
 
-  quality:
-    name: Quality
+  e2e:
+    name: End-to-end tests
+    needs: changes
+    if: >-
+      needs.changes.outputs.full == 'true' ||
+      needs.changes.outputs.api == 'true' ||
+      needs.changes.outputs.dashboard == 'true' ||
+      needs.changes.outputs.worker == 'true' ||
+      needs.changes.outputs.core == 'true' ||
+      needs.changes.outputs.database == 'true' ||
+      needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
@@ -367,6 +376,36 @@ jobs:
           name: playwright-report
           path: apps/e2e/playwright-report/
           if-no-files-found: ignore
+
+  quality:
+    name: Quality
+    needs:
+      - changes
+      - format-lint
+      - typecheck
+      - database-check
+      - api-test
+      - dashboard-test
+      - worker-test
+      - core-test
+      - shared-package-test
+      - helm-check
+      - e2e
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Report prerequisite results
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: echo "$NEEDS_JSON"
+
+      - name: Fail when a prerequisite failed or was cancelled
+        if: >-
+          contains(needs.*.result, 'failure') ||
+          contains(needs.*.result, 'cancelled')
+        run: exit 1
 
   format-lint:
     name: Format and lint
