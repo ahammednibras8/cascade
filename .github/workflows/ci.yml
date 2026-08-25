@@ -16,6 +16,7 @@ concurrency:
 
 env:
   CI: true
+  NODE_OPTIONS: --conditions=development
   DATABASE_URL: postgresql://cascade:cascade@localhost:5432/cascade
   QUEUE_REDIS_URL: redis://localhost:6379
   API_KEY_PEPPER: ci-api-key-pepper
@@ -436,6 +437,9 @@ jobs:
 
       - name: Lint
         run: pnpm run lint:ci
+
+      - name: Generate dashboard route types
+        run: pnpm --filter @cascade/dashboard exec react-router typegen
 
       - name: Check unused code and dependencies
         run: pnpm run knip:prod

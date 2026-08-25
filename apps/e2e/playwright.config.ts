@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { existsSync } from "node:fs";
 import * as process from "node:process";
 import { fileURLToPath } from "node:url";
 
@@ -7,7 +8,9 @@ const explicitApiURL = process.env["CASCADE_API_URL"];
 const explicitReuseExistingServer = process.env["PLAYWRIGHT_REUSE_SERVERS"];
 
 const rootEnvPath = fileURLToPath(new URL("../../.env", import.meta.url));
-process.loadEnvFile(rootEnvPath);
+if (existsSync(rootEnvPath)) {
+  process.loadEnvFile(rootEnvPath);
+}
 
 const apiDir = fileURLToPath(new URL("../api", import.meta.url));
 const dashboardDir = fileURLToPath(new URL("../dashboard", import.meta.url));
