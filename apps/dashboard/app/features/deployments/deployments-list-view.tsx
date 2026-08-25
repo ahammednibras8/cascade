@@ -15,7 +15,7 @@ export function DeploymentsListView({ deployments, pagination, search }: Deploym
   return (
     <main className="mx-auto max-w-7xl p-6">
       <div className="mb-6">
-        <Link to="/" className="text-sm text-blue-700 hover:underline">
+        <Link to="/dashboard" className="text-sm text-blue-700 hover:underline">
           Back to dashboard
         </Link>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">Deployments</h1>

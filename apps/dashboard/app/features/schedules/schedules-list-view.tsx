@@ -21,7 +21,7 @@ export function SchedulesListView({ schedules, pagination, search, role }: Sched
   return (
     <main className="mx-auto max-w-7xl p-6">
       <div className="mb-6">
-        <Link to="/" className="text-sm text-blue-700 hover:underline">
+        <Link to="/dashboard" className="text-sm text-blue-700 hover:underline">
           Back to dashboard
         </Link>
         <div className="mt-3 flex items-center justify-between gap-4">

@@ -11,7 +11,7 @@ function normalizeReturnTo(value: FormDataEntryValue | null) {
     return value;
   }
 
-  return "/";
+  return "/dashboard";
 }
 
 export async function action({ request }: Route.ActionArgs) {

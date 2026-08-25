@@ -16,7 +16,7 @@ function normalizeReturnTo(value: string | null) {
     return value;
   }
 
-  return "/";
+  return "/dashboard";
 }
 
 export async function loader({ request }: Route.LoaderArgs) {

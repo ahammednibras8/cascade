@@ -86,7 +86,7 @@ function normalizeReturnTo(value: string | null | undefined) {
     return value;
   }
 
-  return "/";
+  return "/dashboard";
 }
 
 async function discoverOidcProvider() {
