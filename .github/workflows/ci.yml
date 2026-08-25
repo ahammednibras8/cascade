@@ -111,6 +111,9 @@ jobs:
       - name: Apply database migrations
         run: pnpm run db:deploy
 
+      - name: Run database tests
+        run: pnpm --filter @cascade/database test
+
   api-test:
     name: API tests
     needs: changes
@@ -285,11 +288,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Remaining unit tests
-        run: >-
-          pnpm --filter @cascade/database
-          --filter @cascade/sdk
-          --filter @cascade/storage
-          test
+        run: pnpm --filter @cascade/sdk --filter @cascade/storage test
 
       - name: Render Helm chart
         run: pnpm run hosting:template
