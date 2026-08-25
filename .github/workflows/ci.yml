@@ -59,6 +59,58 @@ jobs:
         with:
           filters: .github/filters.yaml
 
+  database-check:
+    name: Database checks
+    needs: changes
+    if: >-
+      needs.changes.outputs.full == 'true' ||
+      needs.changes.outputs.database == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: cascade
+          POSTGRES_PASSWORD: cascade
+          POSTGRES_DB: cascade
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cascade -d cascade"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate database schema
+        run: pnpm run db:validate
+
+      - name: Verify generated Prisma client
+        run: pnpm run db:generate:check
+
+      - name: Apply database migrations
+        run: pnpm run db:deploy
+
   quality:
     name: Quality
     runs-on: ubuntu-24.04
@@ -107,15 +159,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Validate database schema
-        run: pnpm run db:validate
-
-      - name: Verify generated Prisma client
-        run: pnpm run db:generate:check
-
-      - name: Apply database migrations
-        run: pnpm run db:deploy
 
       - name: Unit tests
         run: pnpm run test:unit
