@@ -29,8 +29,9 @@ Optional:
 | `DATABASE_URL`              | Postgres connection string used by API and workers.                                             |
 | `QUEUE_REDIS_URL`           | Redis connection string used by API and workers.                                                |
 | `CASCADE_API_URL`           | URL the dashboard uses to call the API.                                                         |
-| `CASCADE_DASHBOARD_API_KEY` | API key used by the dashboard.                                                                  |
 | `API_KEY_PEPPER`            | Secret pepper used when hashing API keys. Keep stable; rotating it invalidates existing tokens. |
+| `DASHBOARD_SESSION_SECRET`  | Secret used to sign dashboard session and workspace cookies.                                    |
+| `DASHBOARD_API_AUTH_SECRET` | Shared dashboard/API secret used to sign short-lived human authorization assertions.            |
 
 ## API
 
@@ -111,3 +112,19 @@ Cascade stores JSON inline until it exceeds `LARGE_PAYLOAD_THRESHOLD_BYTES`. Lar
 | `/healthz` | Same readiness check as `/readyz`.      |
 
 Use readiness endpoints for load balancers and orchestrator readiness probes.
+
+## Dashboard authentication
+
+The dashboard authenticates people, stores their selected workspace in signed cookies, and calls the API with a short-lived signed dashboard authorization assertion. The API validates that assertion and scopes requests to the selected organization, project, and environment.
+
+| Variable                    | Purpose                                                                  |
+| --------------------------- | ------------------------------------------------------------------------ |
+| `DASHBOARD_AUTH_MODE`       | `dev` for local bypass; use `oidc` in shared or production installs.     |
+| `DASHBOARD_SESSION_SECRET`  | Signs dashboard session, organization, project, and environment cookies. |
+| `DASHBOARD_API_AUTH_SECRET` | Shared secret used by dashboard and API for signed human API requests.   |
+| `OIDC_ISSUER_URL`           | OpenID Connect issuer URL. Required when `DASHBOARD_AUTH_MODE=oidc`.     |
+| `OIDC_CLIENT_ID`            | OpenID Connect client ID. Required when `DASHBOARD_AUTH_MODE=oidc`.      |
+| `OIDC_CLIENT_SECRET`        | OpenID Connect client secret. Required when `DASHBOARD_AUTH_MODE=oidc`.  |
+| `OIDC_REDIRECT_URI`         | Dashboard OIDC callback URL. Required when `DASHBOARD_AUTH_MODE=oidc`.   |
+
+For local development, set `DASHBOARD_AUTH_MODE=dev` and use stable local secrets with at least 32 characters. For production, generate unique high-entropy values for both dashboard secrets and keep them identical across all dashboard and API replicas.

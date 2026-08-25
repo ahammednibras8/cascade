@@ -13,7 +13,7 @@ let sdk: NodeSDK | undefined;
 let started = false;
 
 function getOtlpUrl(signal: "traces" | "metrics") {
-  const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
+  const endpoint = process.env["OTEL_EXPORTER_OTLP_ENDPOINT"];
 
   if (!endpoint) {
     throw new Error("OTEL_EXPORTER_OTLP_ENDPOINT is required when OTEL_ENABLED=true");
@@ -27,7 +27,7 @@ function getOtlpUrl(signal: "traces" | "metrics") {
 type TelemetryExporterMode = "console" | "otlp";
 
 function getTelemetryExporterMode(): TelemetryExporterMode {
-  const mode = process.env.OTEL_EXPORTER_MODE ?? "otlp";
+  const mode = process.env["OTEL_EXPORTER_MODE"] ?? "otlp";
 
   if (mode === "console" || mode === "otlp") {
     return mode;
@@ -37,7 +37,7 @@ function getTelemetryExporterMode(): TelemetryExporterMode {
 }
 
 export function startTelemetry() {
-  if (started || process.env.OTEL_ENABLED !== "true") {
+  if (started || process.env["OTEL_ENABLED"] !== "true") {
     return;
   }
 
@@ -47,9 +47,9 @@ export function startTelemetry() {
 
   sdk = new NodeSDK({
     resource: resourceFromAttributes({
-      "service.name": process.env.OTEL_SERVICE_NAME ?? "cascade-unknown",
-      "service.version": process.env.CASCADE_VERSION ?? "development",
-      "deployment.environment.name": process.env.OTEL_DEPLOYMENT_ENVIRONMENT ?? "development",
+      "service.name": process.env["OTEL_SERVICE_NAME"] ?? "cascade-unknown",
+      "service.version": process.env["CASCADE_VERSION"] ?? "development",
+      "deployment.environment.name": process.env["OTEL_DEPLOYMENT_ENVIRONMENT"] ?? "development",
     }),
     traceExporter:
       exporterMode === "console"
@@ -64,7 +64,7 @@ export function startTelemetry() {
           : new OTLPMetricExporter({
               url: getOtlpUrl("metrics"),
             }),
-      exportIntervalMillis: Number(process.env.OTEL_METRIC_EXPORT_INTERVAL_MS ?? 1_000),
+      exportIntervalMillis: Number(process.env["OTEL_METRIC_EXPORT_INTERVAL_MS"] ?? 1_000),
     }),
     instrumentations: [
       new HttpInstrumentation({

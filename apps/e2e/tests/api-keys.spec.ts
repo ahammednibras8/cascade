@@ -1,11 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import {
-  getDashboardTestEnvironment,
-  restoreDashboardApiKey,
-} from "./support/dashboard-environment.js";
+import { getDashboardTestEnvironment } from "./support/dashboard-environment.js";
+import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
-process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
+process.env["DATABASE_URL"] ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
 const createdApiKeyNames: string[] = [];
 
@@ -27,8 +25,6 @@ test.afterEach(async () => {
       },
     });
   }
-
-  await restoreDashboardApiKey();
 });
 
 test.afterAll(async () => {
@@ -39,6 +35,8 @@ test.afterAll(async () => {
 test("dashboard creates a scoped API key that can call the API", async ({ page, request }) => {
   const prisma = await getPrisma();
   const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
 
   const name = `E2E API key ${randomUUID().slice(0, 8)}`;
   createdApiKeyNames.push(name);
@@ -61,7 +59,7 @@ test("dashboard creates a scoped API key that can call the API", async ({ page, 
 
   expect(token).toMatch(/^csc_/);
 
-  const apiUrl = process.env.CASCADE_API_URL ?? "http://localhost:3001";
+  const apiUrl = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
   const response = await request.get(`${apiUrl}/api/api-keys`, {
     headers: {
@@ -96,7 +94,9 @@ test("dashboard creates a scoped API key that can call the API", async ({ page, 
 });
 
 test("dashboard rotation immediately invalidates the old API key", async ({ page, request }) => {
-  await getDashboardTestEnvironment();
+  const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
 
   const name = `E2E rotated API key ${randomUUID().slice(0, 8)}`;
   createdApiKeyNames.push(name);
@@ -132,7 +132,7 @@ test("dashboard rotation immediately invalidates the old API key", async ({ page
   expect(newToken).toMatch(/^csc_/);
   expect(newToken).not.toBe(oldToken);
 
-  const apiUrl = process.env.CASCADE_API_URL ?? "http://localhost:3001";
+  const apiUrl = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
   const oldKeyResponse = await request.get(`${apiUrl}/api/api-keys`, {
     headers: {
@@ -152,7 +152,9 @@ test("dashboard rotation immediately invalidates the old API key", async ({ page
 });
 
 test("dashboard revocation immediately invalidates an API key", async ({ page, request }) => {
-  await getDashboardTestEnvironment();
+  const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
 
   const name = `E2E revoked API key ${randomUUID().slice(0, 8)}`;
   createdApiKeyNames.push(name);
@@ -183,7 +185,7 @@ test("dashboard revocation immediately invalidates an API key", async ({ page, r
   await expect(row).not.toHaveText("Rotate");
   await expect(row).not.toHaveText("Revoke");
 
-  const apiUrl = process.env.CASCADE_API_URL ?? "http://localhost:3001";
+  const apiUrl = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
   const response = await request.get(`${apiUrl}/api/api-keys`, {
     headers: {
@@ -195,7 +197,9 @@ test("dashboard revocation immediately invalidates an API key", async ({ page, r
 });
 
 test("a key can use only its selected permission", async ({ page, request }) => {
-  await getDashboardTestEnvironment();
+  const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
 
   const name = `E2E runs-read key ${randomUUID().slice(0, 8)}`;
   createdApiKeyNames.push(name);
@@ -219,7 +223,7 @@ test("a key can use only its selected permission", async ({ page, request }) => 
   await expect(row).toBeVisible();
   await expect(row).toContainText("RUNS_READ");
 
-  const apiUrl = process.env.CASCADE_API_URL ?? "http://localhost:3001";
+  const apiUrl = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
   const runsResponse = await request.get(`${apiUrl}/api/runs`, {
     headers: {

@@ -3,15 +3,21 @@ import { sweepStuckTaskRuns } from "../sweeper/stuck-runs.js";
 const STUCK_RUN_SWEEP_INTERVAL_MS = 10_000;
 
 export function startStuckRunSweeper() {
-  const interval = setInterval(() => {
-    void sweepStuckTaskRuns().catch((error: unknown) => {
+  let currentSweep: Promise<void> | undefined;
+
+  function runStuckRunSweep() {
+    currentSweep = (async () => {
+      await sweepStuckTaskRuns();
+    })().catch((error: unknown) => {
       process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`);
     });
-  }, STUCK_RUN_SWEEP_INTERVAL_MS);
+  }
 
+  const interval = setInterval(runStuckRunSweep, STUCK_RUN_SWEEP_INTERVAL_MS);
   interval.unref();
 
-  return () => {
+  return async () => {
     clearInterval(interval);
+    await currentSweep;
   };
 }

@@ -62,6 +62,10 @@ export function createChildTraceContext(input: {
   };
 }
 
+function isExpectedTraceparentLength(value: string) {
+  return value.length === 55;
+}
+
 function isHex(str: string): boolean {
   for (const char of str) {
     const isDigit = char >= "0" && char <= "9";
@@ -83,12 +87,20 @@ function isAllZeros(str: string): boolean {
   return true;
 }
 
-export function parseTraceparent(value: string | undefined) {
-  if (!value) {
-    return null;
-  }
+function isValidTraceId(value: string | undefined): value is string {
+  return value?.length === 32 && isHex(value) && !isAllZeros(value);
+}
 
-  if (value.length !== 55) {
+function isValidSpanId(value: string | undefined): value is string {
+  return value?.length === 16 && isHex(value) && !isAllZeros(value);
+}
+
+function isValidTraceFlags(value: string | undefined): value is string {
+  return value?.length === 2 && isHex(value);
+}
+
+export function parseTraceparent(value: string | undefined) {
+  if (!value || !isExpectedTraceparentLength(value)) {
     return null;
   }
 
@@ -100,15 +112,12 @@ export function parseTraceparent(value: string | undefined) {
 
   const [version, traceId, spanId, flags] = parts;
 
-  if (version !== "00" || traceId?.length !== 32 || spanId?.length !== 16 || flags?.length !== 2) {
-    return null;
-  }
-
-  if (!isHex(traceId) || !isHex(spanId) || !isHex(flags)) {
-    return null;
-  }
-
-  if (isAllZeros(traceId) || isAllZeros(spanId)) {
+  if (
+    version !== "00" ||
+    !isValidTraceId(traceId) ||
+    !isValidSpanId(spanId) ||
+    !isValidTraceFlags(flags)
+  ) {
     return null;
   }
 

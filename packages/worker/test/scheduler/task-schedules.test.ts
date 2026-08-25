@@ -199,6 +199,7 @@ describe("sweepDueTaskSchedules", () => {
     expect(mocks.txTaskRunCreate).toHaveBeenCalledWith({
       data: {
         taskId: TASK_ID,
+        environmentId: ENVIRONMENT_ID,
         deploymentId: DEPLOYMENT_ID,
         scheduleId: SCHEDULE_ID,
         scheduledFor: NEXT_RUN_AT,

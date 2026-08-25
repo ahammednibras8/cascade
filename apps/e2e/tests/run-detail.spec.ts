@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import { ensureDashboardApiKey, restoreDashboardApiKey } from "./support/dashboard-environment.js";
+import { getDashboardTestOrganization } from "./support/dashboard-environment.js";
 import { createExecutionConfig } from "./support/execution-config.js";
+import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
-process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
+process.env["DATABASE_URL"] ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
 const createdProjectIds: string[] = [];
 
@@ -27,8 +28,6 @@ test.afterEach(async () => {
       },
     },
   });
-
-  await restoreDashboardApiKey();
 });
 
 test.afterAll(async () => {
@@ -39,9 +38,11 @@ test.afterAll(async () => {
 test("shows run payload, output, error, attempts, and logs", async ({ page }) => {
   const prisma = await getPrisma();
   const suffix = randomUUID().slice(0, 8);
+  const organization = await getDashboardTestOrganization();
 
   const project = await prisma.project.create({
     data: {
+      organizationId: organization.id,
       slug: `e2e-detail-project-${suffix}`,
       name: "E2E Detail Project",
       environments: {
@@ -65,8 +66,6 @@ test("shows run payload, output, error, attempts, and logs", async ({ page }) =>
     throw new Error("Expected seeded environment");
   }
 
-  await ensureDashboardApiKey(environment.id);
-
   const executionConfig = createExecutionConfig(`e2e-detail-task-${suffix}`);
 
   const task = await prisma.task.create({
@@ -81,6 +80,7 @@ test("shows run payload, output, error, attempts, and logs", async ({ page }) =>
   const run = await prisma.taskRun.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       status: "FAILED",
       executionConfig,
       payload: {
@@ -130,6 +130,8 @@ test("shows run payload, output, error, attempts, and logs", async ({ page }) =>
     },
   });
 
+  await selectDashboardWorkspace(page, environment.id);
+
   await page.goto("/runs", {
     waitUntil: "domcontentloaded",
   });
@@ -170,9 +172,11 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
   const prisma = await getPrisma();
   const { createTaskRunEvent } = await import("@cascade/database");
   const suffix = randomUUID().slice(0, 8);
+  const organization = await getDashboardTestOrganization();
 
   const project = await prisma.project.create({
     data: {
+      organizationId: organization.id,
       slug: `e2e-sse-project-${suffix}`,
       name: "E2E SSE Project",
       environments: {
@@ -196,8 +200,6 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
     throw new Error("Expected seeded environment");
   }
 
-  await ensureDashboardApiKey(environment.id);
-
   const executionConfig = createExecutionConfig(`e2e-sse-task-${suffix}`);
 
   const task = await prisma.task.create({
@@ -212,6 +214,7 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
   const run = await prisma.taskRun.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       status: "PENDING",
       executionConfig,
       payload: {
@@ -219,6 +222,8 @@ test("updates run detail when SSE detects run changes", async ({ page }) => {
       },
     },
   });
+
+  await selectDashboardWorkspace(page, environment.id);
 
   await page.goto(`/runs/${run.id}`, {
     waitUntil: "domcontentloaded",

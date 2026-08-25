@@ -58,7 +58,7 @@ function waitForDelay(delayMs: number) {
 }
 
 function getWorkerConcurrency(input: StartDeploymentWorkerInput) {
-  const workerConcurrency = input.environment.WORKER_CONCURRENCY;
+  const workerConcurrency = input.environment["WORKER_CONCURRENCY"];
 
   if (!workerConcurrency) {
     throw new Error("WORKER_CONCURRENCY is required for deployment workers");

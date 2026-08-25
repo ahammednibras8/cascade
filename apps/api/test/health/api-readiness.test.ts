@@ -22,7 +22,7 @@ const { checkApiReadiness } = await import("../../src/health/api-readiness.js");
 describe("checkApiReadiness", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.HEALTHCHECK_DEPENDENCY_TIMEOUT_MS;
+    delete process.env["HEALTHCHECK_DEPENDENCY_TIMEOUT_MS"];
 
     dependencies.queryRaw.mockResolvedValue([{ ok: 1 }]);
     dependencies.ping.mockResolvedValue("PONG");

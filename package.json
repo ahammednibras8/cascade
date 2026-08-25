@@ -6,7 +6,6 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "api:create-key": "infisical run --env=dev --path=/ --path=/apps/api -- pnpm --filter @cascade/api run dev:create-api-key",
-    "dashboard:sync-api-key": "pnpm --filter @cascade/api run dev:sync-dashboard-api-key",
     "api:dev": "pnpm --filter @cascade/api run dev",
     "dashboard:dev": "pnpm --filter @cascade/dashboard run dev",
     "worker:dev": "pnpm --filter @cascade/worker run dev",

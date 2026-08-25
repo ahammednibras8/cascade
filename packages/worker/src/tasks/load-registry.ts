@@ -19,9 +19,9 @@ function getTaskDefinitions(module: TaskModule): readonly TaskDefinition[] {
 }
 
 export async function loadTaskRegistry(): Promise<LoadedTaskRegistry> {
-  const configuredModule = process.env.CASCADE_TASK_MODULE?.trim();
+  const configuredModule = process.env["CASCADE_TASK_MODULE"]?.trim();
 
-  if (!configuredModule && process.env.NODE_ENV === "production") {
+  if (!configuredModule && process.env["NODE_ENV"] === "production") {
     throw new Error("CASCADE_TASK_MODULE is required in production worker containers");
   }
 

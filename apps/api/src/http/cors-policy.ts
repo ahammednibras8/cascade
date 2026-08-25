@@ -26,10 +26,10 @@ function validateOrigin(value: string) {
 }
 
 function getAllowedCorsOrigins() {
-  const rawValue = process.env.API_CORS_ALLOWED_ORIGINS;
+  const rawValue = process.env["API_CORS_ALLOWED_ORIGINS"];
 
   if (!rawValue) {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env["NODE_ENV"] === "production") {
       throw new Error("API_CORS_ALLOWED_ORIGINS is required in production");
     }
 

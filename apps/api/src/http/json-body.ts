@@ -6,7 +6,7 @@ import { ApiError } from "./api-error.js";
 export const DEFAULT_JSON_BODY_LIMIT_BYTES = 5 * 1024 * 1024;
 
 export function getJsonBodyLimitBytes() {
-  const rawValue = process.env.API_JSON_BODY_LIMIT_BYTES;
+  const rawValue = process.env["API_JSON_BODY_LIMIT_BYTES"];
 
   if (!rawValue) {
     return DEFAULT_JSON_BODY_LIMIT_BYTES;

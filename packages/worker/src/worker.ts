@@ -14,6 +14,7 @@ import type { WorkerHealthState } from "./health/state.js";
 import { startRunEventOutboxDispatcher } from "./timers/run-event-outbox-dispatcher.js";
 
 const inFlight = new Set<Promise<void>>();
+type StopWorkerTimer = () => void | Promise<void>;
 
 function trackInFlightTask(task: Promise<void>) {
   inFlight.add(task);
@@ -39,65 +40,103 @@ async function waitForShutdown(shutdownSignal: ShutdownSignal) {
   }
 }
 
+function isControlWorker() {
+  return WORKER_ROLE === "control";
+}
+
+function isQueueWorker() {
+  return WORKER_ROLE === "deployment" || WORKER_ROLE === "local";
+}
+
+function startControlTimers(): StopWorkerTimer[] {
+  if (!isControlWorker()) {
+    return [];
+  }
+
+  return [
+    startStuckRunSweeper(),
+    startPendingRunSweeper(),
+    startTaskScheduleScheduler(),
+    startRunEventOutboxDispatcher(),
+  ];
+}
+
+async function stopWorkerTimers(stoppers: StopWorkerTimer[]) {
+  await Promise.allSettled(stoppers.map((stop) => stop()));
+}
+
+async function popMessageUntilShutdown(shutdownSignal: ShutdownSignal) {
+  try {
+    return await popTaskRunMessage();
+  } catch (error) {
+    if (shutdownSignal.isShuttingDown()) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
+function startTaskProcessing(
+  message: NonNullable<Awaited<ReturnType<typeof popTaskRunMessage>>>,
+  taskRegistry: Awaited<ReturnType<typeof loadTaskRegistry>>,
+) {
+  const task = processTaskRun(message, taskRegistry).catch((error: unknown) => {
+    process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`);
+  });
+
+  trackInFlightTask(task);
+}
+
+async function runQueueWorker(shutdownSignal: ShutdownSignal, healthState?: WorkerHealthState) {
+  const taskRegistry = await loadTaskRegistry();
+
+  healthState?.markReady();
+
+  while (!shutdownSignal.isShuttingDown()) {
+    await waitForAvailableWorkerSlot();
+
+    const message = await popMessageUntilShutdown(shutdownSignal);
+
+    if (!message) {
+      continue;
+    }
+
+    startTaskProcessing(message, taskRegistry);
+  }
+
+  await Promise.allSettled(inFlight);
+}
+
+async function runControlWorker(shutdownSignal: ShutdownSignal, healthState?: WorkerHealthState) {
+  healthState?.markReady();
+  await waitForShutdown(shutdownSignal);
+}
+
+async function shutdownWorker(stoppers: StopWorkerTimer[], healthState?: WorkerHealthState) {
+  healthState?.markShuttingDown();
+
+  await stopWorkerTimers(stoppers);
+
+  disconnectTaskRunQueueRedis();
+  await prisma.$disconnect();
+
+  process.stdout.write("Worker stopped\n");
+}
+
 export async function runWorker(shutdownSignal: ShutdownSignal, healthState?: WorkerHealthState) {
   process.stdout.write(`Starting ${WORKER_ROLE} worker with ${packageName}\n`);
 
-  const isControlWorker = WORKER_ROLE === "control";
-  const isQueueWorker = WORKER_ROLE === "deployment" || WORKER_ROLE === "local";
-
-  const stopStuckRunSweeper = isControlWorker ? startStuckRunSweeper() : () => {};
-  const stopPendingRunSweeper = isControlWorker ? startPendingRunSweeper() : () => {};
-  const stopTaskScheduleScheduler = isControlWorker ? startTaskScheduleScheduler() : () => {};
-  const stopRunEventOutboxDispatcher = isControlWorker ? startRunEventOutboxDispatcher() : () => {};
+  const timerStoppers = startControlTimers();
 
   try {
-    if (!isQueueWorker) {
-      healthState?.markReady();
-      await waitForShutdown(shutdownSignal);
+    if (isQueueWorker()) {
+      await runQueueWorker(shutdownSignal, healthState);
       return;
     }
 
-    const taskRegistry = await loadTaskRegistry();
-
-    healthState?.markReady();
-
-    while (!shutdownSignal.isShuttingDown()) {
-      await waitForAvailableWorkerSlot();
-
-      let message: Awaited<ReturnType<typeof popTaskRunMessage>>;
-
-      try {
-        message = await popTaskRunMessage();
-      } catch (error) {
-        if (shutdownSignal.isShuttingDown()) {
-          break;
-        }
-
-        throw error;
-      }
-
-      if (!message) {
-        continue;
-      }
-
-      const task = processTaskRun(message, taskRegistry).catch((error: unknown) => {
-        process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`);
-      });
-      trackInFlightTask(task);
-    }
-
-    await Promise.allSettled(inFlight);
+    await runControlWorker(shutdownSignal, healthState);
   } finally {
-    healthState?.markShuttingDown();
-
-    stopStuckRunSweeper();
-    stopPendingRunSweeper();
-    stopTaskScheduleScheduler();
-    stopRunEventOutboxDispatcher();
-
-    disconnectTaskRunQueueRedis();
-    await prisma.$disconnect();
-
-    process.stdout.write("Worker stopped\n");
+    await shutdownWorker(timerStoppers, healthState);
   }
 }

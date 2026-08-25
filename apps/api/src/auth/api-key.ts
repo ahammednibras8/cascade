@@ -4,7 +4,12 @@ import { prisma } from "@cascade/database";
 import type { ApiKeyScope } from "@cascade/database";
 
 export type ApiAuthContext = {
-  apiKeyId: string;
+  authType?: "api-key" | "dashboard-user";
+  principalId?: string;
+  apiKeyId?: string;
+  userId?: string;
+  organizationId?: string;
+  role?: "OWNER" | "ADMIN" | "DEVELOPER" | "VIEWER";
   environmentId: string;
   projectId: string;
   scopes: ApiKeyScope[];
@@ -14,7 +19,7 @@ const API_KEY_RANDOM_BYTES = 32;
 const API_KEY_PREFIX_LENGTH = 16;
 
 function getApiKeyPepper() {
-  const pepper = process.env.API_KEY_PEPPER;
+  const pepper = process.env["API_KEY_PEPPER"];
 
   if (!pepper) {
     throw new Error("API_KEY_PEPPER is required");
@@ -98,6 +103,8 @@ async function authenticateApiKey(apiKey: string): Promise<ApiAuthContext | null
   });
 
   return {
+    authType: "api-key",
+    principalId: `api-key:${storedApiKey.id}`,
     apiKeyId: storedApiKey.id,
     environmentId: storedApiKey.environmentId,
     projectId: storedApiKey.environment.projectId,
@@ -105,16 +112,21 @@ async function authenticateApiKey(apiKey: string): Promise<ApiAuthContext | null
   };
 }
 
-export function requireApiKey(): RequestHandler {
+export function requireApiKeyWhenUnauthenticated(): RequestHandler {
   return async (request, response, next) => {
     try {
+      if (request.auth) {
+        next();
+        return;
+      }
+
       const apiKey = getApiKeyFromRequest(request);
 
       if (!apiKey) {
         response.status(401).json({
           error: {
             code: "UNAUTHORIZED",
-            message: "Missing API key",
+            message: "Missing API authentication",
           },
         });
         return;

@@ -17,14 +17,16 @@ vi.mock("../../src/queue/task-runs.js", () => ({
 
 const { apiRateLimit } = await import("../../src/http/rate-limit.js");
 
-const originalMaxRequests = process.env.API_RATE_LIMIT_MAX_REQUESTS;
-const originalWindowMs = process.env.API_RATE_LIMIT_WINDOW_MS;
+const originalMaxRequests = process.env["API_RATE_LIMIT_MAX_REQUESTS"];
+const originalWindowMs = process.env["API_RATE_LIMIT_WINDOW_MS"];
 
 function createApp() {
   const app = express();
 
   app.use((request, _response, next) => {
     request.auth = {
+      authType: "api-key",
+      principalId: "api-key:api-key-1",
       apiKeyId: "api-key-1",
       environmentId: "environment-1",
       projectId: "project-1",
@@ -49,21 +51,21 @@ function createApp() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  process.env.API_RATE_LIMIT_MAX_REQUESTS = "2";
-  process.env.API_RATE_LIMIT_WINDOW_MS = "60000";
+  process.env["API_RATE_LIMIT_MAX_REQUESTS"] = "2";
+  process.env["API_RATE_LIMIT_WINDOW_MS"] = "60000";
 });
 
 afterEach(() => {
   if (originalMaxRequests === undefined) {
-    delete process.env.API_RATE_LIMIT_MAX_REQUESTS;
+    delete process.env["API_RATE_LIMIT_MAX_REQUESTS"];
   } else {
-    process.env.API_RATE_LIMIT_MAX_REQUESTS = originalMaxRequests;
+    process.env["API_RATE_LIMIT_MAX_REQUESTS"] = originalMaxRequests;
   }
 
   if (originalWindowMs === undefined) {
-    delete process.env.API_RATE_LIMIT_WINDOW_MS;
+    delete process.env["API_RATE_LIMIT_WINDOW_MS"];
   } else {
-    process.env.API_RATE_LIMIT_WINDOW_MS = originalWindowMs;
+    process.env["API_RATE_LIMIT_WINDOW_MS"] = originalWindowMs;
   }
 
   vi.restoreAllMocks();
@@ -82,7 +84,7 @@ describe("apiRateLimit", () => {
     expect(redis.eval).toHaveBeenCalledWith(
       expect.stringContaining('redis.call("INCR"'),
       1,
-      expect.stringContaining("cascade:rate-limit:api-key:api-key-1:"),
+      expect.stringContaining("cascade:rate-limit:principal:api-key:api-key-1:"),
       expect.any(String),
     );
   });

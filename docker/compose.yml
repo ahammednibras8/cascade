@@ -11,6 +11,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}
     volumes:
       - cascade_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-15432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cascade} -d ${POSTGRES_DB:-cascade}"]
       interval: 5s
@@ -23,6 +25,8 @@ services:
     restart: unless-stopped
     volumes:
       - cascade_redis_data:/data
+    ports:
+      - "${REDIS_PORT:-16379}:6379"
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in docker/.env or the deployment environment}
     command: ["sh", "-ec", 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
@@ -75,6 +79,7 @@ services:
       API_JSON_BODY_LIMIT_BYTES: ${API_JSON_BODY_LIMIT_BYTES:-5242880}
       API_RATE_LIMIT_MAX_REQUESTS: ${API_RATE_LIMIT_MAX_REQUESTS:-300}
       API_RATE_LIMIT_WINDOW_MS: ${API_RATE_LIMIT_WINDOW_MS:-60000}
+      DASHBOARD_API_AUTH_SECRET: ${DASHBOARD_API_AUTH_SECRET:?Set DASHBOARD_API_AUTH_SECRET in docker/.env or the deployment environment}
       DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
       QUEUE_REDIS_URL: ${QUEUE_REDIS_URL:?Set QUEUE_REDIS_URL in docker/.env or the deployment environment}
       API_KEY_PEPPER: ${API_KEY_PEPPER:?Set API_KEY_PEPPER in docker/.env or the deployment environment}
@@ -121,7 +126,14 @@ services:
       HOST: 0.0.0.0
       PORT: 3000
       CASCADE_API_URL: http://api:3001
-      CASCADE_DASHBOARD_API_KEY: ${CASCADE_DASHBOARD_API_KEY:?Set CASCADE_DASHBOARD_API_KEY in docker/.env or the deployment environment}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
+      DASHBOARD_SESSION_SECRET: ${DASHBOARD_SESSION_SECRET:?Set DASHBOARD_SESSION_SECRET in docker/.env or the deployment environment}
+      DASHBOARD_API_AUTH_SECRET: ${DASHBOARD_API_AUTH_SECRET:?Set DASHBOARD_API_AUTH_SECRET in docker/.env or the deployment environment}
+      DASHBOARD_AUTH_MODE: oidc
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:?Set OIDC_ISSUER_URL in docker/.env or the deployment environment}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:?Set OIDC_CLIENT_ID in docker/.env or the deployment environment}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?Set OIDC_CLIENT_SECRET in docker/.env or the deployment environment}
+      OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI:?Set OIDC_REDIRECT_URI in docker/.env or the deployment environment}
     ports:
       - "${DASHBOARD_PORT:-3000}:3000"
     healthcheck:

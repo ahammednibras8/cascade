@@ -1,18 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { createCascadeClient, defineTask } from "@cascade/sdk";
 import { randomUUID } from "node:crypto";
-import {
-  ensureDashboardApiKey,
-  getDashboardApiKey,
-  restoreDashboardApiKey,
-} from "./support/dashboard-environment.js";
+import { getDashboardTestOrganization } from "./support/dashboard-environment.js";
 import { createExecutionConfig } from "./support/execution-config.js";
+import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
+import { ensureE2eTaskApiKey, getE2eTaskApiKey } from "./support/task-api-key.js";
 
 const databaseURL =
-  process.env.DATABASE_URL ?? "postgresql://cascade:cascade@localhost:15432/cascade";
-const apiURL = process.env.CASCADE_API_URL ?? "http://localhost:3001";
+  process.env["DATABASE_URL"] ?? "postgresql://cascade:cascade@localhost:15432/cascade";
+const apiURL = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
-process.env.DATABASE_URL = databaseURL;
+process.env["DATABASE_URL"] = databaseURL;
 
 const createdProjectIds: string[] = [];
 
@@ -26,9 +24,11 @@ async function getPrisma() {
 async function createHelloTaskWithApiKey() {
   const prisma = await getPrisma();
   const suffix = randomUUID().slice(0, 8);
+  const organization = await getDashboardTestOrganization();
 
   const project = await prisma.project.create({
     data: {
+      organizationId: organization.id,
       slug: `e2e-durable-project-${suffix}`,
       name: "E2E Durable Project",
       environments: {
@@ -52,7 +52,7 @@ async function createHelloTaskWithApiKey() {
     throw new Error("Expected created environment");
   }
 
-  await ensureDashboardApiKey(environment.id);
+  await ensureE2eTaskApiKey(environment.id);
 
   const executionConfig = createExecutionConfig("hello");
 
@@ -72,7 +72,7 @@ async function createHelloTaskWithApiKey() {
     environment,
     task,
     executionConfig,
-    apiKey: getDashboardApiKey(),
+    apiKey: getE2eTaskApiKey(),
   };
 }
 
@@ -91,8 +91,6 @@ test.afterEach(async () => {
       },
     },
   });
-
-  await restoreDashboardApiKey();
 });
 
 test.afterAll(async () => {
@@ -101,7 +99,7 @@ test.afterAll(async () => {
 });
 
 test("triggers, executes, persists, and displays a durable task run", async ({ page }) => {
-  const { prisma, task, apiKey } = await createHelloTaskWithApiKey();
+  const { prisma, task, environment, apiKey } = await createHelloTaskWithApiKey();
 
   const helloTask = defineTask<{ message: string }>({
     id: "hello",
@@ -199,6 +197,8 @@ test("triggers, executes, persists, and displays a durable task run", async ({ p
 
   expect(persistedRun.events.some((event) => event.message === "Hello task started")).toBe(true);
 
+  await selectDashboardWorkspace(page, environment.id);
+
   await page.goto(`/runs/${runId}`);
 
   await expect(page.getByRole("heading", { name: "Run detail" })).toBeVisible();
@@ -211,15 +211,18 @@ test("triggers, executes, persists, and displays a durable task run", async ({ p
 });
 
 test("dashboard cancels a pending task run", async ({ page }) => {
-  const { prisma, task, executionConfig } = await createHelloTaskWithApiKey();
+  const { prisma, task, executionConfig, environment } = await createHelloTaskWithApiKey();
 
   const pendingRun = await prisma.taskRun.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       status: "PENDING",
       executionConfig,
     },
   });
+
+  await selectDashboardWorkspace(page, environment.id);
 
   await page.goto(`/runs/${pendingRun.id}`);
 
@@ -255,16 +258,19 @@ test("dashboard cancels a pending task run", async ({ page }) => {
 });
 
 test("dashboard replays a completed task run", async ({ page }) => {
-  const { prisma, task, executionConfig } = await createHelloTaskWithApiKey();
+  const { prisma, task, executionConfig, environment } = await createHelloTaskWithApiKey();
 
   const sourceRun = await prisma.taskRun.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       status: "COMPLETED",
       executionConfig,
       completedAt: new Date(),
     },
   });
+
+  await selectDashboardWorkspace(page, environment.id);
 
   await page.goto(`/runs/${sourceRun.id}`);
 

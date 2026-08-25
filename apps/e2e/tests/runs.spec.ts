@@ -2,8 +2,9 @@ import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { getDashboardTestEnvironment } from "./support/dashboard-environment.js";
 import { createExecutionConfig } from "./support/execution-config.js";
+import { selectDashboardWorkspace } from "./support/dashboard-workspace.js";
 
-process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
+process.env["DATABASE_URL"] ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
 async function getPrisma() {
   const { prisma } = await import("@cascade/database");
@@ -34,6 +35,9 @@ test.afterAll(async () => {
 test("shows task runs in the dashboard table", async ({ page }) => {
   const prisma = await getPrisma();
   const { environment, project } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
+
   const suffix = randomUUID().slice(0, 8);
   const executionConfig = createExecutionConfig(`e2e-hello-${suffix}`);
   const taskIds: string[] = [];
@@ -53,6 +57,7 @@ test("shows task runs in the dashboard table", async ({ page }) => {
     const run = await prisma.taskRun.create({
       data: {
         taskId: task.id,
+        environmentId: environment.id,
         status: "PENDING",
         executionConfig,
         payload: {
@@ -82,10 +87,70 @@ test("shows task runs in the dashboard table", async ({ page }) => {
   }
 });
 
+test("dashboard paginates task runs", async ({ page }) => {
+  const prisma = await getPrisma();
+  const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
+
+  const suffix = randomUUID().slice(0, 8);
+  const executionConfig = createExecutionConfig(`e2e-run-pagination-${suffix}`);
+  const taskIds: string[] = [];
+
+  const task = await prisma.task.create({
+    data: {
+      environmentId: environment.id,
+      slug: `e2e-run-pagination-${suffix}`,
+      name: "E2E Run Pagination Task",
+      executionConfig,
+    },
+  });
+
+  taskIds.push(task.id);
+
+  const runIds = Array.from({ length: 51 }, () => randomUUID());
+
+  try {
+    await prisma.taskRun.createMany({
+      data: runIds.map((id, index) => ({
+        id,
+        taskId: task.id,
+        environmentId: environment.id,
+        status: "COMPLETED",
+        executionConfig,
+        createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, index)),
+        completedAt: new Date(Date.UTC(2026, 0, 1, 0, 1, index)),
+      })),
+    });
+
+    await page.goto(`/runs?taskId=${task.id}`, {
+      waitUntil: "domcontentloaded",
+    });
+
+    await expect(page.getByRole("heading", { name: "Task runs" })).toBeVisible();
+
+    await expect(page.getByRole("link", { name: runIds[50]! })).toBeVisible();
+    await expect(page.getByRole("link", { name: runIds[0]! })).not.toBeVisible();
+    await expect(page.getByText("Showing 50 runs on this page · 51 total")).toBeVisible();
+
+    await page.getByRole("link", { name: "Next page" }).click();
+
+    await expect(page).toHaveURL(/\/runs\?.*taskId=.*cursor=/);
+    await expect(page.getByRole("link", { name: runIds[0]! })).toBeVisible();
+    await expect(page.getByRole("link", { name: "First page" })).toBeVisible();
+    await expect(page.getByText("End of list")).toBeVisible();
+  } finally {
+    await deleteTasks(taskIds);
+  }
+});
+
 test("updates the runs list when realtime receives an environment event", async ({ page }) => {
   const prisma = await getPrisma();
   const { createTaskRunEvent } = await import("@cascade/database");
   const { environment } = await getDashboardTestEnvironment();
+
+  await selectDashboardWorkspace(page, environment.id);
+
   const suffix = randomUUID().slice(0, 8);
   const executionConfig = createExecutionConfig(`e2e-live-runs-${suffix}`);
   const taskIds: string[] = [];
@@ -111,6 +176,7 @@ test("updates the runs list when realtime receives an environment event", async 
     const run = await prisma.taskRun.create({
       data: {
         taskId: task.id,
+        environmentId: environment.id,
         status: "PENDING",
         executionConfig,
         payload: {

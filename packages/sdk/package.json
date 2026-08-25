@@ -27,6 +27,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
+    "@cascade/api-contracts": "workspace:*",
     "@cascade/core": "workspace:*",
     "@opentelemetry/api": "^1.9.1"
   },

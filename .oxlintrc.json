@@ -29,6 +29,82 @@
       {
         "allow": ["_count", "_avg", "_sum", "_min", "_max"]
       }
-    ]
-  }
+    ],
+    "complexity": [
+      "warn",
+      {
+        "max": 12
+      }
+    ],
+    "max-depth": ["warn", 4],
+    "max-lines": [
+      "warn",
+      {
+        "max": 320,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
+    ],
+    "max-lines-per-function": [
+      "warn",
+      {
+        "max": 90,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
+    ],
+    "max-params": ["warn", 4],
+    "typescript/no-explicit-any": "warn"
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "apps/e2e/tests/**/*.ts"
+      ],
+      "rules": {
+        "max-lines": [
+          "warn",
+          {
+            "max": 360,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ],
+        "max-lines-per-function": [
+          "warn",
+          {
+            "max": 140,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ],
+        "max-params": "off"
+      }
+    },
+    {
+      "files": ["apps/dashboard/app/**/*.tsx"],
+      "rules": {
+        "max-lines": [
+          "warn",
+          {
+            "max": 340,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ],
+        "max-lines-per-function": [
+          "warn",
+          {
+            "max": 130,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ]
+      }
+    }
+  ]
 }

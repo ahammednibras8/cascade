@@ -51,6 +51,11 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  User: 'User',
+  UserIdentity: 'UserIdentity',
+  DashboardSession: 'DashboardSession',
+  Organization: 'Organization',
+  OrganizationMember: 'OrganizationMember',
   Project: 'Project',
   Environment: 'Environment',
   ApiKey: 'ApiKey',
@@ -60,7 +65,8 @@ export const ModelName = {
   TaskEvent: 'TaskEvent',
   RunEventOutbox: 'RunEventOutbox',
   TaskSchedule: 'TaskSchedule',
-  Deployment: 'Deployment'
+  Deployment: 'Deployment',
+  DeploymentTask: 'DeploymentTask'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -79,8 +85,66 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
+export const UserScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  displayName: 'displayName',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const UserIdentityScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  provider: 'provider',
+  subject: 'subject',
+  createdAt: 'createdAt'
+} as const
+
+export type UserIdentityScalarFieldEnum = (typeof UserIdentityScalarFieldEnum)[keyof typeof UserIdentityScalarFieldEnum]
+
+
+export const DashboardSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  lastSeenAt: 'lastSeenAt'
+} as const
+
+export type DashboardSessionScalarFieldEnum = (typeof DashboardSessionScalarFieldEnum)[keyof typeof DashboardSessionScalarFieldEnum]
+
+
+export const OrganizationScalarFieldEnum = {
+  id: 'id',
+  slug: 'slug',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type OrganizationScalarFieldEnum = (typeof OrganizationScalarFieldEnum)[keyof typeof OrganizationScalarFieldEnum]
+
+
+export const OrganizationMemberScalarFieldEnum = {
+  id: 'id',
+  organizationId: 'organizationId',
+  userId: 'userId',
+  role: 'role',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type OrganizationMemberScalarFieldEnum = (typeof OrganizationMemberScalarFieldEnum)[keyof typeof OrganizationMemberScalarFieldEnum]
+
+
 export const ProjectScalarFieldEnum = {
   id: 'id',
+  organizationId: 'organizationId',
   slug: 'slug',
   name: 'name',
   createdAt: 'createdAt',
@@ -138,6 +202,7 @@ export type TaskScalarFieldEnum = (typeof TaskScalarFieldEnum)[keyof typeof Task
 export const TaskRunScalarFieldEnum = {
   id: 'id',
   taskId: 'taskId',
+  environmentId: 'environmentId',
   deploymentId: 'deploymentId',
   scheduleId: 'scheduleId',
   scheduledFor: 'scheduledFor',
@@ -209,6 +274,7 @@ export type RunEventOutboxScalarFieldEnum = (typeof RunEventOutboxScalarFieldEnu
 export const TaskScheduleScalarFieldEnum = {
   id: 'id',
   taskId: 'taskId',
+  environmentId: 'environmentId',
   name: 'name',
   payload: 'payload',
   scheduleType: 'scheduleType',
@@ -245,6 +311,19 @@ export const DeploymentScalarFieldEnum = {
 export type DeploymentScalarFieldEnum = (typeof DeploymentScalarFieldEnum)[keyof typeof DeploymentScalarFieldEnum]
 
 
+export const DeploymentTaskScalarFieldEnum = {
+  id: 'id',
+  deploymentId: 'deploymentId',
+  slug: 'slug',
+  name: 'name',
+  description: 'description',
+  executionConfig: 'executionConfig',
+  createdAt: 'createdAt'
+} as const
+
+export type DeploymentTaskScalarFieldEnum = (typeof DeploymentTaskScalarFieldEnum)[keyof typeof DeploymentTaskScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -259,6 +338,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {

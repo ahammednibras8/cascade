@@ -8,6 +8,11 @@
  *
  * 🟢 You can import this file directly.
  */
+export type * from './models/User.js'
+export type * from './models/UserIdentity.js'
+export type * from './models/DashboardSession.js'
+export type * from './models/Organization.js'
+export type * from './models/OrganizationMember.js'
 export type * from './models/Project.js'
 export type * from './models/Environment.js'
 export type * from './models/ApiKey.js'
@@ -18,4 +23,5 @@ export type * from './models/TaskEvent.js'
 export type * from './models/RunEventOutbox.js'
 export type * from './models/TaskSchedule.js'
 export type * from './models/Deployment.js'
+export type * from './models/DeploymentTask.js'
 export type * from './commonInputTypes.js'

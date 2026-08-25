@@ -7,6 +7,13 @@ import {
   type TaskDefinitionInput,
 } from "@cascade/core";
 import {
+  ApiErrorResponseSchema,
+  TriggerTaskRunResponseSchema,
+  parseApiResponse,
+  type ApiResponseSchema,
+  type TriggerTaskRunResponse as TriggerTaskRunResponseBody,
+} from "@cascade/api-contracts";
+import {
   context,
   isSpanContextValid,
   trace,
@@ -36,16 +43,11 @@ export type TriggerTaskOptions<TPayload extends JsonValue = JsonValue> = {
   traceparent?: string;
 };
 
-export type TriggerTaskRunResponse<TPayload extends JsonValue = JsonValue> = {
-  id: string;
-  taskId: string;
-  taskSlug: string;
-  taskName: string;
-  status: string;
+export type TriggerTaskRunResponse<TPayload extends JsonValue = JsonValue> = Omit<
+  TriggerTaskRunResponseBody["taskRun"],
+  "payload"
+> & {
   payload: TPayload | null;
-  createdAt: string;
-  idempotentReplay: boolean;
-  traceparent: string;
 };
 
 export class CascadeApiError extends Error {
@@ -62,10 +64,6 @@ export class CascadeApiError extends Error {
     this.responseBody = input.responseBody;
   }
 }
-
-type TriggerTaskSuccessResponse<TPayload extends JsonValue> = {
-  taskRun: TriggerTaskRunResponse<TPayload>;
-};
 
 type CascadeErrorResponse = {
   error?: {
@@ -144,8 +142,13 @@ async function parseResponseBody(response: Response) {
 }
 
 function getErrorMessage(body: unknown) {
-  const candidate = body as CascadeErrorResponse;
+  const parsedBody = ApiErrorResponseSchema.safeParse(body);
 
+  if (parsedBody.success) {
+    return parsedBody.data.error.message;
+  }
+
+  const candidate = body as CascadeErrorResponse;
   if (typeof candidate?.error?.message === "string") {
     return candidate.error.message;
   }
@@ -154,8 +157,13 @@ function getErrorMessage(body: unknown) {
 }
 
 function getErrorCode(body: unknown) {
-  const candidate = body as CascadeErrorResponse;
+  const parsedBody = ApiErrorResponseSchema.safeParse(body);
 
+  if (parsedBody.success) {
+    return parsedBody.data.error.code;
+  }
+
+  const candidate = body as CascadeErrorResponse;
   if (typeof candidate?.error?.code === "string") {
     return candidate.error.code;
   }
@@ -185,7 +193,11 @@ export function createCascadeClient(options: CascadeClientOptions) {
   const baseUrl = trimTrailingSlash(options.baseUrl);
   const fetchImplementation = getFetch(options.fetch);
 
-  async function request<TResponse>(path: string, init: RequestInit) {
+  async function request<TResponse>(
+    path: string,
+    init: RequestInit,
+    responseSchema: ApiResponseSchema<TResponse>,
+  ) {
     const response = await fetchImplementation(`${baseUrl}${path}`, {
       ...init,
       headers: {
@@ -205,7 +217,7 @@ export function createCascadeClient(options: CascadeClientOptions) {
       });
     }
 
-    return body as TResponse;
+    return parseApiResponse(responseSchema, body);
   }
 
   return {
@@ -218,7 +230,7 @@ export function createCascadeClient(options: CascadeClientOptions) {
         getActiveTraceparent() ??
         createRootTraceContext().traceparent;
 
-      const response = await request<TriggerTaskSuccessResponse<TPayload>>(
+      const response = await request(
         `/api/tasks/slug/${encodeURIComponent(taskDefinition.id)}/trigger`,
         {
           method: "POST",
@@ -231,9 +243,13 @@ export function createCascadeClient(options: CascadeClientOptions) {
           },
           body: JSON.stringify(buildTriggerBody(triggerOptions)),
         },
+        TriggerTaskRunResponseSchema,
       );
 
-      return response.taskRun;
+      return {
+        ...response.taskRun,
+        payload: response.taskRun.payload as TPayload | null,
+      };
     },
   };
 }

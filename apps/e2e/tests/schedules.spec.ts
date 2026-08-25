@@ -1,61 +1,32 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import {
-  getDashboardTestEnvironment,
-  restoreDashboardApiKey,
-} from "./support/dashboard-environment.js";
-import { createExecutionConfig } from "./support/execution-config.js";
-
-process.env.DATABASE_URL ??= "postgresql://cascade:cascade@localhost:15432/cascade";
-
-const createdTaskIds: string[] = [];
-
-async function getPrisma() {
-  const { prisma } = await import("@cascade/database");
-  return prisma;
-}
+  cleanupScheduleTaskFixtures,
+  createScheduleTaskFixture,
+  disconnectSchedulePrisma,
+} from "./support/schedules.js";
 
 test.afterEach(async () => {
-  const prisma = await getPrisma();
-  const taskIds = createdTaskIds.splice(0);
-
-  if (taskIds.length > 0) {
-    await prisma.task.deleteMany({
-      where: {
-        id: {
-          in: taskIds,
-        },
-      },
-    });
-  }
+  await cleanupScheduleTaskFixtures();
 });
 
 test.afterAll(async () => {
-  const prisma = await getPrisma();
-  await restoreDashboardApiKey();
-  await prisma.$disconnect();
+  await disconnectSchedulePrisma();
 });
 
 test("dashboard lists, pauses, and resumes a schedule", async ({ page }) => {
-  const prisma = await getPrisma();
-  const { environment } = await getDashboardTestEnvironment();
   const suffix = randomUUID().slice(0, 8);
-  const executionConfig = createExecutionConfig(`e2e-schedule-${suffix}`);
-
-  const task = await prisma.task.create({
-    data: {
-      environmentId: environment.id,
-      slug: `e2e-schedule-${suffix}`,
-      name: "E2E Scheduled Task",
-      executionConfig,
-    },
+  const { prisma, environment, task } = await createScheduleTaskFixture({
+    page,
+    suffix,
+    slugPrefix: "e2e-schedule",
+    taskName: "E2E Scheduled Task",
   });
-
-  createdTaskIds.push(task.id);
 
   const schedule = await prisma.taskSchedule.create({
     data: {
       taskId: task.id,
+      environmentId: environment.id,
       name: `E2E interval schedule ${suffix}`,
       scheduleType: "INTERVAL",
       intervalSeconds: 3600,
@@ -159,22 +130,57 @@ test("dashboard lists, pauses, and resumes a schedule", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("dashboard creates and edits a cron schedule", async ({ page }) => {
-  const prisma = await getPrisma();
-  const { environment } = await getDashboardTestEnvironment();
+test("dashboard navigates to the next schedule page", async ({ page }) => {
   const suffix = randomUUID().slice(0, 8);
-  const executionConfig = createExecutionConfig(`e2e-schedule-form-${suffix}`);
-
-  const task = await prisma.task.create({
-    data: {
-      environmentId: environment.id,
-      slug: `e2e-schedule-form-${suffix}`,
-      name: "E2E Schedule Form Task",
-      executionConfig,
-    },
+  const { prisma, environment, task } = await createScheduleTaskFixture({
+    page,
+    suffix,
+    slugPrefix: "e2e-schedule-pagination",
+    taskName: "E2E Schedule Pagination Task",
   });
 
-  createdTaskIds.push(task.id);
+  const scheduleNames = Array.from(
+    { length: 51 },
+    (_, index) => `E2E paginated schedule ${index + 1} ${suffix}`,
+  );
+
+  await prisma.taskSchedule.createMany({
+    data: scheduleNames.map((name, index) => ({
+      taskId: task.id,
+      environmentId: environment.id,
+      name,
+      scheduleType: "INTERVAL",
+      intervalSeconds: 3600,
+      cronExpression: null,
+      timezone: "UTC",
+      enabled: false,
+      nextRunAt: new Date(Date.UTC(2020, 0, 1, 0, 0, index)),
+    })),
+  });
+
+  await page.goto("/schedules");
+
+  await expect(page.getByText(scheduleNames[0] as string)).toBeVisible();
+  await expect(page.getByText(scheduleNames[50] as string)).not.toBeVisible();
+
+  await expect(page.getByText("Showing 50 schedules on this page · 51 total")).toBeVisible();
+
+  await page.getByRole("link", { name: "Next page" }).click();
+
+  await expect(page).toHaveURL(/\/schedules\?cursor=/);
+  await expect(page.getByText(scheduleNames[50] as string)).toBeVisible();
+  await expect(page.getByRole("link", { name: "First page" })).toBeVisible();
+  await expect(page.getByText("End of list")).toBeVisible();
+});
+
+test("dashboard creates and edits a cron schedule", async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  const { prisma, task } = await createScheduleTaskFixture({
+    page,
+    suffix,
+    slugPrefix: "e2e-schedule-form",
+    taskName: "E2E Schedule Form Task",
+  });
 
   const scheduleName = `E2E weekday schedule ${suffix}`;
   const updatedScheduleName = `E2E updated weekday schedule ${suffix}`;
@@ -308,4 +314,61 @@ test("dashboard creates and edits a cron schedule", async ({ page }) => {
       hasText: updatedScheduleName,
     }),
   ).toBeVisible();
+});
+
+test("dashboard filters schedules by state and type", async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  const { prisma, environment, task } = await createScheduleTaskFixture({
+    page,
+    suffix,
+    slugPrefix: "e2e-schedule-filter",
+    taskName: "E2E Schedule Filter Task",
+  });
+
+  const intervalScheduleName = `E2E enabled interval ${suffix}`;
+  const cronScheduleName = `E2E paused cron ${suffix}`;
+
+  await prisma.taskSchedule.createMany({
+    data: [
+      {
+        taskId: task.id,
+        environmentId: environment.id,
+        name: intervalScheduleName,
+        scheduleType: "INTERVAL",
+        intervalSeconds: 3600,
+        cronExpression: null,
+        timezone: "UTC",
+        enabled: true,
+        nextRunAt: new Date(Date.now() + 3_600_000),
+      },
+      {
+        taskId: task.id,
+        environmentId: environment.id,
+        name: cronScheduleName,
+        scheduleType: "CRON",
+        intervalSeconds: null,
+        cronExpression: "0 9 * * 1-5",
+        timezone: "UTC",
+        enabled: false,
+        nextRunAt: new Date(Date.now() + 7_200_000),
+      },
+    ],
+  });
+
+  await page.goto("/schedules");
+
+  await expect(page.getByText(intervalScheduleName)).toBeVisible();
+  await expect(page.getByText(cronScheduleName)).toBeVisible();
+
+  await page.getByRole("link", { name: "Paused", exact: true }).click();
+
+  await expect(page).toHaveURL(/\/schedules\?enabled=false/);
+  await expect(page.getByText(cronScheduleName)).toBeVisible();
+  await expect(page.getByText(intervalScheduleName)).not.toBeVisible();
+
+  await page.getByRole("link", { name: "CRON", exact: true }).click();
+
+  await expect(page).toHaveURL(/\/schedules\?.*enabled=false.*scheduleType=CRON/);
+  await expect(page.getByText(cronScheduleName)).toBeVisible();
+  await expect(page.getByText(intervalScheduleName)).not.toBeVisible();
 });

@@ -43,7 +43,7 @@ function getBooleanEnv(name: string, fallback: boolean) {
 type DeploymentRuntimeKind = "docker" | "kubernetes";
 
 function getDeploymentRuntime(): DeploymentRuntimeKind {
-  const runtime = process.env.DEPLOYMENT_RUNTIME ?? "docker";
+  const runtime = process.env["DEPLOYMENT_RUNTIME"] ?? "docker";
 
   if (runtime === "docker" || runtime === "kubernetes") {
     return runtime;

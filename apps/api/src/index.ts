@@ -1,8 +1,9 @@
 import express from "express";
 import type { Socket } from "node:net";
 import { packageName } from "@cascade/core";
-import { requireApiKey } from "./auth/api-key.js";
-import { tasksRouter } from "./routes/tasks.js";
+import { requireApiKeyWhenUnauthenticated } from "./auth/api-key.js";
+import { requireDashboardUserAuthorization } from "./auth/dashboard-user.js";
+import { apiRouter } from "./routes/api-router.js";
 import { disconnectTaskRunQueueRedis } from "./queue/task-runs.js";
 import { disconnectEnvironmentRunsNotificationSubscriber } from "./realtime/environment-runs-notifications.js";
 import { disconnectRunEventNotificationSubscriber } from "./realtime/run-event-notifications.js";
@@ -17,7 +18,7 @@ import { asyncHandler } from "./http/async-handler.js";
 import { checkApiReadiness } from "./health/api-readiness.js";
 
 const app = express();
-const port = Number(process.env.API_PORT ?? 3001);
+const port = Number(process.env["API_PORT"] ?? 3001);
 let shuttingDown = false;
 const sockets = new Set<Socket>();
 
@@ -59,7 +60,13 @@ app.get("/me", (request, response) => {
   });
 });
 
-app.use("/api", requireApiKey(), apiRateLimit(), tasksRouter);
+app.use(
+  "/api",
+  requireDashboardUserAuthorization(),
+  requireApiKeyWhenUnauthenticated(),
+  apiRateLimit(),
+  apiRouter,
+);
 
 app.use(errorHandler);
 

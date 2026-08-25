@@ -20,7 +20,7 @@ type EnqueueTaskRunOptions = {
 };
 
 function getQueueRedisUrl() {
-  const redisUrl = process.env.QUEUE_REDIS_URL;
+  const redisUrl = process.env["QUEUE_REDIS_URL"];
 
   if (!redisUrl) {
     throw new Error("QUEUE_REDIS_URL is missing");
@@ -57,7 +57,7 @@ function getTaskRunDelayedQueueKey(deploymentId: string | null | undefined) {
 }
 
 function getWorkerDeploymentId() {
-  const rawDeploymentId = process.env.CASCADE_DEPLOYMENT_ID?.trim();
+  const rawDeploymentId = process.env["CASCADE_DEPLOYMENT_ID"]?.trim();
 
   if (!rawDeploymentId || rawDeploymentId === "local") {
     return null;
@@ -68,7 +68,7 @@ function getWorkerDeploymentId() {
 
 export const taskRunQueueRedis = globalForRedis.taskRunQueueRedis ?? createRedisClient();
 
-if (process.env.NODE_ENV !== "production") {
+if (process.env["NODE_ENV"] !== "production") {
   globalForRedis.taskRunQueueRedis = taskRunQueueRedis;
 }
 

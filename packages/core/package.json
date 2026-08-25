@@ -16,6 +16,13 @@
         "default": "./dist/esm/index.js"
       }
     },
+    "./dashboard-api-auth": {
+      "development": "./src/dashboard-api-auth.ts",
+      "import": {
+        "types": "./dist/esm/dashboard-api-auth.d.ts",
+        "default": "./dist/esm/dashboard-api-auth.js"
+      }
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -44,6 +51,7 @@
     ],
     "exports": {
       ".": "./src/index.ts",
+      "./dashboard-api-auth": "./src/dashboard-api-auth.ts",
       "./package.json": "./package.json"
     },
     "project": "./tsconfig.build.json"

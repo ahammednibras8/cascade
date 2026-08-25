@@ -85,12 +85,12 @@ function resetStorageEnv() {
     delete process.env[key];
   }
 
-  process.env.S3_ENDPOINT = "http://localhost:19090";
-  process.env.S3_REGION = "us-east-1";
-  process.env.S3_FORCE_PATH_STYLE = "true";
-  process.env.S3_ACCESS_KEY_ID = "cascade";
-  process.env.S3_SECRET_ACCESS_KEY = "cascade-password";
-  process.env.S3_BUCKET = "cascade-task-payloads";
+  process.env["S3_ENDPOINT"] = "http://localhost:19090";
+  process.env["S3_REGION"] = "us-east-1";
+  process.env["S3_FORCE_PATH_STYLE"] = "true";
+  process.env["S3_ACCESS_KEY_ID"] = "cascade";
+  process.env["S3_SECRET_ACCESS_KEY"] = "cascade-password";
+  process.env["S3_BUCKET"] = "cascade-task-payloads";
 }
 
 function sha256(value: string) {
@@ -110,7 +110,7 @@ describe("@cascade/storage", () => {
   });
 
   it("keeps small JSON inline", async () => {
-    process.env.LARGE_PAYLOAD_THRESHOLD_BYTES = "1000000";
+    process.env["LARGE_PAYLOAD_THRESHOLD_BYTES"] = "1000000";
 
     const { maybeStoreJsonValue } = await loadStorage();
 
@@ -133,7 +133,7 @@ describe("@cascade/storage", () => {
   });
 
   it("stores large JSON and returns an object ref", async () => {
-    process.env.LARGE_PAYLOAD_THRESHOLD_BYTES = "10";
+    process.env["LARGE_PAYLOAD_THRESHOLD_BYTES"] = "10";
 
     aws.send
       .mockRejectedValueOnce(new Error("bucket missing"))

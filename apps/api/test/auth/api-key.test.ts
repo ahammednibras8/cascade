@@ -13,12 +13,12 @@ vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-const { hashApiKey, requireApiKey } = await import("../../src/auth/api-key.js");
+const { hashApiKey, requireApiKeyWhenUnauthenticated } = await import("../../src/auth/api-key.js");
 
 function createApp() {
   const app = express();
 
-  app.use(requireApiKey());
+  app.use(requireApiKeyWhenUnauthenticated());
 
   app.get("/protected", (req, response) => {
     response.json({
@@ -33,7 +33,7 @@ describe("API key auth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    process.env.API_KEY_PEPPER = "test-api-key-pepper";
+    process.env["API_KEY_PEPPER"] = "test-api-key-pepper";
 
     prisma.apiKey.updateMany.mockResolvedValue({ count: 1 });
   });
@@ -47,7 +47,7 @@ describe("API key auth", () => {
     expect(response.body).toEqual({
       error: {
         code: "UNAUTHORIZED",
-        message: "Missing API key",
+        message: "Missing API authentication",
       },
     });
 
@@ -125,6 +125,8 @@ describe("API key auth", () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       auth: {
+        authType: "api-key",
+        principalId: "api-key:api-key-1",
         apiKeyId: "api-key-1",
         environmentId: "environment-1",
         projectId: "project-1",
@@ -165,6 +167,8 @@ describe("API key auth", () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       auth: {
+        authType: "api-key",
+        principalId: "api-key:api-key-2",
         apiKeyId: "api-key-2",
         environmentId: "environment-2",
         projectId: "project-2",
