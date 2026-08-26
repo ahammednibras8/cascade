@@ -34,7 +34,7 @@ vi.mock("../../../app/lib/auth/dashboard-session.server.js", () => ({
 
 const { loader } = await import("../../../app/routes/auth/login.js");
 
-describe("login route", () => {
+describe("auth start route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env["DASHBOARD_AUTH_MODE"];
@@ -47,7 +47,7 @@ describe("login route", () => {
     });
 
     const response = await loader({
-      request: new Request("http://dashboard.test/login?returnTo=/runs"),
+      request: new Request("http://dashboard.test/auth/start?returnTo=/runs"),
     } as never);
 
     expect(startOidcLogin).toHaveBeenCalledWith("/runs");
@@ -70,7 +70,7 @@ describe("login route", () => {
     commitDashboardSession.mockResolvedValue("cascade-session=signed; HttpOnly");
 
     const response = await loader({
-      request: new Request("http://dashboard.test/login?returnTo=/runs"),
+      request: new Request("http://dashboard.test/auth/start?returnTo=/runs"),
     } as never);
 
     expect(startOidcLogin).not.toHaveBeenCalled();
@@ -96,7 +96,9 @@ describe("login route", () => {
     commitDashboardSession.mockResolvedValue("cascade-session=signed; HttpOnly");
 
     const response = await loader({
-      request: new Request("http://dashboard.test/login?returnTo=https://attacker.example.test"),
+      request: new Request(
+        "http://dashboard.test/auth/start?returnTo=https://attacker.example.test",
+      ),
     } as never);
 
     expect(response.headers.get("Location")).toBe("/dashboard");
