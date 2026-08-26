@@ -56,7 +56,7 @@ test("switches the active project and environment", async ({ page }) => {
   }
 
   try {
-    await page.goto("/");
+    await page.goto("/dashboard");
 
     const workspaceSelect = page.getByRole("combobox", {
       name: "Project and environment",

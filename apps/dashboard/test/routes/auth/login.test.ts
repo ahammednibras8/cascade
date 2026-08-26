@@ -99,6 +99,6 @@ describe("login route", () => {
       request: new Request("http://dashboard.test/login?returnTo=https://attacker.example.test"),
     } as never);
 
-    expect(response.headers.get("Location")).toBe("/");
+    expect(response.headers.get("Location")).toBe("/dashboard");
   });
 });

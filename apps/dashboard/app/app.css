@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url("/landing/synex/inter-tight-latin.woff2") format("woff2");
+}
+
 @theme {
   --font-sans:
     "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
@@ -10,4 +18,208 @@ html,
 body {
   @apply min-h-screen bg-gray-50 text-gray-950;
   color-scheme: light;
+}
+
+/* Living Green's native control uses a dark glass plate, stacked ambient
+   shadows, an inset highlight, and a pointer-facing specular rim. Keep the
+   material CSS-only here so three CTA instances do not add three WebGL passes. */
+.sylva-glass-button {
+  --glass-angle: 2.4rad;
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color 180ms ease,
+    transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.sylva-glass-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.34;
+  background: conic-gradient(
+    from var(--glass-angle) at 50% 50%,
+    rgba(240, 246, 232, 0) 0deg,
+    rgba(240, 246, 232, 0.08) 14deg,
+    rgba(240, 246, 232, 0.95) 28deg,
+    rgba(240, 246, 232, 0.16) 46deg,
+    rgba(240, 246, 232, 0) 68deg,
+    rgba(240, 246, 232, 0) 180deg,
+    rgba(240, 246, 232, 0.08) 194deg,
+    rgba(240, 246, 232, 0.95) 208deg,
+    rgba(240, 246, 232, 0.16) 226deg,
+    rgba(240, 246, 232, 0) 248deg,
+    rgba(240, 246, 232, 0) 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  transition: opacity 240ms ease;
+}
+
+.sylva-glass-button__plate {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.085),
+      rgba(255, 255, 255, 0.014) 44%,
+      rgba(255, 255, 255, 0) 64%
+    ),
+    rgba(10, 12, 10, 0.72);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.32),
+    0 11px 25px rgba(0, 0, 0, 0.2),
+    0 22px 44px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 -1px 3px rgba(255, 255, 255, 0.05);
+  transition:
+    background 380ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    box-shadow 380ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.sylva-glass-button__content {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sylva-glass-button__content svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: none;
+  stroke-width: 1.75;
+  opacity: 0.72;
+  transition: opacity 180ms ease;
+}
+
+.sylva-glass-button[data-tone="black"] {
+  color: #fff;
+}
+
+.sylva-glass-button[data-tone="black"] .sylva-glass-button__plate {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.12),
+      rgba(255, 255, 255, 0.018) 46%,
+      rgba(255, 255, 255, 0) 66%
+    ),
+    rgba(5, 7, 6, 0.88);
+}
+
+.sylva-glass-button:hover,
+.sylva-glass-button:focus-visible {
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.sylva-glass-button:hover::after,
+.sylva-glass-button:focus-visible::after {
+  opacity: 0.88;
+}
+
+.sylva-glass-button:hover .sylva-glass-button__plate,
+.sylva-glass-button:focus-visible .sylva-glass-button__plate {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.105),
+      rgba(255, 255, 255, 0.02) 44%,
+      rgba(255, 255, 255, 0) 64%
+    ),
+    rgba(8, 10, 8, 0.82);
+  box-shadow:
+    0 5px 12px rgba(0, 0, 0, 0.38),
+    0 14px 31px rgba(0, 0, 0, 0.26),
+    0 28px 56px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.17),
+    inset 0 -1px 3px rgba(255, 255, 255, 0.06);
+}
+
+.sylva-glass-button:hover .sylva-glass-button__content svg,
+.sylva-glass-button:focus-visible .sylva-glass-button__content svg {
+  opacity: 1;
+}
+
+.sylva-glass-button[data-tone="white"],
+.sylva-glass-button[data-tone="white"]:hover,
+.sylva-glass-button[data-tone="white"]:focus-visible {
+  color: #11130f;
+}
+
+.sylva-glass-button[data-tone="white"] .sylva-glass-button__plate,
+.sylva-glass-button[data-tone="white"]:hover .sylva-glass-button__plate,
+.sylva-glass-button[data-tone="white"]:focus-visible .sylva-glass-button__plate {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 246, 240, 0.9)),
+    rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.12),
+    0 12px 28px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 #fff,
+    inset 0 -1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.sylva-glass-button[data-tone="white"]::after {
+  opacity: 0.7;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.sylva-glass-button:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.sylva-glass-button:focus-visible {
+  outline: 2px solid rgba(5, 5, 12, 0.72);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sylva-glass-button,
+  .sylva-glass-button::after,
+  .sylva-glass-button__plate,
+  .sylva-glass-button__content svg {
+    transition: none;
+  }
+
+  .sylva-glass-button:hover,
+  .sylva-glass-button:focus-visible,
+  .sylva-glass-button:active {
+    transform: none;
+  }
 }

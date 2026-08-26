@@ -32,7 +32,7 @@ test("switches the active organization", async ({ page }) => {
   });
 
   try {
-    await page.goto("/");
+    await page.goto("/dashboard");
 
     const organizationSelect = page.getByRole("combobox", {
       name: "Organization",

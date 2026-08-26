@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
 export async function selectDashboardWorkspace(page: Page, environmentId: string) {
-  await page.goto("/");
+  await page.goto("/dashboard");
 
   const workspaceSelect = page.getByRole("combobox", {
     name: "Project and environment",

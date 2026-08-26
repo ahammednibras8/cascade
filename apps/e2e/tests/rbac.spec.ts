@@ -154,7 +154,7 @@ async function createViewerContext(browser: Browser, baseURL: string, userId: st
 }
 
 async function selectWorkspace(page: Page, environmentId: string) {
-  await page.goto("/");
+  await page.goto("/dashboard");
 
   const workspaceSelect = page.getByRole("combobox", {
     name: "Project and environment",
@@ -232,7 +232,7 @@ async function expectViewerScheduleAccess(
 }
 
 async function expectViewerApiKeyAccess(page: Page) {
-  await page.goto("/");
+  await page.goto("/dashboard");
 
   await expect(page.getByRole("link", { name: "Manage API keys" })).toHaveCount(0);
 

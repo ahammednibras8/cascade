@@ -1,5 +1,5 @@
 import { Form, Link } from "react-router";
-import type { Route } from "./+types/home";
+import type { Route } from "./+types/dashboard";
 import { ArrowRight } from "~/components/icons";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
 import { getDashboardWorkspaceContext } from "~/lib/workspace/dashboard-workspace.server";
@@ -86,7 +86,7 @@ function OrganizationSwitcher({ data }: { data: HomeData }) {
             ))}
           </select>
         </label>
-        <input type="hidden" name="returnTo" value="/" />
+        <input type="hidden" name="returnTo" value="/dashboard" />
         <SwitchButton label="Switch organization" />
       </Form>
     </>
@@ -143,7 +143,7 @@ function WorkspaceSwitcher({ data }: { data: HomeData }) {
             ))}
           </select>
         </label>
-        <input type="hidden" name="returnTo" value="/" />
+        <input type="hidden" name="returnTo" value="/dashboard" />
         <SwitchButton label="Switch workspace" />
       </Form>
     </>
