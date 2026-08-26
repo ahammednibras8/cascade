@@ -6,7 +6,7 @@ test("authenticated dashboard loads", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 });
 
-test("public landing page loads without a dashboard session", async ({ browser }, testInfo) => {
+test("public landing loads without a dashboard session", async ({ browser }, testInfo) => {
   const baseURL = testInfo.project.use.baseURL;
   const context = await browser.newContext({
     ...(typeof baseURL === "string" ? { baseURL } : {}),
@@ -25,8 +25,28 @@ test("public landing page loads without a dashboard session", async ({ browser }
       page.getByRole("heading", {
         name: "Durable tasks you can inspect, replay, and trust.",
       }),
-    ).toBeVisible();
-    await expect(page.locator("a, button")).toHaveCount(0);
+    ).toBeAttached();
+    await expect(page.getByText("Background work,")).toBeVisible();
+    await expect(page.getByText("built to survive.")).toBeVisible();
+    await expect(page.locator("nav, a, button")).toHaveCount(0);
+    await expect(page.locator("[data-cta-reserved]")).toHaveCount(1);
+
+    await expect(page.locator("img")).toHaveCount(5);
+    const imagesLoaded = await page
+      .locator("img")
+      .evaluateAll((images) =>
+        images.every((image) => Number(Reflect.get(image, "naturalWidth")) > 0),
+      );
+    expect(imagesLoaded).toBe(true);
+
+    const overflow = await page.evaluate<{ horizontal: number; vertical: number }>(
+      `({
+        horizontal: document.documentElement.scrollWidth - window.innerWidth,
+        vertical: document.documentElement.scrollHeight - window.innerHeight,
+      })`,
+    );
+    expect(overflow.horizontal).toBeLessThanOrEqual(0);
+    expect(overflow.vertical).toBeLessThanOrEqual(0);
   } finally {
     await context.close();
   }
