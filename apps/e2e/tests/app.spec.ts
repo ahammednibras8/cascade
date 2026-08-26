@@ -28,8 +28,10 @@ test("public landing loads without a dashboard session", async ({ browser }, tes
     ).toBeAttached();
     await expect(page.getByText("Background work,")).toBeVisible();
     await expect(page.getByText("built to survive.")).toBeVisible();
-    await expect(page.locator("nav, a, button")).toHaveCount(0);
-    await expect(page.locator("[data-cta-reserved]")).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Sign up" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Log in" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "View docs" })).toBeVisible();
+    await expect(page.locator("nav, a")).toHaveCount(0);
 
     await expect(page.locator("img")).toHaveCount(5);
     const imagesLoaded = await page
