@@ -32,8 +32,13 @@ export default function Hero() {
         role="group"
         aria-label="Cascade account"
       >
-        <GlassButton label="Log in" icon={LogIn} tone="white" />
-        <GlassButton label="Sign up" icon={UserPlus} tone="black" />
+        <GlassButton label="Log in" icon={LogIn} tone="white" to="/login?returnTo=/dashboard" />
+        <GlassButton
+          label="Sign up"
+          icon={UserPlus}
+          tone="black"
+          to="/login?returnTo=/onboarding"
+        />
       </motion.div>
 
       <div
