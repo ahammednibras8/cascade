@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { BookOpen, LogIn, UserPlus } from "lucide-react";
+import { ArrowRight, BookOpen } from "lucide-react";
 import GlassButton from "./GlassButton";
 import StoneReveal from "./StoneReveal";
 
@@ -28,12 +28,9 @@ export default function Hero() {
         initial={shouldReduceMotion ? false : { opacity: 0, y: -12, filter: "blur(6px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-        className="absolute top-4 right-4 z-20 flex items-center gap-2 sm:top-6 sm:right-6"
-        role="group"
-        aria-label="Cascade account"
+        className="absolute top-4 right-4 z-20 sm:top-6 sm:right-6"
       >
-        <GlassButton label="Log in" icon={LogIn} tone="white" to="/login" />
-        <GlassButton label="Sign up" icon={UserPlus} tone="black" to="/signup" />
+        <GlassButton label="Continue" icon={ArrowRight} tone="black" to="/login" />
       </motion.div>
 
       <div

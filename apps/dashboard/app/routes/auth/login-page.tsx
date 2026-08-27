@@ -19,25 +19,11 @@ export function loader({ request }: Route.LoaderArgs) {
 }
 
 export function meta() {
-  return [
-    { title: "Log in · Cascade" },
-    { name: "description", content: "Log in to your Cascade account." },
-  ];
+  return [{ title: "Sign in · Cascade" }, { name: "description", content: "Sign in to Cascade." }];
 }
 
 export default function LoginPage({ loaderData }: Route.ComponentProps) {
   const startHref = `/auth/start?returnTo=${encodeURIComponent(loaderData.returnTo)}`;
 
-  return (
-    <AuthEntryPage
-      title="Welcome back"
-      description="Continue through your configured identity provider to access Cascade."
-      submitLabel="Continue to log in"
-      startHref={startHref}
-      alternatePrompt="New to Cascade?"
-      alternateAction="Create an account"
-      alternateHref="/signup"
-      error={loaderData.error}
-    />
-  );
+  return <AuthEntryPage title="Sign in" startHref={startHref} error={loaderData.error} />;
 }

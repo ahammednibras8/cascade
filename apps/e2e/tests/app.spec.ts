@@ -28,8 +28,7 @@ test("public landing loads without a dashboard session", async ({ browser }, tes
     ).toBeAttached();
     await expect(page.getByText("Background work,")).toBeVisible();
     await expect(page.getByText("built to survive.")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Sign up" })).toHaveAttribute("href", "/signup");
-    await expect(page.getByRole("link", { name: "Log in" })).toHaveAttribute("href", "/login");
+    await expect(page.getByRole("link", { name: "Continue" })).toHaveAttribute("href", "/login");
     await expect(page.getByRole("button", { name: "View docs" })).toBeVisible();
     await expect(page.locator("nav")).toHaveCount(0);
 

@@ -46,6 +46,22 @@ body {
     transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
+.sylva-glass-button[data-full-width="true"] {
+  width: 100%;
+}
+
+.sylva-glass-button[data-size="large"] {
+  height: 3.5rem;
+}
+
+.sylva-glass-button[data-size="large"] .sylva-glass-button__content {
+  width: 100%;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  padding-inline: 1.25rem;
+  font-size: 0.875rem;
+}
+
 .sylva-glass-button::after {
   content: "";
   position: absolute;
