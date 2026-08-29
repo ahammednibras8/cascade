@@ -18,12 +18,10 @@ describe("post-authentication redirect", () => {
     vi.clearAllMocks();
   });
 
-  it("sends a user without a usable workspace to onboarding", async () => {
+  it("keeps a user without a usable workspace in the login flow", async () => {
     prisma.environment.findFirst.mockResolvedValue(null);
 
-    await expect(resolvePostAuthenticationRedirect("user-1", "/dashboard")).resolves.toBe(
-      "/onboarding",
-    );
+    await expect(resolvePostAuthenticationRedirect("user-1", "/dashboard")).resolves.toBe("/login");
 
     expect(prisma.environment.findFirst).toHaveBeenCalledWith({
       where: {

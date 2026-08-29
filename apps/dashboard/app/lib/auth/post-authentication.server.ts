@@ -12,6 +12,14 @@ export async function resolvePostAuthenticationRedirect(
   userId: string,
   requestedReturnTo: string | null | undefined,
 ) {
+  if (!(await hasUsableDashboardWorkspace(userId))) {
+    return "/login";
+  }
+
+  return normalizeReturnTo(requestedReturnTo);
+}
+
+export async function hasUsableDashboardWorkspace(userId: string) {
   const usableEnvironment = await prisma.environment.findFirst({
     where: {
       project: {
@@ -29,9 +37,5 @@ export async function resolvePostAuthenticationRedirect(
     },
   });
 
-  if (!usableEnvironment) {
-    return "/onboarding";
-  }
-
-  return normalizeReturnTo(requestedReturnTo);
+  return usableEnvironment !== null;
 }

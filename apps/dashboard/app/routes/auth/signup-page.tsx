@@ -5,5 +5,12 @@ export function meta() {
 }
 
 export default function SignupPage() {
-  return <AuthEntryPage title="Sign in" startHref="/auth/start" />;
+  return (
+    <AuthEntryPage
+      authenticated={false}
+      devAuthEnabled={false}
+      stage="authentication"
+      startHref="/auth/start"
+    />
+  );
 }

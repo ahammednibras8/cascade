@@ -220,6 +220,12 @@ body {
   transform: translateY(0) scale(0.985);
 }
 
+.sylva-glass-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+  transform: none;
+}
+
 .sylva-glass-button:focus-visible {
   outline: 2px solid rgba(5, 5, 12, 0.72);
   outline-offset: 3px;

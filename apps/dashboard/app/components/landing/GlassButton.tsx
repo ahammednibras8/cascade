@@ -1,15 +1,18 @@
 import type { LucideIcon } from "lucide-react";
-import type { CSSProperties, PointerEvent } from "react";
+import type { CSSProperties, MouseEventHandler, PointerEvent } from "react";
 import { Link } from "react-router";
 
 type GlassButtonProps = {
+  disabled?: boolean;
   fullWidth?: boolean;
   href?: string;
   label: string;
   icon: LucideIcon;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
   size?: "default" | "large";
   tone?: "glass" | "black" | "white";
   to?: string;
+  type?: "button" | "submit";
 };
 
 type GlassButtonStyle = CSSProperties & {
@@ -26,13 +29,16 @@ function handlePointerMove(event: PointerEvent<HTMLElement>) {
 }
 
 export default function GlassButton({
+  disabled = false,
   fullWidth = false,
   href,
   label,
   icon: Icon,
+  onClick,
   size = "default",
   tone = "glass",
   to,
+  type = "button",
 }: GlassButtonProps) {
   const content = (
     <>
@@ -70,7 +76,7 @@ export default function GlassButton({
   }
 
   return (
-    <button type="button" {...sharedProps}>
+    <button type={type} disabled={disabled} onClick={onClick} {...sharedProps}>
       {content}
     </button>
   );
