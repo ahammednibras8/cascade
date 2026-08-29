@@ -1,44 +1,13 @@
 import { ApiKeyScope, prisma } from "@cascade/database";
 import { getDashboardSession } from "../auth/dashboard-session.server";
 import { getDashboardWorkspaceContext } from "../workspace/dashboard-workspace.server";
+import type { DashboardActivationState } from "./activation-state";
 
 const ACTIVATION_API_KEY_SCOPES = [
   ApiKeyScope.DEPLOYMENTS_WRITE,
   ApiKeyScope.TASKS_TRIGGER,
   ApiKeyScope.RUNS_READ,
 ] as const;
-
-export type DashboardActivationState =
-  | {
-      state: "AUTH_REQUIRED";
-    }
-  | {
-      state: "WORKSPACE_REQUIRED";
-    }
-  | {
-      state: "CREDENTIAL_REQUIRED";
-      environmentId: string;
-    }
-  | {
-      state: "STARTER_REQUIRED";
-      environmentId: string;
-    }
-  | {
-      state: "DEPLOYMENT_PENDING";
-      deploymentId: string;
-      environmentId: string;
-      runtimeStatus: "PENDING" | "STARTING" | "DRAINING" | "STOPPED" | "FAILED";
-    }
-  | {
-      state: "FIRST_RUN_PENDING";
-      deploymentId: string;
-      environmentId: string;
-    }
-  | {
-      state: "ACTIVATED";
-      deploymentId: string;
-      environmentId: string;
-    };
 
 export async function resolveDashboardActivationState(
   request: Request,

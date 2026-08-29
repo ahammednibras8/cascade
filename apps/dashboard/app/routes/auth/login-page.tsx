@@ -5,7 +5,7 @@ import {
   getDashboardSession,
 } from "~/lib/auth/dashboard-session.server";
 import { findOrCreateDevDashboardUser } from "~/lib/auth/dashboard-user.server";
-import { hasUsableDashboardWorkspace } from "~/lib/auth/post-authentication.server";
+import { resolveDashboardActivationState } from "~/lib/activation/activation-state.server";
 import type { Route } from "./+types/login-page";
 import { redirect } from "react-router";
 import { createPersonalWorkspace } from "~/lib/auth/create-personal-workspace.server";
@@ -27,14 +27,26 @@ function isDevAuthEnabled() {
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const returnTo = normalizeReturnTo(url.searchParams.get("returnTo"));
-  const session = await getDashboardSession(request);
+  const activationState = await resolveDashboardActivationState(request);
 
-  if (session) {
-    if (await hasUsableDashboardWorkspace(session.userId)) {
-      throw redirect(returnTo);
-    }
+  if (activationState.state === "ACTIVATED") {
+    throw redirect(returnTo);
+  }
 
+  if (activationState.state === "AUTH_REQUIRED") {
     return {
+      activationState: null,
+      authenticated: false,
+      devAuthEnabled: isDevAuthEnabled(),
+      error: url.searchParams.get("error"),
+      returnTo,
+      stage: "authentication" as const,
+    };
+  }
+
+  if (activationState.state === "WORKSPACE_REQUIRED") {
+    return {
+      activationState: null,
       authenticated: true,
       devAuthEnabled: isDevAuthEnabled(),
       error: null,
@@ -44,11 +56,12 @@ export async function loader({ request }: Route.LoaderArgs) {
   }
 
   return {
-    authenticated: false,
+    activationState,
+    authenticated: true,
     devAuthEnabled: isDevAuthEnabled(),
-    error: url.searchParams.get("error"),
+    error: null,
     returnTo,
-    stage: "authentication" as const,
+    stage: "activation" as const,
   };
 }
 
@@ -77,7 +90,9 @@ export async function action({ request }: Route.ActionArgs) {
     headers.append("Set-Cookie", await commitActiveDashboardOrganization(workspace.organizationId));
     headers.append("Set-Cookie", await commitActiveDashboardEnvironment(workspace.environmentId));
 
-    return redirect(normalizeReturnTo(typeof returnToValue === "string" ? returnToValue : null), {
+    const returnTo = normalizeReturnTo(typeof returnToValue === "string" ? returnToValue : null);
+
+    return redirect(`/login?returnTo=${encodeURIComponent(returnTo)}`, {
       headers,
     });
   }
@@ -114,6 +129,7 @@ export default function LoginPage({ loaderData }: Route.ComponentProps) {
 
   return (
     <AuthEntryPage
+      activationState={loaderData.activationState}
       authenticated={loaderData.authenticated}
       devAuthEnabled={loaderData.devAuthEnabled}
       stage={loaderData.stage}

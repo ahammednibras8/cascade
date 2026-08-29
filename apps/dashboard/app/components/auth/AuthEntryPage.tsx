@@ -3,8 +3,11 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Form, useFetcher } from "react-router";
 import GlassButton from "~/components/landing/GlassButton";
+import type { PendingDashboardActivationState } from "~/lib/activation/activation-state";
+import ActivationState from "./ActivationState";
+import SetupProgress from "./SetupProgress";
 
-type AuthStage = "authentication" | "workspace";
+type AuthStage = "authentication" | "workspace" | "activation";
 
 type AuthActionData = {
   error?: string;
@@ -13,6 +16,7 @@ type AuthActionData = {
 };
 
 type AuthEntryPageProps = {
+  activationState: PendingDashboardActivationState | null;
   authenticated: boolean;
   devAuthEnabled: boolean;
   error?: string | null;
@@ -22,6 +26,7 @@ type AuthEntryPageProps = {
 };
 
 export default function AuthEntryPage({
+  activationState,
   authenticated,
   devAuthEnabled,
   error,
@@ -33,6 +38,7 @@ export default function AuthEntryPage({
   const fetcher = useFetcher<AuthActionData>();
   const [currentStage, setCurrentStage] = useState<AuthStage>(stage);
 
+  const activationStage = currentStage === "activation" ? activationState : null;
   const isAuthenticated = [authenticated, fetcher.data?.ok === true].includes(true);
   const workspaceStage = currentStage === "workspace";
   const authenticationPending = fetcher.state !== "idle";
@@ -49,50 +55,12 @@ export default function AuthEntryPage({
 
   return (
     <main className="flex min-h-dvh w-full bg-[#f2f2f0] p-2 lg:h-dvh lg:overflow-hidden lg:p-4">
-      <section className="relative hidden h-full w-[52%] overflow-hidden rounded-[28px] bg-[#10140f] shadow-[0_28px_90px_rgba(0,0,0,0.2)] lg:block">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(circle at 50% 28%, rgba(205,225,174,0.18), transparent 35%), linear-gradient(180deg, rgba(255,255,255,0.035), transparent 45%)",
-          }}
-        />
-        <img
-          src="/landing/synex/stone-g-left.png"
-          alt=""
-          className="pointer-events-none absolute -bottom-20 -left-40 w-[92%] max-w-none opacity-80"
-        />
-        <img
-          src="/landing/synex/stone-g-right.png"
-          alt=""
-          className="pointer-events-none absolute -right-40 -bottom-24 w-[88%] max-w-none opacity-75"
-        />
-
-        <div className="absolute inset-0 z-10 flex items-center px-14 xl:px-16">
-          <motion.ol
-            aria-label="Setup progress"
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full space-y-8"
-          >
-            <Step
-              number="01"
-              label="Verify your identity"
-              state={workspaceStage ? "complete" : "active"}
-              onSelect={() => setCurrentStage("authentication")}
-            />
-            <Step
-              number="02"
-              label="Create a workspace"
-              state={workspaceStage ? "active" : "pending"}
-              {...(isAuthenticated ? { onSelect: () => setCurrentStage("workspace") } : {})}
-            />
-            <Step number="03" label="Run your first task" state="pending" />
-          </motion.ol>
-        </div>
-      </section>
+      <SetupProgress
+        currentStage={currentStage}
+        isAuthenticated={isAuthenticated}
+        onStageChange={setCurrentStage}
+        shouldReduceMotion={shouldReduceMotion}
+      />
 
       <section className="relative flex flex-1 items-center justify-center overflow-hidden px-6 py-12 sm:px-12 lg:px-16 xl:px-24">
         <div
@@ -120,7 +88,9 @@ export default function AuthEntryPage({
               {...(shouldReduceMotion ? {} : { exit: { opacity: 0, x: -10 } })}
               transition={{ duration: 0.24, ease: "easeOut" }}
             >
-              {workspaceStage ? (
+              {activationStage ? (
+                <ActivationState activationState={activationStage} returnTo={returnTo} />
+              ) : workspaceStage ? (
                 <WorkspaceState
                   onBack={() => setCurrentStage("authentication")}
                   returnTo={returnTo}
@@ -268,49 +238,5 @@ function WorkspaceState({ onBack, returnTo }: { onBack: () => void; returnTo: st
         </div>
       </Form>
     </>
-  );
-}
-
-function Step({
-  number,
-  label,
-  onSelect,
-  state,
-}: {
-  number: string;
-  label: string;
-  onSelect?: () => void;
-  state: "active" | "complete" | "pending";
-}) {
-  const active = state === "active";
-  const selectable = onSelect !== undefined && !active;
-
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={onSelect}
-        disabled={!selectable}
-        aria-current={active ? "step" : undefined}
-        className={`flex w-full items-center gap-4 text-left text-sm transition-colors ${
-          active
-            ? "text-white"
-            : state === "complete"
-              ? "cursor-pointer text-white/65 hover:text-white"
-              : selectable
-                ? "cursor-pointer text-white/40 hover:text-white/70"
-                : "cursor-default text-white/40"
-        }`}
-      >
-        <span
-          className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold ${
-            active ? "border-white/70 bg-white text-[#10140f]" : "border-white/15 bg-black/20"
-          }`}
-        >
-          {number}
-        </span>
-        <span className="font-medium">{label}</span>
-      </button>
-    </li>
   );
 }
