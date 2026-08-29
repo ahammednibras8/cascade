@@ -1,7 +1,9 @@
 import { expect, request as playwrightRequest, test, type TestInfo } from "@playwright/test";
+import { createCascadeClient, defineTask } from "@cascade/sdk";
 import { randomUUID } from "node:crypto";
 
 process.env["DATABASE_URL"] ??= "postgresql://cascade:cascade@localhost:15432/cascade";
+const apiURL = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
 function getBaseURL(testInfo: TestInfo) {
   const baseURL = testInfo.project.use.baseURL;
@@ -212,6 +214,12 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
 
     await expect(page.getByRole("heading", { name: "Copy this API key now" })).toBeVisible();
 
+    const apiKey = await page
+      .locator("section[aria-labelledby='new-api-key-heading'] code")
+      .innerText();
+
+    expect(apiKey).toMatch(/^csc_/);
+
     await page.goBack();
 
     await expect(page).toHaveURL(/\/login\?returnTo=%2Fruns$/);
@@ -234,6 +242,44 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
       },
     });
 
+    const task = defineTask({
+      id: `e2e-activation-task-${suffix}`,
+      run() {
+        return {
+          ok: true,
+        };
+      },
+    });
+
+    const cascade = createCascadeClient({
+      baseUrl: apiURL,
+      apiKey,
+    });
+
+    const deployment = await cascade.registerDeployment({
+      version: `e2e-activation-${suffix}`,
+      image: "ghcr.io/cascade/e2e-activation:v1",
+      tasks: [
+        {
+          task,
+          name: "E2E activation task",
+        },
+      ],
+    });
+
+    expect(deployment).toMatchObject({
+      environmentId: project.environments[0]?.id,
+      status: "ACTIVE",
+      version: `e2e-activation-${suffix}`,
+      image: "ghcr.io/cascade/e2e-activation:v1",
+      tasks: [
+        {
+          slug: `e2e-activation-task-${suffix}`,
+          name: "E2E activation task",
+        },
+      ],
+    });
+
     expect(project).toMatchObject({
       organizationId: organization.id,
       name: "E2E Activated Project",
@@ -246,6 +292,17 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
         type: "DEVELOPMENT",
       }),
     ]);
+
+    await page.getByRole("link", { name: "Check deployment" }).click();
+
+    await expect(page).toHaveURL(/\/login\?returnTo=%2Fruns$/);
+    await expect(page.getByRole("heading", { name: "Starting your deployment" })).toBeVisible();
+    await expect(page.getByText("PENDING", { exact: true })).toBeVisible();
+
+    await expect(page.getByRole("link", { name: "View deployment status" })).toHaveAttribute(
+      "href",
+      `/deployments/${deployment.id}`,
+    );
 
     const cookieNames = (await context.cookies(baseURL)).map((cookie) => cookie.name);
 
