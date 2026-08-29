@@ -6,17 +6,10 @@ import {
   commitDashboardSession,
   createDashboardSession,
 } from "~/lib/auth/dashboard-session.server";
+import { resolvePostAuthenticationRedirect } from "~/lib/auth/post-authentication.server";
 
 function isDevAuthEnabled() {
   return process.env["DASHBOARD_AUTH_MODE"]?.trim() === "dev";
-}
-
-function normalizeReturnTo(value: string | null) {
-  if (value?.startsWith("/") && !value.startsWith("//")) {
-    return value;
-  }
-
-  return "/dashboard";
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -26,8 +19,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (isDevAuthEnabled()) {
     const user = await findOrCreateDevDashboardUser();
     const session = await createDashboardSession(user.id);
+    const destination = await resolvePostAuthenticationRedirect(user.id, returnTo);
 
-    return redirect(normalizeReturnTo(returnTo), {
+    return redirect(destination, {
       headers: {
         "Set-Cookie": await commitDashboardSession(session.token),
       },

@@ -5,5 +5,5 @@ export function meta() {
 }
 
 export default function SignupPage() {
-  return <AuthEntryPage title="Sign in" startHref="/auth/start?returnTo=%2Fonboarding" />;
+  return <AuthEntryPage title="Sign in" startHref="/auth/start" />;
 }

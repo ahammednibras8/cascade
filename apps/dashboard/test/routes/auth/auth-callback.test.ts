@@ -5,6 +5,9 @@ const clearOidcLoginTransaction = vi.hoisted(() => vi.fn<() => Promise<string>>(
 const findOrCreateOidcUser = vi.hoisted(() => vi.fn<(profile: unknown) => Promise<unknown>>());
 const createDashboardSession = vi.hoisted(() => vi.fn<(userId: string) => Promise<unknown>>());
 const commitDashboardSession = vi.hoisted(() => vi.fn<(token: string) => Promise<string>>());
+const resolvePostAuthenticationRedirect = vi.hoisted(() =>
+  vi.fn<(userId: string, returnTo: string) => Promise<string>>(),
+);
 
 vi.mock("../../../app/lib/auth/oidc.server.js", () => ({
   completeOidcLogin,
@@ -20,6 +23,10 @@ vi.mock("../../../app/lib/auth/dashboard-session.server.js", () => ({
   commitDashboardSession,
 }));
 
+vi.mock("../../../app/lib/auth/post-authentication.server.js", () => ({
+  resolvePostAuthenticationRedirect,
+}));
+
 const { loader } = await import("../../../app/routes/auth/auth-callback.js");
 
 const profile = {
@@ -32,6 +39,7 @@ const profile = {
 describe("OIDC callback route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resolvePostAuthenticationRedirect.mockResolvedValue("/runs");
   });
 
   it("creates a dashboard session and returns to the requested page", async () => {
@@ -55,6 +63,7 @@ describe("OIDC callback route", () => {
     expect(findOrCreateOidcUser).toHaveBeenCalledWith(profile);
     expect(createDashboardSession).toHaveBeenCalledWith("user-1");
     expect(commitDashboardSession).toHaveBeenCalledWith("dashboard-session-token");
+    expect(resolvePostAuthenticationRedirect).toHaveBeenCalledWith("user-1", "/runs");
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/runs");
     expect(response.headers.get("Set-Cookie")).toContain("cascade-oidc=");
@@ -74,5 +83,6 @@ describe("OIDC callback route", () => {
     expect(response.headers.get("Set-Cookie")).toContain("Max-Age=0");
     expect(findOrCreateOidcUser).not.toHaveBeenCalled();
     expect(createDashboardSession).not.toHaveBeenCalled();
+    expect(resolvePostAuthenticationRedirect).not.toHaveBeenCalled();
   });
 });

@@ -18,6 +18,9 @@ const createDashboardSession = vi.hoisted(() =>
 );
 
 const commitDashboardSession = vi.hoisted(() => vi.fn<(token: string) => Promise<string>>());
+const resolvePostAuthenticationRedirect = vi.hoisted(() =>
+  vi.fn<(userId: string, returnTo: string | null) => Promise<string>>(),
+);
 
 vi.mock("../../../app/lib/auth/oidc.server.js", () => ({
   startOidcLogin,
@@ -32,12 +35,17 @@ vi.mock("../../../app/lib/auth/dashboard-session.server.js", () => ({
   createDashboardSession,
 }));
 
+vi.mock("../../../app/lib/auth/post-authentication.server.js", () => ({
+  resolvePostAuthenticationRedirect,
+}));
+
 const { loader } = await import("../../../app/routes/auth/login.js");
 
 describe("auth start route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env["DASHBOARD_AUTH_MODE"];
+    resolvePostAuthenticationRedirect.mockResolvedValue("/runs");
   });
 
   it("starts OIDC login and preserves the internal return path", async () => {
@@ -77,6 +85,7 @@ describe("auth start route", () => {
     expect(findOrCreateDevDashboardUser).toHaveBeenCalledWith();
     expect(createDashboardSession).toHaveBeenCalledWith("user-1");
     expect(commitDashboardSession).toHaveBeenCalledWith("dev-session-token");
+    expect(resolvePostAuthenticationRedirect).toHaveBeenCalledWith("user-1", "/runs");
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/runs");
     expect(response.headers.get("Set-Cookie")).toContain("cascade-session=");
@@ -84,6 +93,7 @@ describe("auth start route", () => {
 
   it("does not redirect dev auth to an external return URL", async () => {
     process.env["DASHBOARD_AUTH_MODE"] = "dev";
+    resolvePostAuthenticationRedirect.mockResolvedValue("/dashboard");
     findOrCreateDevDashboardUser.mockResolvedValue({
       id: "user-1",
       email: "local-dashboard@example.test",
