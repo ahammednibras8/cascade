@@ -19,7 +19,7 @@ export async function resolvePostAuthenticationRedirect(
   return normalizeReturnTo(requestedReturnTo);
 }
 
-export async function hasUsableDashboardWorkspace(userId: string) {
+async function hasUsableDashboardWorkspace(userId: string) {
   const usableEnvironment = await prisma.environment.findFirst({
     where: {
       project: {

@@ -1,8 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignore": [
-    "apps/dashboard/app/lib/environment-runs-stream.client.ts",
-    "apps/dashboard/app/lib/run-event-stream.client.ts",
     "packages/database/src/generated/prisma/browser.ts",
     "packages/database/src/generated/prisma/internal/prismaNamespaceBrowser.ts"
   ],
@@ -12,8 +10,7 @@
   "ignoreBinaries": ["goose", "helm", "infisical", "mint"],
   "workspaces": {
     ".": {
-      "entry": ["package.json"],
-      "project": ["*.json", ".configs/**/*.json"]
+      "entry": ["package.json", "examples/hello-deployment/tasks/index.mjs"]
     },
     "apps/api": {
       "entry": ["src/index.ts", "src/dev/*.ts"],
@@ -21,43 +18,41 @@
     },
     "apps/dashboard": {
       "entry": ["app/routes/**/*.{ts,tsx}"],
-      "project": ["app/**/*.{ts,tsx}", "test/**/*.{ts,tsx}", "*.ts"]
+      "project": ["app/**/*.{ts,tsx}", "app/**/*.css", "test/**/*.{ts,tsx}", "*.ts"]
     },
     "packages/core": {
-      "entry": ["src/index.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/api-contracts": {
-      "entry": ["src/index.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/database": {
       "entry": ["prisma/seed/**/*.ts"],
-      "project": ["src/**/*.ts", "test/**/*.ts", "prisma/**/*.ts"]
+      "project": ["src/**/*.ts", "test/**/*.ts", "prisma/**/*.ts", "prisma/**/*.prisma"]
     },
     "packages/sdk": {
-      "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"]
     },
     "packages/storage": {
-      "entry": ["src/index.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/worker": {
-      "entry": ["src/index.ts", "src/tasks/registry.ts"],
-      "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.mjs"]
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"],
+      "ignoreDependencies": ["tsx"]
     },
     "packages/clickhouse": {
       "entry": ["package.json"],
       "project": []
     },
     "docs": {
-      "entry": ["docs.json", "**/*.mdx"],
-      "project": ["**/*.mdx"]
+      "entry": ["package.json"],
+      "project": []
     },
     "apps/e2e": {
       "entry": ["tests/**/*.ts"],
-      "project": ["**/*.ts"]
+      "project": ["**/*.ts"],
+      "ignoreDependencies": ["@cascade/dashboard"]
     }
   },
   "treatConfigHintsAsErrors": true
