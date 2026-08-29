@@ -1,9 +1,14 @@
 import { expect, request as playwrightRequest, test, type TestInfo } from "@playwright/test";
-import { createCascadeClient, defineTask } from "@cascade/sdk";
-import { randomUUID } from "node:crypto";
+import {
+  createActivationApiKey,
+  createActivationWorkspace,
+  createDashboardActivationFixture,
+  disposeDashboardActivationFixture,
+  getActivationProject,
+  registerActivationDeployment,
+} from "./support/dashboard-activation.js";
 
 process.env["DATABASE_URL"] ??= "postgresql://cascade:cascade@localhost:15432/cascade";
-const apiURL = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
 function getBaseURL(testInfo: TestInfo) {
   const baseURL = testInfo.project.use.baseURL;
@@ -13,25 +18,6 @@ function getBaseURL(testInfo: TestInfo) {
   }
 
   return baseURL;
-}
-
-function getCookieValue(setCookie: string) {
-  const firstPart = setCookie.split(";")[0];
-
-  if (!firstPart) {
-    throw new Error("Dashboard session cookie is missing");
-  }
-
-  const separatorIndex = firstPart.indexOf("=");
-
-  if (separatorIndex === -1) {
-    throw new Error("Dashboard session cookie is invalid");
-  }
-
-  return {
-    name: firstPart.slice(0, separatorIndex),
-    value: firstPart.slice(separatorIndex + 1),
-  };
 }
 
 test("authenticated dashboard loads", async ({ page }) => {
@@ -132,91 +118,12 @@ test("legacy signup and onboarding routes do not exist", async ({
 
 test("takes a new workspace to credential activation", async ({ browser }, testInfo) => {
   const baseURL = getBaseURL(testInfo);
-  const { prisma } = await import("@cascade/database");
-  const { commitDashboardSession, createDashboardSession } =
-    await import("../../dashboard/app/lib/auth/dashboard-session.server.js");
-
-  const suffix = randomUUID().slice(0, 8);
-  const user = await prisma.user.create({
-    data: {
-      email: `e2e-workspace-activation-${suffix}@example.test`,
-      displayName: "E2E Workspace Activation",
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  const organization = await prisma.organization.create({
-    data: {
-      slug: `personal-${user.id}`,
-      name: "E2E Workspace Activation",
-      members: {
-        create: {
-          userId: user.id,
-          role: "OWNER",
-        },
-      },
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  const session = await createDashboardSession(user.id);
-  const sessionCookie = getCookieValue(await commitDashboardSession(session.token));
-  const context = await browser.newContext({
-    baseURL,
-  });
+  const fixture = await createDashboardActivationFixture(browser, baseURL);
 
   try {
-    await context.addCookies([
-      {
-        name: sessionCookie.name,
-        value: sessionCookie.value,
-        url: baseURL,
-        expires: Math.floor(session.expiresAt.getTime() / 1000),
-        httpOnly: true,
-        secure: baseURL.startsWith("https://"),
-        sameSite: "Lax",
-      },
-    ]);
-
-    const page = await context.newPage();
-
-    await page.goto("/login?returnTo=/runs");
-
-    await expect(page.getByRole("heading", { name: "Create a workspace" })).toBeVisible();
-
-    await page.getByLabel("Project name").fill("E2E Activated Project");
-    await page.getByRole("button", { name: "Create workspace" }).click();
-
-    await expect(page).toHaveURL(/\/login\?returnTo=%2Fruns$/);
-    await expect(page.getByRole("heading", { name: "Create an integration key" })).toBeVisible();
-
-    await expect(page.getByRole("link", { name: "Create API key" })).toHaveAttribute(
-      "href",
-      "/api-keys",
-    );
-
-    await page.getByRole("link", { name: "Create API key" }).click();
-
-    await expect(page).toHaveURL(/\/api-keys$/);
-    await expect(page.getByRole("heading", { name: "API keys" })).toBeVisible();
-
-    await page.getByRole("textbox", { name: "Name" }).fill(`E2E activation key ${suffix}`);
-
-    await page.locator('input[name="scope"][value="DEPLOYMENTS_WRITE"]').check();
-    await page.locator('input[name="scope"][value="TASKS_TRIGGER"]').check();
-    await page.locator('input[name="scope"][value="RUNS_READ"]').check();
-
-    await page.getByRole("button", { name: "Create API key" }).click();
-
-    await expect(page.getByRole("heading", { name: "Copy this API key now" })).toBeVisible();
-
-    const apiKey = await page
-      .locator("section[aria-labelledby='new-api-key-heading'] code")
-      .innerText();
+    const page = await fixture.context.newPage();
+    await createActivationWorkspace(page);
+    const apiKey = await createActivationApiKey(page, fixture.suffix);
 
     expect(apiKey).toMatch(/^csc_/);
 
@@ -226,72 +133,23 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
     await expect(
       page.getByRole("heading", { name: "Register your first deployment" }),
     ).toBeVisible();
-    await expect(page.locator("pre code")).toContainText("cascade.registerDeployment");
+    const registrationCode = page.locator("pre code");
+
+    await expect(registrationCode).toContainText("createCascadeClient");
+    await expect(registrationCode).toContainText('process.env["CASCADE_API_KEY"]');
+    await expect(registrationCode).toContainText("cascade.registerDeployment");
 
     await expect(page.getByRole("link", { name: "Check deployment" })).toHaveAttribute(
       "href",
       "/login?returnTo=%2Fruns",
     );
 
-    const project = await prisma.project.findUniqueOrThrow({
-      where: {
-        slug: `personal-${user.id}-project`,
-      },
-      include: {
-        environments: true,
-      },
-    });
-
-    const task = defineTask({
-      id: `e2e-activation-task-${suffix}`,
-      run() {
-        return {
-          ok: true,
-        };
-      },
-    });
-
-    const cascade = createCascadeClient({
-      baseUrl: apiURL,
+    const project = await getActivationProject(fixture);
+    const deployment = await registerActivationDeployment({
       apiKey,
+      environmentId: project.environments[0]?.id ?? "",
+      suffix: fixture.suffix,
     });
-
-    const deployment = await cascade.registerDeployment({
-      version: `e2e-activation-${suffix}`,
-      image: "ghcr.io/cascade/e2e-activation:v1",
-      tasks: [
-        {
-          task,
-          name: "E2E activation task",
-        },
-      ],
-    });
-
-    expect(deployment).toMatchObject({
-      environmentId: project.environments[0]?.id,
-      status: "ACTIVE",
-      version: `e2e-activation-${suffix}`,
-      image: "ghcr.io/cascade/e2e-activation:v1",
-      tasks: [
-        {
-          slug: `e2e-activation-task-${suffix}`,
-          name: "E2E activation task",
-        },
-      ],
-    });
-
-    expect(project).toMatchObject({
-      organizationId: organization.id,
-      name: "E2E Activated Project",
-      slug: `personal-${user.id}-project`,
-    });
-    expect(project.environments).toEqual([
-      expect.objectContaining({
-        slug: "dev",
-        name: "Development",
-        type: "DEVELOPMENT",
-      }),
-    ]);
 
     await page.getByRole("link", { name: "Check deployment" }).click();
 
@@ -304,29 +162,12 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
       `/deployments/${deployment.id}`,
     );
 
-    const cookieNames = (await context.cookies(baseURL)).map((cookie) => cookie.name);
+    const cookieNames = (await fixture.context.cookies(baseURL)).map((cookie) => cookie.name);
 
     expect(cookieNames).toEqual(
       expect.arrayContaining(["cascade-active-organization", "cascade-active-environment"]),
     );
   } finally {
-    await context.close();
-
-    await prisma.project.deleteMany({
-      where: {
-        organizationId: organization.id,
-      },
-    });
-    await prisma.organization.delete({
-      where: {
-        id: organization.id,
-      },
-    });
-    await prisma.user.delete({
-      where: {
-        id: user.id,
-      },
-    });
-    await prisma.$disconnect();
+    await disposeDashboardActivationFixture(fixture);
   }
 });

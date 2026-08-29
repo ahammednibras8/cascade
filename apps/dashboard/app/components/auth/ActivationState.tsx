@@ -54,11 +54,24 @@ export default function ActivationState({
           created.
         </p>
         <pre className="mt-6 overflow-x-auto rounded-2xl bg-[#10140f] p-4 text-xs leading-6 text-white/85">
-          <code>{`await cascade.registerDeployment({
-  version: "v1",
-  image: "your-registry/your-worker:v1",
-  tasks: [{ task: hello }],
-});`}</code>
+          <code>{`import { createCascadeClient } from "@cascade/sdk";
+          import { hello } from "./tasks/hello.js";
+
+          const cascade = createCascadeClient({
+            baseUrl: process.env["CASCADE_API_URL"]!,
+            apiKey: process.env["CASCADE_API_KEY"]!,
+          });
+
+          await cascade.registerDeployment({
+            version: "v1",
+            image: "ghcr.io/your-org/your-worker:v1",
+            tasks: [
+              {
+                task: hello,
+                name: "Hello",
+              },
+            ],
+          });`}</code>
         </pre>
         <div className="mt-6">
           <GlassButton
@@ -119,10 +132,20 @@ function FirstRunActivationState({ checkActivationHref }: { checkActivationHref:
         Trigger one task through the SDK. A completed run activates this workspace.
       </p>
       <pre className="mt-6 overflow-x-auto rounded-2xl bg-[#10140f] p-4 text-xs leading-6 text-white/85">
-        <code>{`await cascade.triggerTask(hello, {
-  payload: { message: "Hello, Cascade" },
-  idempotencyKey: crypto.randomUUID(),
-});`}</code>
+        <code>{`import { createCascadeClient } from "@cascade/sdk";
+        import { hello } from "./tasks/hello.js";
+        
+        const cascade = createCascadeClient({
+          baseUrl: process.env["CASCADE_API_URL"]!,
+          apiKey: process.env["CASCADE_API_KEY"]!,
+        });
+        
+        const run = await cascade.triggerTask(hello, {
+          payload: { message: "Hello, Cascade" },
+          idempotencyKey: crypto.randomUUID(),
+        });
+        
+        console.log(run.id);`}</code>
       </pre>
       <div className="mt-6 space-y-3">
         <GlassButton
