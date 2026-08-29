@@ -60,14 +60,72 @@ export async function resolveDashboardActivationState(
     };
   }
 
-  const environment = await prisma.environment.findFirst({
+  return resolveWorkspaceActivationState(activeEnvironment.id, session.userId);
+}
+
+async function resolveWorkspaceActivationState(
+  environmentId: string,
+  userId: string,
+): Promise<DashboardActivationState> {
+  const environment = await findActivationEnvironment(environmentId, userId);
+
+  if (!environment) {
+    return {
+      state: "WORKSPACE_REQUIRED",
+    };
+  }
+
+  if (environment.apiKeys.length === 0) {
+    return {
+      state: "CREDENTIAL_REQUIRED",
+      environmentId: environment.id,
+    };
+  }
+
+  const deployment = environment.deployments[0];
+
+  if (!deployment || deployment.tasks.length === 0) {
+    return {
+      state: "STARTER_REQUIRED",
+      environmentId: environment.id,
+    };
+  }
+
+  if (deployment.runtimeStatus !== "RUNNING") {
+    return {
+      state: "DEPLOYMENT_PENDING",
+      deploymentId: deployment.id,
+      environmentId: environment.id,
+      runtimeStatus: deployment.runtimeStatus,
+    };
+  }
+
+  const hasCompletedRun = await hasCompletedDeploymentRun(deployment.id, environment.id);
+
+  if (!hasCompletedRun) {
+    return {
+      state: "FIRST_RUN_PENDING",
+      deploymentId: deployment.id,
+      environmentId: environment.id,
+    };
+  }
+
+  return {
+    state: "ACTIVATED",
+    deploymentId: deployment.id,
+    environmentId: environment.id,
+  };
+}
+
+function findActivationEnvironment(environmentId: string, userId: string) {
+  return prisma.environment.findFirst({
     where: {
-      id: activeEnvironment.id,
+      id: environmentId,
       project: {
         organization: {
           members: {
             some: {
-              userId: session.userId,
+              userId,
             },
           },
         },
@@ -108,42 +166,13 @@ export async function resolveDashboardActivationState(
       },
     },
   });
+}
 
-  if (!environment) {
-    return {
-      state: "WORKSPACE_REQUIRED",
-    };
-  }
-
-  if (environment.apiKeys.length === 0) {
-    return {
-      state: "CREDENTIAL_REQUIRED",
-      environmentId: environment.id,
-    };
-  }
-
-  const deployment = environment.deployments[0];
-
-  if (!deployment || deployment.tasks.length === 0) {
-    return {
-      state: "STARTER_REQUIRED",
-      environmentId: environment.id,
-    };
-  }
-
-  if (deployment.runtimeStatus !== "RUNNING") {
-    return {
-      state: "DEPLOYMENT_PENDING",
-      deploymentId: deployment.id,
-      environmentId: environment.id,
-      runtimeStatus: deployment.runtimeStatus,
-    };
-  }
-
+async function hasCompletedDeploymentRun(deploymentId: string, environmentId: string) {
   const completedRun = await prisma.taskRun.findFirst({
     where: {
-      deploymentId: deployment.id,
-      environmentId: environment.id,
+      deploymentId,
+      environmentId,
       status: "COMPLETED",
     },
     select: {
@@ -151,17 +180,5 @@ export async function resolveDashboardActivationState(
     },
   });
 
-  if (!completedRun) {
-    return {
-      state: "FIRST_RUN_PENDING",
-      deploymentId: deployment.id,
-      environmentId: environment.id,
-    };
-  }
-
-  return {
-    state: "ACTIVATED",
-    deploymentId: deployment.id,
-    environmentId: environment.id,
-  };
+  return completedRun !== null;
 }
