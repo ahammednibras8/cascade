@@ -8,6 +8,9 @@ import { findOrCreateDevDashboardUser } from "~/lib/auth/dashboard-user.server";
 import { hasUsableDashboardWorkspace } from "~/lib/auth/post-authentication.server";
 import type { Route } from "./+types/login-page";
 import { redirect } from "react-router";
+import { createPersonalWorkspace } from "~/lib/auth/create-personal-workspace.server";
+import { commitActiveDashboardOrganization } from "~/lib/workspace/dashboard-organization.server";
+import { commitActiveDashboardEnvironment } from "~/lib/workspace/dashboard-workspace.server";
 
 function normalizeReturnTo(value: string | null) {
   if (value?.startsWith("/") && !value.startsWith("//")) {
@@ -52,6 +55,33 @@ export async function loader({ request }: Route.LoaderArgs) {
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
 
+  if (formData.get("intent") === "create_workspace") {
+    const session = await getDashboardSession(request);
+    const projectName = formData.get("projectName");
+    const returnToValue = formData.get("returnTo");
+
+    if (!session) {
+      throw redirect("/login");
+    }
+
+    if (typeof projectName !== "string" || !projectName.trim()) {
+      return Response.json({ ok: false, error: "project_name_required" }, { status: 400 });
+    }
+
+    const workspace = await createPersonalWorkspace({
+      userId: session.userId,
+      projectName,
+    });
+
+    const headers = new Headers();
+    headers.append("Set-Cookie", await commitActiveDashboardOrganization(workspace.organizationId));
+    headers.append("Set-Cookie", await commitActiveDashboardEnvironment(workspace.environmentId));
+
+    return redirect(normalizeReturnTo(typeof returnToValue === "string" ? returnToValue : null), {
+      headers,
+    });
+  }
+
   if (formData.get("intent") !== "authenticate" || !isDevAuthEnabled()) {
     return Response.json({ ok: false, error: "authentication_unavailable" }, { status: 400 });
   }
@@ -88,6 +118,7 @@ export default function LoginPage({ loaderData }: Route.ComponentProps) {
       devAuthEnabled={loaderData.devAuthEnabled}
       stage={loaderData.stage}
       startHref={startHref}
+      returnTo={loaderData.returnTo}
       error={loaderData.error}
     />
   );

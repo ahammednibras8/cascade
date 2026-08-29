@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useFetcher } from "react-router";
+import { Form, useFetcher } from "react-router";
 import GlassButton from "~/components/landing/GlassButton";
 
 type AuthStage = "authentication" | "workspace";
@@ -18,19 +18,20 @@ type AuthEntryPageProps = {
   error?: string | null;
   stage: AuthStage;
   startHref: string;
+  returnTo: string;
 };
 
 export default function AuthEntryPage({
   authenticated,
   devAuthEnabled,
   error,
+  returnTo,
   stage,
   startHref,
 }: AuthEntryPageProps) {
   const shouldReduceMotion = useReducedMotion();
   const fetcher = useFetcher<AuthActionData>();
   const [currentStage, setCurrentStage] = useState<AuthStage>(stage);
-  const [projectName, setProjectName] = useState("");
 
   const isAuthenticated = [authenticated, fetcher.data?.ok === true].includes(true);
   const workspaceStage = currentStage === "workspace";
@@ -121,9 +122,8 @@ export default function AuthEntryPage({
             >
               {workspaceStage ? (
                 <WorkspaceState
-                  projectName={projectName}
                   onBack={() => setCurrentStage("authentication")}
-                  onProjectNameChange={setProjectName}
+                  returnTo={returnTo}
                 />
               ) : (
                 <AuthenticationState
@@ -221,15 +221,7 @@ function AuthenticationState({
   );
 }
 
-function WorkspaceState({
-  projectName,
-  onBack,
-  onProjectNameChange,
-}: {
-  projectName: string;
-  onBack: () => void;
-  onProjectNameChange: (value: string) => void;
-}) {
+function WorkspaceState({ onBack, returnTo }: { onBack: () => void; returnTo: string }) {
   return (
     <>
       <button
@@ -248,7 +240,10 @@ function WorkspaceState({
         Name the project you want to use with Cascade.
       </p>
 
-      <div className="mt-8">
+      <Form method="post" action="/login" className="mt-8">
+        <input type="hidden" name="intent" value="create_workspace" />
+        <input type="hidden" name="returnTo" value={returnTo} />
+
         <label htmlFor="project-name" className="text-sm font-medium text-black/65">
           Project name
         </label>
@@ -256,12 +251,22 @@ function WorkspaceState({
           id="project-name"
           name="projectName"
           type="text"
-          autoComplete="off"
-          value={projectName}
-          onChange={(event) => onProjectNameChange(event.target.value)}
+          autoComplete="organization"
+          required
           className="mt-2 h-12 w-full rounded-2xl border border-black/10 bg-white/70 px-4 text-sm text-[#05050c] outline-none transition focus:border-black/30 focus:bg-white"
         />
-      </div>
+
+        <div className="mt-6">
+          <GlassButton
+            label="Create workspace"
+            icon={ArrowRight}
+            type="submit"
+            tone="black"
+            size="large"
+            fullWidth
+          />
+        </div>
+      </Form>
     </>
   );
 }
