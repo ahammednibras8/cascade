@@ -74,3 +74,24 @@ test("anonymous dashboard requests are redirected to login", async ({
     await anonymousRequest.dispose();
   }
 });
+
+test("legacy signup and onboarding routes do not exist", async ({
+  browserName: _browserName,
+}, testInfo) => {
+  const baseURL = testInfo.project.use.baseURL;
+  const request = await playwrightRequest.newContext(
+    typeof baseURL === "string" ? { baseURL } : {},
+  );
+
+  try {
+    const responses = await Promise.all(
+      ["/signup", "/onboarding"].map((path) => request.get(path)),
+    );
+
+    for (const response of responses) {
+      expect(response.status()).toBe(404);
+    }
+  } finally {
+    await request.dispose();
+  }
+});

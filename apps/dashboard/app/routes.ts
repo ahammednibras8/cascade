@@ -3,10 +3,8 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 export default [
   index("routes/landing.tsx"),
   route("dashboard", "routes/dashboard.tsx"),
-  route("onboarding", "routes/onboarding/onboarding.tsx"),
   route("readyz", "routes/system/readyz.ts"),
   route("login", "routes/auth/login-page.tsx"),
-  route("signup", "routes/auth/signup-page.tsx"),
   route("signed-out", "routes/auth/signed-out.tsx"),
   route("auth/start", "routes/auth/login.ts"),
   route("auth/callback", "routes/auth/auth-callback.ts"),

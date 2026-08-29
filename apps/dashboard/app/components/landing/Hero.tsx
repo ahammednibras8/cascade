@@ -1,14 +1,10 @@
-import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, BookOpen } from "lucide-react";
 import GlassButton from "./GlassButton";
 import StoneReveal from "./StoneReveal";
 
-const EXPO_OUT = [0.22, 1, 0.36, 1] as const;
 const ASSET_BASE = "/landing/synex";
 
 export default function Hero() {
-  const shouldReduceMotion = useReducedMotion();
-
   return (
     <section
       className="relative h-dvh w-full overflow-hidden bg-[#f2f2f0]"
@@ -24,65 +20,31 @@ export default function Hero() {
         }}
       />
 
-      <motion.div
-        initial={shouldReduceMotion ? false : { opacity: 0, y: -12, filter: "blur(6px)" }}
-        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-        transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-        className="absolute top-4 right-4 z-20 sm:top-6 sm:right-6"
-      >
+      <div className="absolute top-4 right-4 z-20 sm:top-6 sm:right-6">
         <GlassButton label="Continue" icon={ArrowRight} tone="black" to="/login" />
-      </motion.div>
+      </div>
 
       <div
         className="relative flex flex-col items-center px-6 pt-[clamp(4rem,12vh,8.75rem)] text-center"
         style={{ zIndex: 10 }}
       >
-        <motion.p
-          initial={shouldReduceMotion ? false : { opacity: 0, y: 16, filter: "blur(8px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-          className="mb-3 text-xs font-medium text-black/50 sm:mb-4 sm:text-[13px] md:text-sm"
-        >
+        <p className="mb-3 text-xs font-medium text-black/50 sm:mb-4 sm:text-[13px] md:text-sm">
           Durable Task Execution
-        </motion.p>
+        </p>
 
         <h2 className="text-[34px] font-medium leading-[1.05] tracking-[-0.03em] sm:text-[44px] md:text-[56px] lg:text-[68px]">
-          <motion.span
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 24, filter: "blur(12px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
-            className="block text-black/20"
-          >
-            Background work,
-          </motion.span>
-          <motion.span
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 24, filter: "blur(12px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.7, delay: 0.32, ease: "easeOut" }}
-            className="block text-[#05050c]"
-          >
-            built to survive.
-          </motion.span>
+          <span className="block text-black/20">Background work,</span>
+          <span className="block text-[#05050c]">built to survive.</span>
         </h2>
 
-        <motion.p
-          initial={shouldReduceMotion ? false : { opacity: 0, y: 20, filter: "blur(8px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 0.7, delay: 0.45, ease: "easeOut" }}
-          className="mt-4 max-w-xl text-sm font-medium text-black/35 sm:mt-5 sm:text-base md:text-lg"
-        >
+        <p className="mt-4 max-w-xl text-sm font-medium text-black/35 sm:mt-5 sm:text-base md:text-lg">
           Run background jobs, schedules, retries, and long-running operations as observable task
           runs you can inspect, cancel, and replay.
-        </motion.p>
+        </p>
 
-        <motion.div
-          initial={shouldReduceMotion ? false : { opacity: 0, y: 18, filter: "blur(8px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 0.7, delay: 0.58, ease: "easeOut" }}
-          className="mt-7 flex flex-wrap items-center justify-center gap-2.5 sm:mt-8 sm:gap-3"
-        >
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5 sm:mt-8 sm:gap-3">
           <GlassButton label="View docs" icon={BookOpen} />
-        </motion.div>
+        </div>
       </div>
 
       <StoneReveal
@@ -98,10 +60,7 @@ export default function Hero() {
         className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center"
         style={{ zIndex: 3 }}
       >
-        <motion.div
-          initial={shouldReduceMotion ? false : { opacity: 0, y: 80, filter: "blur(8px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 1, delay: 0.6, ease: EXPO_OUT }}
+        <div
           className="w-[92vw] sm:w-[72vw] md:w-[60vw] lg:w-[min(54vw,calc((100dvh-29.25rem)*1.845))]"
           style={{ maxWidth: "944px" }}
         >
@@ -111,7 +70,7 @@ export default function Hero() {
             draggable={false}
             className="block h-auto w-full rounded-t-xl object-contain shadow-[0_-8px_80px_rgba(0,0,0,0.12),0_40px_120px_rgba(0,0,0,0.10)]"
           />
-        </motion.div>
+        </div>
       </div>
 
       <StoneReveal

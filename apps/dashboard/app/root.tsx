@@ -8,10 +8,17 @@ import {
   useLocation,
 } from "react-router";
 
+import type { CSSProperties } from "react";
 import type { Route } from "./+types/root";
 import { Theme } from "~/components/ui";
 import "@radix-ui/themes/styles.css";
 import "./app.css";
+
+const PUBLIC_LANDING_BODY_STYLE = {
+  height: "100dvh",
+  overflow: "hidden",
+  width: "100vw",
+} satisfies CSSProperties;
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -29,6 +36,9 @@ export const links: Route.LinksFunction = () => [
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const isPublicLanding = location.pathname === "/";
+  const bodyClassName = isPublicLanding
+    ? "h-dvh overflow-hidden bg-gray-50 text-gray-950 antialiased"
+    : "min-h-screen bg-gray-50 text-gray-950 antialiased";
 
   return (
     <html lang="en">
@@ -38,12 +48,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="min-h-screen bg-gray-50 text-gray-950 antialiased">
+      <body
+        className={bodyClassName}
+        style={isPublicLanding ? PUBLIC_LANDING_BODY_STYLE : undefined}
+      >
         <Theme appearance="light" accentColor="bronze" grayColor="sand" radius="small">
           {children}
         </Theme>
-        {isPublicLanding ? null : <ScrollRestoration />}
-        <Scripts />
+        {isPublicLanding ? null : (
+          <>
+            <ScrollRestoration />
+            <Scripts />
+          </>
+        )}
       </body>
     </html>
   );
