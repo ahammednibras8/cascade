@@ -1,4 +1,36 @@
-import { expect, request as playwrightRequest, test } from "@playwright/test";
+import { expect, request as playwrightRequest, test, type TestInfo } from "@playwright/test";
+import { randomUUID } from "node:crypto";
+
+process.env["DATABASE_URL"] ??= "postgresql://cascade:cascade@localhost:15432/cascade";
+
+function getBaseURL(testInfo: TestInfo) {
+  const baseURL = testInfo.project.use.baseURL;
+
+  if (typeof baseURL !== "string") {
+    throw new Error("Playwright base URL is required");
+  }
+
+  return baseURL;
+}
+
+function getCookieValue(setCookie: string) {
+  const firstPart = setCookie.split(";")[0];
+
+  if (!firstPart) {
+    throw new Error("Dashboard session cookie is missing");
+  }
+
+  const separatorIndex = firstPart.indexOf("=");
+
+  if (separatorIndex === -1) {
+    throw new Error("Dashboard session cookie is invalid");
+  }
+
+  return {
+    name: firstPart.slice(0, separatorIndex),
+    value: firstPart.slice(separatorIndex + 1),
+  };
+}
 
 test("authenticated dashboard loads", async ({ page }) => {
   await page.goto("/dashboard");
@@ -93,5 +125,119 @@ test("legacy signup and onboarding routes do not exist", async ({
     }
   } finally {
     await request.dispose();
+  }
+});
+
+test("activates a new user's workspace through login", async ({ browser }, testInfo) => {
+  const baseURL = getBaseURL(testInfo);
+  const { prisma } = await import("@cascade/database");
+  const { commitDashboardSession, createDashboardSession } =
+    await import("../../dashboard/app/lib/auth/dashboard-session.server.js");
+
+  const suffix = randomUUID().slice(0, 8);
+  const user = await prisma.user.create({
+    data: {
+      email: `e2e-workspace-activation-${suffix}@example.test`,
+      displayName: "E2E Workspace Activation",
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const organization = await prisma.organization.create({
+    data: {
+      slug: `personal-${user.id}`,
+      name: "E2E Workspace Activation",
+      members: {
+        create: {
+          userId: user.id,
+          role: "OWNER",
+        },
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const session = await createDashboardSession(user.id);
+  const sessionCookie = getCookieValue(await commitDashboardSession(session.token));
+  const context = await browser.newContext({
+    baseURL,
+  });
+
+  try {
+    await context.addCookies([
+      {
+        name: sessionCookie.name,
+        value: sessionCookie.value,
+        url: baseURL,
+        expires: Math.floor(session.expiresAt.getTime() / 1000),
+        httpOnly: true,
+        secure: baseURL.startsWith("https://"),
+        sameSite: "Lax",
+      },
+    ]);
+
+    const page = await context.newPage();
+
+    await page.goto("/login?returnTo=/runs");
+
+    await expect(page.getByRole("heading", { name: "Create a workspace" })).toBeVisible();
+
+    await page.getByLabel("Project name").fill("E2E Activated Project");
+    await page.getByRole("button", { name: "Create workspace" }).click();
+
+    await expect(page).toHaveURL(/\/runs$/);
+    await expect(page.getByRole("heading", { name: "Task runs" })).toBeVisible();
+    await expect(page.getByText("No task runs yet.")).toBeVisible();
+
+    const project = await prisma.project.findUniqueOrThrow({
+      where: {
+        slug: `personal-${user.id}-project`,
+      },
+      include: {
+        environments: true,
+      },
+    });
+
+    expect(project).toMatchObject({
+      organizationId: organization.id,
+      name: "E2E Activated Project",
+      slug: `personal-${user.id}-project`,
+    });
+    expect(project.environments).toEqual([
+      expect.objectContaining({
+        slug: "dev",
+        name: "Development",
+        type: "DEVELOPMENT",
+      }),
+    ]);
+
+    const cookieNames = (await context.cookies(baseURL)).map((cookie) => cookie.name);
+
+    expect(cookieNames).toEqual(
+      expect.arrayContaining(["cascade-active-organization", "cascade-active-environment"]),
+    );
+  } finally {
+    await context.close();
+
+    await prisma.project.deleteMany({
+      where: {
+        organizationId: organization.id,
+      },
+    });
+    await prisma.organization.delete({
+      where: {
+        id: organization.id,
+      },
+    });
+    await prisma.user.delete({
+      where: {
+        id: user.id,
+      },
+    });
+    await prisma.$disconnect();
   }
 });
