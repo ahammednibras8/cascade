@@ -56,6 +56,24 @@ export const DeploymentDetailResponseSchema = z.object({
   }),
 });
 
+export const CreateDeploymentResponseSchema = z.object({
+  deployment: z.object({
+    id: z.string().min(1),
+    environmentId: z.string().min(1),
+    version: z.string().min(1),
+    image: z.string().min(1),
+    status: DeploymentStatusSchema,
+    tasks: z.array(
+      z.object({
+        id: z.string().min(1),
+        slug: z.string().min(1),
+        name: z.string().min(1),
+      }),
+    ),
+    createdAt: IsoDateTimeStringSchema,
+  }),
+});
+
 export const DeactivateDeploymentResponseSchema = z.object({
   deployment: z.object({
     id: z.string().min(1),
@@ -80,3 +98,4 @@ export type ListDeploymentsResponse = z.infer<typeof ListDeploymentsResponseSche
 export type DeploymentDetailResponse = z.infer<typeof DeploymentDetailResponseSchema>;
 export type DeactivateDeploymentResponse = z.infer<typeof DeactivateDeploymentResponseSchema>;
 export type RollbackDeploymentResponse = z.infer<typeof RollbackDeploymentResponseSchema>;
+export type CreateDeploymentResponse = z.infer<typeof CreateDeploymentResponseSchema>;

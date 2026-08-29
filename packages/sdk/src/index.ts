@@ -12,6 +12,8 @@ import {
   parseApiResponse,
   type ApiResponseSchema,
   type TriggerTaskRunResponse as TriggerTaskRunResponseBody,
+  CreateDeploymentResponseSchema,
+  type CreateDeploymentResponse,
 } from "@cascade/api-contracts";
 import {
   context,
@@ -49,6 +51,20 @@ export type TriggerTaskRunResponse<TPayload extends JsonValue = JsonValue> = Omi
 > & {
   payload: TPayload | null;
 };
+
+export type DeploymentTaskInput = {
+  task: Pick<TaskDefinition, "id" | "queue" | "retry" | "timeoutMs">;
+  name?: string;
+  description?: string | null;
+};
+
+export type RegisterDeploymentOptions = {
+  version: string;
+  image: string;
+  tasks: readonly DeploymentTaskInput[];
+};
+
+export type RegisteredDeployment = CreateDeploymentResponse["deployment"];
 
 export class CascadeApiError extends Error {
   readonly status: number;
@@ -250,6 +266,36 @@ export function createCascadeClient(options: CascadeClientOptions) {
         ...response.taskRun,
         payload: response.taskRun.payload as TPayload | null,
       };
+    },
+
+    async registerDeployment(deployment: RegisterDeploymentOptions): Promise<RegisteredDeployment> {
+      const response = await request(
+        "/api/deployments",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            version: deployment.version,
+            image: deployment.image,
+            tasks: deployment.tasks.map(({ task: taskDefinition, name, description }) => ({
+              slug: taskDefinition.id,
+              name: name ?? taskDefinition.id,
+              description: description ?? null,
+              executionConfig: {
+                schemaVersion: 1,
+                timeoutMs: taskDefinition.timeoutMs,
+                retry: taskDefinition.retry,
+                queue: taskDefinition.queue,
+              },
+            })),
+          }),
+        },
+        CreateDeploymentResponseSchema,
+      );
+
+      return response.deployment;
     },
   };
 }

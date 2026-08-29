@@ -1,5 +1,6 @@
 import { ApiErrorResponseSchema, type ApiResponseSchema } from "./common.js";
 import {
+  CreateDeploymentResponseSchema,
   DeactivateDeploymentResponseSchema,
   DeploymentDetailResponseSchema,
   ListDeploymentsResponseSchema,
@@ -20,7 +21,7 @@ import { ListApiKeysResponseSchema } from "./api-keys.js";
 export type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 export type ApiRouteKind = "list" | "cursor-list" | "detail" | "mutation" | "stream";
 export type ApiRetrySafety = "safe" | "idempotency-key" | "unsafe";
-export type ApiResponseStatus = 200 | 202 | 400 | 401 | 403 | 404 | 409 | 500;
+export type ApiResponseStatus = 200 | 201 | 202 | 400 | 401 | 403 | 404 | 409 | 500;
 
 export type ApiRouteContract = {
   method: HttpMethod;
@@ -159,6 +160,29 @@ export const apiContracts = {
       "RUN_NOT_FOUND",
       "RUN_EXECUTION_CONFIG_MISSING",
       "RUN_NOT_REPLAYABLE",
+    ],
+  },
+  createDeployment: {
+    method: "POST",
+    path: "/api/deployments",
+    kind: "mutation",
+    retrySafety: "unsafe",
+    responses: {
+      201: CreateDeploymentResponseSchema,
+      400: ApiErrorResponseSchema,
+      409: ApiErrorResponseSchema,
+    },
+    errorCodes: [
+      "INVALID_BODY",
+      "INVALID_VERSION",
+      "INVALID_IMAGE",
+      "INVALID_TASKS",
+      "INVALID_TASK",
+      "INVALID_TASK_NAME",
+      "INVALID_TASK_DESCRIPTION",
+      "INVALID_TASK_EXECUTION_CONFIG",
+      "DUPLICATE_TASK_SLUG",
+      "DEPLOYMENT_VERSION_EXISTS",
     ],
   },
   listDeployments: {
