@@ -197,7 +197,30 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
       "/api-keys",
     );
 
-    await expect(page.getByRole("link", { name: "I created the key" })).toHaveAttribute(
+    await page.getByRole("link", { name: "Create API key" }).click();
+
+    await expect(page).toHaveURL(/\/api-keys$/);
+    await expect(page.getByRole("heading", { name: "API keys" })).toBeVisible();
+
+    await page.getByRole("textbox", { name: "Name" }).fill(`E2E activation key ${suffix}`);
+
+    await page.locator('input[name="scope"][value="DEPLOYMENTS_WRITE"]').check();
+    await page.locator('input[name="scope"][value="TASKS_TRIGGER"]').check();
+    await page.locator('input[name="scope"][value="RUNS_READ"]').check();
+
+    await page.getByRole("button", { name: "Create API key" }).click();
+
+    await expect(page.getByRole("heading", { name: "Copy this API key now" })).toBeVisible();
+
+    await page.goBack();
+
+    await expect(page).toHaveURL(/\/login\?returnTo=%2Fruns$/);
+    await expect(
+      page.getByRole("heading", { name: "Register your first deployment" }),
+    ).toBeVisible();
+    await expect(page.locator("pre code")).toContainText("cascade.registerDeployment");
+
+    await expect(page.getByRole("link", { name: "Check deployment" })).toHaveAttribute(
       "href",
       "/login?returnTo=%2Fruns",
     );
