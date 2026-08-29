@@ -60,84 +60,58 @@ export const hello = defineTask({
 
 ## 3. Register the task deployment
 
-Every deployed task must include an execution config. This config becomes the default for future runs, and each run receives its own snapshot.
+The SDK creates the deployment request from your task definition. Its timeout, retry, and queue configuration become the defaults snapshotted onto future runs.
 
-```sh
-curl -i "$CASCADE_API_URL/api/deployments" \
-  -H "Authorization: Bearer $CASCADE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "version": "hello-v1",
-    "image": "ghcr.io/acme/cascade-worker:hello-v1",
-    "tasks": [
-      {
-        "slug": "hello",
-        "name": "Hello",
-        "description": "Returns a greeting",
-        "executionConfig": {
-          "schemaVersion": 1,
-          "timeoutMs": 30000,
-          "retry": {
-            "maxAttempts": 3,
-            "delayMs": 1000,
-            "exponentialBackoff": true
-          },
-          "queue": {
-            "name": "hello",
-            "concurrencyLimit": 2
-          }
-        }
-      }
-    ]
-  }'
+```ts
+import { createCascadeClient } from "@cascade/sdk";
+import { hello } from "./tasks/hello.js";
+
+const cascade = createCascadeClient({
+  baseUrl: process.env["CASCADE_API_URL"]!,
+  apiKey: process.env["CASCADE_API_KEY"]!,
+});
+
+const deployment = await cascade.registerDeployment({
+  version: "hello-v1",
+  image: "ghcr.io/acme/cascade-worker:hello-v1",
+  tasks: [
+    {
+      task: hello,
+      name: "Hello",
+      description: "Returns a greeting",
+    },
+  ],
+});
+
+console.log(deployment.id);
 ```
 
-Important fields:
-
-| Field                       | Meaning                                                           |
-| --------------------------- | ----------------------------------------------------------------- |
-| `version`                   | Your deployment version. It must be unique in the environment.    |
-| `image`                     | Worker image or runtime identifier used by your deployment setup. |
-| `tasks[].slug`              | Public task identifier used by trigger requests.                  |
-| `executionConfig.timeoutMs` | Max execution time. Use `null` to disable timeout.                |
-| `executionConfig.retry`     | Retry policy for this task.                                       |
-| `executionConfig.queue`     | Queue name and optional concurrency limit.                        |
+`version` must be unique in the environment. `image` must be the worker image that contains the `hello` task definition.
 
 ## 4. Trigger a run
 
-```sh
-curl -i "$CASCADE_API_URL/api/tasks/slug/hello/trigger" \
-  -H "Authorization: Bearer $CASCADE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: hello-demo-1" \
-  -d '{
-    "payload": {
-      "name": "Nibras"
-    }
-  }'
+Use the same SDK client and task definition to trigger work.
+
+```ts
+import { createCascadeClient } from "@cascade/sdk";
+import { hello } from "./tasks/hello.js";
+
+const cascade = createCascadeClient({
+  baseUrl: process.env["CASCADE_API_URL"]!,
+  apiKey: process.env["CASCADE_API_KEY"]!,
+});
+
+const run = await cascade.triggerTask(hello, {
+  payload: {
+    name: "Nibras",
+  },
+  idempotencyKey: "hello-demo-1",
+});
+
+console.log(run.id);
 ```
 
-A new run returns `202 Accepted`.
-
-```json
-{
-  "taskRun": {
-    "id": "8f5c...",
-    "taskId": "7aa1...",
-    "taskSlug": "hello",
-    "taskName": "Hello",
-    "status": "PENDING",
-    "payload": {
-      "name": "Nibras"
-    },
-    "createdAt": "2026-08-15T00:00:00.000Z",
-    "idempotentReplay": false,
-    "traceparent": "00-..."
-  }
-}
-```
-
-Send the same request with the same `Idempotency-Key` and body to get the same run back with `200 OK`.
+A new run has status `PENDING`. Reuse the same idempotency key with the same payload to receive the existing run instead of creating another one.
 
 ## 5. Inspect the run
 
