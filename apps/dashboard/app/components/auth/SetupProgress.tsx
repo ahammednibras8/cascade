@@ -1,20 +1,35 @@
 import { motion } from "framer-motion";
+import { getSetupStepState, isSetupStepViewable, type AuthStage } from "./setup-progress";
 
-type AuthStage = "authentication" | "workspace" | "activation";
+const steps: Array<{ label: string; number: string; stage: AuthStage }> = [
+  {
+    number: "01",
+    label: "Verify your identity",
+    stage: "authentication",
+  },
+  {
+    number: "02",
+    label: "Create a workspace",
+    stage: "workspace",
+  },
+  {
+    number: "03",
+    label: "Run your first task",
+    stage: "activation",
+  },
+];
 
 export default function SetupProgress({
-  currentStage,
-  isAuthenticated,
+  progressStage,
+  viewStage,
   onStageChange,
   shouldReduceMotion,
 }: {
-  currentStage: AuthStage;
-  isAuthenticated: boolean;
+  progressStage: AuthStage;
+  viewStage: AuthStage;
   onStageChange: (stage: AuthStage) => void;
   shouldReduceMotion: boolean | null;
 }) {
-  const workspaceStage = currentStage === "workspace";
-
   return (
     <section className="relative hidden h-full w-[52%] overflow-hidden rounded-[28px] bg-[#10140f] shadow-[0_28px_90px_rgba(0,0,0,0.2)] lg:block">
       <div
@@ -44,23 +59,21 @@ export default function SetupProgress({
           transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
           className="w-full space-y-8"
         >
-          <Step
-            number="01"
-            label="Verify your identity"
-            state={workspaceStage ? "complete" : "active"}
-            onSelect={() => onStageChange("authentication")}
-          />
-          <Step
-            number="02"
-            label="Create a workspace"
-            state={workspaceStage ? "active" : "pending"}
-            {...(isAuthenticated ? { onSelect: () => onStageChange("workspace") } : {})}
-          />
-          <Step
-            number="03"
-            label="Run your first task"
-            state={currentStage === "activation" ? "active" : "pending"}
-          />
+          {steps.map((step) => {
+            const state = getSetupStepState(progressStage, step.stage);
+            const viewable = isSetupStepViewable(progressStage, step.stage);
+
+            return (
+              <Step
+                key={step.stage}
+                number={step.number}
+                label={step.label}
+                selected={viewStage === step.stage}
+                state={state}
+                {...(viewable ? { onSelect: () => onStageChange(step.stage) } : {})}
+              />
+            );
+          })}
         </motion.ol>
       </div>
     </section>
@@ -71,15 +84,17 @@ function Step({
   number,
   label,
   onSelect,
+  selected,
   state,
 }: {
+  selected: boolean;
   number: string;
   label: string;
   onSelect?: () => void;
   state: "active" | "complete" | "pending";
 }) {
   const active = state === "active";
-  const selectable = onSelect !== undefined && !active;
+  const selectable = onSelect !== undefined && !selected;
 
   return (
     <li>
@@ -88,6 +103,7 @@ function Step({
         onClick={onSelect}
         disabled={!selectable}
         aria-current={active ? "step" : undefined}
+        aria-pressed={selected}
         className={`flex w-full items-center gap-4 text-left text-sm transition-colors ${
           active
             ? "text-white"

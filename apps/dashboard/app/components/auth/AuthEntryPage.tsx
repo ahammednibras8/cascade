@@ -6,8 +6,7 @@ import GlassButton from "~/components/landing/GlassButton";
 import type { PendingDashboardActivationState } from "~/lib/activation/activation-state";
 import ActivationState from "./ActivationState";
 import SetupProgress from "./SetupProgress";
-
-type AuthStage = "authentication" | "workspace" | "activation";
+import { getDurableProgressStage, type AuthStage } from "./setup-progress";
 
 type AuthActionData = {
   error?: string;
@@ -36,29 +35,34 @@ export default function AuthEntryPage({
 }: AuthEntryPageProps) {
   const shouldReduceMotion = useReducedMotion();
   const fetcher = useFetcher<AuthActionData>();
-  const [currentStage, setCurrentStage] = useState<AuthStage>(stage);
+  const [viewStage, setViewStage] = useState<AuthStage>(stage);
 
-  const activationStage = currentStage === "activation" ? activationState : null;
+  const activationStage = viewStage === "activation" ? activationState : null;
+
   const isAuthenticated = [authenticated, fetcher.data?.ok === true].includes(true);
-  const workspaceStage = currentStage === "workspace";
+  const progressStage = getDurableProgressStage({
+    hasPersistedSession: isAuthenticated,
+    loaderStage: stage,
+  });
+  const workspaceStage = viewStage === "workspace";
   const authenticationPending = fetcher.state !== "idle";
 
   useEffect(() => {
-    setCurrentStage(stage);
+    setViewStage(stage);
   }, [stage]);
 
   useEffect(() => {
     if (fetcher.data?.ok && fetcher.data.stage) {
-      setCurrentStage(fetcher.data.stage);
+      setViewStage(fetcher.data.stage);
     }
   }, [fetcher.data]);
 
   return (
     <main className="flex min-h-dvh w-full bg-[#f2f2f0] p-2 lg:h-dvh lg:overflow-hidden lg:p-4">
       <SetupProgress
-        currentStage={currentStage}
-        isAuthenticated={isAuthenticated}
-        onStageChange={setCurrentStage}
+        progressStage={progressStage}
+        viewStage={viewStage}
+        onStageChange={setViewStage}
         shouldReduceMotion={shouldReduceMotion}
       />
 
@@ -82,7 +86,7 @@ export default function AuthEntryPage({
 
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={currentStage}
+              key={viewStage}
               initial={shouldReduceMotion ? false : { opacity: 0, x: 14 }}
               animate={{ opacity: 1, x: 0 }}
               {...(shouldReduceMotion ? {} : { exit: { opacity: 0, x: -10 } })}
@@ -92,7 +96,9 @@ export default function AuthEntryPage({
                 <ActivationState activationState={activationStage} returnTo={returnTo} />
               ) : workspaceStage ? (
                 <WorkspaceState
-                  onBack={() => setCurrentStage("authentication")}
+                  completed={progressStage === "activation"}
+                  onBack={() => setViewStage("authentication")}
+                  onContinue={() => setViewStage("activation")}
                   returnTo={returnTo}
                 />
               ) : (
@@ -102,7 +108,7 @@ export default function AuthEntryPage({
                   devAuthEnabled={devAuthEnabled}
                   error={error ?? fetcher.data?.error}
                   fetcher={fetcher}
-                  onContinue={() => setCurrentStage("workspace")}
+                  onContinue={() => setViewStage(progressStage)}
                   startHref={startHref}
                 />
               )}
@@ -131,6 +137,29 @@ function AuthenticationState({
   onContinue: () => void;
   startHref: string;
 }) {
+  if (authenticated) {
+    return (
+      <>
+        <h1 className="mt-14 text-4xl leading-tight font-medium tracking-[-0.035em] text-[#05050c]">
+          You&apos;re signed in
+        </h1>
+        <p className="mt-3 text-sm leading-6 text-black/50">
+          Your account is connected. Return to setup when you are ready.
+        </p>
+        <div className="mt-8">
+          <GlassButton
+            label="Return to setup"
+            icon={ArrowRight}
+            onClick={onContinue}
+            tone="black"
+            size="large"
+            fullWidth
+          />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <h1 className="mt-14 text-4xl leading-tight font-medium tracking-[-0.035em] text-[#05050c]">
@@ -191,7 +220,40 @@ function AuthenticationState({
   );
 }
 
-function WorkspaceState({ onBack, returnTo }: { onBack: () => void; returnTo: string }) {
+function WorkspaceState({
+  completed,
+  onBack,
+  onContinue,
+  returnTo,
+}: {
+  completed: boolean;
+  onBack: () => void;
+  onContinue: () => void;
+  returnTo: string;
+}) {
+  if (completed) {
+    return (
+      <>
+        <h1 className="mt-14 text-4xl leading-tight font-medium tracking-[-0.035em] text-[#05050c]">
+          Workspace created
+        </h1>
+        <p className="mt-3 text-sm leading-6 text-black/50">
+          Your workspace is saved. Continue to finish activation.
+        </p>
+        <div className="mt-8">
+          <GlassButton
+            label="Return to activation"
+            icon={ArrowRight}
+            onClick={onContinue}
+            tone="black"
+            size="large"
+            fullWidth
+          />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <button
