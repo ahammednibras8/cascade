@@ -128,7 +128,7 @@ test("legacy signup and onboarding routes do not exist", async ({
   }
 });
 
-test("activates a new user's workspace through login", async ({ browser }, testInfo) => {
+test("takes a new workspace to credential activation", async ({ browser }, testInfo) => {
   const baseURL = getBaseURL(testInfo);
   const { prisma } = await import("@cascade/database");
   const { commitDashboardSession, createDashboardSession } =
@@ -189,9 +189,18 @@ test("activates a new user's workspace through login", async ({ browser }, testI
     await page.getByLabel("Project name").fill("E2E Activated Project");
     await page.getByRole("button", { name: "Create workspace" }).click();
 
-    await expect(page).toHaveURL(/\/runs$/);
-    await expect(page.getByRole("heading", { name: "Task runs" })).toBeVisible();
-    await expect(page.getByText("No task runs yet.")).toBeVisible();
+    await expect(page).toHaveURL(/\/login\?returnTo=%2Fruns$/);
+    await expect(page.getByRole("heading", { name: "Create an integration key" })).toBeVisible();
+
+    await expect(page.getByRole("link", { name: "Create API key" })).toHaveAttribute(
+      "href",
+      "/api-keys",
+    );
+
+    await expect(page.getByRole("link", { name: "I created the key" })).toHaveAttribute(
+      "href",
+      "/login?returnTo=%2Fruns",
+    );
 
     const project = await prisma.project.findUniqueOrThrow({
       where: {
