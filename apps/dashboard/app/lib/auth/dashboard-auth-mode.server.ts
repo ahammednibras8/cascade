@@ -4,7 +4,7 @@ function getDashboardAuthMode(): DashboardAuthMode {
   const mode = process.env["DASHBOARD_AUTH_MODE"]?.trim() || "oidc";
 
   if (mode !== "dev" && mode !== "oidc") {
-    throw new Error("DASHBOARD_ATUH_MODE must be dev or oidc");
+    throw new Error("DASHBOARD_AUTH_MODE must be dev or oidc");
   }
 
   if (mode === "dev" && process.env["NODE_ENV"] === "production") {
