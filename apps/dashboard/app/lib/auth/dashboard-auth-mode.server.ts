@@ -1,6 +1,6 @@
 export type DashboardAuthMode = "dev" | "oidc";
 
-export function getDashboardAuthMode(): DashboardAuthMode {
+function getDashboardAuthMode(): DashboardAuthMode {
   const mode = process.env["DASHBOARD_AUTH_MODE"]?.trim() || "oidc";
 
   if (mode !== "dev" && mode !== "oidc") {
