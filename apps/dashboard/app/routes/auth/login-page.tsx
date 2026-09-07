@@ -11,6 +11,7 @@ import { redirect } from "react-router";
 import { createPersonalWorkspace } from "~/lib/auth/create-personal-workspace.server";
 import { commitActiveDashboardOrganization } from "~/lib/workspace/dashboard-organization.server";
 import { commitActiveDashboardEnvironment } from "~/lib/workspace/dashboard-workspace.server";
+import { isDevDashboardAuthEnabled } from "~/lib/auth/dashboard-auth-mode.server";
 
 function normalizeReturnTo(value: string | null) {
   if (value?.startsWith("/") && !value.startsWith("//")) {
@@ -18,10 +19,6 @@ function normalizeReturnTo(value: string | null) {
   }
 
   return "/dashboard";
-}
-
-function isDevAuthEnabled() {
-  return process.env["DASHBOARD_AUTH_MODE"]?.trim() === "dev";
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -37,7 +34,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     return {
       activationState: null,
       authenticated: false,
-      devAuthEnabled: isDevAuthEnabled(),
+      devAuthEnabled: isDevDashboardAuthEnabled(),
       error: url.searchParams.get("error"),
       returnTo,
       stage: "authentication" as const,
@@ -48,7 +45,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     return {
       activationState: null,
       authenticated: true,
-      devAuthEnabled: isDevAuthEnabled(),
+      devAuthEnabled: isDevDashboardAuthEnabled(),
       error: null,
       returnTo,
       stage: "workspace" as const,
@@ -58,7 +55,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return {
     activationState,
     authenticated: true,
-    devAuthEnabled: isDevAuthEnabled(),
+    devAuthEnabled: isDevDashboardAuthEnabled(),
     error: null,
     returnTo,
     stage: "activation" as const,
@@ -97,7 +94,7 @@ export async function action({ request }: Route.ActionArgs) {
     });
   }
 
-  if (formData.get("intent") !== "authenticate" || !isDevAuthEnabled()) {
+  if (formData.get("intent") !== "authenticate" || !isDevDashboardAuthEnabled()) {
     return Response.json({ ok: false, error: "authentication_unavailable" }, { status: 400 });
   }
 

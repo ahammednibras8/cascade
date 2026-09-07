@@ -165,6 +165,16 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
 
     await expect(page.getByRole("heading", { name: "You're signed in" })).toBeVisible();
 
+    await page.reload();
+
+    await expect(page).toHaveURL(/\/login\?returnTo=%2Fruns$/);
+    await expect(page.getByRole("heading", { name: "Starting your deployment" })).toBeVisible();
+    await expect(page.getByText("PENDING", { exact: true })).toBeVisible();
+
+    await setupProgress.getByRole("button", { name: "Verify your identity" }).click();
+
+    await expect(page.getByRole("heading", { name: "You're signed in" })).toBeVisible();
+
     await page.getByRole("button", { name: "Return to setup" }).click();
 
     await expect(page.getByRole("heading", { name: "Starting your deployment" })).toBeVisible();

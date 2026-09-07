@@ -7,16 +7,13 @@ import {
   createDashboardSession,
 } from "~/lib/auth/dashboard-session.server";
 import { resolvePostAuthenticationRedirect } from "~/lib/auth/post-authentication.server";
-
-function isDevAuthEnabled() {
-  return process.env["DASHBOARD_AUTH_MODE"]?.trim() === "dev";
-}
+import { isDevDashboardAuthEnabled } from "~/lib/auth/dashboard-auth-mode.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const returnTo = url.searchParams.get("returnTo");
 
-  if (isDevAuthEnabled()) {
+  if (isDevDashboardAuthEnabled()) {
     const user = await findOrCreateDevDashboardUser();
     const session = await createDashboardSession(user.id);
     const destination = await resolvePostAuthenticationRedirect(user.id, returnTo);
