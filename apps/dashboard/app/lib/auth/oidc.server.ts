@@ -1,5 +1,6 @@
 import * as oidc from "openid-client";
 import { createCookie } from "react-router";
+import { getOidcConfiguration, type OidcConfiguration } from "./oidc-config.server";
 
 type OidcTransaction = {
   state: string;
@@ -53,15 +54,6 @@ function getDashboardSessionSecret() {
   return secret;
 }
 
-function getOidcConfiguration() {
-  return {
-    issueUrl: getRequiredEnvironmentVariable("OIDC_ISSUER_URL"),
-    clientId: getRequiredEnvironmentVariable("OIDC_CLIENT_ID"),
-    clientSecret: getRequiredEnvironmentVariable("OIDC_CLIENT_SECRET"),
-    redirectUri: getRequiredEnvironmentVariable("OIDC_REDIRECT_URI"),
-  };
-}
-
 function getOidcTransactionCookie() {
   const production = process.env["NODE_ENV"] === "production";
 
@@ -89,12 +81,9 @@ function normalizeReturnTo(value: string | null | undefined) {
   return "/dashboard";
 }
 
-async function discoverOidcProvider() {
-  const config = getOidcConfiguration();
-
-  return oidc.discovery(new URL(config.issueUrl), config.clientId, config.clientSecret);
+async function discoverOidcProvider(config: OidcConfiguration) {
+  return oidc.discovery(new URL(config.issuerUrl), config.clientId, config.clientSecret);
 }
-
 function getRequiredClaim(claims: Record<string, unknown>, name: string) {
   const value = claims[name];
 
@@ -108,8 +97,8 @@ function getRequiredClaim(claims: Record<string, unknown>, name: string) {
 export async function startOidcLogin(
   returnTo: string | null | undefined,
 ): Promise<OidcStartResult> {
-  const provider = await discoverOidcProvider();
-  const { redirectUri } = getOidcConfiguration();
+  const config = getOidcConfiguration();
+  const provider = await discoverOidcProvider(config);
 
   const state = oidc.randomState();
   const nonce = oidc.randomNonce();
@@ -117,7 +106,7 @@ export async function startOidcLogin(
   const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier);
 
   const authorizationUrl = oidc.buildAuthorizationUrl(provider, {
-    redirect_uri: redirectUri,
+    redirect_uri: config.redirectUri,
     response_type: "code",
     scope: "openid profile email",
     state,
@@ -146,7 +135,8 @@ export async function completeOidcLogin(request: Request): Promise<OidcCompletio
     throw new OidcAuthenticationError("OIDC login transaction is missing or invalid");
   }
 
-  const provider = await discoverOidcProvider();
+  const config = getOidcConfiguration();
+  const provider = await discoverOidcProvider(config);
 
   const tokens = await oidc.authorizationCodeGrant(provider, new URL(request.url), {
     pkceCodeVerifier: transaction.codeVerifier,
@@ -168,7 +158,7 @@ export async function completeOidcLogin(request: Request): Promise<OidcCompletio
 
   return {
     profile: {
-      provider: getOidcConfiguration().issueUrl,
+      provider: config.issuerUrl,
       subject,
       email,
       displayName: typeof name === "string" && name ? name : null,
