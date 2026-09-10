@@ -32,6 +32,14 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            - name: DASHBOARD_AUTH_MODE
+              value: oidc
+            - name: OIDC_ISSUER_URL
+              value: {{required "dashboard.oidc.issuerUrl is required" .Values.dashboard.oidc.issuerUrl | quote}}
+            - name: OIDC_CLIENT_ID
+              value: {{required "dashboard.oidc.clientId is required" .Values.dashboard.oidc.clientId | quote}}
+            - name: OIDC_REDIRECT_URI
+              value: {{ required "dashboard.oidc.redirectUri is required" .Values.dashboard.oidc.redirectUri | quote}}
             - name: HOST
               value: 0.0.0.0
             - name: PORT
@@ -40,7 +48,7 @@ spec:
               value: {{ printf "http://%s-api:3001" (include "cascade.fullname" .) | quote }}
           readinessProbe:
             httpGet:
-              path: /
+              path: /readyz
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10

@@ -31,6 +31,10 @@ api:
 dashboard:
   enabled: true
   replicaCount: 1
+  oidc:
+    issuerUrl: ""
+    clientId: ""
+    redirectUri: ""
   image:
     repository: ghcr.io/ahammednibras8/cascade-dashboard
     tag: ""

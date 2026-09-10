@@ -14,6 +14,10 @@ api:
     pullPolicy: Never
 
 dashboard:
+  oidc:
+    issuerUrl: https://identity.cascade.local
+    clientId: cascade-dashboard-local
+    redirectUri: https://cascade.local/auth/callback
   image:
     repository: cascade-dashboard
     tag: local

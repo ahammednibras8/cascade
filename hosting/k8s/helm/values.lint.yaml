@@ -12,6 +12,10 @@ api:
     tag: lint
 
 dashboard:
+  oidc:
+    issuerUrl: https://identity.example.test
+    clientId: cascade-dashboard
+    redirectUri: https://dashboard.example.test/auth/callback
   image:
     tag: lint
 
