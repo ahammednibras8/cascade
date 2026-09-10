@@ -38,6 +38,11 @@ spec:
               value: {{required "dashboard.oidc.issuerUrl is required" .Values.dashboard.oidc.issuerUrl | quote}}
             - name: OIDC_CLIENT_ID
               value: {{required "dashboard.oidc.clientId is required" .Values.dashboard.oidc.clientId | quote}}
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{include "cascade.dashboardSecretName" .}}
+                  key: {{ required "dashboardSecret.oidcClientSecretKey is required" .Values.dashboardSecret.oidcClientSecretKey | quote}}
             - name: OIDC_REDIRECT_URI
               value: {{ required "dashboard.oidc.redirectUri is required" .Values.dashboard.oidc.redirectUri | quote}}
             - name: HOST
