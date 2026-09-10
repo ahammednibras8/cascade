@@ -55,7 +55,7 @@ function validateProductionUrl(name: string, url: URL) {
 export function getOidcConfiguration(): OidcConfiguration {
   const issuerUrl = getRequiredEnvironmentVariable("OIDC_ISSUER_URL");
   const clientId = getRequiredEnvironmentVariable("OIDC_CLIENT_ID");
-  const clientSecret = getRequiredEnvironmentVariable("OIDC_CLEINT_SECRET");
+  const clientSecret = getRequiredEnvironmentVariable("OIDC_CLIENT_SECRET");
   const redirectUri = getRequiredEnvironmentVariable("OIDC_REDIRECT_URI");
 
   const issuer = parseHttpUrl("OIDC_ISSUER_URL", issuerUrl);
@@ -69,7 +69,7 @@ export function getOidcConfiguration(): OidcConfiguration {
     throw new Error(`OIDC_REDIRECT_URI must point exactly to ${OIDC_CALLBACK_PATH}`);
   }
 
-  validateProductionUrl("OIDC_ISSUER", issuer);
+  validateProductionUrl("OIDC_ISSUER_URL", issuer);
   validateProductionUrl("OIDC_REDIRECT_URI", redirect);
 
   return {
