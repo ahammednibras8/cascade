@@ -127,4 +127,15 @@ The dashboard authenticates people, stores their selected workspace in signed co
 | `OIDC_CLIENT_SECRET`        | OpenID Connect client secret. Required when `DASHBOARD_AUTH_MODE=oidc`.  |
 | `OIDC_REDIRECT_URI`         | Dashboard OIDC callback URL. Required when `DASHBOARD_AUTH_MODE=oidc`.   |
 
-For local development, set `DASHBOARD_AUTH_MODE=dev` and use stable local secrets with at least 32 characters. For production, generate unique high-entropy values for both dashboard secrets and keep them identical across all dashboard and API replicas.
+For local development, set `DASHBOARD_AUTH_MODE=dev` and use stable local secrets with at least 32 characters. To exercise the real login flow locally, use `oidc` with a provider callback such as `http://localhost:3000/auth/callback`. Production rejects `DASHBOARD_AUTH_MODE=dev`; use `oidc`, HTTPS URLs, and unique high-entropy dashboard secrets. Keep the shared dashboard/API authorization secret identical across all dashboard and API replicas.
+
+### Amazon Cognito with Google federation
+
+When Cognito brokers Google authentication, configure two different redirects:
+
+1. The Google OAuth web client redirects to Cognito at `https://<cognito-domain>/oauth2/idpresponse`.
+2. The Cognito app client redirects to Cascade at `<dashboard-origin>/auth/callback`.
+
+Configure the Cognito app client as a confidential client using the authorization-code flow and the `openid`, `email`, and `profile` scopes. Enable the Google identity provider on that app client and map at least `sub`, `email`, `email_verified`, and `name`. Set `OIDC_ISSUER_URL` to the Cognito user-pool issuer, not the Cognito managed-login domain.
+
+Keep local development client credentials in the ignored root `.env`. Store production `OIDC_CLIENT_SECRET`, `DASHBOARD_SESSION_SECRET`, and `DASHBOARD_API_AUTH_SECRET` values in the deployment secret manager; never commit them or place them in public Helm values. The dashboard `/readyz` endpoint validates the OIDC configuration when `DASHBOARD_AUTH_MODE=oidc`.
