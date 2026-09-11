@@ -6,14 +6,7 @@ import {
 } from "~/lib/workspace/dashboard-organization.server";
 import { redirect } from "react-router";
 import { clearActiveDashboardEnvironment } from "~/lib/workspace/dashboard-workspace.server";
-
-function normalizeReturnTo(value: FormDataEntryValue | null) {
-  if (typeof value === "string" && value.startsWith("/") && !value.startsWith("//")) {
-    return value;
-  }
-
-  return "/dashboard";
-}
+import { getSafeDashboardReturnTo } from "~/lib/auth/return-to.server";
 
 export async function action({ request }: Route.ActionArgs) {
   const session = await requireDashboardUser(request);
@@ -39,7 +32,7 @@ export async function action({ request }: Route.ActionArgs) {
   headers.append("Set-Cookie", await commitActiveDashboardOrganization(organization.id));
   headers.append("Set-Cookie", await clearActiveDashboardEnvironment());
 
-  return redirect(normalizeReturnTo(formData.get("returnTo")), {
+  return redirect(getSafeDashboardReturnTo(formData.get("returnTo")), {
     headers,
   });
 }

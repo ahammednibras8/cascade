@@ -1,6 +1,7 @@
 import * as oidc from "openid-client";
 import { createCookie } from "react-router";
 import { getOidcConfiguration, type OidcConfiguration } from "./oidc-config.server";
+import { getSafeDashboardReturnTo } from "./return-to.server";
 
 type OidcTransaction = {
   state: string;
@@ -73,14 +74,6 @@ export async function clearOidcLoginTransaction() {
   });
 }
 
-function normalizeReturnTo(value: string | null | undefined) {
-  if (value?.startsWith("/") && !value.startsWith("//")) {
-    return value;
-  }
-
-  return "/dashboard";
-}
-
 async function discoverOidcProvider(config: OidcConfiguration) {
   return oidc.discovery(new URL(config.issuerUrl), config.clientId, config.clientSecret);
 }
@@ -119,7 +112,7 @@ export async function startOidcLogin(
     state,
     nonce,
     codeVerifier,
-    returnTo: normalizeReturnTo(returnTo),
+    returnTo: getSafeDashboardReturnTo(returnTo),
   };
 
   return {

@@ -1,12 +1,5 @@
 import { prisma } from "@cascade/database";
-
-function normalizeReturnTo(value: string | null | undefined) {
-  if (value?.startsWith("/") && !value.startsWith("//")) {
-    return value;
-  }
-
-  return "/dashboard";
-}
+import { getSafeDashboardReturnTo } from "./return-to.server";
 
 export async function resolvePostAuthenticationRedirect(
   userId: string,
@@ -16,7 +9,7 @@ export async function resolvePostAuthenticationRedirect(
     return "/login";
   }
 
-  return normalizeReturnTo(requestedReturnTo);
+  return getSafeDashboardReturnTo(requestedReturnTo);
 }
 
 async function hasUsableDashboardWorkspace(userId: string) {

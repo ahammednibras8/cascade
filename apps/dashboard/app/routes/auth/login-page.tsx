@@ -12,18 +12,11 @@ import { createPersonalWorkspace } from "~/lib/auth/create-personal-workspace.se
 import { commitActiveDashboardOrganization } from "~/lib/workspace/dashboard-organization.server";
 import { commitActiveDashboardEnvironment } from "~/lib/workspace/dashboard-workspace.server";
 import { isDevDashboardAuthEnabled } from "~/lib/auth/dashboard-auth-mode.server";
-
-function normalizeReturnTo(value: string | null) {
-  if (value?.startsWith("/") && !value.startsWith("//")) {
-    return value;
-  }
-
-  return "/dashboard";
-}
+import { getSafeDashboardReturnTo } from "~/lib/auth/return-to.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
-  const returnTo = normalizeReturnTo(url.searchParams.get("returnTo"));
+  const returnTo = getSafeDashboardReturnTo(url.searchParams.get("returnTo"));
   const activationState = await resolveDashboardActivationState(request);
 
   if (activationState.state === "ACTIVATED") {
@@ -87,7 +80,7 @@ export async function action({ request }: Route.ActionArgs) {
     headers.append("Set-Cookie", await commitActiveDashboardOrganization(workspace.organizationId));
     headers.append("Set-Cookie", await commitActiveDashboardEnvironment(workspace.environmentId));
 
-    const returnTo = normalizeReturnTo(typeof returnToValue === "string" ? returnToValue : null);
+    const returnTo = getSafeDashboardReturnTo(returnToValue);
 
     return redirect(`/login?returnTo=${encodeURIComponent(returnTo)}`, {
       headers,
