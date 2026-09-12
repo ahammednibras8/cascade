@@ -3,6 +3,10 @@ import { createCookie } from "react-router";
 import { getOidcConfiguration, type OidcConfiguration } from "./oidc-config.server";
 import { getSafeDashboardReturnTo } from "./return-to.server";
 
+const MAX_SUBJECT_LENGTH = 255;
+const MAX_EMAIL_LENGTH = 254;
+const MAX_DISPLAY_NAME_LENGTH = 200;
+
 type OidcTransaction = {
   state: string;
   nonce: string;
@@ -28,8 +32,18 @@ type OidcCompletionResult = {
   clearCookie: string;
 };
 
+export type OidcAuthenticationErrorCode =
+  | "sign_in_cancelled"
+  | "sign_in_expired"
+  | "invalid_identity"
+  | "email_not_verified"
+  | "provider_unavailable";
+
 export class OidcAuthenticationError extends Error {
-  constructor(message: string) {
+  constructor(
+    readonly code: OidcAuthenticationErrorCode,
+    message: string,
+  ) {
     super(message);
     this.name = "OidcAuthenticationError";
   }
@@ -77,14 +91,67 @@ export async function clearOidcLoginTransaction() {
 async function discoverOidcProvider(config: OidcConfiguration) {
   return oidc.discovery(new URL(config.issuerUrl), config.clientId, config.clientSecret);
 }
-function getRequiredClaim(claims: Record<string, unknown>, name: string) {
+
+function getRequiredStringClaim(
+  claims: Record<string, unknown>,
+  name: string,
+  maximumLength: number,
+) {
   const value = claims[name];
 
-  if (typeof value !== "string" || !value) {
-    throw new OidcAuthenticationError(`OIDC ID token is missing required ${name} claim`);
+  if (typeof value !== "string" || value.trim().length === 0 || value.length > maximumLength) {
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      `OIDC ID token contains an invalid ${name} claim`,
+    );
   }
 
   return value;
+}
+
+function getVerifiedEmailClaim(claims: Record<string, unknown>) {
+  const email = getRequiredStringClaim(claims, "email", MAX_EMAIL_LENGTH).trim().toLowerCase();
+
+  const emailParts = email.split("@");
+
+  if (emailParts.length !== 2 || !emailParts[0] || !emailParts[1] || /\s/u.test(email)) {
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "OIDC ID token contains an invalid email claims",
+    );
+  }
+
+  if (claims["email_verified"] !== true) {
+    throw new OidcAuthenticationError("email_not_verified", "OIDC identity email is not verified");
+  }
+
+  return email;
+}
+
+function getDisplayNameClaim(claims: Record<string, unknown>) {
+  const value = claims["name"];
+
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "OIDC ID token contains an invalid name claims",
+    );
+  }
+
+  const displayName = value.trim();
+
+  if (displayName.length === 0 || displayName.length > MAX_DISPLAY_NAME_LENGTH) {
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "OIDC ID token contains an invalid name claims",
+    );
+  }
+
+  return displayName;
 }
 
 export async function startOidcLogin(
@@ -125,7 +192,10 @@ export async function completeOidcLogin(request: Request): Promise<OidcCompletio
   const transaction = await getOidcTransactionCookie().parse(request.headers.get("Cookie"));
 
   if (!isOidcTransaction(transaction)) {
-    throw new OidcAuthenticationError("OIDC login transaction is missing or invalid");
+    throw new OidcAuthenticationError(
+      "sign_in_expired",
+      "OIDC login transaction is missing or invalid",
+    );
   }
 
   const config = getOidcConfiguration();
@@ -141,20 +211,23 @@ export async function completeOidcLogin(request: Request): Promise<OidcCompletio
   const claims = tokens.claims();
 
   if (!claims) {
-    throw new OidcAuthenticationError("OIDC provider did not return ID token claims");
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "OIDC provider did not return ID token claims",
+    );
   }
 
   const record = claims as Record<string, unknown>;
-  const subject = getRequiredClaim(record, "sub");
-  const email = getRequiredClaim(record, "email");
-  const name = record["name"];
+  const subject = getRequiredStringClaim(record, "sub", MAX_SUBJECT_LENGTH);
+  const email = getVerifiedEmailClaim(record);
+  const displayName = getDisplayNameClaim(record);
 
   return {
     profile: {
       provider: config.issuerUrl,
       subject,
       email,
-      displayName: typeof name === "string" && name ? name : null,
+      displayName,
     },
     returnTo: transaction.returnTo,
     clearCookie: await clearOidcLoginTransaction(),
