@@ -184,7 +184,7 @@ async function discoverOidcProvider(config: OidcConfiguration) {
   } catch (error) {
     throw new OidcAuthenticationError(
       "provider_unavailable",
-      "The identity provider configuration could be loaded",
+      "The identity provider configuration could not be loaded",
       { cause: error },
     );
   }
