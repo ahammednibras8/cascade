@@ -43,10 +43,100 @@ export class OidcAuthenticationError extends Error {
   constructor(
     readonly code: OidcAuthenticationErrorCode,
     message: string,
+    options?: ErrorOptions,
   ) {
-    super(message);
+    super(message, options);
     this.name = "OidcAuthenticationError";
   }
+}
+
+const RESTARTABLE_AUTHORIZATION_ERRORS = new Set([
+  "login_required",
+  "interaction_required",
+  "consent_required",
+  "account_selection_required",
+]);
+
+const TEMPORARY_PROVIDER_ERRORS = new Set(["server_error", "temporarily_unavailable"]);
+
+function throwMappedProviderError(error: unknown): never {
+  if (error instanceof OidcAuthenticationError) {
+    throw error;
+  }
+
+  if (error instanceof oidc.AuthorizationResponseError) {
+    if (error.error === "access_denied") {
+      throw new OidcAuthenticationError(
+        "sign_in_cancelled",
+        "The identity provider denied the authorization request",
+        { cause: error },
+      );
+    }
+
+    if (RESTARTABLE_AUTHORIZATION_ERRORS.has(error.error)) {
+      throw new OidcAuthenticationError(
+        "sign_in_expired",
+        "The identity provider requires a new sign-in attempt",
+        { cause: error },
+      );
+    }
+
+    if (TEMPORARY_PROVIDER_ERRORS.has(error.error)) {
+      throw new OidcAuthenticationError(
+        "provider_unavailable",
+        "This identity provider is temporarily unavailable",
+        { cause: error },
+      );
+    }
+
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "The identity provider returned an invalid authorization response",
+      { cause: error },
+    );
+  }
+
+  if (error instanceof oidc.ResponseBodyError) {
+    if (error.error === "invalid_grant") {
+      throw new OidcAuthenticationError(
+        "sign_in_expired",
+        "The authorization code is invalid, expired, or already used",
+        { cause: error },
+      );
+    }
+
+    if (TEMPORARY_PROVIDER_ERRORS.has(error.error)) {
+      throw new OidcAuthenticationError(
+        "provider_unavailable",
+        "The identity provider is temporarily unavailable",
+        { cause: error },
+      );
+    }
+
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "The identity provider rejected the token request",
+      { cause: error },
+    );
+  }
+
+  if (error instanceof oidc.ClientError) {
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "The identity provider response failed protocol validation",
+      { cause: error },
+    );
+  }
+
+  if (error instanceof TypeError) {
+    throw new OidcAuthenticationError(
+      "provider_unavailable",
+      "The identity provider could not be reached",
+      { cause: error },
+    );
+  }
+
+  throw error;
 }
 
 function getRequiredEnvironmentVariable(name: string) {
@@ -89,7 +179,32 @@ export async function clearOidcLoginTransaction() {
 }
 
 async function discoverOidcProvider(config: OidcConfiguration) {
-  return oidc.discovery(new URL(config.issuerUrl), config.clientId, config.clientSecret);
+  try {
+    return await oidc.discovery(new URL(config.issuerUrl), config.clientId, config.clientSecret);
+  } catch (error) {
+    throw new OidcAuthenticationError(
+      "provider_unavailable",
+      "The identity provider configuration could be loaded",
+      { cause: error },
+    );
+  }
+}
+
+async function exchangeAuthorizationCode(
+  provider: oidc.Configuration,
+  callbackUrl: URL,
+  transaction: OidcTransaction,
+) {
+  try {
+    return await oidc.authorizationCodeGrant(provider, callbackUrl, {
+      pkceCodeVerifier: transaction.codeVerifier,
+      expectedState: transaction.state,
+      expectedNonce: transaction.nonce,
+      idTokenExpected: true,
+    });
+  } catch (error) {
+    throwMappedProviderError(error);
+  }
 }
 
 function getRequiredStringClaim(
@@ -201,12 +316,7 @@ export async function completeOidcLogin(request: Request): Promise<OidcCompletio
   const config = getOidcConfiguration();
   const provider = await discoverOidcProvider(config);
 
-  const tokens = await oidc.authorizationCodeGrant(provider, new URL(request.url), {
-    pkceCodeVerifier: transaction.codeVerifier,
-    expectedState: transaction.state,
-    expectedNonce: transaction.nonce,
-    idTokenExpected: true,
-  });
+  const tokens = await exchangeAuthorizationCode(provider, new URL(request.url), transaction);
 
   const claims = tokens.claims();
 
