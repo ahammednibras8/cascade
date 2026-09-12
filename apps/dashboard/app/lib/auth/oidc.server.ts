@@ -117,7 +117,7 @@ function getVerifiedEmailClaim(claims: Record<string, unknown>) {
   if (emailParts.length !== 2 || !emailParts[0] || !emailParts[1] || /\s/u.test(email)) {
     throw new OidcAuthenticationError(
       "invalid_identity",
-      "OIDC ID token contains an invalid email claims",
+      "OIDC ID token contains an invalid email claim",
     );
   }
 
@@ -138,7 +138,7 @@ function getDisplayNameClaim(claims: Record<string, unknown>) {
   if (typeof value !== "string") {
     throw new OidcAuthenticationError(
       "invalid_identity",
-      "OIDC ID token contains an invalid name claims",
+      "OIDC ID token contains an invalid name claim",
     );
   }
 
@@ -147,7 +147,7 @@ function getDisplayNameClaim(claims: Record<string, unknown>) {
   if (displayName.length === 0 || displayName.length > MAX_DISPLAY_NAME_LENGTH) {
     throw new OidcAuthenticationError(
       "invalid_identity",
-      "OIDC ID token contains an invalid name claims",
+      "OIDC ID token contains an invalid name claim",
     );
   }
 
