@@ -82,9 +82,10 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  identities  UserIdentity[]
-  memberships OrganizationMember[]
-  sessions    DashboardSession[]
+  identities        UserIdentity[]
+  memberships       OrganizationMember[]
+  sessions          DashboardSession[]
+  onboardingRecords DashboardOnboarding[]
 
   @@index([createdAt])
 }
@@ -114,6 +115,21 @@ model DashboardSession {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model DashboardOnboarding {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  environmentId String @db.Uuid
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, environmentId])
+  @@index([environmentId])
 }
 
 model Organization {
@@ -175,6 +191,7 @@ model Environment {
   deployments   Deployment[]
   taskRuns      TaskRun[]
   taskSchedules TaskSchedule[]
+  onboardingRecords DashboardOnboarding[]
 
   @@unique([projectId, slug])
   @@index([projectId])
@@ -255,8 +272,8 @@ model TaskRun {
   deployment  Deployment?   @relation(fields: [deploymentId], references: [id], onDelete: SetNull)
   schedule    TaskSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
 
-  attempts      TaskAttempt[]
-  events        TaskEvent[]
+  attempts TaskAttempt[]
+  events   TaskEvent[]
 
   @@unique([taskId, idempotencyKeyHash])
   @@unique([scheduleId, scheduledFor])
@@ -346,10 +363,10 @@ model TaskSchedule {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  environment Environment  @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  task        Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
 
-  runs          TaskRun[]
+  runs TaskRun[]
 
   @@index([taskId, nextRunAt, id])
   @@index([enabled, nextRunAt, id])

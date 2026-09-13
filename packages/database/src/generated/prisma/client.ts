@@ -57,6 +57,11 @@ export type UserIdentity = Prisma.UserIdentityModel
  */
 export type DashboardSession = Prisma.DashboardSessionModel
 /**
+ * Model DashboardOnboarding
+ * 
+ */
+export type DashboardOnboarding = Prisma.DashboardOnboardingModel
+/**
  * Model Organization
  * 
  */

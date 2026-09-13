@@ -54,6 +54,7 @@ export const ModelName = {
   User: 'User',
   UserIdentity: 'UserIdentity',
   DashboardSession: 'DashboardSession',
+  DashboardOnboarding: 'DashboardOnboarding',
   Organization: 'Organization',
   OrganizationMember: 'OrganizationMember',
   Project: 'Project',
@@ -117,6 +118,18 @@ export const DashboardSessionScalarFieldEnum = {
 } as const
 
 export type DashboardSessionScalarFieldEnum = (typeof DashboardSessionScalarFieldEnum)[keyof typeof DashboardSessionScalarFieldEnum]
+
+
+export const DashboardOnboardingScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  environmentId: 'environmentId',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type DashboardOnboardingScalarFieldEnum = (typeof DashboardOnboardingScalarFieldEnum)[keyof typeof DashboardOnboardingScalarFieldEnum]
 
 
 export const OrganizationScalarFieldEnum = {
