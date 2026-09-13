@@ -100,6 +100,30 @@ it("rejects an external return path", async () => {
   });
 });
 
+it("returns a readable message for an allowlisted login error", async () => {
+  const result = await loader({
+    request: new Request("http://dashboard.test/login?error=email_not_verified"),
+  } as never);
+
+  expect(result).toMatchObject({
+    error: "Your identity provider must verify your email address before you can sign in.",
+    stage: "authentication",
+  });
+});
+
+it("does not return an unrecognized login error to the UI", async () => {
+  const result = await loader({
+    request: new Request(
+      "http://dashboard.test/login?error=client_secret%3Draw-provider-description",
+    ),
+  } as never);
+
+  expect(result).toMatchObject({
+    error: null,
+    stage: "authentication",
+  });
+});
+
 it("renders workspace state for an authenticated user without a workspace", async () => {
   getDashboardSession.mockResolvedValue({ userId: "user-1" });
   resolveDashboardActivationState.mockResolvedValue({ state: "WORKSPACE_REQUIRED" });
