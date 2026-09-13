@@ -213,9 +213,26 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
     );
 
     const project = await getActivationProject(fixture);
+    const environmentId = project.environments[0]?.id ?? "";
+    const onboarding = await fixture.prisma.dashboardOnboarding.findUnique({
+      where: {
+        userId_environmentId: {
+          userId: fixture.userId,
+          environmentId,
+        },
+      },
+      select: {
+        completedAt: true,
+      },
+    });
+
+    expect(onboarding).toEqual({
+      completedAt: null,
+    });
+
     const deployment = await registerActivationDeployment({
       apiKey,
-      environmentId: project.environments[0]?.id ?? "",
+      environmentId,
       suffix: fixture.suffix,
     });
 
@@ -229,9 +246,13 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
       name: "Setup progress",
     });
 
-    await setupProgress.getByRole("button", { name: "Verify your identity" }).click();
+    const identityStep = setupProgress.getByRole("button", { name: "Verify your identity" });
+    const signedInHeading = page.getByRole("heading", { name: "You're signed in" });
 
-    await expect(page.getByRole("heading", { name: "You're signed in" })).toBeVisible();
+    await expect(async () => {
+      await identityStep.click();
+      await expect(signedInHeading).toBeVisible({ timeout: 500 });
+    }).toPass();
 
     await page.reload();
 
@@ -239,9 +260,10 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
     await expect(page.getByRole("heading", { name: "Starting your deployment" })).toBeVisible();
     await expect(page.getByText("PENDING", { exact: true })).toBeVisible();
 
-    await setupProgress.getByRole("button", { name: "Verify your identity" }).click();
-
-    await expect(page.getByRole("heading", { name: "You're signed in" })).toBeVisible();
+    await expect(async () => {
+      await identityStep.click();
+      await expect(signedInHeading).toBeVisible({ timeout: 500 });
+    }).toPass();
 
     await page.getByRole("button", { name: "Return to setup" }).click();
 

@@ -150,7 +150,6 @@ it("redirects an authenticated user with a workspace into the product", async ()
   getDashboardSession.mockResolvedValue({ userId: "user-1" });
   resolveDashboardActivationState.mockResolvedValue({
     state: "ACTIVATED",
-    deploymentId: "deployment-1",
     environmentId: "environment-1",
   });
 

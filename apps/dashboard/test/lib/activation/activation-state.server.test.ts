@@ -7,6 +7,10 @@ const getDashboardWorkspaceContext = vi.hoisted(() =>
 );
 
 const prisma = vi.hoisted(() => ({
+  dashboardOnboarding: {
+    updateMany: vi.fn<(input: unknown) => Promise<unknown>>(),
+    upsert: vi.fn<(input: unknown) => Promise<unknown>>(),
+  },
   environment: {
     findFirst: vi.fn<(input: unknown) => Promise<unknown>>(),
   },
@@ -47,6 +51,7 @@ function setWorkspace(environment: { id: string } | null) {
 
 function setEnvironment(input: {
   activeApiKey?: boolean;
+  onboarding?: Date | "missing" | null;
   deployment?: {
     id: string;
     runtimeStatus: "PENDING" | "STARTING" | "RUNNING" | "DRAINING" | "STOPPED" | "FAILED";
@@ -55,6 +60,14 @@ function setEnvironment(input: {
 }) {
   prisma.environment.findFirst.mockResolvedValue({
     id: environmentId,
+    onboardingRecords:
+      input.onboarding === "missing"
+        ? []
+        : [
+            {
+              completedAt: input.onboarding ?? null,
+            },
+          ],
     apiKeys: input.activeApiKey ? [{ id: "api-key-1" }] : [],
     deployments: input.deployment
       ? [
@@ -70,19 +83,21 @@ function setEnvironment(input: {
   });
 }
 
-describe("resolveDashboardActivationState", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+beforeEach(() => {
+  vi.clearAllMocks();
 
-    getDashboardSession.mockResolvedValue({
-      userId: "user-1",
-    });
-    setWorkspace({
-      id: environmentId,
-    });
-    prisma.taskRun.findFirst.mockResolvedValue(null);
+  getDashboardSession.mockResolvedValue({
+    userId: "user-1",
   });
+  setWorkspace({
+    id: environmentId,
+  });
+  prisma.taskRun.findFirst.mockResolvedValue(null);
+  prisma.dashboardOnboarding.upsert.mockResolvedValue({ completedAt: null });
+  prisma.dashboardOnboarding.updateMany.mockResolvedValue({ count: 1 });
+});
 
+describe("session, workspace, and onboarding activation states", () => {
   it("returns AUTH_REQUIRED without a session", async () => {
     getDashboardSession.mockResolvedValue(null);
 
@@ -103,6 +118,62 @@ describe("resolveDashboardActivationState", () => {
     expect(prisma.environment.findFirst).not.toHaveBeenCalled();
   });
 
+  it("returns WORKSPACE_REQUIRED when the selected environment is not available to the user", async () => {
+    prisma.environment.findFirst.mockResolvedValue(null);
+
+    await expect(resolveDashboardActivationState(request)).resolves.toEqual({
+      state: "WORKSPACE_REQUIRED",
+    });
+
+    expect(prisma.dashboardOnboarding.upsert).not.toHaveBeenCalled();
+  });
+
+  it("creates a missing onboarding record for an existing workspace", async () => {
+    setEnvironment({
+      onboarding: "missing",
+      activeApiKey: false,
+    });
+
+    await expect(resolveDashboardActivationState(request)).resolves.toEqual({
+      state: "CREDENTIAL_REQUIRED",
+      environmentId,
+    });
+
+    expect(prisma.dashboardOnboarding.upsert).toHaveBeenCalledWith({
+      where: {
+        userId_environmentId: {
+          userId: "user-1",
+          environmentId,
+        },
+      },
+      update: {},
+      create: {
+        userId: "user-1",
+        environmentId,
+      },
+      select: {
+        completedAt: true,
+      },
+    });
+  });
+
+  it("returns ACTIVATED immediately for completed onboarding", async () => {
+    setEnvironment({
+      onboarding: new Date("2026-09-14T00:00:00.000Z"),
+      activeApiKey: false,
+    });
+
+    await expect(resolveDashboardActivationState(request)).resolves.toEqual({
+      state: "ACTIVATED",
+      environmentId,
+    });
+
+    expect(prisma.taskRun.findFirst).not.toHaveBeenCalled();
+    expect(prisma.dashboardOnboarding.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("credential, deployment, task, and run activation states", () => {
   it("returns CREDENTIAL_REQUIRED without a usable quickstart API key", async () => {
     setEnvironment({
       activeApiKey: false,
@@ -195,8 +266,18 @@ describe("resolveDashboardActivationState", () => {
 
     await expect(resolveDashboardActivationState(request)).resolves.toEqual({
       state: "ACTIVATED",
-      deploymentId,
       environmentId,
+    });
+
+    expect(prisma.dashboardOnboarding.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        environmentId,
+        completedAt: null,
+      },
+      data: {
+        completedAt: expect.any(Date),
+      },
     });
   });
 });
