@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Form, useFetcher } from "react-router";
+import { useFetcher } from "react-router";
 import GlassButton from "~/components/landing/GlassButton";
 import type { PendingDashboardActivationState } from "~/lib/activation/activation-state";
 import ActivationState from "./ActivationState";
@@ -101,9 +101,9 @@ export default function AuthEntryPage({
               ) : workspaceStage ? (
                 <WorkspaceState
                   completed={progressStage === "activation"}
+                  fetcher={fetcher}
                   onBack={() => setViewStage("authentication")}
                   onContinue={() => setViewStage("activation")}
-                  returnTo={returnTo}
                 />
               ) : (
                 <AuthenticationState
@@ -226,15 +226,18 @@ function AuthenticationState({
 
 function WorkspaceState({
   completed,
+  fetcher,
   onBack,
   onContinue,
-  returnTo,
 }: {
   completed: boolean;
+  fetcher: ReturnType<typeof useFetcher<AuthActionData>>;
   onBack: () => void;
   onContinue: () => void;
-  returnTo: string;
 }) {
+  const workspacePending =
+    fetcher.state !== "idle" && fetcher.formData?.get("intent") === "create_workspace";
+
   if (completed) {
     return (
       <>
@@ -276,9 +279,8 @@ function WorkspaceState({
         Name the project you want to use with Cascade.
       </p>
 
-      <Form method="post" action="/login" className="mt-8">
+      <fetcher.Form method="post" action="/login" className="mt-8">
         <input type="hidden" name="intent" value="create_workspace" />
-        <input type="hidden" name="returnTo" value={returnTo} />
 
         <label htmlFor="project-name" className="text-sm font-medium text-black/65">
           Project name
@@ -294,15 +296,16 @@ function WorkspaceState({
 
         <div className="mt-6">
           <GlassButton
-            label="Create workspace"
+            label={workspacePending ? "Creating workspace..." : "Create workspace"}
             icon={ArrowRight}
             type="submit"
+            disabled={workspacePending}
             tone="black"
             size="large"
             fullWidth
           />
         </div>
-      </Form>
+      </fetcher.Form>
     </>
   );
 }

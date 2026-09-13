@@ -62,7 +62,6 @@ export async function action({ request }: Route.ActionArgs) {
   if (formData.get("intent") === "create_workspace") {
     const session = await getDashboardSession(request);
     const projectName = formData.get("projectName");
-    const returnToValue = formData.get("returnTo");
 
     if (!session) {
       throw redirect("/login");
@@ -81,11 +80,15 @@ export async function action({ request }: Route.ActionArgs) {
     headers.append("Set-Cookie", await commitActiveDashboardOrganization(workspace.organizationId));
     headers.append("Set-Cookie", await commitActiveDashboardEnvironment(workspace.environmentId));
 
-    const returnTo = getSafeDashboardReturnTo(returnToValue);
-
-    return redirect(`/login?returnTo=${encodeURIComponent(returnTo)}`, {
-      headers,
-    });
+    return Response.json(
+      {
+        ok: true,
+        stage: "activation" as const,
+      },
+      {
+        headers,
+      },
+    );
   }
 
   if (formData.get("intent") !== "authenticate" || !isDevDashboardAuthEnabled()) {
