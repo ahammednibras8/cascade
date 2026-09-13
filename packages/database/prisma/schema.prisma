@@ -118,14 +118,14 @@ model DashboardSession {
 }
 
 model DashboardOnboarding {
-  id String @id @default(uuid()) @db.Uuid
-  userId String @db.Uuid
-  environmentId String @db.Uuid
-  completedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  environmentId String    @db.Uuid
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
 
   @@unique([userId, environmentId])
@@ -186,11 +186,11 @@ model Environment {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  apiKeys       ApiKey[]
-  tasks         Task[]
-  deployments   Deployment[]
-  taskRuns      TaskRun[]
-  taskSchedules TaskSchedule[]
+  apiKeys           ApiKey[]
+  tasks             Task[]
+  deployments       Deployment[]
+  taskRuns          TaskRun[]
+  taskSchedules     TaskSchedule[]
   onboardingRecords DashboardOnboarding[]
 
   @@unique([projectId, slug])

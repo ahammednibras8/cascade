@@ -62,6 +62,20 @@ export async function createPersonalWorkspace({
       },
     });
 
+    await tx.dashboardOnboarding.upsert({
+      where: {
+        userId_environmentId: {
+          userId,
+          environmentId: environment.id,
+        },
+      },
+      update: {},
+      create: {
+        userId,
+        environmentId: environment.id,
+      },
+    });
+
     return {
       organizationId: organization.id,
       projectId: project.id,
