@@ -99,7 +99,7 @@ export default async function setup(_config: FullConfig) {
     new Request(new URL("/login", baseUrl).toString()),
     user.id,
   );
-  const setCookie = await commitDashboardSession(session.token);
+  const setCookie = await commitDashboardSession(session);
   const cookie = getCookieValue(setCookie);
 
   await mkdir(dirname(storageStatePath), {

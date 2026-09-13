@@ -40,7 +40,7 @@ export async function createDashboardActivationFixture(
     new Request(new URL("/login", baseURL).toString()),
     user.id,
   );
-  const sessionCookie = getCookieValue(await commitDashboardSession(session.token));
+  const sessionCookie = getCookieValue(await commitDashboardSession(session));
   const context = await browser.newContext({ baseURL });
 
   await context.addCookies([

@@ -26,6 +26,43 @@ test("authenticated dashboard loads", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 });
 
+test("sign out revokes the session and offers another account", async ({ browser }, testInfo) => {
+  const baseURL = getBaseURL(testInfo);
+  const fixture = await createDashboardActivationFixture(browser, baseURL);
+
+  try {
+    const page = await fixture.context.newPage();
+    await page.goto("/dashboard");
+    await page.getByRole("button", { name: "Sign out" }).click();
+
+    await expect(page).toHaveURL(/\/signed-out$/);
+    await expect(page.getByRole("heading", { name: "Signed out" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Sign in again" })).toHaveAttribute(
+      "href",
+      "/login",
+    );
+    await expect(page.getByRole("link", { name: "Use another account" })).toHaveAttribute(
+      "href",
+      "/auth/start?selectAccount=true",
+    );
+
+    const sessionCount = await fixture.prisma.dashboardSession.count({
+      where: {
+        userId: fixture.userId,
+      },
+    });
+    expect(sessionCount).toBe(0);
+
+    const cookieNames = (await fixture.context.cookies(baseURL)).map((cookie) => cookie.name);
+    expect(cookieNames).not.toContain("cascade-session");
+
+    await page.goto("/dashboard");
+    await expect(page).toHaveURL(/\/login\?returnTo=%2Fdashboard$/);
+  } finally {
+    await disposeDashboardActivationFixture(fixture);
+  }
+});
+
 test("public landing loads without a dashboard session", async ({ browser }, testInfo) => {
   const baseURL = testInfo.project.use.baseURL;
   const context = await browser.newContext({

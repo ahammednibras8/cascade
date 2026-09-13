@@ -135,7 +135,7 @@ async function createViewerContext(browser: Browser, baseURL: string, userId: st
     new Request(new URL("/login", baseURL).toString()),
     userId,
   );
-  const cookie = getCookieValue(await commitDashboardSession(session.token));
+  const cookie = getCookieValue(await commitDashboardSession(session));
 
   const context = await browser.newContext({
     baseURL,

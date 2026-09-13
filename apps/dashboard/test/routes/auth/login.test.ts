@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const startOidcLogin = vi.hoisted(() =>
   vi.fn<
-    (returnTo: string | null) => Promise<{
+    (
+      returnTo: string | null,
+      options?: { selectAccount?: boolean },
+    ) => Promise<{
       authorizationUrl: string;
       setCookie: string;
     }>
@@ -69,10 +72,41 @@ describe("auth start route", () => {
       request: new Request("http://dashboard.test/auth/start?returnTo=/runs"),
     } as never);
 
-    expect(startOidcLogin).toHaveBeenCalledWith("/runs");
+    expect(startOidcLogin).toHaveBeenCalledWith("/runs", {
+      selectAccount: false,
+    });
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("https://identity.example.test/authorize");
     expect(response.headers.get("Set-Cookie")).toContain("cascade-oidc=");
+  });
+
+  it("requests account selection only for the exact true query value", async () => {
+    startOidcLogin.mockResolvedValue({
+      authorizationUrl: "https://identity.example.test/authorize",
+      setCookie: "cascade-oidc=signed-transaction; HttpOnly",
+    });
+
+    await loader({
+      request: new Request("http://dashboard.test/auth/start?selectAccount=true"),
+    } as never);
+
+    expect(startOidcLogin).toHaveBeenCalledWith("/dashboard", {
+      selectAccount: true,
+    });
+
+    vi.clearAllMocks();
+    startOidcLogin.mockResolvedValue({
+      authorizationUrl: "https://identity.example.test/authorize",
+      setCookie: "cascade-oidc=signed-transaction; HttpOnly",
+    });
+
+    await loader({
+      request: new Request("http://dashboard.test/auth/start?selectAccount=login"),
+    } as never);
+
+    expect(startOidcLogin).toHaveBeenCalledWith("/dashboard", {
+      selectAccount: false,
+    });
   });
 
   it("creates a local dashboard session when dev auth is enabled", async () => {
@@ -139,7 +173,9 @@ describe("auth start route", () => {
       ),
     } as never);
 
-    expect(startOidcLogin).toHaveBeenCalledWith("/dashboard");
+    expect(startOidcLogin).toHaveBeenCalledWith("/dashboard", {
+      selectAccount: false,
+    });
   });
 
   it("returns a safe error when provider discovery fails", async () => {

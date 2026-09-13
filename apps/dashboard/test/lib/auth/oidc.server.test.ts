@@ -114,6 +114,19 @@ describe("OIDC login start", () => {
     expect(result.setCookie).toContain("HttpOnly");
   });
 
+  it("requests provider account selection only when explicitly enabled", async () => {
+    await startOidcLogin("/dashboard", {
+      selectAccount: true,
+    });
+
+    expect(oidc.buildAuthorizationUrl).toHaveBeenCalledWith(
+      OIDC_CONFIGURATION,
+      expect.objectContaining({
+        prompt: "select_account",
+      }),
+    );
+  });
+
   it("rejects external return URLs", async () => {
     await startOidcLogin("https://attacker.example.test");
 
