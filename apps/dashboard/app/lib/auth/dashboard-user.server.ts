@@ -133,8 +133,32 @@ async function findOrCreateOidcUserInTransaction(
   return ensurePersonalOrganization(tx, user);
 }
 
-export function findOrCreateOidcUser(profile: OidcProfile) {
+function isUniqueConstraintViolation(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
+}
+
+function provisionOidcUser(profile: OidcProfile) {
   return prisma.$transaction((tx) => findOrCreateOidcUserInTransaction(tx, profile));
+}
+
+export async function findOrCreateOidcUser(profile: OidcProfile) {
+  try {
+    return await provisionOidcUser(profile);
+  } catch (error) {
+    if (!isUniqueConstraintViolation(error)) {
+      throw error;
+    }
+  }
+
+  try {
+    return await provisionOidcUser(profile);
+  } catch (error) {
+    if (error instanceof OidcIdentityLinkRequiredError || !isUniqueConstraintViolation(error)) {
+      throw error;
+    }
+
+    throw new OidcIdentityLinkRequiredError();
+  }
 }
 
 export async function findOrCreateDevDashboardUser() {

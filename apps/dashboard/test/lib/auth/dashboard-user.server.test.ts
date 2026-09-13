@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const prisma = vi.hoisted(() => ({
+const transaction = vi.hoisted(() => ({
   userIdentity: {
     findUnique: vi.fn<(input: unknown) => Promise<unknown>>(),
   },
@@ -18,11 +18,16 @@ const prisma = vi.hoisted(() => ({
   },
 }));
 
+const prisma = vi.hoisted(() => ({
+  $transaction:
+    vi.fn<(callback: (tx: typeof transaction) => Promise<unknown>) => Promise<unknown>>(),
+}));
+
 vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-const { findOrCreateOidcUser, OidcIdentityLinkRequiredError } =
+const { findOrCreateDevDashboardUser, findOrCreateOidcUser, OidcIdentityLinkRequiredError } =
   await import("../../../app/lib/auth/dashboard-user.server.js");
 
 const profile = {
@@ -36,16 +41,17 @@ describe("findOrCreateOidcUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    prisma.organization.upsert.mockResolvedValue({
+    prisma.$transaction.mockImplementation((callback) => callback(transaction));
+    transaction.organization.upsert.mockResolvedValue({
       id: "organization-1",
     });
-    prisma.organizationMember.upsert.mockResolvedValue({});
+    transaction.organizationMember.upsert.mockResolvedValue({});
   });
 
   it("creates a user and linked OIDC identity for a first login", async () => {
-    prisma.userIdentity.findUnique.mockResolvedValue(null);
-    prisma.user.findUnique.mockResolvedValue(null);
-    prisma.user.create.mockResolvedValue({
+    transaction.userIdentity.findUnique.mockResolvedValue(null);
+    transaction.user.findUnique.mockResolvedValue(null);
+    transaction.user.create.mockResolvedValue({
       id: "user-1",
       email: profile.email,
       displayName: profile.displayName,
@@ -57,7 +63,8 @@ describe("findOrCreateOidcUser", () => {
       displayName: profile.displayName,
     });
 
-    expect(prisma.user.create).toHaveBeenCalledWith({
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(transaction.user.create).toHaveBeenCalledWith({
       data: {
         email: profile.email,
         displayName: profile.displayName,
@@ -77,13 +84,13 @@ describe("findOrCreateOidcUser", () => {
   });
 
   it("updates profile data for an already linked identity", async () => {
-    prisma.userIdentity.findUnique.mockResolvedValue({
+    transaction.userIdentity.findUnique.mockResolvedValue({
       userId: "user-1",
     });
-    prisma.user.findUnique.mockResolvedValue({
+    transaction.user.findUnique.mockResolvedValue({
       id: "user-1",
     });
-    prisma.user.update.mockResolvedValue({
+    transaction.user.update.mockResolvedValue({
       id: "user-1",
       email: profile.email,
       displayName: profile.displayName,
@@ -91,7 +98,7 @@ describe("findOrCreateOidcUser", () => {
 
     await findOrCreateOidcUser(profile);
 
-    expect(prisma.user.update).toHaveBeenCalledWith({
+    expect(transaction.user.update).toHaveBeenCalledWith({
       where: {
         id: "user-1",
       },
@@ -108,8 +115,8 @@ describe("findOrCreateOidcUser", () => {
   });
 
   it("refuses to automatically link an identity to an existing email account", async () => {
-    prisma.userIdentity.findUnique.mockResolvedValue(null);
-    prisma.user.findUnique.mockResolvedValue({
+    transaction.userIdentity.findUnique.mockResolvedValue(null);
+    transaction.user.findUnique.mockResolvedValue({
       id: "existing-user",
     });
 
@@ -117,13 +124,13 @@ describe("findOrCreateOidcUser", () => {
       OidcIdentityLinkRequiredError,
     );
 
-    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(transaction.user.create).not.toHaveBeenCalled();
   });
 
   it("creates an owner membership in the user's personal organization", async () => {
-    prisma.userIdentity.findUnique.mockResolvedValue(null);
-    prisma.user.findUnique.mockResolvedValue(null);
-    prisma.user.create.mockResolvedValue({
+    transaction.userIdentity.findUnique.mockResolvedValue(null);
+    transaction.user.findUnique.mockResolvedValue(null);
+    transaction.user.create.mockResolvedValue({
       id: "user-1",
       email: profile.email,
       displayName: profile.displayName,
@@ -131,7 +138,7 @@ describe("findOrCreateOidcUser", () => {
 
     await findOrCreateOidcUser(profile);
 
-    expect(prisma.organization.upsert).toHaveBeenCalledWith({
+    expect(transaction.organization.upsert).toHaveBeenCalledWith({
       where: {
         slug: "personal-user-1",
       },
@@ -145,19 +152,83 @@ describe("findOrCreateOidcUser", () => {
       },
     });
 
-    expect(prisma.organizationMember.upsert).toHaveBeenCalledWith({
+    expect(transaction.organizationMember.upsert).toHaveBeenCalledWith({
       where: {
         organizationId_userId: {
           organizationId: "organization-1",
           userId: "user-1",
         },
       },
-      update: {},
+      update: {
+        role: "OWNER",
+      },
       create: {
         organizationId: "organization-1",
         userId: "user-1",
         role: "OWNER",
       },
     });
+  });
+});
+
+describe("OIDC provisioning transaction failures", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prisma.$transaction.mockImplementation((callback) => callback(transaction));
+    transaction.userIdentity.findUnique.mockResolvedValue(null);
+    transaction.user.findUnique.mockResolvedValue(null);
+    transaction.user.create.mockResolvedValue({
+      id: "user-1",
+      email: profile.email,
+      displayName: profile.displayName,
+    });
+    transaction.organization.upsert.mockResolvedValue({
+      id: "organization-1",
+    });
+    transaction.organizationMember.upsert.mockResolvedValue({});
+  });
+
+  it("rejects the transaction when personal organization provisioning fails", async () => {
+    const failure = new Error("organization provisioning failed");
+    transaction.organization.upsert.mockRejectedValue(failure);
+
+    await expect(findOrCreateOidcUser(profile)).rejects.toBe(failure);
+
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(transaction.organizationMember.upsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects the transaction when owner membership provisioning fails", async () => {
+    const failure = new Error("membership provisioning failed");
+    transaction.organizationMember.upsert.mockRejectedValue(failure);
+
+    await expect(findOrCreateOidcUser(profile)).rejects.toBe(failure);
+
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+  });
+});
+
+describe("findOrCreateDevDashboardUser", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prisma.$transaction.mockImplementation((callback) => callback(transaction));
+    transaction.user.upsert.mockResolvedValue({
+      id: "dev-user-1",
+      email: "local-dashboard@example.test",
+      displayName: "Local Dashboard User",
+    });
+    transaction.organization.upsert.mockResolvedValue({
+      id: "organization-1",
+    });
+    transaction.organizationMember.upsert.mockResolvedValue({});
+  });
+
+  it("provisions the development user and personal organization in one transaction", async () => {
+    await findOrCreateDevDashboardUser();
+
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(transaction.user.upsert).toHaveBeenCalledOnce();
+    expect(transaction.organization.upsert).toHaveBeenCalledOnce();
+    expect(transaction.organizationMember.upsert).toHaveBeenCalledOnce();
   });
 });
