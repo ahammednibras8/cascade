@@ -47,6 +47,10 @@ export default function AuthEntryPage({
   const workspaceStage = viewStage === "workspace";
   const authenticationPending = fetcher.state !== "idle";
 
+  const authenticationError =
+    error ??
+    (fetcher.data?.error ? "Authentication is currently unavailable. Please try again." : null);
+
   useEffect(() => {
     setViewStage(stage);
   }, [stage]);
@@ -106,7 +110,7 @@ export default function AuthEntryPage({
                   authenticated={isAuthenticated}
                   authenticationPending={authenticationPending}
                   devAuthEnabled={devAuthEnabled}
-                  error={error ?? fetcher.data?.error}
+                  error={authenticationError}
                   fetcher={fetcher}
                   onContinue={() => setViewStage(progressStage)}
                   startHref={startHref}
@@ -174,7 +178,7 @@ function AuthenticationState({
           role="alert"
           className="mt-6 rounded-2xl border border-red-900/10 bg-red-50 px-4 py-3 text-sm text-red-700"
         >
-          Authentication failed. Please try again.
+          {error}
         </p>
       ) : null}
 

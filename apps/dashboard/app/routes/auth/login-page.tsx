@@ -13,6 +13,7 @@ import { commitActiveDashboardOrganization } from "~/lib/workspace/dashboard-org
 import { commitActiveDashboardEnvironment } from "~/lib/workspace/dashboard-workspace.server";
 import { isDevDashboardAuthEnabled } from "~/lib/auth/dashboard-auth-mode.server";
 import { getSafeDashboardReturnTo } from "~/lib/auth/return-to.server";
+import { getDashboardLoginErrorMessage } from "~/lib/auth/login-error";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
@@ -28,7 +29,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       activationState: null,
       authenticated: false,
       devAuthEnabled: isDevDashboardAuthEnabled(),
-      error: url.searchParams.get("error"),
+      error: getDashboardLoginErrorMessage(url.searchParams.get("error")),
       returnTo,
       stage: "authentication" as const,
     };

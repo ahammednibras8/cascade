@@ -8,14 +8,30 @@ const commitDashboardSession = vi.hoisted(() => vi.fn<(token: string) => Promise
 const resolvePostAuthenticationRedirect = vi.hoisted(() =>
   vi.fn<(userId: string, returnTo: string) => Promise<string>>(),
 );
+const authErrors = vi.hoisted(() => {
+  class OidcAuthenticationError extends Error {
+    constructor(readonly code: string) {
+      super("OIDC authentication failed");
+    }
+  }
+
+  class OidcIdentityLinkRequiredError extends Error {}
+
+  return {
+    OidcAuthenticationError,
+    OidcIdentityLinkRequiredError,
+  };
+});
 
 vi.mock("../../../app/lib/auth/oidc.server.js", () => ({
   completeOidcLogin,
   clearOidcLoginTransaction,
+  OidcAuthenticationError: authErrors.OidcAuthenticationError,
 }));
 
 vi.mock("../../../app/lib/auth/dashboard-user.server.js", () => ({
   findOrCreateOidcUser,
+  OidcIdentityLinkRequiredError: authErrors.OidcIdentityLinkRequiredError,
 }));
 
 vi.mock("../../../app/lib/auth/dashboard-session.server.js", () => ({
@@ -84,5 +100,59 @@ describe("OIDC callback route", () => {
     expect(findOrCreateOidcUser).not.toHaveBeenCalled();
     expect(createDashboardSession).not.toHaveBeenCalled();
     expect(resolvePostAuthenticationRedirect).not.toHaveBeenCalled();
+  });
+});
+
+describe("OIDC callback error classification", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    clearOidcLoginTransaction.mockResolvedValue("cascade-oidc=; Max-Age=0");
+  });
+
+  it.each([
+    "sign_in_cancelled",
+    "sign_in_expired",
+    "invalid_identity",
+    "email_not_verified",
+    "provider_unavailable",
+  ])("returns the safe OIDC error code %s", async (code) => {
+    completeOidcLogin.mockRejectedValue(new authErrors.OidcAuthenticationError(code));
+
+    const response = await loader({
+      request: new Request("http://dashboard.test/auth/callback?code=bad"),
+    } as never);
+
+    expect(response.headers.get("Location")).toBe(`/login?error=${code}`);
+    expect(response.headers.get("Set-Cookie")).toContain("Max-Age=0");
+  });
+
+  it("returns a safe code when an email belongs to another identity", async () => {
+    completeOidcLogin.mockResolvedValue({
+      profile,
+      returnTo: "/runs",
+      clearCookie: "cascade-oidc=; Max-Age=0",
+    });
+    findOrCreateOidcUser.mockRejectedValue(new authErrors.OidcIdentityLinkRequiredError());
+
+    const response = await loader({
+      request: new Request("http://dashboard.test/auth/callback?code=test"),
+    } as never);
+
+    expect(response.headers.get("Location")).toBe("/login?error=identity_link_required");
+    expect(createDashboardSession).not.toHaveBeenCalled();
+  });
+
+  it("does not expose an unknown exception message in the redirect", async () => {
+    completeOidcLogin.mockRejectedValue(
+      new Error("client_secret and authorization code must never reach the browser"),
+    );
+
+    const response = await loader({
+      request: new Request("http://dashboard.test/auth/callback?code=bad"),
+    } as never);
+
+    expect(response.headers.get("Location")).toBe("/login?error=authentication_failed");
+    expect(response.headers.get("Location")).not.toContain("client_secret");
+    expect(response.headers.get("Location")).not.toContain("authorization");
   });
 });
