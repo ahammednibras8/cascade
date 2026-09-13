@@ -22,7 +22,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
     return redirect(destination, {
       headers: {
-        "Set-Cookie": await commitDashboardSession(session.token),
+        "Set-Cookie": await commitDashboardSession(session),
       },
     });
   }

@@ -78,8 +78,16 @@ export async function rotateDashboardSession(request: Request, userId: string) {
   };
 }
 
-export async function commitDashboardSession(token: string) {
-  return getSessionCookie().serialize(token);
+export async function commitDashboardSession(session: { token: string; expiresAt: Date }) {
+  const remainingLifetimeSeconds = Math.max(
+    0,
+    Math.floor((session.expiresAt.getTime() - Date.now()) / 1000),
+  );
+
+  return getSessionCookie().serialize(session.token, {
+    expires: session.expiresAt,
+    maxAge: remainingLifetimeSeconds,
+  });
 }
 
 export async function getDashboardSession(

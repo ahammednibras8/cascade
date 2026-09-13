@@ -105,7 +105,7 @@ export async function action({ request }: Route.ActionArgs) {
     { ok: true, stage: "workspace" as const },
     {
       headers: {
-        "Set-Cookie": await commitDashboardSession(session.token),
+        "Set-Cookie": await commitDashboardSession(session),
       },
     },
   );

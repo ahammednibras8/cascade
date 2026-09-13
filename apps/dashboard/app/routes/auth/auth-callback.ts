@@ -14,7 +14,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     const login = await completeOidcLogin(request);
     const user = await findOrCreateOidcUser(login.profile);
     const session = await rotateDashboardSession(request, user.id);
-    const sessionCookie = await commitDashboardSession(session.token);
+    const sessionCookie = await commitDashboardSession(session);
     const destination = await resolvePostAuthenticationRedirect(user.id, login.returnTo);
 
     const headers = new Headers();

@@ -31,20 +31,20 @@ const {
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const SESSION_ID = "22222222-2222-4222-8222-222222222222";
 
+beforeEach(() => {
+  process.env["DASHBOARD_SESSION_SECRET"] = testSessionSecret;
+  process.env["NODE_ENV"] = "test";
+  vi.clearAllMocks();
+  prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
+});
+
+afterEach(() => {
+  process.env["DASHBOARD_SESSION_SECRET"] = originalSessionSecret;
+  process.env["NODE_ENV"] = originalNodeEnv;
+});
+
 describe("dashboard sessions", () => {
-  beforeEach(() => {
-    process.env["DASHBOARD_SESSION_SECRET"] = testSessionSecret;
-    process.env["NODE_ENV"] = "test";
-    vi.clearAllMocks();
-    prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
-  });
-
-  afterEach(() => {
-    process.env["DASHBOARD_SESSION_SECRET"] = originalSessionSecret;
-    process.env["NODE_ENV"] = originalNodeEnv;
-  });
-
-  it("rotates to a random token but stores only its HMAC hash", async () => {
+  it("cleans expired sessions and stores only the new token HMAC hash", async () => {
     prisma.dashboardSession.create.mockResolvedValue({});
 
     const session = await rotateDashboardSession(
@@ -63,7 +63,17 @@ describe("dashboard sessions", () => {
       },
     });
     expect(prisma.$transaction).toHaveBeenCalledOnce();
-    expect(prisma.dashboardSession.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.dashboardSession.deleteMany).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          {
+            expiresAt: {
+              lte: expect.any(Date),
+            },
+          },
+        ],
+      },
+    });
   });
 
   it("revokes the presented session before creating its replacement", async () => {
@@ -83,7 +93,16 @@ describe("dashboard sessions", () => {
 
     expect(prisma.dashboardSession.deleteMany).toHaveBeenCalledWith({
       where: {
-        tokenHash: hashDashboardSessionToken(previousToken),
+        OR: [
+          {
+            expiresAt: {
+              lte: expect.any(Date),
+            },
+          },
+          {
+            tokenHash: hashDashboardSessionToken(previousToken),
+          },
+        ],
       },
     });
     expect(prisma.dashboardSession.create).toHaveBeenCalledWith({
