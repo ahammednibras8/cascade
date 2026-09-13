@@ -51,7 +51,7 @@ async function ensurePersonalOrganization(tx: DashboardUserTransaction, user: Da
   return user;
 }
 
-export async function findOrCreateOidcUserInTransaction(
+async function findOrCreateOidcUserInTransaction(
   tx: DashboardUserTransaction,
   profile: OidcProfile,
 ) {
