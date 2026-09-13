@@ -2,6 +2,7 @@ import * as oidc from "openid-client";
 import { createCookie } from "react-router";
 import { getOidcConfiguration, type OidcConfiguration } from "./oidc-config.server";
 import { getSafeDashboardReturnTo } from "./return-to.server";
+import type { DashboardLoginErrorCode } from "./login-error";
 
 const MAX_SUBJECT_LENGTH = 255;
 const MAX_EMAIL_LENGTH = 254;
@@ -32,12 +33,10 @@ type OidcCompletionResult = {
   clearCookie: string;
 };
 
-export type OidcAuthenticationErrorCode =
-  | "sign_in_cancelled"
-  | "sign_in_expired"
-  | "invalid_identity"
-  | "email_not_verified"
-  | "provider_unavailable";
+export type OidcAuthenticationErrorCode = Exclude<
+  DashboardLoginErrorCode,
+  "identity_link_required" | "authentication_failed"
+>;
 
 export class OidcAuthenticationError extends Error {
   constructor(

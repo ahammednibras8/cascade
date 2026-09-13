@@ -1,14 +1,34 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const oidc = vi.hoisted(() => ({
-  authorizationCodeGrant: vi.fn<(input: unknown, url: URL, checks: unknown) => Promise<unknown>>(),
-  buildAuthorizationUrl: vi.fn<(input: unknown, parameters: unknown) => URL>(),
-  calculatePKCECodeChallenge: vi.fn<(value: string) => Promise<string>>(),
-  discovery: vi.fn<(issuer: URL, clientId: string, clientSecret: string) => Promise<unknown>>(),
-  randomNonce: vi.fn<() => string>(),
-  randomPKCECodeVerifier: vi.fn<() => string>(),
-  randomState: vi.fn<() => string>(),
-}));
+const oidc = vi.hoisted(() => {
+  class AuthorizationResponseError extends Error {
+    constructor(readonly error: string) {
+      super("authorization response error");
+    }
+  }
+
+  class ResponseBodyError extends Error {
+    constructor(readonly error: string) {
+      super("response body error");
+    }
+  }
+
+  class ClientError extends Error {}
+
+  return {
+    AuthorizationResponseError,
+    ClientError,
+    ResponseBodyError,
+    authorizationCodeGrant:
+      vi.fn<(input: unknown, url: URL, checks: unknown) => Promise<unknown>>(),
+    buildAuthorizationUrl: vi.fn<(input: unknown, parameters: unknown) => URL>(),
+    calculatePKCECodeChallenge: vi.fn<(value: string) => Promise<string>>(),
+    discovery: vi.fn<(issuer: URL, clientId: string, clientSecret: string) => Promise<unknown>>(),
+    randomNonce: vi.fn<() => string>(),
+    randomPKCECodeVerifier: vi.fn<() => string>(),
+    randomState: vi.fn<() => string>(),
+  };
+});
 
 vi.mock("openid-client", () => oidc);
 
@@ -32,6 +52,20 @@ async function completeWithClaims(claims: Record<string, unknown> | undefined) {
       return claims;
     },
   });
+
+  return completeOidcLogin(
+    new Request("http://dashboard.test/auth/callback?code=authorization-code&state=state-123", {
+      headers: {
+        Cookie: start.setCookie,
+      },
+    }),
+  );
+}
+
+async function completeWithProviderError(error: unknown) {
+  const start = await startOidcLogin("/tasks");
+
+  oidc.authorizationCodeGrant.mockRejectedValue(error);
 
   return completeOidcLogin(
     new Request("http://dashboard.test/auth/callback?code=authorization-code&state=state-123", {
@@ -86,6 +120,17 @@ describe("OIDC login start", () => {
     const result = await startOidcLogin("/");
 
     expect(result.setCookie).toContain("cascade-oidc=");
+  });
+
+  it("classifies discovery failures as provider unavailability", async () => {
+    const failure = new TypeError("provider could not be reached");
+    oidc.discovery.mockRejectedValue(failure);
+
+    await expect(startOidcLogin("/runs")).rejects.toMatchObject({
+      name: "OidcAuthenticationError",
+      code: "provider_unavailable",
+      cause: failure,
+    });
   });
 });
 
@@ -219,5 +264,67 @@ describe("OIDC login completion", () => {
     await expect(
       completeOidcLogin(new Request("http://dashboard.test/auth/callback?code=authorization-code")),
     ).rejects.toBeInstanceOf(OidcAuthenticationError);
+  });
+});
+
+describe("OIDC provider error classification", () => {
+  it.each([
+    {
+      label: "authorization denial",
+      failure: new oidc.AuthorizationResponseError("access_denied"),
+      code: "sign_in_cancelled",
+    },
+    {
+      label: "required provider interaction",
+      failure: new oidc.AuthorizationResponseError("interaction_required"),
+      code: "sign_in_expired",
+    },
+    {
+      label: "temporary authorization failure",
+      failure: new oidc.AuthorizationResponseError("temporarily_unavailable"),
+      code: "provider_unavailable",
+    },
+    {
+      label: "unknown authorization failure",
+      failure: new oidc.AuthorizationResponseError("invalid_request"),
+      code: "invalid_identity",
+    },
+    {
+      label: "expired authorization code",
+      failure: new oidc.ResponseBodyError("invalid_grant"),
+      code: "sign_in_expired",
+    },
+    {
+      label: "temporary token failure",
+      failure: new oidc.ResponseBodyError("server_error"),
+      code: "provider_unavailable",
+    },
+    {
+      label: "rejected token request",
+      failure: new oidc.ResponseBodyError("invalid_client"),
+      code: "invalid_identity",
+    },
+    {
+      label: "protocol validation failure",
+      failure: new oidc.ClientError("state mismatch"),
+      code: "invalid_identity",
+    },
+    {
+      label: "network failure",
+      failure: new TypeError("connection failed"),
+      code: "provider_unavailable",
+    },
+  ])("maps $label to $code", async ({ failure, code }) => {
+    await expect(completeWithProviderError(failure)).rejects.toMatchObject({
+      name: "OidcAuthenticationError",
+      code,
+      cause: failure,
+    });
+  });
+
+  it("does not disguise an unknown application error as a provider failure", async () => {
+    const failure = new Error("unexpected application failure");
+
+    await expect(completeWithProviderError(failure)).rejects.toBe(failure);
   });
 });
