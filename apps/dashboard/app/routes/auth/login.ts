@@ -4,7 +4,7 @@ import { redirect } from "react-router";
 import { findOrCreateDevDashboardUser } from "~/lib/auth/dashboard-user.server";
 import {
   commitDashboardSession,
-  createDashboardSession,
+  rotateDashboardSession,
 } from "~/lib/auth/dashboard-session.server";
 import { resolvePostAuthenticationRedirect } from "~/lib/auth/post-authentication.server";
 import { isDevDashboardAuthEnabled } from "~/lib/auth/dashboard-auth-mode.server";
@@ -17,7 +17,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   if (isDevDashboardAuthEnabled()) {
     const user = await findOrCreateDevDashboardUser();
-    const session = await createDashboardSession(user.id);
+    const session = await rotateDashboardSession(request, user.id);
     const destination = await resolvePostAuthenticationRedirect(user.id, returnTo);
 
     return redirect(destination, {

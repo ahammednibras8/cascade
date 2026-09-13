@@ -37,16 +37,27 @@ export function hashDashboardSessionToken(token: string) {
   return createHmac("sha256", getDashboardSessionSecret()).update(token).digest("hex");
 }
 
-export async function createDashboardSession(userId: string) {
+export async function rotateDashboardSession(request: Request, userId: string) {
+  const previousToken = await getSessionCookie().parse(request.headers.get("Cookie"));
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_LIFETIME_SECONDS * 1000);
 
-  await prisma.dashboardSession.create({
-    data: {
-      userId,
-      tokenHash: hashDashboardSessionToken(token),
-      expiresAt,
-    },
+  await prisma.$transaction(async (tx) => {
+    if (typeof previousToken === "string") {
+      await tx.dashboardSession.deleteMany({
+        where: {
+          tokenHash: hashDashboardSessionToken(previousToken),
+        },
+      });
+    }
+
+    await tx.dashboardSession.create({
+      data: {
+        userId,
+        tokenHash: hashDashboardSessionToken(token),
+        expiresAt,
+      },
+    });
   });
 
   return {

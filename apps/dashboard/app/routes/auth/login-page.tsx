@@ -1,8 +1,8 @@
 import AuthEntryPage from "~/components/auth/AuthEntryPage";
 import {
   commitDashboardSession,
-  createDashboardSession,
   getDashboardSession,
+  rotateDashboardSession,
 } from "~/lib/auth/dashboard-session.server";
 import { findOrCreateDevDashboardUser } from "~/lib/auth/dashboard-user.server";
 import { resolveDashboardActivationState } from "~/lib/activation/activation-state.server";
@@ -99,7 +99,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const user = await findOrCreateDevDashboardUser();
-  const session = await createDashboardSession(user.id);
+  const session = await rotateDashboardSession(request, user.id);
 
   return Response.json(
     { ok: true, stage: "workspace" as const },

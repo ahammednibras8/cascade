@@ -208,6 +208,67 @@ describe("OIDC provisioning transaction failures", () => {
   });
 });
 
+describe("OIDC provisioning uniqueness conflicts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    transaction.organization.upsert.mockResolvedValue({
+      id: "organization-1",
+    });
+    transaction.organizationMember.upsert.mockResolvedValue({});
+  });
+
+  it("retries when another request creates the same identity first", async () => {
+    prisma.$transaction
+      .mockRejectedValueOnce({ code: "P2002" })
+      .mockImplementationOnce((callback) => callback(transaction));
+    transaction.userIdentity.findUnique.mockResolvedValue({
+      userId: "user-1",
+    });
+    transaction.user.findUnique.mockResolvedValue({
+      id: "user-1",
+    });
+    transaction.user.update.mockResolvedValue({
+      id: "user-1",
+      email: profile.email,
+      displayName: profile.displayName,
+    });
+
+    await expect(findOrCreateOidcUser(profile)).resolves.toEqual({
+      id: "user-1",
+      email: profile.email,
+      displayName: profile.displayName,
+    });
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+  });
+
+  it("still refuses a different identity using the concurrently created email", async () => {
+    prisma.$transaction
+      .mockRejectedValueOnce({ code: "P2002" })
+      .mockImplementationOnce((callback) => callback(transaction));
+    transaction.userIdentity.findUnique.mockResolvedValue(null);
+    transaction.user.findUnique.mockResolvedValue({
+      id: "different-user",
+    });
+
+    await expect(findOrCreateOidcUser(profile)).rejects.toBeInstanceOf(
+      OidcIdentityLinkRequiredError,
+    );
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(transaction.user.create).not.toHaveBeenCalled();
+  });
+
+  it("does not retry unrelated database failures", async () => {
+    const failure = new Error("database unavailable");
+    prisma.$transaction.mockRejectedValueOnce(failure);
+
+    await expect(findOrCreateOidcUser(profile)).rejects.toBe(failure);
+
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+  });
+});
+
 describe("findOrCreateDevDashboardUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
