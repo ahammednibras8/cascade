@@ -41,7 +41,7 @@ export default async function setup(_config: FullConfig) {
   const baseUrl = new URL(getRequiredEnvironmentVariable("PLAYWRIGHT_BASE_URL"));
 
   const { prisma } = await import("@cascade/database");
-  const { commitDashboardSession, createDashboardSession } =
+  const { commitDashboardSession, rotateDashboardSession } =
     await import("../../../dashboard/app/lib/auth/dashboard-session.server.js");
 
   const user = await prisma.user.upsert({
@@ -95,7 +95,10 @@ export default async function setup(_config: FullConfig) {
     },
   });
 
-  const session = await createDashboardSession(user.id);
+  const session = await rotateDashboardSession(
+    new Request(new URL("/login", baseUrl).toString()),
+    user.id,
+  );
   const setCookie = await commitDashboardSession(session.token);
   const cookie = getCookieValue(setCookie);
 

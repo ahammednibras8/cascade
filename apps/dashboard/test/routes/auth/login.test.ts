@@ -15,8 +15,8 @@ const findOrCreateDevDashboardUser = vi.hoisted(() =>
   vi.fn<() => Promise<{ id: string; email: string; displayName: string }>>(),
 );
 
-const createDashboardSession = vi.hoisted(() =>
-  vi.fn<(userId: string) => Promise<{ token: string; expiresAt: Date }>>(),
+const rotateDashboardSession = vi.hoisted(() =>
+  vi.fn<(request: Request, userId: string) => Promise<{ token: string; expiresAt: Date }>>(),
 );
 
 const commitDashboardSession = vi.hoisted(() => vi.fn<(token: string) => Promise<string>>());
@@ -39,7 +39,7 @@ vi.mock("../../../app/lib/auth/dashboard-user.server.js", () => ({
 
 vi.mock("../../../app/lib/auth/dashboard-session.server.js", () => ({
   commitDashboardSession,
-  createDashboardSession,
+  rotateDashboardSession,
 }));
 
 vi.mock("../../../app/lib/auth/post-authentication.server.js", () => ({
@@ -80,19 +80,18 @@ describe("auth start route", () => {
       email: "local-dashboard@example.test",
       displayName: "Local Dashboard User",
     });
-    createDashboardSession.mockResolvedValue({
+    rotateDashboardSession.mockResolvedValue({
       token: "dev-session-token",
       expiresAt: new Date("2026-01-01T00:00:00.000Z"),
     });
     commitDashboardSession.mockResolvedValue("cascade-session=signed; HttpOnly");
 
-    const response = await loader({
-      request: new Request("http://dashboard.test/auth/start?returnTo=/runs"),
-    } as never);
+    const request = new Request("http://dashboard.test/auth/start?returnTo=/runs");
+    const response = await loader({ request } as never);
 
     expect(startOidcLogin).not.toHaveBeenCalled();
     expect(findOrCreateDevDashboardUser).toHaveBeenCalledWith();
-    expect(createDashboardSession).toHaveBeenCalledWith("user-1");
+    expect(rotateDashboardSession).toHaveBeenCalledWith(request, "user-1");
     expect(commitDashboardSession).toHaveBeenCalledWith("dev-session-token");
     expect(resolvePostAuthenticationRedirect).toHaveBeenCalledWith("user-1", "/runs");
     expect(response.status).toBe(302);
@@ -108,7 +107,7 @@ describe("auth start route", () => {
       email: "local-dashboard@example.test",
       displayName: "Local Dashboard User",
     });
-    createDashboardSession.mockResolvedValue({
+    rotateDashboardSession.mockResolvedValue({
       token: "dev-session-token",
       expiresAt: new Date("2026-01-01T00:00:00.000Z"),
     });

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const prisma = vi.hoisted(() => ({
+  $transaction: vi.fn<(callback: (transaction: unknown) => Promise<unknown>) => Promise<unknown>>(),
   dashboardSession: {
     create: vi.fn<(input: unknown) => Promise<unknown>>(),
     findUnique: vi.fn<(input: unknown) => Promise<unknown>>(),
@@ -21,10 +22,10 @@ process.env["NODE_ENV"] = "test";
 
 const {
   commitDashboardSession,
-  createDashboardSession,
   destroyDashboardSession,
   getDashboardSession,
   hashDashboardSessionToken,
+  rotateDashboardSession,
 } = await import("../../../app/lib/auth/dashboard-session.server.js");
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
@@ -35,6 +36,7 @@ describe("dashboard sessions", () => {
     process.env["DASHBOARD_SESSION_SECRET"] = testSessionSecret;
     process.env["NODE_ENV"] = "test";
     vi.clearAllMocks();
+    prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
   });
 
   afterEach(() => {
@@ -42,10 +44,13 @@ describe("dashboard sessions", () => {
     process.env["NODE_ENV"] = originalNodeEnv;
   });
 
-  it("creates a random token but stores only its HMAC hash", async () => {
+  it("rotates to a random token but stores only its HMAC hash", async () => {
     prisma.dashboardSession.create.mockResolvedValue({});
 
-    const session = await createDashboardSession(USER_ID);
+    const session = await rotateDashboardSession(
+      new Request("http://dashboard.test/login"),
+      USER_ID,
+    );
 
     expect(session.token).toMatch(/^[A-Za-z0-9_-]+$/);
     expect(session.token.length).toBeGreaterThanOrEqual(43);
@@ -57,6 +62,8 @@ describe("dashboard sessions", () => {
         expiresAt: expect.any(Date),
       },
     });
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(prisma.dashboardSession.deleteMany).not.toHaveBeenCalled();
   });
 
   it("reads a valid unexpired session from a signed cookie", async () => {

@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const completeOidcLogin = vi.hoisted(() => vi.fn<(request: Request) => Promise<unknown>>());
 const clearOidcLoginTransaction = vi.hoisted(() => vi.fn<() => Promise<string>>());
 const findOrCreateOidcUser = vi.hoisted(() => vi.fn<(profile: unknown) => Promise<unknown>>());
-const createDashboardSession = vi.hoisted(() => vi.fn<(userId: string) => Promise<unknown>>());
+const rotateDashboardSession = vi.hoisted(() =>
+  vi.fn<(request: Request, userId: string) => Promise<unknown>>(),
+);
 const commitDashboardSession = vi.hoisted(() => vi.fn<(token: string) => Promise<string>>());
 const resolvePostAuthenticationRedirect = vi.hoisted(() =>
   vi.fn<(userId: string, returnTo: string) => Promise<string>>(),
@@ -35,8 +37,8 @@ vi.mock("../../../app/lib/auth/dashboard-user.server.js", () => ({
 }));
 
 vi.mock("../../../app/lib/auth/dashboard-session.server.js", () => ({
-  createDashboardSession,
   commitDashboardSession,
+  rotateDashboardSession,
 }));
 
 vi.mock("../../../app/lib/auth/post-authentication.server.js", () => ({
@@ -67,17 +69,16 @@ describe("OIDC callback route", () => {
     findOrCreateOidcUser.mockResolvedValue({
       id: "user-1",
     });
-    createDashboardSession.mockResolvedValue({
+    rotateDashboardSession.mockResolvedValue({
       token: "dashboard-session-token",
     });
     commitDashboardSession.mockResolvedValue("cascade-session=signed-session; HttpOnly");
 
-    const response = await loader({
-      request: new Request("http://dashboard.test/auth/callback?code=test"),
-    } as never);
+    const request = new Request("http://dashboard.test/auth/callback?code=test");
+    const response = await loader({ request } as never);
 
     expect(findOrCreateOidcUser).toHaveBeenCalledWith(profile);
-    expect(createDashboardSession).toHaveBeenCalledWith("user-1");
+    expect(rotateDashboardSession).toHaveBeenCalledWith(request, "user-1");
     expect(commitDashboardSession).toHaveBeenCalledWith("dashboard-session-token");
     expect(resolvePostAuthenticationRedirect).toHaveBeenCalledWith("user-1", "/runs");
     expect(response.status).toBe(302);
@@ -98,7 +99,7 @@ describe("OIDC callback route", () => {
     expect(response.headers.get("Location")).toBe("/login?error=authentication_failed");
     expect(response.headers.get("Set-Cookie")).toContain("Max-Age=0");
     expect(findOrCreateOidcUser).not.toHaveBeenCalled();
-    expect(createDashboardSession).not.toHaveBeenCalled();
+    expect(rotateDashboardSession).not.toHaveBeenCalled();
     expect(resolvePostAuthenticationRedirect).not.toHaveBeenCalled();
   });
 });
@@ -139,7 +140,7 @@ describe("OIDC callback error classification", () => {
     } as never);
 
     expect(response.headers.get("Location")).toBe("/login?error=identity_link_required");
-    expect(createDashboardSession).not.toHaveBeenCalled();
+    expect(rotateDashboardSession).not.toHaveBeenCalled();
   });
 
   it("does not expose an unknown exception message in the redirect", async () => {

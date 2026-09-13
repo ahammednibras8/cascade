@@ -18,7 +18,7 @@ export async function createDashboardActivationFixture(
   baseURL: string,
 ): Promise<DashboardActivationFixture> {
   const { prisma } = await import("@cascade/database");
-  const { commitDashboardSession, createDashboardSession } =
+  const { commitDashboardSession, rotateDashboardSession } =
     await import("../../../dashboard/app/lib/auth/dashboard-session.server.js");
   const suffix = randomUUID().slice(0, 8);
   const user = await prisma.user.create({
@@ -36,7 +36,10 @@ export async function createDashboardActivationFixture(
     },
     select: { id: true },
   });
-  const session = await createDashboardSession(user.id);
+  const session = await rotateDashboardSession(
+    new Request(new URL("/login", baseURL).toString()),
+    user.id,
+  );
   const sessionCookie = getCookieValue(await commitDashboardSession(session.token));
   const context = await browser.newContext({ baseURL });
 

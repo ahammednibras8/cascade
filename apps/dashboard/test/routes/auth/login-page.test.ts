@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const getDashboardSession = vi.hoisted(() => vi.fn<(request: Request) => Promise<unknown>>());
-const createDashboardSession = vi.hoisted(() => vi.fn<(userId: string) => Promise<unknown>>());
+const rotateDashboardSession = vi.hoisted(() =>
+  vi.fn<(request: Request, userId: string) => Promise<unknown>>(),
+);
 const commitDashboardSession = vi.hoisted(() => vi.fn<(token: string) => Promise<string>>());
 const findOrCreateDevDashboardUser = vi.hoisted(() => vi.fn<() => Promise<unknown>>());
 const resolveDashboardActivationState = vi.hoisted(() =>
@@ -28,8 +30,8 @@ const commitActiveDashboardEnvironment = vi.hoisted(() =>
 
 vi.mock("../../../app/lib/auth/dashboard-session.server.js", () => ({
   commitDashboardSession,
-  createDashboardSession,
   getDashboardSession,
+  rotateDashboardSession,
 }));
 
 vi.mock("../../../app/lib/auth/dashboard-user.server.js", () => ({
@@ -193,14 +195,15 @@ it.each([
 it("creates a development session without navigating away from login", async () => {
   process.env["DASHBOARD_AUTH_MODE"] = "dev";
   findOrCreateDevDashboardUser.mockResolvedValue({ id: "user-1" });
-  createDashboardSession.mockResolvedValue({ token: "session-token" });
+  rotateDashboardSession.mockResolvedValue({ token: "session-token" });
   commitDashboardSession.mockResolvedValue("cascade-session=signed; HttpOnly");
 
+  const request = new Request("http://dashboard.test/login", {
+    method: "POST",
+    body: new URLSearchParams({ intent: "authenticate" }),
+  });
   const response = await action({
-    request: new Request("http://dashboard.test/login", {
-      method: "POST",
-      body: new URLSearchParams({ intent: "authenticate" }),
-    }),
+    request,
   } as never);
 
   expect(response).toBeInstanceOf(Response);
@@ -210,7 +213,7 @@ it("creates a development session without navigating away from login", async () 
   });
   expect((response as Response).headers.get("Set-Cookie")).toContain("cascade-session=");
   expect(findOrCreateDevDashboardUser).toHaveBeenCalledWith();
-  expect(createDashboardSession).toHaveBeenCalledWith("user-1");
+  expect(rotateDashboardSession).toHaveBeenCalledWith(request, "user-1");
 });
 
 it("creates a workspace from the login activation form", async () => {
