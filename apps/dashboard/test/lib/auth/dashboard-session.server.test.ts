@@ -66,6 +66,39 @@ describe("dashboard sessions", () => {
     expect(prisma.dashboardSession.deleteMany).not.toHaveBeenCalled();
   });
 
+  it("revokes the presented session before creating its replacement", async () => {
+    const previousToken = "previous-dashboard-session-token";
+    const cookie = await commitDashboardSession(previousToken);
+    prisma.dashboardSession.deleteMany.mockResolvedValue({ count: 1 });
+    prisma.dashboardSession.create.mockResolvedValue({});
+
+    const session = await rotateDashboardSession(
+      new Request("http://dashboard.test/auth/callback", {
+        headers: {
+          Cookie: cookie,
+        },
+      }),
+      USER_ID,
+    );
+
+    expect(prisma.dashboardSession.deleteMany).toHaveBeenCalledWith({
+      where: {
+        tokenHash: hashDashboardSessionToken(previousToken),
+      },
+    });
+    expect(prisma.dashboardSession.create).toHaveBeenCalledWith({
+      data: {
+        userId: USER_ID,
+        tokenHash: hashDashboardSessionToken(session.token),
+        expiresAt: session.expiresAt,
+      },
+    });
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(prisma.dashboardSession.deleteMany.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.dashboardSession.create.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
   it("reads a valid unexpired session from a signed cookie", async () => {
     const token = "valid-dashboard-session-token";
     const expiresAt = new Date("2030-01-01T00:00:00.000Z");

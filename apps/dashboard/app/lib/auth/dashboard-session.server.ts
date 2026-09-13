@@ -39,14 +39,28 @@ export function hashDashboardSessionToken(token: string) {
 
 export async function rotateDashboardSession(request: Request, userId: string) {
   const previousToken = await getSessionCookie().parse(request.headers.get("Cookie"));
+  const issuedAt = new Date();
   const token = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + SESSION_LIFETIME_SECONDS * 1000);
+  const expiresAt = new Date(issuedAt.getTime() + SESSION_LIFETIME_SECONDS * 1000);
 
   await prisma.$transaction(async (tx) => {
     if (typeof previousToken === "string") {
       await tx.dashboardSession.deleteMany({
         where: {
-          tokenHash: hashDashboardSessionToken(previousToken),
+          OR: [
+            {
+              expiresAt: {
+                lte: issuedAt,
+              },
+            },
+            ...(typeof previousToken === "string"
+              ? [
+                  {
+                    tokenHash: hashDashboardSessionToken(previousToken),
+                  },
+                ]
+              : []),
+          ],
         },
       });
     }
