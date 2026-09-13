@@ -1,4 +1,4 @@
-import { prisma } from "@cascade/database";
+import { Prisma, prisma } from "@cascade/database";
 import type { OidcProfile } from "./oidc.server";
 
 export class OidcIdentityLinkRequiredError extends Error {
@@ -14,8 +14,10 @@ type DashboardUser = {
   displayName: string | null;
 };
 
-async function ensurePersonalOrganization(user: DashboardUser) {
-  const organization = await prisma.organization.upsert({
+type DashboardUserTransaction = Prisma.TransactionClient;
+
+async function ensurePersonalOrganization(tx: DashboardUserTransaction, user: DashboardUser) {
+  const organization = await tx.organization.upsert({
     where: {
       slug: `personal-${user.id}`,
     },
@@ -29,14 +31,16 @@ async function ensurePersonalOrganization(user: DashboardUser) {
     },
   });
 
-  await prisma.organizationMember.upsert({
+  await tx.organizationMember.upsert({
     where: {
       organizationId_userId: {
         organizationId: organization.id,
         userId: user.id,
       },
     },
-    update: {},
+    update: {
+      role: "OWNER",
+    },
     create: {
       organizationId: organization.id,
       userId: user.id,
@@ -47,8 +51,11 @@ async function ensurePersonalOrganization(user: DashboardUser) {
   return user;
 }
 
-export async function findOrCreateOidcUser(profile: OidcProfile) {
-  const identity = await prisma.userIdentity.findUnique({
+export async function findOrCreateOidcUserInTransaction(
+  tx: DashboardUserTransaction,
+  profile: OidcProfile,
+) {
+  const identity = await tx.userIdentity.findUnique({
     where: {
       provider_subject: {
         provider: profile.provider,
@@ -61,7 +68,7 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
   });
 
   if (identity) {
-    const emailOwner = await prisma.user.findUnique({
+    const emailOwner = await tx.user.findUnique({
       where: {
         email: profile.email,
       },
@@ -74,7 +81,7 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
       throw new OidcIdentityLinkRequiredError();
     }
 
-    const user = await prisma.user.update({
+    const user = await tx.user.update({
       where: {
         id: identity.userId,
       },
@@ -89,10 +96,10 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
       },
     });
 
-    return ensurePersonalOrganization(user);
+    return ensurePersonalOrganization(tx, user);
   }
 
-  const existingUser = await prisma.user.findUnique({
+  const existingUser = await tx.user.findUnique({
     where: {
       email: profile.email,
     },
@@ -105,7 +112,7 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
     throw new OidcIdentityLinkRequiredError();
   }
 
-  const user = await prisma.user.create({
+  const user = await tx.user.create({
     data: {
       email: profile.email,
       displayName: profile.displayName,
@@ -123,7 +130,11 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
     },
   });
 
-  return ensurePersonalOrganization(user);
+  return ensurePersonalOrganization(tx, user);
+}
+
+export function findOrCreateOidcUser(profile: OidcProfile) {
+  return prisma.$transaction((tx) => findOrCreateOidcUserInTransaction(tx, profile));
 }
 
 export async function findOrCreateDevDashboardUser() {
@@ -131,23 +142,25 @@ export async function findOrCreateDevDashboardUser() {
   const displayName =
     process.env["DASHBOARD_DEV_AUTH_DISPLAY_NAME"]?.trim() || "Local Dashboard User";
 
-  const user = await prisma.user.upsert({
-    where: {
-      email,
-    },
-    update: {
-      displayName,
-    },
-    create: {
-      email,
-      displayName,
-    },
-    select: {
-      id: true,
-      email: true,
-      displayName: true,
-    },
-  });
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.upsert({
+      where: {
+        email,
+      },
+      update: {
+        displayName,
+      },
+      create: {
+        email,
+        displayName,
+      },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+      },
+    });
 
-  return ensurePersonalOrganization(user);
+    return ensurePersonalOrganization(tx, user);
+  });
 }

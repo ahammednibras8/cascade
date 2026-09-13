@@ -8,6 +8,8 @@ const startOidcLogin = vi.hoisted(() =>
     }>
   >(),
 );
+const clearOidcLoginTransaction = vi.hoisted(() => vi.fn<() => Promise<string>>());
+const getDashboardLoginErrorCode = vi.hoisted(() => vi.fn<(error: unknown) => string>());
 
 const findOrCreateDevDashboardUser = vi.hoisted(() =>
   vi.fn<() => Promise<{ id: string; email: string; displayName: string }>>(),
@@ -23,7 +25,12 @@ const resolvePostAuthenticationRedirect = vi.hoisted(() =>
 );
 
 vi.mock("../../../app/lib/auth/oidc.server.js", () => ({
+  clearOidcLoginTransaction,
   startOidcLogin,
+}));
+
+vi.mock("../../../app/lib/auth/login-error.server.js", () => ({
+  getDashboardLoginErrorCode,
 }));
 
 vi.mock("../../../app/lib/auth/dashboard-user.server.js", () => ({
@@ -45,6 +52,8 @@ describe("auth start route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env["DASHBOARD_AUTH_MODE"];
+    clearOidcLoginTransaction.mockResolvedValue("cascade-oidc=; Max-Age=0");
+    getDashboardLoginErrorCode.mockReturnValue("authentication_failed");
     resolvePostAuthenticationRedirect.mockResolvedValue("/runs");
   });
 
@@ -112,5 +121,38 @@ describe("auth start route", () => {
     } as never);
 
     expect(response.headers.get("Location")).toBe("/dashboard");
+  });
+
+  it("rejects an external OIDC return path before starting authentication", async () => {
+    startOidcLogin.mockResolvedValue({
+      authorizationUrl: "https://identity.example.test/authorize",
+      setCookie: "cascade-oidc=signed-transaction; HttpOnly",
+    });
+
+    await loader({
+      request: new Request(
+        "http://dashboard.test/auth/start?returnTo=https://attacker.example.test",
+      ),
+    } as never);
+
+    expect(startOidcLogin).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("returns a safe error when provider discovery fails", async () => {
+    const failure = new Error("raw provider failure must not be exposed");
+    startOidcLogin.mockRejectedValue(failure);
+    getDashboardLoginErrorCode.mockReturnValue("provider_unavailable");
+
+    const response = await loader({
+      request: new Request("http://dashboard.test/auth/start?returnTo=/runs"),
+    } as never);
+
+    expect(getDashboardLoginErrorCode).toHaveBeenCalledWith(failure);
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe(
+      "/login?error=provider_unavailable&returnTo=%2Fruns",
+    );
+    expect(response.headers.get("Location")).not.toContain("raw");
+    expect(response.headers.get("Set-Cookie")).toContain("Max-Age=0");
   });
 });

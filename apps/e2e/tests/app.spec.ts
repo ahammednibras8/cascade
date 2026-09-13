@@ -95,6 +95,37 @@ test("anonymous dashboard requests are redirected to login", async ({
   }
 });
 
+test("login displays only allowlisted authentication errors", async ({ browser }, testInfo) => {
+  const baseURL = getBaseURL(testInfo);
+  const context = await browser.newContext({
+    baseURL,
+    storageState: {
+      cookies: [],
+      origins: [],
+    },
+  });
+
+  try {
+    const page = await context.newPage();
+
+    await page.goto("/login?error=email_not_verified");
+    await expect(page.getByRole("alert")).toHaveText(
+      "Your identity provider must verify your email address before you can sign in.",
+    );
+
+    await page.goto("/login?error=raw-provider-description");
+    await expect(page.getByRole("alert")).toHaveCount(0);
+
+    await page.goto("/login?returnTo=%2F%5Cattacker.example.test");
+    await expect(page.getByRole("link", { name: "Continue with SSO" })).toHaveAttribute(
+      "href",
+      "/auth/start?returnTo=%2Fdashboard",
+    );
+  } finally {
+    await context.close();
+  }
+});
+
 test("legacy signup and onboarding routes do not exist", async ({
   browserName: _browserName,
 }, testInfo) => {

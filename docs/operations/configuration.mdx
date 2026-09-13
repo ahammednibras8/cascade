@@ -138,4 +138,6 @@ When Cognito brokers Google authentication, configure two different redirects:
 
 Configure the Cognito app client as a confidential client using the authorization-code flow and the `openid`, `email`, and `profile` scopes. Enable the Google identity provider on that app client and map at least `sub`, `email`, `email_verified`, and `name`. Set `OIDC_ISSUER_URL` to the Cognito user-pool issuer, not the Cognito managed-login domain.
 
+Cascade protects the authorization-code round trip with PKCE S256, state, nonce, and a signed ten-minute transaction cookie. The OIDC client validates the provider response and ID token; Cascade additionally requires a non-empty subject, a valid normalized email, and the boolean claim `email_verified: true`. Post-login redirects are limited to internal dashboard paths. Provider descriptions and unexpected exceptions are never returned to the browser; the login page displays only allowlisted Cascade error messages.
+
 Keep local development client credentials in the ignored root `.env`. Store production `OIDC_CLIENT_SECRET`, `DASHBOARD_SESSION_SECRET`, and `DASHBOARD_API_AUTH_SECRET` values in the deployment secret manager; never commit them or place them in public Helm values. The dashboard `/readyz` endpoint validates the OIDC configuration when `DASHBOARD_AUTH_MODE=oidc`.
