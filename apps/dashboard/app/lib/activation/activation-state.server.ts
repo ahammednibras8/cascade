@@ -44,6 +44,32 @@ async function resolveWorkspaceActivationState(
     };
   }
 
+  const onboarding =
+    environment.onboardingRecords[0] ??
+    (await prisma.dashboardOnboarding.upsert({
+      where: {
+        userId_environmentId: {
+          userId,
+          environmentId: environment.id,
+        },
+      },
+      update: {},
+      create: {
+        userId,
+        environmentId: environment.id,
+      },
+      select: {
+        completedAt: true,
+      },
+    }));
+
+  if (onboarding.completedAt) {
+    return {
+      state: "ACTIVATED",
+      environmentId: environment.id,
+    };
+  }
+
   if (environment.apiKeys.length === 0) {
     return {
       state: "CREDENTIAL_REQUIRED",
@@ -79,9 +105,19 @@ async function resolveWorkspaceActivationState(
     };
   }
 
+  await prisma.dashboardOnboarding.updateMany({
+    where: {
+      userId,
+      environmentId: environment.id,
+      completedAt: null,
+    },
+    data: {
+      completedAt: new Date(),
+    },
+  });
+
   return {
     state: "ACTIVATED",
-    deploymentId: deployment.id,
     environmentId: environment.id,
   };
 }
@@ -102,6 +138,15 @@ function findActivationEnvironment(environmentId: string, userId: string) {
     },
     select: {
       id: true,
+      onboardingRecords: {
+        where: {
+          userId,
+        },
+        select: {
+          completedAt: true,
+        },
+        take: 1,
+      },
       apiKeys: {
         where: {
           revokedAt: null,

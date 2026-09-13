@@ -10,7 +10,7 @@ export type DashboardActivationState =
       runtimeStatus: "PENDING" | "STARTING" | "DRAINING" | "STOPPED" | "FAILED";
     }
   | { state: "FIRST_RUN_PENDING"; deploymentId: string; environmentId: string }
-  | { state: "ACTIVATED"; deploymentId: string; environmentId: string };
+  | { state: "ACTIVATED"; environmentId: string };
 
 export type PendingDashboardActivationState = Exclude<
   DashboardActivationState,

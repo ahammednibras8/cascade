@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const transaction = vi.hoisted(() => ({
+  dashboardOnboarding: {
+    upsert: vi.fn<(input: unknown) => Promise<unknown>>(),
+  },
   environment: {
     upsert: vi.fn<(input: unknown) => Promise<unknown>>(),
   },
@@ -93,6 +96,20 @@ describe("createPersonalWorkspace", () => {
         id: true,
       },
     });
+
+    expect(transaction.dashboardOnboarding.upsert).toHaveBeenCalledWith({
+      where: {
+        userId_environmentId: {
+          userId,
+          environmentId,
+        },
+      },
+      update: {},
+      create: {
+        userId,
+        environmentId,
+      },
+    });
   });
 
   it("rejects an empty project name before starting a transaction", async () => {
@@ -104,5 +121,19 @@ describe("createPersonalWorkspace", () => {
     ).rejects.toThrow("Project name is required");
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects the workspace transaction when onboarding creation fails", async () => {
+    const failure = new Error("onboarding creation failed");
+    transaction.dashboardOnboarding.upsert.mockRejectedValue(failure);
+
+    await expect(
+      createPersonalWorkspace({
+        userId,
+        projectName: "Cascade",
+      }),
+    ).rejects.toBe(failure);
+
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
 });
