@@ -44,26 +44,24 @@ export async function rotateDashboardSession(request: Request, userId: string) {
   const expiresAt = new Date(issuedAt.getTime() + SESSION_LIFETIME_SECONDS * 1000);
 
   await prisma.$transaction(async (tx) => {
-    if (typeof previousToken === "string") {
-      await tx.dashboardSession.deleteMany({
-        where: {
-          OR: [
-            {
-              expiresAt: {
-                lte: issuedAt,
-              },
+    await tx.dashboardSession.deleteMany({
+      where: {
+        OR: [
+          {
+            expiresAt: {
+              lte: issuedAt,
             },
-            ...(typeof previousToken === "string"
-              ? [
-                  {
-                    tokenHash: hashDashboardSessionToken(previousToken),
-                  },
-                ]
-              : []),
-          ],
-        },
-      });
-    }
+          },
+          ...(typeof previousToken === "string"
+            ? [
+                {
+                  tokenHash: hashDashboardSessionToken(previousToken),
+                },
+              ]
+            : []),
+        ],
+      },
+    });
 
     await tx.dashboardSession.create({
       data: {
