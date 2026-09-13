@@ -6,7 +6,9 @@ const findOrCreateOidcUser = vi.hoisted(() => vi.fn<(profile: unknown) => Promis
 const rotateDashboardSession = vi.hoisted(() =>
   vi.fn<(request: Request, userId: string) => Promise<unknown>>(),
 );
-const commitDashboardSession = vi.hoisted(() => vi.fn<(token: string) => Promise<string>>());
+const commitDashboardSession = vi.hoisted(() =>
+  vi.fn<(session: { token: string; expiresAt: Date }) => Promise<string>>(),
+);
 const resolvePostAuthenticationRedirect = vi.hoisted(() =>
   vi.fn<(userId: string, returnTo: string) => Promise<string>>(),
 );
@@ -71,6 +73,7 @@ describe("OIDC callback route", () => {
     });
     rotateDashboardSession.mockResolvedValue({
       token: "dashboard-session-token",
+      expiresAt: new Date("2026-01-01T00:00:00.000Z"),
     });
     commitDashboardSession.mockResolvedValue("cascade-session=signed-session; HttpOnly");
 
@@ -79,7 +82,10 @@ describe("OIDC callback route", () => {
 
     expect(findOrCreateOidcUser).toHaveBeenCalledWith(profile);
     expect(rotateDashboardSession).toHaveBeenCalledWith(request, "user-1");
-    expect(commitDashboardSession).toHaveBeenCalledWith("dashboard-session-token");
+    expect(commitDashboardSession).toHaveBeenCalledWith({
+      token: "dashboard-session-token",
+      expiresAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
     expect(resolvePostAuthenticationRedirect).toHaveBeenCalledWith("user-1", "/runs");
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/runs");

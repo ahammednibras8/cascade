@@ -78,7 +78,10 @@ describe("dashboard sessions", () => {
 
   it("revokes the presented session before creating its replacement", async () => {
     const previousToken = "previous-dashboard-session-token";
-    const cookie = await commitDashboardSession(previousToken);
+    const cookie = await commitDashboardSession({
+      token: previousToken,
+      expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
     prisma.dashboardSession.deleteMany.mockResolvedValue({ count: 1 });
     prisma.dashboardSession.create.mockResolvedValue({});
 
@@ -117,7 +120,39 @@ describe("dashboard sessions", () => {
       prisma.dashboardSession.create.mock.invocationCallOrder[0] ?? 0,
     );
   });
+});
 
+describe("dashboard session cookie security", () => {
+  it("uses the database session expiration for the browser cookie", async () => {
+    const expiresAt = new Date("2030-01-01T00:00:00.000Z");
+
+    const cookie = await commitDashboardSession({
+      token: "dashboard-session-token",
+      expiresAt,
+    });
+
+    expect(cookie).toContain(`Expires=${expiresAt.toUTCString()}`);
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).toContain("SameSite=Lax");
+  });
+
+  it("uses a secure host-only cookie in production", async () => {
+    process.env["NODE_ENV"] = "production";
+
+    const cookie = await commitDashboardSession({
+      token: "production-dashboard-session-token",
+      expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
+
+    expect(cookie).toContain("__Host-cascade-session=");
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).toContain("Path=/");
+    expect(cookie).toContain("SameSite=Lax");
+    expect(cookie).toContain("Secure");
+  });
+});
+
+describe("dashboard session validation and revocation", () => {
   it("reads a valid unexpired session from a signed cookie", async () => {
     const token = "valid-dashboard-session-token";
     const expiresAt = new Date("2030-01-01T00:00:00.000Z");
@@ -128,7 +163,7 @@ describe("dashboard sessions", () => {
       expiresAt,
     });
 
-    const cookie = await commitDashboardSession(token);
+    const cookie = await commitDashboardSession({ token, expiresAt });
     const session = await getDashboardSession(
       new Request("http://dashboard.test/tasks", {
         headers: {
@@ -164,7 +199,10 @@ describe("dashboard sessions", () => {
       expiresAt: new Date("2020-01-01T00:00:00.000Z"),
     });
 
-    const cookie = await commitDashboardSession(token);
+    const cookie = await commitDashboardSession({
+      token,
+      expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
     const session = await getDashboardSession(
       new Request("http://dashboard.test/tasks", {
         headers: {
@@ -183,7 +221,10 @@ describe("dashboard sessions", () => {
 
   it("deletes the stored session during logout and expires the browser cookie", async () => {
     const token = "logout-dashboard-session-token";
-    const cookie = await commitDashboardSession(token);
+    const cookie = await commitDashboardSession({
+      token,
+      expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
 
     const setCookie = await destroyDashboardSession(
       new Request("http://dashboard.test/logout", {

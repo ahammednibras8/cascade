@@ -27,6 +27,10 @@ type OidcStartResult = {
   setCookie: string;
 };
 
+type OidcLoginOptions = {
+  selectAccount?: boolean;
+};
+
 type OidcCompletionResult = {
   profile: OidcProfile;
   returnTo: string;
@@ -270,6 +274,7 @@ function getDisplayNameClaim(claims: Record<string, unknown>) {
 
 export async function startOidcLogin(
   returnTo: string | null | undefined,
+  options: OidcLoginOptions = {},
 ): Promise<OidcStartResult> {
   const config = getOidcConfiguration();
   const provider = await discoverOidcProvider(config);
@@ -287,6 +292,7 @@ export async function startOidcLogin(
     nonce,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
+    ...(options.selectAccount ? { prompt: "select_account" } : {}),
   });
 
   const transaction: OidcTransaction = {

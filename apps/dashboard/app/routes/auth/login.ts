@@ -14,6 +14,7 @@ import { getSafeDashboardReturnTo } from "~/lib/auth/return-to.server";
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const returnTo = getSafeDashboardReturnTo(url.searchParams.get("returnTo"));
+  const selectAccount = url.searchParams.get("selectAccount") === "true";
 
   if (isDevDashboardAuthEnabled()) {
     const user = await findOrCreateDevDashboardUser();
@@ -28,7 +29,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   }
 
   try {
-    const login = await startOidcLogin(returnTo);
+    const login = await startOidcLogin(returnTo, {
+      selectAccount,
+    });
 
     return redirect(login.authorizationUrl, {
       headers: {

@@ -4,7 +4,9 @@ const getDashboardSession = vi.hoisted(() => vi.fn<(request: Request) => Promise
 const rotateDashboardSession = vi.hoisted(() =>
   vi.fn<(request: Request, userId: string) => Promise<unknown>>(),
 );
-const commitDashboardSession = vi.hoisted(() => vi.fn<(token: string) => Promise<string>>());
+const commitDashboardSession = vi.hoisted(() =>
+  vi.fn<(session: { token: string; expiresAt: Date }) => Promise<string>>(),
+);
 const findOrCreateDevDashboardUser = vi.hoisted(() => vi.fn<() => Promise<unknown>>());
 const resolveDashboardActivationState = vi.hoisted(() =>
   vi.fn<(request: Request) => Promise<unknown>>(),
@@ -195,7 +197,10 @@ it.each([
 it("creates a development session without navigating away from login", async () => {
   process.env["DASHBOARD_AUTH_MODE"] = "dev";
   findOrCreateDevDashboardUser.mockResolvedValue({ id: "user-1" });
-  rotateDashboardSession.mockResolvedValue({ token: "session-token" });
+  rotateDashboardSession.mockResolvedValue({
+    token: "session-token",
+    expiresAt: new Date("2026-01-01T00:00:00.000Z"),
+  });
   commitDashboardSession.mockResolvedValue("cascade-session=signed; HttpOnly");
 
   const request = new Request("http://dashboard.test/login", {
@@ -214,6 +219,10 @@ it("creates a development session without navigating away from login", async () 
   expect((response as Response).headers.get("Set-Cookie")).toContain("cascade-session=");
   expect(findOrCreateDevDashboardUser).toHaveBeenCalledWith();
   expect(rotateDashboardSession).toHaveBeenCalledWith(request, "user-1");
+  expect(commitDashboardSession).toHaveBeenCalledWith({
+    token: "session-token",
+    expiresAt: new Date("2026-01-01T00:00:00.000Z"),
+  });
 });
 
 it("creates a workspace from the login activation form", async () => {
