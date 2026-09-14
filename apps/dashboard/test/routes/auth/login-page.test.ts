@@ -32,6 +32,12 @@ const commitActiveDashboardOrganization = vi.hoisted(() =>
 const commitActiveDashboardEnvironment = vi.hoisted(() =>
   vi.fn<(environmentId: string) => Promise<string>>(),
 );
+const handleApiKeyAction = vi.hoisted(() =>
+  vi.fn<(request: Request, formData: FormData) => Promise<Response>>(),
+);
+const requireDashboardCapability = vi.hoisted(() =>
+  vi.fn<(request: Request, capability: string) => Promise<unknown>>(),
+);
 
 vi.mock("../../../app/lib/auth/dashboard-session.server.js", () => ({
   commitDashboardSession,
@@ -58,6 +64,14 @@ vi.mock("../../../app/lib/workspace/dashboard-organization.server.js", () => ({
 
 vi.mock("../../../app/lib/workspace/dashboard-workspace.server.js", () => ({
   commitActiveDashboardEnvironment,
+}));
+
+vi.mock("../../../app/features/api-keys/api-key-actions.server.js", () => ({
+  handleApiKeyAction,
+}));
+
+vi.mock("../../../app/lib/auth/dashboard-permissions.server.js", () => ({
+  requireDashboardCapability,
 }));
 
 const { action, loader } = await import("../../../app/routes/auth/login-page.js");
@@ -225,6 +239,46 @@ it("returns the latest pending activation state without redirecting", async () =
     stage: "activation",
   });
   expect(resolveDashboardActivationState).toHaveBeenCalledWith(request);
+});
+
+it("creates the activation API key through the existing API-key action", async () => {
+  const expectedResponse = Response.json(
+    {
+      ok: true,
+      intent: "create",
+      token: "csc_test_activation_token",
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    },
+  );
+  handleApiKeyAction.mockResolvedValue(expectedResponse);
+  const request = new Request("http://dashboard.test/login", {
+    method: "POST",
+    body: new URLSearchParams({
+      intent: "create_activation_key",
+      name: "Local development",
+    }),
+  });
+
+  const response = await action({ request } as never);
+
+  expect(response).toBe(expectedResponse);
+  expect(requireDashboardCapability).toHaveBeenCalledWith(request, "API_KEYS_MANAGE");
+  expect(handleApiKeyAction).toHaveBeenCalledOnce();
+
+  const [forwardedRequest, forwardedFormData] = handleApiKeyAction.mock.calls[0] ?? [];
+
+  expect(forwardedRequest).toBe(request);
+  expect(forwardedFormData?.get("intent")).toBe("create");
+  expect(forwardedFormData?.get("name")).toBe("Local development");
+  expect(forwardedFormData?.getAll("scope")).toEqual([
+    "DEPLOYMENTS_WRITE",
+    "TASKS_TRIGGER",
+    "RUNS_READ",
+  ]);
 });
 
 it.each([

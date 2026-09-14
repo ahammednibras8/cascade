@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import GlassButton from "~/components/landing/GlassButton";
 import type { PendingDashboardActivationState } from "~/lib/activation/activation-state";
+import ActivationCredentialState from "./ActivationCredentialState";
 
 export default function ActivationState({
   activationState,
@@ -12,36 +13,7 @@ export default function ActivationState({
   onCheck: () => void;
 }) {
   if (activationState.state === "CREDENTIAL_REQUIRED") {
-    return (
-      <>
-        <h1 className="mt-14 text-4xl leading-tight font-medium tracking-[-0.035em] text-[#05050c]">
-          Create an integration key
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-black/50">
-          Create one active key with deployment creation, task triggering, and run-reading
-          permissions. Save the secret in the environment that registers your deployment.
-        </p>
-        <div className="mt-8 space-y-3">
-          <GlassButton
-            label="Create API key"
-            icon={ArrowRight}
-            to="/api-keys"
-            tone="black"
-            size="large"
-            fullWidth
-          />
-          <GlassButton
-            label={checking ? "Checking..." : "I created the key"}
-            icon={ArrowRight}
-            onClick={onCheck}
-            disabled={checking}
-            tone="white"
-            size="large"
-            fullWidth
-          />
-        </div>
-      </>
-    );
+    return <ActivationCredentialState checking={checking} onCheck={onCheck} />;
   }
 
   if (activationState.state === "STARTER_REQUIRED") {
