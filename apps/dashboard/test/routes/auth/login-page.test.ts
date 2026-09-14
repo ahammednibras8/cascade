@@ -11,6 +11,9 @@ const findOrCreateDevDashboardUser = vi.hoisted(() => vi.fn<() => Promise<unknow
 const resolveDashboardActivationState = vi.hoisted(() =>
   vi.fn<(request: Request) => Promise<unknown>>(),
 );
+const resolveWorkspaceActivationState = vi.hoisted(() =>
+  vi.fn<(environmentId: string, userId: string) => Promise<unknown>>(),
+);
 
 const createPersonalWorkspace = vi.hoisted(() =>
   vi.fn<
@@ -42,6 +45,7 @@ vi.mock("../../../app/lib/auth/dashboard-user.server.js", () => ({
 
 vi.mock("../../../app/lib/activation/activation-state.server.js", () => ({
   resolveDashboardActivationState,
+  resolveWorkspaceActivationState,
 }));
 
 vi.mock("../../../app/lib/auth/create-personal-workspace.server.js", () => ({
@@ -64,6 +68,10 @@ beforeEach(() => {
   delete process.env["DASHBOARD_AUTH_MODE"];
   getDashboardSession.mockResolvedValue(null);
   resolveDashboardActivationState.mockResolvedValue({ state: "AUTH_REQUIRED" });
+  resolveWorkspaceActivationState.mockResolvedValue({
+    state: "CREDENTIAL_REQUIRED",
+    environmentId: "environment-1",
+  });
 });
 
 afterEach(() => {
@@ -240,19 +248,33 @@ it("creates a workspace from the login activation form", async () => {
       body: new URLSearchParams({
         intent: "create_workspace",
         projectName: "Cascade",
-        returnTo: "/runs",
       }),
     }),
   } as never);
 
   expect(response).toBeInstanceOf(Response);
-  expect((response as Response).status).toBe(302);
-  expect((response as Response).headers.get("Location")).toBe("/login?returnTo=%2Fruns");
+  expect((response as Response).status).toBe(200);
+  expect((response as Response).headers.get("Location")).toBeNull();
+  await expect((response as Response).json()).resolves.toEqual({
+    activationState: {
+      state: "CREDENTIAL_REQUIRED",
+      environmentId: "environment-1",
+    },
+    ok: true,
+    stage: "activation",
+  });
 
   expect(createPersonalWorkspace).toHaveBeenCalledWith({
     userId: "user-1",
     projectName: "Cascade",
   });
+  expect(resolveWorkspaceActivationState).toHaveBeenCalledWith("environment-1", "user-1");
   expect(commitActiveDashboardOrganization).toHaveBeenCalledWith("organization-1");
   expect(commitActiveDashboardEnvironment).toHaveBeenCalledWith("environment-1");
+  expect((response as Response).headers.get("Set-Cookie")).toContain(
+    "cascade-active-organization=organization-1",
+  );
+  expect((response as Response).headers.get("Set-Cookie")).toContain(
+    "cascade-active-environment=environment-1",
+  );
 });

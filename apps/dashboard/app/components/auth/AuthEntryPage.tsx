@@ -25,6 +25,13 @@ type AuthEntryPageProps = {
   returnTo: string;
 };
 
+function getCurrentActivationState(
+  actionState: PendingDashboardActivationState | undefined,
+  loaderState: PendingDashboardActivationState | null,
+) {
+  return actionState ?? loaderState;
+}
+
 export default function AuthEntryPage({
   activationState,
   authenticated,
@@ -38,7 +45,10 @@ export default function AuthEntryPage({
   const fetcher = useFetcher<AuthActionData>();
   const [viewStage, setViewStage] = useState<AuthStage>(stage);
 
-  const currentActivationState = fetcher.data?.activationState ?? activationState;
+  const currentActivationState = getCurrentActivationState(
+    fetcher.data?.activationState,
+    activationState,
+  );
   const activationStage = viewStage === "activation" ? currentActivationState : null;
 
   const isAuthenticated = [authenticated, fetcher.data?.ok === true].includes(true);

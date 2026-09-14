@@ -81,10 +81,21 @@ export async function disposeDashboardActivationFixture(fixture: DashboardActiva
 export async function createActivationWorkspace(page: Page) {
   await page.goto("/login?returnTo=/runs");
   await expect(page.getByRole("heading", { name: "Create a workspace" })).toBeVisible();
+  const loginUrl = page.url();
+
+  await page.evaluate(() => {
+    Reflect.set(globalThis, "__cascadeWorkspaceDocument", "preserved");
+  });
+
   await page.getByLabel("Project name").fill("E2E Activated Project");
   await page.getByRole("button", { name: "Create workspace" }).click();
-  await expect(page).toHaveURL(/\/login\?returnTo=%2Fruns$/);
   await expect(page.getByRole("heading", { name: "Create an integration key" })).toBeVisible();
+  await expect(page).toHaveURL(loginUrl);
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__cascadeWorkspaceDocument") as unknown),
+    )
+    .toBe("preserved");
 }
 
 export async function createActivationApiKey(page: Page, suffix: string) {
