@@ -195,12 +195,17 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
 
     expect(apiKey).toMatch(/^csc_/);
 
-    await page.goBack();
+    await page.getByRole("button", { name: "I saved the key" }).click();
 
     await expect(page).toHaveURL(/\/login\?returnTo=\/runs$/);
     await expect(
       page.getByRole("heading", { name: "Register your first deployment" }),
     ).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__cascadeCredentialDocument") as unknown),
+      )
+      .toBe("preserved");
     const registrationCode = page.locator("pre code");
 
     await expect(registrationCode).toContainText("createCascadeClient");

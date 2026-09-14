@@ -71,15 +71,7 @@ export default function ActivationState({
           Cascade registered your deployment. Its current runtime state is{" "}
           <strong>{activationState.runtimeStatus}</strong>.
         </p>
-        <div className="mt-8 space-y-3">
-          <GlassButton
-            label="View deployment status"
-            icon={ArrowRight}
-            to={`/deployments/${activationState.deploymentId}`}
-            tone="black"
-            size="large"
-            fullWidth
-          />
+        <div className="mt-8">
           <GlassButton
             label={checking ? "Checking..." : "Check again"}
             icon={ArrowRight}
@@ -128,15 +120,7 @@ function FirstRunActivationState({
         
         console.log(run.id);`}</code>
       </pre>
-      <div className="mt-6 space-y-3">
-        <GlassButton
-          label="View runs"
-          icon={ArrowRight}
-          to="/runs"
-          tone="black"
-          size="large"
-          fullWidth
-        />
+      <div className="mt-6">
         <GlassButton
           label={checking ? "Checking..." : "Check activation"}
           icon={ArrowRight}

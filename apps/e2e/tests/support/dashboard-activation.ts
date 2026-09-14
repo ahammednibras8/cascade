@@ -100,23 +100,25 @@ export async function createActivationWorkspace(page: Page) {
 }
 
 export async function createActivationApiKey(page: Page, suffix: string) {
-  await expect(page.getByRole("link", { name: "Create API key" })).toHaveAttribute(
-    "href",
-    "/api-keys",
-  );
-  await page.getByRole("link", { name: "Create API key" }).click();
-  await expect(page).toHaveURL(/\/api-keys$/);
-  await expect(page.getByRole("heading", { name: "API keys" })).toBeVisible();
-  await page.getByRole("textbox", { name: "Name" }).fill(`E2E activation key ${suffix}`);
+  await expect(page.getByRole("heading", { name: "Create an integration key" })).toBeVisible();
+  const loginUrl = page.url();
 
-  await page.locator('input[name="scope"][value="DEPLOYMENTS_WRITE"]').check();
-  await page.locator('input[name="scope"][value="TASKS_TRIGGER"]').check();
-  await page.locator('input[name="scope"][value="RUNS_READ"]').check();
+  await page.evaluate(() => {
+    Reflect.set(globalThis, "__cascadeCredentialDocument", "preserved");
+  });
+
+  await page.getByRole("textbox", { name: "Key name" }).fill(`E2E activation key ${suffix}`);
 
   await page.getByRole("button", { name: "Create API key" }).click();
-  await expect(page.getByRole("heading", { name: "Copy this API key now" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Save your integration key" })).toBeVisible();
+  await expect(page).toHaveURL(loginUrl);
+  await expect
+    .poll(() =>
+      page.evaluate(() => Reflect.get(globalThis, "__cascadeCredentialDocument") as unknown),
+    )
+    .toBe("preserved");
 
-  return page.locator("section[aria-labelledby='new-api-key-heading'] code").innerText();
+  return page.locator("section[aria-labelledby='activation-api-key-heading'] code").innerText();
 }
 
 export async function getActivationProject(fixture: DashboardActivationFixture) {
