@@ -59,45 +59,49 @@ export async function loader({ request }: Route.LoaderArgs) {
   };
 }
 
+async function refreshDashboardActivation(request: Request, formData: FormData) {
+  const activationState = await resolveDashboardActivationState(request);
+
+  if (activationState.state === "AUTH_REQUIRED") {
+    return Response.json(
+      {
+        error: "authentication_required",
+        ok: false,
+      },
+      { status: 401 },
+    );
+  }
+
+  if (activationState.state === "WORKSPACE_REQUIRED") {
+    return Response.json(
+      {
+        error: "workspace_required",
+        ok: false,
+      },
+      { status: 409 },
+    );
+  }
+
+  if (activationState.state === "ACTIVATED") {
+    return Response.json({
+      ok: true,
+      redirectTo: getSafeDashboardReturnTo(formData.get("returnTo")),
+    });
+  }
+
+  return Response.json({
+    activationState,
+    ok: true,
+    stage: "activation" as const,
+  });
+}
+
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "refresh_activation") {
-    const activationState = await resolveDashboardActivationState(request);
-
-    if (activationState.state === "AUTH_REQUIRED") {
-      return Response.json(
-        {
-          error: "authentication_required",
-          ok: false,
-        },
-        { status: 401 },
-      );
-    }
-
-    if (activationState.state === "WORKSPACE_REQUIRED") {
-      return Response.json(
-        {
-          error: "workspace_required",
-          ok: false,
-        },
-        { status: 409 },
-      );
-    }
-
-    if (activationState.state === "ACTIVATED") {
-      return Response.json({
-        ok: true,
-        redirectTo: getSafeDashboardReturnTo(formData.get("returnTo")),
-      });
-    }
-
-    return Response.json({
-      activationState,
-      ok: true,
-      stage: "activation" as const,
-    });
+    return refreshDashboardActivation(request, formData);
   }
 
   if (intent === "create_workspace") {

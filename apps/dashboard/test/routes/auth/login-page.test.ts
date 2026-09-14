@@ -201,6 +201,79 @@ it.each([
   });
 });
 
+it("returns the latest pending activation state without redirecting", async () => {
+  const activationState = {
+    state: "DEPLOYMENT_PENDING",
+    deploymentId: "deployment-1",
+    environmentId: "environment-1",
+    runtimeStatus: "STARTING",
+  };
+  resolveDashboardActivationState.mockResolvedValue(activationState);
+  const request = new Request("http://dashboard.test/login", {
+    method: "POST",
+    body: new URLSearchParams({ intent: "refresh_activation" }),
+  });
+
+  const response = await action({ request } as never);
+
+  expect(response).toBeInstanceOf(Response);
+  expect((response as Response).status).toBe(200);
+  expect((response as Response).headers.get("Location")).toBeNull();
+  await expect((response as Response).json()).resolves.toEqual({
+    activationState,
+    ok: true,
+    stage: "activation",
+  });
+  expect(resolveDashboardActivationState).toHaveBeenCalledWith(request);
+});
+
+it.each([
+  { returnTo: "/runs", redirectTo: "/runs" },
+  { returnTo: "https://attacker.example.test", redirectTo: "/dashboard" },
+])("returns the safe destination after activation", async ({ returnTo, redirectTo }) => {
+  resolveDashboardActivationState.mockResolvedValue({
+    state: "ACTIVATED",
+    environmentId: "environment-1",
+  });
+
+  const response = await action({
+    request: new Request("http://dashboard.test/login", {
+      method: "POST",
+      body: new URLSearchParams({
+        intent: "refresh_activation",
+        returnTo,
+      }),
+    }),
+  } as never);
+
+  expect(response).toBeInstanceOf(Response);
+  await expect((response as Response).json()).resolves.toEqual({
+    ok: true,
+    redirectTo,
+  });
+});
+
+it.each([
+  { state: "AUTH_REQUIRED", error: "authentication_required", status: 401 },
+  { state: "WORKSPACE_REQUIRED", error: "workspace_required", status: 409 },
+])("rejects refresh when activation resolves to $state", async ({ state, error, status }) => {
+  resolveDashboardActivationState.mockResolvedValue({ state });
+
+  const response = await action({
+    request: new Request("http://dashboard.test/login", {
+      method: "POST",
+      body: new URLSearchParams({ intent: "refresh_activation" }),
+    }),
+  } as never);
+
+  expect(response).toBeInstanceOf(Response);
+  expect((response as Response).status).toBe(status);
+  await expect((response as Response).json()).resolves.toEqual({
+    error,
+    ok: false,
+  });
+});
+
 it("creates a development session without navigating away from login", async () => {
   process.env["DASHBOARD_AUTH_MODE"] = "dev";
   findOrCreateDevDashboardUser.mockResolvedValue({ id: "user-1" });
