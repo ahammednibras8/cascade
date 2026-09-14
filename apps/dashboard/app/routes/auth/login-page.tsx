@@ -17,6 +17,8 @@ import { commitActiveDashboardEnvironment } from "~/lib/workspace/dashboard-work
 import { isDevDashboardAuthEnabled } from "~/lib/auth/dashboard-auth-mode.server";
 import { getSafeDashboardReturnTo } from "~/lib/auth/return-to.server";
 import { getDashboardLoginErrorMessage } from "~/lib/auth/login-error";
+import { handleApiKeyAction } from "~/features/api-keys/api-key-actions.server";
+import { requireDashboardCapability } from "~/lib/auth/dashboard-permissions.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
@@ -96,12 +98,35 @@ async function refreshDashboardActivation(request: Request, formData: FormData) 
   });
 }
 
+async function createActivationApiKey(request: Request, formData: FormData) {
+  await requireDashboardCapability(request, "API_KEYS_MANAGE");
+
+  const apiKeyFormData = new FormData();
+  const name = formData.get("name");
+
+  apiKeyFormData.set("intent", "create");
+
+  if (typeof name === "string") {
+    apiKeyFormData.set("name", name);
+  }
+
+  apiKeyFormData.append("scope", "DEPLOYMENTS_WRITE");
+  apiKeyFormData.append("scope", "TASKS_TRIGGER");
+  apiKeyFormData.append("scope", "RUNS_READ");
+
+  return handleApiKeyAction(request, apiKeyFormData);
+}
+
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "refresh_activation") {
     return refreshDashboardActivation(request, formData);
+  }
+
+  if (intent === "create_activation_key") {
+    return createActivationApiKey(request, formData);
   }
 
   if (intent === "create_workspace") {
