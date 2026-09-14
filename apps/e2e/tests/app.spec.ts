@@ -197,7 +197,7 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
 
     await page.goBack();
 
-    await expect(page).toHaveURL(/\/login\?returnTo=%2Fruns$/);
+    await expect(page).toHaveURL(/\/login\?returnTo=\/runs$/);
     await expect(
       page.getByRole("heading", { name: "Register your first deployment" }),
     ).toBeVisible();

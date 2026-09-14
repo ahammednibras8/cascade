@@ -81,6 +81,7 @@ export async function disposeDashboardActivationFixture(fixture: DashboardActiva
 export async function createActivationWorkspace(page: Page) {
   await page.goto("/login?returnTo=/runs");
   await expect(page.getByRole("heading", { name: "Create a workspace" })).toBeVisible();
+  await page.waitForLoadState("networkidle");
   const loginUrl = page.url();
 
   await page.evaluate(() => {

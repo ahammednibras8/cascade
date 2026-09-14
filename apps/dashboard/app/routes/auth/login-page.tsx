@@ -61,8 +61,46 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
+  const intent = formData.get("intent");
 
-  if (formData.get("intent") === "create_workspace") {
+  if (intent === "refresh_activation") {
+    const activationState = await resolveDashboardActivationState(request);
+
+    if (activationState.state === "AUTH_REQUIRED") {
+      return Response.json(
+        {
+          error: "authentication_required",
+          ok: false,
+        },
+        { status: 401 },
+      );
+    }
+
+    if (activationState.state === "WORKSPACE_REQUIRED") {
+      return Response.json(
+        {
+          error: "workspace_required",
+          ok: false,
+        },
+        { status: 409 },
+      );
+    }
+
+    if (activationState.state === "ACTIVATED") {
+      return Response.json({
+        ok: true,
+        redirectTo: getSafeDashboardReturnTo(formData.get("returnTo")),
+      });
+    }
+
+    return Response.json({
+      activationState,
+      ok: true,
+      stage: "activation" as const,
+    });
+  }
+
+  if (intent === "create_workspace") {
     const session = await getDashboardSession(request);
     const projectName = formData.get("projectName");
 
@@ -104,7 +142,7 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  if (formData.get("intent") !== "authenticate" || !isDevDashboardAuthEnabled()) {
+  if (intent !== "authenticate" || !isDevDashboardAuthEnabled()) {
     return Response.json({ ok: false, error: "authentication_unavailable" }, { status: 400 });
   }
 
