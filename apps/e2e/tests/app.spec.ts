@@ -207,10 +207,7 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
     await expect(registrationCode).toContainText('process.env["CASCADE_API_KEY"]');
     await expect(registrationCode).toContainText("cascade.registerDeployment");
 
-    await expect(page.getByRole("link", { name: "Check deployment" })).toHaveAttribute(
-      "href",
-      "/login?returnTo=%2Fruns",
-    );
+    await expect(page.getByRole("button", { name: "Check deployment" })).toBeVisible();
 
     const project = await getActivationProject(fixture);
     const environmentId = project.environments[0]?.id ?? "";
@@ -235,12 +232,22 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
       environmentId,
       suffix: fixture.suffix,
     });
+    const activationUrl = page.url();
 
-    await page.getByRole("link", { name: "Check deployment" }).click();
+    await page.evaluate(() => {
+      Reflect.set(globalThis, "__cascadeActivationDocument", "preserved");
+    });
 
-    await expect(page).toHaveURL(/\/login\?returnTo=%2Fruns$/);
+    await page.getByRole("button", { name: "Check deployment" }).click();
+
     await expect(page.getByRole("heading", { name: "Starting your deployment" })).toBeVisible();
     await expect(page.getByText("PENDING", { exact: true })).toBeVisible();
+    await expect(page).toHaveURL(activationUrl);
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__cascadeActivationDocument") as unknown),
+      )
+      .toBe("preserved");
 
     const setupProgress = page.getByRole("list", {
       name: "Setup progress",
@@ -256,7 +263,7 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
 
     await page.reload();
 
-    await expect(page).toHaveURL(/\/login\?returnTo=%2Fruns$/);
+    await expect(page).toHaveURL(/\/login\?returnTo=\/runs$/);
     await expect(page.getByRole("heading", { name: "Starting your deployment" })).toBeVisible();
     await expect(page.getByText("PENDING", { exact: true })).toBeVisible();
 

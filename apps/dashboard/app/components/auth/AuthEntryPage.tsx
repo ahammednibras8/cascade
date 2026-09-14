@@ -33,14 +33,19 @@ function getCurrentActivationState(
   return actionState ?? loaderState;
 }
 
-function useActivationRedirect(redirectTo: string | undefined) {
+function useActivationRedirect(actionData: AuthActionData | undefined) {
   const navigate = useNavigate();
+  const redirectTo = actionData?.redirectTo;
 
   useEffect(() => {
     if (redirectTo) {
       void navigate(redirectTo, { replace: true });
     }
   }, [navigate, redirectTo]);
+}
+
+function isActivationRefreshPending(state: string, formData: FormData | undefined) {
+  return state !== "idle" && formData?.get("intent") === "refresh_activation";
 }
 
 export default function AuthEntryPage({
@@ -56,7 +61,7 @@ export default function AuthEntryPage({
   const fetcher = useFetcher<AuthActionData>();
   const [viewStage, setViewStage] = useState<AuthStage>(stage);
 
-  useActivationRedirect(fetcher.data?.redirectTo);
+  useActivationRedirect(fetcher.data);
 
   const currentActivationState = getCurrentActivationState(
     fetcher.data?.activationState,
@@ -70,10 +75,7 @@ export default function AuthEntryPage({
     loaderStage: stage,
   });
   const workspaceStage = viewStage === "workspace";
-  const activationRefreshPending = [
-    fetcher.state !== "idle",
-    fetcher.formData?.get("intent") === "refresh_activation",
-  ].every(Boolean);
+  const activationRefreshPending = isActivationRefreshPending(fetcher.state, fetcher.formData);
   const authenticationPending = fetcher.state !== "idle";
 
   const authenticationError =
