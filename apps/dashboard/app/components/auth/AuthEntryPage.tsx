@@ -9,6 +9,7 @@ import SetupProgress from "./SetupProgress";
 import { getDurableProgressStage, type AuthStage } from "./setup-progress";
 
 type AuthActionData = {
+  activationState?: PendingDashboardActivationState;
   error?: string;
   ok: boolean;
   stage?: AuthStage;
@@ -37,7 +38,8 @@ export default function AuthEntryPage({
   const fetcher = useFetcher<AuthActionData>();
   const [viewStage, setViewStage] = useState<AuthStage>(stage);
 
-  const activationStage = viewStage === "activation" ? activationState : null;
+  const currentActivationState = fetcher.data?.activationState ?? activationState;
+  const activationStage = viewStage === "activation" ? currentActivationState : null;
 
   const isAuthenticated = [authenticated, fetcher.data?.ok === true].includes(true);
   const progressStage = getDurableProgressStage({

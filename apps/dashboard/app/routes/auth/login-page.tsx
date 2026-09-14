@@ -5,7 +5,10 @@ import {
   rotateDashboardSession,
 } from "~/lib/auth/dashboard-session.server";
 import { findOrCreateDevDashboardUser } from "~/lib/auth/dashboard-user.server";
-import { resolveDashboardActivationState } from "~/lib/activation/activation-state.server";
+import {
+  resolveDashboardActivationState,
+  resolveWorkspaceActivationState,
+} from "~/lib/activation/activation-state.server";
 import type { Route } from "./+types/login-page";
 import { redirect } from "react-router";
 import { createPersonalWorkspace } from "~/lib/auth/create-personal-workspace.server";
@@ -76,12 +79,22 @@ export async function action({ request }: Route.ActionArgs) {
       projectName,
     });
 
+    const activationState = await resolveWorkspaceActivationState(
+      workspace.environmentId,
+      session.userId,
+    );
+
+    if (activationState.state === "WORKSPACE_REQUIRED" || activationState.state === "ACTIVATED") {
+      throw new Error("Expected a pending activation state after workspace creation");
+    }
+
     const headers = new Headers();
     headers.append("Set-Cookie", await commitActiveDashboardOrganization(workspace.organizationId));
     headers.append("Set-Cookie", await commitActiveDashboardEnvironment(workspace.environmentId));
 
     return Response.json(
       {
+        activationState,
         ok: true,
         stage: "activation" as const,
       },

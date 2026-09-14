@@ -32,7 +32,7 @@ export async function resolveDashboardActivationState(
   return resolveWorkspaceActivationState(activeEnvironment.id, session.userId);
 }
 
-async function resolveWorkspaceActivationState(
+export async function resolveWorkspaceActivationState(
   environmentId: string,
   userId: string,
 ): Promise<DashboardActivationState> {
