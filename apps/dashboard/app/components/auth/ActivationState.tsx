@@ -4,13 +4,13 @@ import type { PendingDashboardActivationState } from "~/lib/activation/activatio
 
 export default function ActivationState({
   activationState,
-  returnTo,
+  checking,
+  onCheck,
 }: {
   activationState: PendingDashboardActivationState;
-  returnTo: string;
+  checking: boolean;
+  onCheck: () => void;
 }) {
-  const checkActivationHref = `/login?returnTo=${encodeURIComponent(returnTo)}`;
-
   if (activationState.state === "CREDENTIAL_REQUIRED") {
     return (
       <>
@@ -31,9 +31,10 @@ export default function ActivationState({
             fullWidth
           />
           <GlassButton
-            label="I created the key"
+            label={checking ? "Checking..." : "I created the key"}
             icon={ArrowRight}
-            href={checkActivationHref}
+            onClick={onCheck}
+            disabled={checking}
             tone="white"
             size="large"
             fullWidth
@@ -75,9 +76,10 @@ export default function ActivationState({
         </pre>
         <div className="mt-6">
           <GlassButton
-            label="Check deployment"
+            label={checking ? "Checking..." : "Check deployment"}
             icon={ArrowRight}
-            href={checkActivationHref}
+            onClick={onCheck}
+            disabled={checking}
             tone="black"
             size="large"
             fullWidth
@@ -107,9 +109,10 @@ export default function ActivationState({
             fullWidth
           />
           <GlassButton
-            label="Check again"
+            label={checking ? "Checking..." : "Check again"}
             icon={ArrowRight}
-            href={checkActivationHref}
+            onClick={onCheck}
+            disabled={checking}
             tone="white"
             size="large"
             fullWidth
@@ -119,10 +122,16 @@ export default function ActivationState({
     );
   }
 
-  return <FirstRunActivationState checkActivationHref={checkActivationHref} />;
+  return <FirstRunActivationState checking={checking} onCheck={onCheck} />;
 }
 
-function FirstRunActivationState({ checkActivationHref }: { checkActivationHref: string }) {
+function FirstRunActivationState({
+  checking,
+  onCheck,
+}: {
+  checking: boolean;
+  onCheck: () => void;
+}) {
   return (
     <>
       <h1 className="mt-14 text-4xl leading-tight font-medium tracking-[-0.035em] text-[#05050c]">
@@ -157,9 +166,10 @@ function FirstRunActivationState({ checkActivationHref }: { checkActivationHref:
           fullWidth
         />
         <GlassButton
-          label="Check activation"
+          label={checking ? "Checking..." : "Check activation"}
           icon={ArrowRight}
-          href={checkActivationHref}
+          onClick={onCheck}
+          disabled={checking}
           tone="white"
           size="large"
           fullWidth

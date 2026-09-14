@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useFetcher } from "react-router";
+import { useFetcher, useNavigate } from "react-router";
 import GlassButton from "~/components/landing/GlassButton";
 import type { PendingDashboardActivationState } from "~/lib/activation/activation-state";
 import ActivationState from "./ActivationState";
@@ -13,6 +13,7 @@ type AuthActionData = {
   error?: string;
   ok: boolean;
   stage?: AuthStage;
+  redirectTo?: string;
 };
 
 type AuthEntryPageProps = {
@@ -32,6 +33,16 @@ function getCurrentActivationState(
   return actionState ?? loaderState;
 }
 
+function useActivationRedirect(redirectTo: string | undefined) {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (redirectTo) {
+      void navigate(redirectTo, { replace: true });
+    }
+  }, [navigate, redirectTo]);
+}
+
 export default function AuthEntryPage({
   activationState,
   authenticated,
@@ -45,6 +56,8 @@ export default function AuthEntryPage({
   const fetcher = useFetcher<AuthActionData>();
   const [viewStage, setViewStage] = useState<AuthStage>(stage);
 
+  useActivationRedirect(fetcher.data?.redirectTo);
+
   const currentActivationState = getCurrentActivationState(
     fetcher.data?.activationState,
     activationState,
@@ -57,6 +70,10 @@ export default function AuthEntryPage({
     loaderStage: stage,
   });
   const workspaceStage = viewStage === "workspace";
+  const activationRefreshPending = [
+    fetcher.state !== "idle",
+    fetcher.formData?.get("intent") === "refresh_activation",
+  ].every(Boolean);
   const authenticationPending = fetcher.state !== "idle";
 
   const authenticationError =
@@ -109,7 +126,22 @@ export default function AuthEntryPage({
               transition={{ duration: 0.24, ease: "easeOut" }}
             >
               {activationStage ? (
-                <ActivationState activationState={activationStage} returnTo={returnTo} />
+                <ActivationState
+                  activationState={activationStage}
+                  checking={activationRefreshPending}
+                  onCheck={() => {
+                    void fetcher.submit(
+                      {
+                        intent: "refresh_activation",
+                        returnTo,
+                      },
+                      {
+                        action: "/login",
+                        method: "post",
+                      },
+                    );
+                  }}
+                />
               ) : workspaceStage ? (
                 <WorkspaceState
                   completed={progressStage === "activation"}
