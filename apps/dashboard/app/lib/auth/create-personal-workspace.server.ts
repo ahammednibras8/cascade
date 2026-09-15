@@ -81,6 +81,8 @@ export async function createPersonalWorkspace({
         create: {
           userId,
           environmentId: environment.id,
+          selectedSetupPath: "sdk",
+          displayedStep: "activation",
         },
       });
 
