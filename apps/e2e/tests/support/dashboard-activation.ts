@@ -145,7 +145,12 @@ export async function createActivationApiKey(page: Page, suffix: string) {
 
 export async function getActivationProject(fixture: DashboardActivationFixture) {
   const project = await fixture.prisma.project.findUniqueOrThrow({
-    where: { slug: `personal-${fixture.userId}-project` },
+    where: {
+      organizationId_slug: {
+        organizationId: fixture.organizationId,
+        slug: `personal-${fixture.userId}-project`,
+      },
+    },
     include: { environments: true },
   });
 

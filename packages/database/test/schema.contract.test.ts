@@ -9,6 +9,7 @@ config({
 
 const describeWithDatabase = process.env["DATABASE_URL"] ? describe : describe.skip;
 const trackedProjectIds = new Set<string>();
+const trackedOrganizationIds = new Set<string>();
 const EXECUTION_CONFIG = {
   schemaVersion: 1,
   timeoutMs: 30_000,
@@ -50,11 +51,28 @@ async function deleteTrackedProjects() {
   if (!prisma) return;
 
   await Promise.all([...trackedProjectIds].map((projectId) => deleteProject(prisma, projectId)));
+  await prisma.organization.deleteMany({
+    where: {
+      id: {
+        in: [...trackedOrganizationIds],
+      },
+    },
+  });
+  trackedOrganizationIds.clear();
 }
 
 async function createProjectGraph(prisma: PrismaClient, suffix: string) {
+  const organization = await prisma.organization.create({
+    data: {
+      slug: `schema-contract-organization-${suffix}`,
+      name: "Schema Contract Organization",
+    },
+  });
+  trackedOrganizationIds.add(organization.id);
+
   const project = await prisma.project.create({
     data: {
+      organizationId: organization.id,
       slug: `schema-contract-${suffix}`,
       name: "Schema Contract Project",
       environments: {
@@ -172,6 +190,51 @@ async function deleteIdentityGraph(
   }
 }
 
+async function createProjectsWithOrganizationScopedSlug(prisma: PrismaClient, suffix: string) {
+  const projectSlug = `shared-project-${suffix}`;
+  const organizations = await Promise.all([
+    prisma.organization.create({
+      data: { slug: `project-scope-a-${suffix}`, name: "Project Scope A" },
+    }),
+    prisma.organization.create({
+      data: { slug: `project-scope-b-${suffix}`, name: "Project Scope B" },
+    }),
+  ]);
+  const firstOrganization = first(organizations);
+  const secondOrganization = organizations[1];
+
+  if (!secondOrganization) throw new Error("Expected the second organization");
+
+  try {
+    await prisma.project.create({
+      data: { organizationId: firstOrganization.id, slug: projectSlug, name: "First Project" },
+    });
+    await prisma.project.create({
+      data: { organizationId: secondOrganization.id, slug: projectSlug, name: "Second Project" },
+    });
+    const projectCount = await prisma.project.count({ where: { slug: projectSlug } });
+
+    await expectUniqueViolation(
+      prisma.project.create({
+        data: {
+          organizationId: firstOrganization.id,
+          slug: projectSlug,
+          name: "Duplicate Project",
+        },
+      }),
+    );
+
+    return projectCount;
+  } finally {
+    await prisma.project.deleteMany({
+      where: { organizationId: { in: organizations.map(({ id }) => id) } },
+    });
+    await prisma.organization.deleteMany({
+      where: { id: { in: organizations.map(({ id }) => id) } },
+    });
+  }
+}
+
 describeWithDatabase("Postgres schema contract", () => {
   beforeAll(async () => {
     database = await import("../src/index.js");
@@ -217,6 +280,12 @@ describeWithDatabase("Postgres schema contract", () => {
 
     await deleteProject(prisma, project.id);
     await expectGraphDeleted(prisma, { attemptId: attempt.id, eventId: event.id, runId: run.id });
+  });
+
+  it("scopes project slug uniqueness to an organization", async () => {
+    const projectCount = await createProjectsWithOrganizationScopedSlug(getPrisma(), randomUUID());
+
+    expect(projectCount).toBe(2);
   });
 
   it("stores OIDC identities and organization memberships", async () => {
