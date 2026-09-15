@@ -94,7 +94,7 @@ function Step({
   state: "active" | "complete" | "pending";
 }) {
   const active = state === "active";
-  const selectable = onSelect !== undefined && !selected;
+  const selectable = onSelect !== undefined;
 
   return (
     <li>
