@@ -1,5 +1,8 @@
 import { ApiKeyScope, prisma } from "@cascade/database";
-import { getDashboardSession } from "../auth/dashboard-session.server";
+import {
+  getDashboardSession,
+  type DashboardSessionIdentity,
+} from "../auth/dashboard-session.server";
 import { getDashboardWorkspaceContext } from "../workspace/dashboard-workspace.server";
 import type { DashboardActivationState } from "./activation-state";
 
@@ -11,8 +14,10 @@ const ACTIVATION_API_KEY_SCOPES = [
 
 export async function resolveDashboardActivationState(
   request: Request,
+  existingSession?: DashboardSessionIdentity | null,
 ): Promise<DashboardActivationState> {
-  const session = await getDashboardSession(request);
+  const session =
+    existingSession === undefined ? await getDashboardSession(request) : existingSession;
 
   if (!session) {
     return {

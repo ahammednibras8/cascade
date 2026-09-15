@@ -108,6 +108,22 @@ describe("session, workspace, and onboarding activation states", () => {
     expect(getDashboardWorkspaceContext).not.toHaveBeenCalled();
   });
 
+  it("reuses a previously loaded dashboard session", async () => {
+    setWorkspace(null);
+    const existingSession = {
+      id: "session-1",
+      userId: "user-1",
+      expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+    };
+
+    await expect(resolveDashboardActivationState(request, existingSession)).resolves.toEqual({
+      state: "WORKSPACE_REQUIRED",
+    });
+
+    expect(getDashboardSession).not.toHaveBeenCalled();
+    expect(getDashboardWorkspaceContext).toHaveBeenCalledWith(request, "user-1");
+  });
+
   it("returns WORKSPACE_REQUIRED without an active environment", async () => {
     setWorkspace(null);
 

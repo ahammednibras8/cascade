@@ -82,6 +82,16 @@ export async function createActivationWorkspace(page: Page) {
   await page.goto("/login?returnTo=/runs");
   await expect(page.getByRole("heading", { name: "Create a workspace" })).toBeVisible();
   await page.waitForLoadState("networkidle");
+  const setupProgress = page.getByRole("list", { name: "Setup progress" });
+  const identityStep = setupProgress.getByRole("button", { name: "Verify your identity" });
+  const workspaceStep = setupProgress.getByRole("button", { name: "Create a workspace" });
+  const activationStep = setupProgress.getByRole("button", { name: "Run your first task" });
+
+  await expect(identityStep).toBeEnabled();
+  await expect(workspaceStep).toBeEnabled();
+  await expect(workspaceStep).toHaveAttribute("aria-pressed", "true");
+  await expect(activationStep).toBeDisabled();
+
   const loginUrl = page.url();
 
   await page.evaluate(() => {
@@ -91,6 +101,8 @@ export async function createActivationWorkspace(page: Page) {
   await page.getByLabel("Project name").fill("E2E Activated Project");
   await page.getByRole("button", { name: "Create workspace" }).click();
   await expect(page.getByRole("heading", { name: "Create an integration key" })).toBeVisible();
+  await expect(activationStep).toBeEnabled();
+  await expect(activationStep).toHaveAttribute("aria-pressed", "true");
   await expect(page).toHaveURL(loginUrl);
   await expect
     .poll(() =>

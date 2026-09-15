@@ -4,7 +4,10 @@ import {
   getDashboardSession,
   rotateDashboardSession,
 } from "~/lib/auth/dashboard-session.server";
-import { findOrCreateDevDashboardUser } from "~/lib/auth/dashboard-user.server";
+import {
+  findOrCreateDevDashboardUser,
+  getDashboardUserIdentitySummary,
+} from "~/lib/auth/dashboard-user.server";
 import {
   resolveDashboardActivationState,
   resolveWorkspaceActivationState,
@@ -23,7 +26,12 @@ import { requireDashboardCapability } from "~/lib/auth/dashboard-permissions.ser
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const returnTo = getSafeDashboardReturnTo(url.searchParams.get("returnTo"));
-  const activationState = await resolveDashboardActivationState(request);
+  const session = await getDashboardSession(request);
+
+  const [activationState, identity] = await Promise.all([
+    resolveDashboardActivationState(request, session),
+    session ? getDashboardUserIdentitySummary(session.userId) : Promise.resolve(null),
+  ]);
 
   if (activationState.state === "ACTIVATED") {
     throw redirect(returnTo);
@@ -37,6 +45,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       error: getDashboardLoginErrorMessage(url.searchParams.get("error")),
       returnTo,
       stage: "authentication" as const,
+      identity,
     };
   }
 
@@ -48,6 +57,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       error: null,
       returnTo,
       stage: "workspace" as const,
+      identity,
     };
   }
 
@@ -58,6 +68,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     error: null,
     returnTo,
     stage: "activation" as const,
+    identity,
   };
 }
 

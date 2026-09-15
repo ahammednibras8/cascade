@@ -16,6 +16,41 @@ type DashboardUser = {
 
 type DashboardUserTransaction = Prisma.TransactionClient;
 
+export type DashboardUserIdentitySummary = {
+  displayName: string | null;
+  email: string;
+  provider: string | null;
+};
+
+export async function getDashboardUserIdentitySummary(
+  userId: string,
+): Promise<DashboardUserIdentitySummary> {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: {
+      id: userId,
+    },
+    select: {
+      displayName: true,
+      email: true,
+      identities: {
+        select: {
+          provider: true,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+        take: 1,
+      },
+    },
+  });
+
+  return {
+    displayName: user.displayName,
+    email: user.email,
+    provider: user.identities[0]?.provider ?? null,
+  };
+}
+
 async function ensurePersonalOrganization(tx: DashboardUserTransaction, user: DashboardUser) {
   const organization = await tx.organization.upsert({
     where: {

@@ -21,14 +21,21 @@ const transaction = vi.hoisted(() => ({
 const prisma = vi.hoisted(() => ({
   $transaction:
     vi.fn<(callback: (tx: typeof transaction) => Promise<unknown>) => Promise<unknown>>(),
+  user: {
+    findUniqueOrThrow: vi.fn<(input: unknown) => Promise<unknown>>(),
+  },
 }));
 
 vi.mock("@cascade/database", () => ({
   prisma,
 }));
 
-const { findOrCreateDevDashboardUser, findOrCreateOidcUser, OidcIdentityLinkRequiredError } =
-  await import("../../../app/lib/auth/dashboard-user.server.js");
+const {
+  findOrCreateDevDashboardUser,
+  findOrCreateOidcUser,
+  getDashboardUserIdentitySummary,
+  OidcIdentityLinkRequiredError,
+} = await import("../../../app/lib/auth/dashboard-user.server.js");
 
 const profile = {
   provider: "https://identity.example.test",
@@ -36,6 +43,55 @@ const profile = {
   email: "nibras@example.test",
   displayName: "Ahammed Nibras",
 };
+
+describe("getDashboardUserIdentitySummary", () => {
+  it("returns the persisted user and first linked identity provider", async () => {
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      displayName: profile.displayName,
+      email: profile.email,
+      identities: [{ provider: profile.provider }],
+    });
+
+    await expect(getDashboardUserIdentitySummary("user-1")).resolves.toEqual({
+      displayName: profile.displayName,
+      email: profile.email,
+      provider: profile.provider,
+    });
+
+    expect(prisma.user.findUniqueOrThrow).toHaveBeenCalledWith({
+      where: {
+        id: "user-1",
+      },
+      select: {
+        displayName: true,
+        email: true,
+        identities: {
+          select: {
+            provider: true,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+          take: 1,
+        },
+      },
+    });
+  });
+
+  it("returns a null provider for the local development identity", async () => {
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      displayName: "Local Dashboard User",
+      email: "local-dashboard@example.test",
+      identities: [],
+    });
+
+    await expect(getDashboardUserIdentitySummary("dev-user-1")).resolves.toEqual({
+      displayName: "Local Dashboard User",
+      email: "local-dashboard@example.test",
+      provider: null,
+    });
+  });
+});
 
 describe("findOrCreateOidcUser", () => {
   beforeEach(() => {
