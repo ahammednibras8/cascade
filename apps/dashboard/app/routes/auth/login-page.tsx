@@ -16,12 +16,28 @@ import type { Route } from "./+types/login-page";
 import { redirect } from "react-router";
 import { createPersonalWorkspace } from "~/lib/auth/create-personal-workspace.server";
 import { commitActiveDashboardOrganization } from "~/lib/workspace/dashboard-organization.server";
-import { commitActiveDashboardEnvironment } from "~/lib/workspace/dashboard-workspace.server";
+import {
+  commitActiveDashboardEnvironment,
+  getDashboardWorkspaceContext,
+} from "~/lib/workspace/dashboard-workspace.server";
 import { isDevDashboardAuthEnabled } from "~/lib/auth/dashboard-auth-mode.server";
 import { getSafeDashboardReturnTo } from "~/lib/auth/return-to.server";
 import { getDashboardLoginErrorMessage } from "~/lib/auth/login-error";
 import { handleApiKeyAction } from "~/features/api-keys/api-key-actions.server";
 import { requireDashboardCapability } from "~/lib/auth/dashboard-permissions.server";
+import { prisma } from "@cascade/database";
+
+type PersistedOnboardingStep = "authentication" | "workspace" | "activation";
+
+function getPersistedOnboardingStep(
+  value: FormDataEntryValue | null,
+): PersistedOnboardingStep | null {
+  if (value === "authentication" || value === "workspace" || value === "activation") {
+    return value;
+  }
+
+  return null;
+}
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
@@ -128,9 +144,75 @@ async function createActivationApiKey(request: Request, formData: FormData) {
   return handleApiKeyAction(request, apiKeyFormData);
 }
 
+async function updateDisplayedOnboardingStep(request: Request, formData: FormData) {
+  const displayedStep = getPersistedOnboardingStep(formData.get("displayedStep"));
+
+  if (!displayedStep) {
+    return Response.json(
+      {
+        error: "invalid_displayed_step",
+        ok: false,
+      },
+      { status: 400 },
+    );
+  }
+
+  const session = await getDashboardSession(request);
+
+  if (!session) {
+    return Response.json(
+      {
+        error: "authentication_required",
+        ok: false,
+      },
+      { status: 401 },
+    );
+  }
+
+  const workspace = await getDashboardWorkspaceContext(request, session.userId);
+  const environment = workspace.activeEnvironment;
+
+  if (!environment) {
+    return Response.json(
+      {
+        error: "workspace_required",
+        ok: false,
+      },
+      { status: 409 },
+    );
+  }
+
+  await prisma.dashboardOnboarding.upsert({
+    where: {
+      userId_environmentId: {
+        userId: session.userId,
+        environmentId: environment.id,
+      },
+    },
+    update: {
+      displayedStep,
+    },
+    create: {
+      userId: session.userId,
+      environmentId: environment.id,
+      selectedSetupPath: "sdk",
+      displayedStep,
+    },
+  });
+
+  return Response.json({
+    displayedStep,
+    ok: true,
+  });
+}
+
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
+
+  if (intent === "update_displayed_step") {
+    return updateDisplayedOnboardingStep(request, formData);
+  }
 
   if (intent === "refresh_activation") {
     return refreshDashboardActivation(request, formData);

@@ -166,6 +166,8 @@ describe("session, workspace, and onboarding activation states", () => {
       create: {
         userId: "user-1",
         environmentId,
+        selectedSetupPath: "sdk",
+        displayedStep: "activation",
       },
       select: {
         completedAt: true,
