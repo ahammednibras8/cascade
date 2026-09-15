@@ -162,17 +162,16 @@ model OrganizationMember {
 
 model Project {
   id             String   @id @default(uuid()) @db.Uuid
-  organizationId String?  @db.Uuid
-  slug           String   @unique
+  organizationId String   @db.Uuid
+  slug           String
   name           String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   environments Environment[]
 
   @@unique([organizationId, slug])
-  @@index([organizationId])
   @@index([createdAt])
 }
 

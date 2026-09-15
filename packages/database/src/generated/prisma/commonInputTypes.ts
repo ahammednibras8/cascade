@@ -179,6 +179,23 @@ export type EnumOrganizationRoleWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumOrganizationRoleFilter<$PrismaModel>
 }
 
+export type EnumEnvironmentTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.EnvironmentType | Prisma.EnumEnvironmentTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumEnvironmentTypeFilter<$PrismaModel> | $Enums.EnvironmentType
+}
+
+export type EnumEnvironmentTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.EnvironmentType | Prisma.EnumEnvironmentTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumEnvironmentTypeWithAggregatesFilter<$PrismaModel> | $Enums.EnvironmentType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumEnvironmentTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumEnvironmentTypeFilter<$PrismaModel>
+}
+
 export type UuidNullableFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
@@ -204,23 +221,6 @@ export type UuidNullableWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedStringNullableFilter<$PrismaModel>
   _max?: Prisma.NestedStringNullableFilter<$PrismaModel>
-}
-
-export type EnumEnvironmentTypeFilter<$PrismaModel = never> = {
-  equals?: $Enums.EnvironmentType | Prisma.EnumEnvironmentTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumEnvironmentTypeFilter<$PrismaModel> | $Enums.EnvironmentType
-}
-
-export type EnumEnvironmentTypeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.EnvironmentType | Prisma.EnumEnvironmentTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumEnvironmentTypeWithAggregatesFilter<$PrismaModel> | $Enums.EnvironmentType
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumEnvironmentTypeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumEnvironmentTypeFilter<$PrismaModel>
 }
 
 export type JsonNullableFilter<$PrismaModel = never> =
@@ -697,6 +697,23 @@ export type NestedEnumOrganizationRoleWithAggregatesFilter<$PrismaModel = never>
   _max?: Prisma.NestedEnumOrganizationRoleFilter<$PrismaModel>
 }
 
+export type NestedEnumEnvironmentTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.EnvironmentType | Prisma.EnumEnvironmentTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumEnvironmentTypeFilter<$PrismaModel> | $Enums.EnvironmentType
+}
+
+export type NestedEnumEnvironmentTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.EnvironmentType | Prisma.EnumEnvironmentTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumEnvironmentTypeWithAggregatesFilter<$PrismaModel> | $Enums.EnvironmentType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumEnvironmentTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumEnvironmentTypeFilter<$PrismaModel>
+}
+
 export type NestedUuidNullableFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
@@ -720,23 +737,6 @@ export type NestedUuidNullableWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedStringNullableFilter<$PrismaModel>
   _max?: Prisma.NestedStringNullableFilter<$PrismaModel>
-}
-
-export type NestedEnumEnvironmentTypeFilter<$PrismaModel = never> = {
-  equals?: $Enums.EnvironmentType | Prisma.EnumEnvironmentTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumEnvironmentTypeFilter<$PrismaModel> | $Enums.EnvironmentType
-}
-
-export type NestedEnumEnvironmentTypeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.EnvironmentType | Prisma.EnumEnvironmentTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.EnvironmentType[] | Prisma.ListEnumEnvironmentTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumEnvironmentTypeWithAggregatesFilter<$PrismaModel> | $Enums.EnvironmentType
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumEnvironmentTypeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumEnvironmentTypeFilter<$PrismaModel>
 }
 
 export type NestedJsonNullableFilter<$PrismaModel = never> =
