@@ -92,6 +92,16 @@ export async function createActivationWorkspace(page: Page) {
   await expect(workspaceStep).toHaveAttribute("aria-pressed", "true");
   await expect(activationStep).toBeDisabled();
 
+  await identityStep.click();
+  await expect(page.getByRole("heading", { name: "Identity verified" })).toBeVisible();
+  await expect(page.getByText("E2E Workspace Activation", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Use another account" })).toHaveAttribute(
+    "href",
+    "/auth/start?selectAccount=true&returnTo=%2Fruns",
+  );
+  await page.getByRole("button", { name: "Return to setup" }).click();
+  await expect(page.getByRole("heading", { name: "Create a workspace" })).toBeVisible();
+
   const loginUrl = page.url();
 
   await page.evaluate(() => {
