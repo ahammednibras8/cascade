@@ -1,10 +1,12 @@
 import { expect, request as playwrightRequest, test, type TestInfo } from "@playwright/test";
 import {
+  createCompletedActivationRun,
   createActivationApiKey,
   createActivationWorkspace,
   createDashboardActivationFixture,
   disposeDashboardActivationFixture,
   getActivationProject,
+  markActivationDeploymentRunning,
   registerActivationDeployment,
 } from "./support/dashboard-activation.js";
 
@@ -184,7 +186,9 @@ test("legacy signup and onboarding routes do not exist", async ({
   }
 });
 
-test("takes a new workspace to credential activation", async ({ browser }, testInfo) => {
+test("activates a new workspace without reloading between setup steps", async ({
+  browser,
+}, testInfo) => {
   const baseURL = getBaseURL(testInfo);
   const fixture = await createDashboardActivationFixture(browser, baseURL);
 
@@ -291,10 +295,55 @@ test("takes a new workspace to credential activation", async ({ browser }, testI
     await expect(page.getByRole("heading", { name: "Starting your deployment" })).toBeVisible();
     await expect(page.getByText("PENDING", { exact: true })).toBeVisible();
 
-    await expect(page.getByRole("link", { name: "View deployment status" })).toHaveAttribute(
-      "href",
-      `/deployments/${deployment.id}`,
-    );
+    await expect(page.getByRole("button", { name: "Check again" })).toBeVisible();
+
+    await markActivationDeploymentRunning(fixture, deployment.id);
+
+    await page.getByRole("button", { name: "Check again" }).click();
+
+    await expect(page.getByRole("heading", { name: "Trigger your first run" })).toBeVisible();
+    await expect(page).toHaveURL(/\/login\?returnTo=\/runs$/);
+
+    const task = deployment.tasks[0];
+
+    if (!task) {
+      throw new Error("Activation deployment did not register a task");
+    }
+
+    await createCompletedActivationRun({
+      deploymentId: deployment.id,
+      environmentId,
+      fixture,
+      taskId: task.id,
+    });
+
+    await page.evaluate(() => {
+      Reflect.set(globalThis, "__cascadeCompletionDocument", "preserved");
+    });
+
+    await page.getByRole("button", { name: "Check activation" }).click();
+
+    await expect(page).toHaveURL(/\/runs$/);
+    await expect(page.getByRole("heading", { name: "Task runs" })).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, "__cascadeCompletionDocument") as unknown),
+      )
+      .toBe("preserved");
+
+    const completedOnboarding = await fixture.prisma.dashboardOnboarding.findUnique({
+      where: {
+        userId_environmentId: {
+          userId: fixture.userId,
+          environmentId,
+        },
+      },
+      select: {
+        completedAt: true,
+      },
+    });
+
+    expect(completedOnboarding?.completedAt).toBeInstanceOf(Date);
 
     const cookieNames = (await fixture.context.cookies(baseURL)).map((cookie) => cookie.name);
 

@@ -172,6 +172,46 @@ export async function registerActivationDeployment({
   return deployment;
 }
 
+export async function markActivationDeploymentRunning(
+  fixture: DashboardActivationFixture,
+  deploymentId: string,
+) {
+  await fixture.prisma.deployment.update({
+    where: { id: deploymentId },
+    data: {
+      runtimeStatus: "RUNNING",
+      runtimeStartedAt: new Date(),
+    },
+  });
+}
+
+export async function createCompletedActivationRun({
+  deploymentId,
+  environmentId,
+  fixture,
+  taskId,
+}: {
+  deploymentId: string;
+  environmentId: string;
+  fixture: DashboardActivationFixture;
+  taskId: string;
+}) {
+  const completedAt = new Date();
+
+  await fixture.prisma.taskRun.create({
+    data: {
+      taskId,
+      environmentId,
+      deploymentId,
+      status: "COMPLETED",
+      payload: { message: "Activate workspace" },
+      output: { activated: true },
+      startedAt: completedAt,
+      completedAt,
+    },
+  });
+}
+
 function getCookieValue(setCookie: string) {
   const firstPart = setCookie.split(";")[0];
 
