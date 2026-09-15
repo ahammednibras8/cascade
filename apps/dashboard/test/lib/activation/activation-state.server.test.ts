@@ -170,23 +170,24 @@ describe("session, workspace, and onboarding activation states", () => {
         displayedStep: "activation",
       },
       select: {
-        completedAt: true,
+        id: true,
       },
     });
   });
 
-  it("returns ACTIVATED immediately for completed onboarding", async () => {
+  it("derives technical state even when onboarding metadata already exists", async () => {
     setEnvironment({
       onboarding: new Date("2026-09-14T00:00:00.000Z"),
       activeApiKey: false,
     });
 
     await expect(resolveDashboardActivationState(request)).resolves.toEqual({
-      state: "ACTIVATED",
+      state: "CREDENTIAL_REQUIRED",
       environmentId,
     });
 
     expect(prisma.taskRun.findFirst).not.toHaveBeenCalled();
+    expect(prisma.dashboardOnboarding.upsert).not.toHaveBeenCalled();
     expect(prisma.dashboardOnboarding.updateMany).not.toHaveBeenCalled();
   });
 });

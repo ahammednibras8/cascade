@@ -231,6 +231,59 @@ async function updateDisplayedOnboardingStep(request: Request, formData: FormDat
   });
 }
 
+async function dismissDashboardOnboarding(request: Request, formData: FormData) {
+  const session = await getDashboardSession(request);
+
+  if (!session) {
+    return Response.json(
+      {
+        error: "authentication_required",
+        ok: false,
+      },
+      { status: 401 },
+    );
+  }
+
+  const workspace = await getDashboardWorkspaceContext(request, session.userId);
+  const environment = workspace.activeEnvironment;
+
+  if (!environment) {
+    return Response.json(
+      {
+        error: "workspace_required",
+        ok: false,
+      },
+      { status: 409 },
+    );
+  }
+
+  const dismissedAt = new Date();
+
+  await prisma.dashboardOnboarding.upsert({
+    where: {
+      userId_environmentId: {
+        userId: session.userId,
+        environmentId: environment.id,
+      },
+    },
+    update: {
+      dismissedAt,
+    },
+    create: {
+      userId: session.userId,
+      environmentId: environment.id,
+      selectedSetupPath: "sdk",
+      displayedStep: "activation",
+      dismissedAt,
+    },
+  });
+
+  return Response.json({
+    ok: true,
+    redirectTo: getSafeDashboardReturnTo(formData.get("returnTo")),
+  });
+}
+
 async function createDashboardWorkspace(request: Request, formData: FormData) {
   const session = await getDashboardSession(request);
   const projectName = formData.get("projectName");
@@ -279,6 +332,10 @@ export async function action({ request }: Route.ActionArgs) {
 
   if (intent === "update_displayed_step") {
     return updateDisplayedOnboardingStep(request, formData);
+  }
+
+  if (intent === "dismiss_onboarding") {
+    return dismissDashboardOnboarding(request, formData);
   }
 
   if (intent === "refresh_activation") {
