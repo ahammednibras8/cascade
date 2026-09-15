@@ -263,12 +263,20 @@ test("activates a new workspace without reloading between setup steps", async ({
     });
 
     const identityStep = setupProgress.getByRole("button", { name: "Verify your identity" });
-    const signedInHeading = page.getByRole("heading", { name: "You're signed in" });
+    const verifiedIdentityHeading = page.getByRole("heading", { name: "Identity verified" });
 
     await expect(async () => {
       await identityStep.click();
-      await expect(signedInHeading).toBeVisible({ timeout: 500 });
+      await expect(verifiedIdentityHeading).toBeVisible({ timeout: 500 });
     }).toPass();
+    await expect(page.getByText("E2E Workspace Activation", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(`e2e-workspace-activation-${fixture.suffix}@example.test`, { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Use another account" })).toHaveAttribute(
+      "href",
+      "/auth/start?selectAccount=true&returnTo=%2Fruns",
+    );
 
     await page.reload();
 
@@ -278,7 +286,7 @@ test("activates a new workspace without reloading between setup steps", async ({
 
     await expect(async () => {
       await identityStep.click();
-      await expect(signedInHeading).toBeVisible({ timeout: 500 });
+      await expect(verifiedIdentityHeading).toBeVisible({ timeout: 500 });
     }).toPass();
 
     await page.getByRole("button", { name: "Return to setup" }).click();

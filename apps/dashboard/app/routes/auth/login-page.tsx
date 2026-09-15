@@ -189,14 +189,28 @@ export async function action({ request }: Route.ActionArgs) {
   const existingSession = await getDashboardSession(request);
 
   if (existingSession) {
-    return { ok: true, stage: "workspace" as const };
+    const identity = await getDashboardUserIdentitySummary(existingSession.userId);
+
+    return {
+      identity,
+      ok: true,
+      stage: "workspace" as const,
+    };
   }
 
   const user = await findOrCreateDevDashboardUser();
   const session = await rotateDashboardSession(request, user.id);
 
   return Response.json(
-    { ok: true, stage: "workspace" as const },
+    {
+      identity: {
+        displayName: user.displayName,
+        email: user.email,
+        provider: null,
+      },
+      ok: true,
+      stage: "workspace" as const,
+    },
     {
       headers: {
         "Set-Cookie": await commitDashboardSession(session),
@@ -211,16 +225,21 @@ export function meta() {
 
 export default function LoginPage({ loaderData }: Route.ComponentProps) {
   const startHref = `/auth/start?returnTo=${encodeURIComponent(loaderData.returnTo)}`;
+  const selectAccountHref = `/auth/start?selectAccount=true&returnTo=${encodeURIComponent(
+    loaderData.returnTo,
+  )}`;
 
   return (
     <AuthEntryPage
       activationState={loaderData.activationState}
       authenticated={loaderData.authenticated}
       devAuthEnabled={loaderData.devAuthEnabled}
+      error={loaderData.error}
+      identity={loaderData.identity}
+      returnTo={loaderData.returnTo}
+      selectAccountHref={selectAccountHref}
       stage={loaderData.stage}
       startHref={startHref}
-      returnTo={loaderData.returnTo}
-      error={loaderData.error}
     />
   );
 }

@@ -8,6 +8,9 @@ const commitDashboardSession = vi.hoisted(() =>
   vi.fn<(session: { token: string; expiresAt: Date }) => Promise<string>>(),
 );
 const findOrCreateDevDashboardUser = vi.hoisted(() => vi.fn<() => Promise<unknown>>());
+const getDashboardUserIdentitySummary = vi.hoisted(() =>
+  vi.fn<(userId: string) => Promise<unknown>>(),
+);
 const resolveDashboardActivationState = vi.hoisted(() =>
   vi.fn<(request: Request, existingSession?: unknown) => Promise<unknown>>(),
 );
@@ -44,7 +47,7 @@ vi.mock("../../../app/lib/auth/dashboard-session.server.js", () => ({
 
 vi.mock("../../../app/lib/auth/dashboard-user.server.js", () => ({
   findOrCreateDevDashboardUser,
-  getDashboardUserIdentitySummary: vi.fn<() => Promise<unknown>>(),
+  getDashboardUserIdentitySummary,
 }));
 
 vi.mock("../../../app/lib/activation/activation-state.server.js", () => ({
@@ -83,6 +86,11 @@ beforeEach(() => {
   resolveWorkspaceActivationState.mockResolvedValue({
     state: "CREDENTIAL_REQUIRED",
     environmentId: "environment-1",
+  });
+  getDashboardUserIdentitySummary.mockResolvedValue({
+    displayName: "Ahammed Nibras",
+    email: "nibras@example.test",
+    provider: "https://identity.example.test",
   });
 });
 
@@ -209,7 +217,11 @@ it.each([
 
 it("creates a development session without navigating away from login", async () => {
   process.env["DASHBOARD_AUTH_MODE"] = "dev";
-  findOrCreateDevDashboardUser.mockResolvedValue({ id: "user-1" });
+  findOrCreateDevDashboardUser.mockResolvedValue({
+    id: "user-1",
+    displayName: "Local Dashboard User",
+    email: "local-dashboard@example.test",
+  });
   rotateDashboardSession.mockResolvedValue({
     token: "session-token",
     expiresAt: new Date("2026-01-01T00:00:00.000Z"),
@@ -224,6 +236,11 @@ it("creates a development session without navigating away from login", async () 
 
   expect(response).toBeInstanceOf(Response);
   await expect((response as Response).json()).resolves.toEqual({
+    identity: {
+      displayName: "Local Dashboard User",
+      email: "local-dashboard@example.test",
+      provider: null,
+    },
     ok: true,
     stage: "workspace",
   });
@@ -234,6 +251,31 @@ it("creates a development session without navigating away from login", async () 
     token: "session-token",
     expiresAt: new Date("2026-01-01T00:00:00.000Z"),
   });
+});
+
+it("returns the persisted identity when development authentication already has a session", async () => {
+  process.env["DASHBOARD_AUTH_MODE"] = "dev";
+  getDashboardSession.mockResolvedValue({ userId: "user-1" });
+
+  const response = await action({
+    request: new Request("http://dashboard.test/login", {
+      method: "POST",
+      body: new URLSearchParams({ intent: "authenticate" }),
+    }),
+  } as never);
+
+  expect(response).toEqual({
+    identity: {
+      displayName: "Ahammed Nibras",
+      email: "nibras@example.test",
+      provider: "https://identity.example.test",
+    },
+    ok: true,
+    stage: "workspace",
+  });
+  expect(getDashboardUserIdentitySummary).toHaveBeenCalledWith("user-1");
+  expect(findOrCreateDevDashboardUser).not.toHaveBeenCalled();
+  expect(rotateDashboardSession).not.toHaveBeenCalled();
 });
 
 it("creates a workspace from the login activation form", async () => {

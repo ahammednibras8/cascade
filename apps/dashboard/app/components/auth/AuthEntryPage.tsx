@@ -7,6 +7,7 @@ import type { PendingDashboardActivationState } from "~/lib/activation/activatio
 import ActivationState from "./ActivationState";
 import SetupProgress from "./SetupProgress";
 import { getDurableProgressStage, type AuthStage } from "./setup-progress";
+import type { DashboardUserIdentitySummary } from "~/lib/auth/dashboard-user.server";
 
 type AuthActionData = {
   activationState?: PendingDashboardActivationState;
@@ -14,6 +15,7 @@ type AuthActionData = {
   ok: boolean;
   stage?: AuthStage;
   redirectTo?: string;
+  identity?: DashboardUserIdentitySummary;
 };
 
 type AuthEntryPageProps = {
@@ -24,6 +26,8 @@ type AuthEntryPageProps = {
   stage: AuthStage;
   startHref: string;
   returnTo: string;
+  identity: DashboardUserIdentitySummary | null;
+  selectAccountHref: string;
 };
 
 function getCurrentActivationState(
@@ -53,7 +57,9 @@ export default function AuthEntryPage({
   authenticated,
   devAuthEnabled,
   error,
+  identity,
   returnTo,
+  selectAccountHref,
   stage,
   startHref,
 }: AuthEntryPageProps) {
@@ -67,6 +73,7 @@ export default function AuthEntryPage({
     fetcher.data?.activationState,
     activationState,
   );
+  const currentIdentity = fetcher.data?.identity ?? identity;
   const activationStage = viewStage === "activation" ? currentActivationState : null;
 
   const isAuthenticated = [authenticated, fetcher.data?.ok === true].includes(true);
@@ -160,6 +167,8 @@ export default function AuthEntryPage({
                   fetcher={fetcher}
                   onContinue={() => setViewStage(progressStage)}
                   startHref={startHref}
+                  identity={currentIdentity}
+                  selectAccountHref={selectAccountHref}
                 />
               )}
             </motion.div>
@@ -176,7 +185,9 @@ function AuthenticationState({
   devAuthEnabled,
   error,
   fetcher,
+  identity,
   onContinue,
+  selectAccountHref,
   startHref,
 }: {
   authenticated: boolean;
@@ -186,22 +197,56 @@ function AuthenticationState({
   fetcher: ReturnType<typeof useFetcher<AuthActionData>>;
   onContinue: () => void;
   startHref: string;
+  identity: DashboardUserIdentitySummary | null;
+  selectAccountHref: string;
 }) {
   if (authenticated) {
+    const accountName = identity?.displayName ?? identity?.email ?? "Verified account";
+    const accountEmail = identity?.email ?? "Your authenticated session is active.";
+
     return (
       <>
         <h1 className="mt-14 text-4xl leading-tight font-medium tracking-[-0.035em] text-[#05050c]">
-          You&apos;re signed in
+          Identity verified
         </h1>
+
         <p className="mt-3 text-sm leading-6 text-black/50">
-          Your account is connected. Return to setup when you are ready.
+          You are securely signed in. Continuing setup will not require authentication again.
         </p>
-        <div className="mt-8">
+
+        <div className="mt-7 flex items-center gap-4 rounded-2xl border border-black/8 bg-white/65 p-4 shadow-sm">
+          <div
+            aria-hidden="true"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#dbe5cf] text-sm font-semibold uppercase text-[#24301c]"
+          >
+            {accountName.slice(0, 1)}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-[#05050c]">{accountName}</p>
+            <p className="mt-0.5 truncate text-xs text-black/45">{accountEmail}</p>
+          </div>
+
+          <span className="rounded-full bg-[#e1ead7] px-2.5 py-1 text-[11px] font-semibold text-[#334526]">
+            Verified
+          </span>
+        </div>
+
+        <div className="mt-8 space-y-3">
           <GlassButton
             label="Return to setup"
             icon={ArrowRight}
             onClick={onContinue}
             tone="black"
+            size="large"
+            fullWidth
+          />
+
+          <GlassButton
+            label="Use another account"
+            icon={ArrowLeft}
+            href={selectAccountHref}
+            tone="glass"
             size="large"
             fullWidth
           />
