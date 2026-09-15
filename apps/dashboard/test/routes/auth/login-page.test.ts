@@ -41,6 +41,9 @@ const handleApiKeyAction = vi.hoisted(() =>
 const requireDashboardCapability = vi.hoisted(() =>
   vi.fn<(request: Request, capability: string) => Promise<unknown>>(),
 );
+const dashboardOnboardingFindUnique = vi.hoisted(() =>
+  vi.fn<(input: unknown) => Promise<unknown>>(),
+);
 
 vi.mock("../../../app/lib/auth/dashboard-session.server.js", () => ({
   commitDashboardSession,
@@ -68,6 +71,7 @@ vi.mock("../../../app/lib/workspace/dashboard-organization.server.js", () => ({
 
 vi.mock("../../../app/lib/workspace/dashboard-workspace.server.js", () => ({
   commitActiveDashboardEnvironment,
+  getDashboardWorkspaceContext: vi.fn<() => void>(),
 }));
 
 vi.mock("../../../app/features/api-keys/api-key-actions.server.js", () => ({
@@ -78,6 +82,15 @@ vi.mock("../../../app/lib/auth/dashboard-permissions.server.js", () => ({
   requireDashboardCapability,
 }));
 
+vi.mock("@cascade/database", () => ({
+  prisma: {
+    dashboardOnboarding: {
+      findUnique: dashboardOnboardingFindUnique,
+      upsert: vi.fn<(input: unknown) => Promise<unknown>>(),
+    },
+  },
+}));
+
 const { loader } = await import("../../../app/routes/auth/login-page.js");
 const originalAuthMode = process.env["DASHBOARD_AUTH_MODE"];
 
@@ -85,6 +98,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   delete process.env["DASHBOARD_AUTH_MODE"];
   getDashboardSession.mockResolvedValue(null);
+  dashboardOnboardingFindUnique.mockResolvedValue({
+    displayedStep: "activation",
+  });
   resolveDashboardActivationState.mockResolvedValue({ state: "AUTH_REQUIRED" });
   resolveWorkspaceActivationState.mockResolvedValue({
     state: "CREDENTIAL_REQUIRED",
@@ -234,5 +250,41 @@ it.each([
     },
     returnTo: "/runs",
     stage: "activation",
+  });
+});
+
+it.each([
+  { storedStep: "authentication", expectedStep: "authentication" },
+  { storedStep: "workspace", expectedStep: "workspace" },
+  { storedStep: "activation", expectedStep: "activation" },
+  { storedStep: null, expectedStep: "activation" },
+  { storedStep: "unknown-step", expectedStep: "activation" },
+])("restores $storedStep as $expectedStep", async ({ storedStep, expectedStep }) => {
+  getDashboardSession.mockResolvedValue({ userId: "user-1" });
+  resolveDashboardActivationState.mockResolvedValue({
+    state: "CREDENTIAL_REQUIRED",
+    environmentId: "environment-1",
+  });
+  dashboardOnboardingFindUnique.mockResolvedValue(
+    storedStep === null ? null : { displayedStep: storedStep },
+  );
+
+  const result = await loader({
+    request: new Request("http://dashboard.test/login"),
+  } as never);
+
+  expect(result).toMatchObject({
+    stage: expectedStep,
+  });
+  expect(dashboardOnboardingFindUnique).toHaveBeenCalledWith({
+    where: {
+      userId_environmentId: {
+        userId: "user-1",
+        environmentId: "environment-1",
+      },
+    },
+    select: {
+      displayedStep: true,
+    },
   });
 });

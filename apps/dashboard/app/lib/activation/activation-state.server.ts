@@ -49,9 +49,8 @@ export async function resolveWorkspaceActivationState(
     };
   }
 
-  const onboarding =
-    environment.onboardingRecords[0] ??
-    (await prisma.dashboardOnboarding.upsert({
+  if (environment.onboardingRecords.length === 0) {
+    await prisma.dashboardOnboarding.upsert({
       where: {
         userId_environmentId: {
           userId,
@@ -66,15 +65,9 @@ export async function resolveWorkspaceActivationState(
         displayedStep: "activation",
       },
       select: {
-        completedAt: true,
+        id: true,
       },
-    }));
-
-  if (onboarding.completedAt) {
-    return {
-      state: "ACTIVATED",
-      environmentId: environment.id,
-    };
+    });
   }
 
   if (environment.apiKeys.length === 0) {
@@ -150,7 +143,7 @@ function findActivationEnvironment(environmentId: string, userId: string) {
           userId,
         },
         select: {
-          completedAt: true,
+          id: true,
         },
         take: 1,
       },
