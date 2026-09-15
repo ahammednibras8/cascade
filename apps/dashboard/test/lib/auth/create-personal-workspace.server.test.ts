@@ -65,7 +65,10 @@ describe("createPersonalWorkspace", () => {
 
     expect(transaction.project.upsert).toHaveBeenCalledWith({
       where: {
-        slug: `personal-${userId}-project`,
+        organizationId_slug: {
+          organizationId,
+          slug: `personal-${userId}-project`,
+        },
       },
       update: {},
       create: {

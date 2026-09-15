@@ -30,7 +30,10 @@ export async function createPersonalWorkspace({
 
     const project = await tx.project.upsert({
       where: {
-        slug: projectSlug,
+        organizationId_slug: {
+          organizationId: organization.id,
+          slug: projectSlug,
+        },
       },
       update: {},
       create: {
