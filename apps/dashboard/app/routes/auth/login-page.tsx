@@ -206,6 +206,48 @@ async function updateDisplayedOnboardingStep(request: Request, formData: FormDat
   });
 }
 
+async function createDashboardWorkspace(request: Request, formData: FormData) {
+  const session = await getDashboardSession(request);
+  const projectName = formData.get("projectName");
+
+  if (!session) {
+    throw redirect("/login");
+  }
+
+  if (typeof projectName !== "string" || !projectName.trim()) {
+    return Response.json({ ok: false, error: "project_name_required" }, { status: 400 });
+  }
+
+  const workspace = await createPersonalWorkspace({
+    userId: session.userId,
+    projectName,
+  });
+
+  const activationState = await resolveWorkspaceActivationState(
+    workspace.environmentId,
+    session.userId,
+  );
+
+  if (activationState.state === "WORKSPACE_REQUIRED" || activationState.state === "ACTIVATED") {
+    throw new Error("Expected a pending activation state after workspace creation");
+  }
+
+  const headers = new Headers();
+  headers.append("Set-Cookie", await commitActiveDashboardOrganization(workspace.organizationId));
+  headers.append("Set-Cookie", await commitActiveDashboardEnvironment(workspace.environmentId));
+
+  return Response.json(
+    {
+      activationState,
+      ok: true,
+      stage: "activation" as const,
+    },
+    {
+      headers,
+    },
+  );
+}
+
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
@@ -223,45 +265,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   if (intent === "create_workspace") {
-    const session = await getDashboardSession(request);
-    const projectName = formData.get("projectName");
-
-    if (!session) {
-      throw redirect("/login");
-    }
-
-    if (typeof projectName !== "string" || !projectName.trim()) {
-      return Response.json({ ok: false, error: "project_name_required" }, { status: 400 });
-    }
-
-    const workspace = await createPersonalWorkspace({
-      userId: session.userId,
-      projectName,
-    });
-
-    const activationState = await resolveWorkspaceActivationState(
-      workspace.environmentId,
-      session.userId,
-    );
-
-    if (activationState.state === "WORKSPACE_REQUIRED" || activationState.state === "ACTIVATED") {
-      throw new Error("Expected a pending activation state after workspace creation");
-    }
-
-    const headers = new Headers();
-    headers.append("Set-Cookie", await commitActiveDashboardOrganization(workspace.organizationId));
-    headers.append("Set-Cookie", await commitActiveDashboardEnvironment(workspace.environmentId));
-
-    return Response.json(
-      {
-        activationState,
-        ok: true,
-        stage: "activation" as const,
-      },
-      {
-        headers,
-      },
-    );
+    return createDashboardWorkspace(request, formData);
   }
 
   if (intent !== "authenticate" || !isDevDashboardAuthEnabled()) {

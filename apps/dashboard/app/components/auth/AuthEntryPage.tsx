@@ -66,6 +66,7 @@ export default function AuthEntryPage({
 }: AuthEntryPageProps) {
   const shouldReduceMotion = useReducedMotion();
   const fetcher = useFetcher<AuthActionData>();
+  const onboardingMetadataFetcher = useFetcher();
   const [viewStage, setViewStage] = useState<AuthStage>(stage);
 
   useActivationRedirect(fetcher.data);
@@ -90,6 +91,25 @@ export default function AuthEntryPage({
     error ??
     (fetcher.data?.error ? "Authentication is currently unavailable. Please try again." : null);
 
+  function changeViewStage(nextStage: AuthStage) {
+    setViewStage(nextStage);
+
+    if (!currentActivationState) {
+      return;
+    }
+
+    void onboardingMetadataFetcher.submit(
+      {
+        intent: "update_displayed_step",
+        displayedStep: nextStage,
+      },
+      {
+        action: "/login",
+        method: "post",
+      },
+    );
+  }
+
   useEffect(() => {
     setViewStage(stage);
   }, [stage]);
@@ -105,7 +125,7 @@ export default function AuthEntryPage({
       <SetupProgress
         progressStage={progressStage}
         viewStage={viewStage}
-        onStageChange={setViewStage}
+        onStageChange={changeViewStage}
         shouldReduceMotion={shouldReduceMotion}
       />
 
@@ -163,8 +183,8 @@ export default function AuthEntryPage({
                 <WorkspaceState
                   completed={progressStage === "activation"}
                   fetcher={fetcher}
-                  onBack={() => setViewStage("authentication")}
-                  onContinue={() => setViewStage("activation")}
+                  onBack={() => changeViewStage("authentication")}
+                  onContinue={() => changeViewStage("activation")}
                 />
               ) : (
                 <AuthenticationState
@@ -173,7 +193,7 @@ export default function AuthEntryPage({
                   devAuthEnabled={devAuthEnabled}
                   error={authenticationError}
                   fetcher={fetcher}
-                  onContinue={() => setViewStage(progressStage)}
+                  onContinue={() => changeViewStage(progressStage)}
                   startHref={startHref}
                   identity={currentIdentity}
                   selectAccountHref={selectAccountHref}

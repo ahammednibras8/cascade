@@ -75,6 +75,12 @@ vi.mock("../../../app/lib/auth/dashboard-permissions.server.js", () => ({
   requireDashboardCapability,
 }));
 
+vi.mock("@cascade/database", () => ({
+  prisma: {
+    dashboardOnboarding: { upsert: vi.fn<(input: unknown) => Promise<unknown>>() },
+  },
+}));
+
 const { action } = await import("../../../app/routes/auth/login-page.js");
 const originalAuthMode = process.env["DASHBOARD_AUTH_MODE"];
 
