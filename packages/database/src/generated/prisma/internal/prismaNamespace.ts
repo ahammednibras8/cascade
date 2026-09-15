@@ -1768,6 +1768,11 @@ export const DashboardOnboardingScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   environmentId: 'environmentId',
+  startedAt: 'startedAt',
+  selectedSetupPath: 'selectedSetupPath',
+  displayedStep: 'displayedStep',
+  restartedAt: 'restartedAt',
+  dismissedAt: 'dismissedAt',
   completedAt: 'completedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

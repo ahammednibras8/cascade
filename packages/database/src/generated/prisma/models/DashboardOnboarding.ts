@@ -28,6 +28,11 @@ export type DashboardOnboardingMinAggregateOutputType = {
   id: string | null
   userId: string | null
   environmentId: string | null
+  startedAt: Date | null
+  selectedSetupPath: string | null
+  displayedStep: string | null
+  restartedAt: Date | null
+  dismissedAt: Date | null
   completedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -37,6 +42,11 @@ export type DashboardOnboardingMaxAggregateOutputType = {
   id: string | null
   userId: string | null
   environmentId: string | null
+  startedAt: Date | null
+  selectedSetupPath: string | null
+  displayedStep: string | null
+  restartedAt: Date | null
+  dismissedAt: Date | null
   completedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -46,6 +56,11 @@ export type DashboardOnboardingCountAggregateOutputType = {
   id: number
   userId: number
   environmentId: number
+  startedAt: number
+  selectedSetupPath: number
+  displayedStep: number
+  restartedAt: number
+  dismissedAt: number
   completedAt: number
   createdAt: number
   updatedAt: number
@@ -57,6 +72,11 @@ export type DashboardOnboardingMinAggregateInputType = {
   id?: true
   userId?: true
   environmentId?: true
+  startedAt?: true
+  selectedSetupPath?: true
+  displayedStep?: true
+  restartedAt?: true
+  dismissedAt?: true
   completedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -66,6 +86,11 @@ export type DashboardOnboardingMaxAggregateInputType = {
   id?: true
   userId?: true
   environmentId?: true
+  startedAt?: true
+  selectedSetupPath?: true
+  displayedStep?: true
+  restartedAt?: true
+  dismissedAt?: true
   completedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -75,6 +100,11 @@ export type DashboardOnboardingCountAggregateInputType = {
   id?: true
   userId?: true
   environmentId?: true
+  startedAt?: true
+  selectedSetupPath?: true
+  displayedStep?: true
+  restartedAt?: true
+  dismissedAt?: true
   completedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -157,6 +187,11 @@ export type DashboardOnboardingGroupByOutputType = {
   id: string
   userId: string
   environmentId: string
+  startedAt: Date
+  selectedSetupPath: string | null
+  displayedStep: string | null
+  restartedAt: Date | null
+  dismissedAt: Date | null
   completedAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -187,6 +222,11 @@ export type DashboardOnboardingWhereInput = {
   id?: Prisma.UuidFilter<"DashboardOnboarding"> | string
   userId?: Prisma.UuidFilter<"DashboardOnboarding"> | string
   environmentId?: Prisma.UuidFilter<"DashboardOnboarding"> | string
+  startedAt?: Prisma.DateTimeFilter<"DashboardOnboarding"> | Date | string
+  selectedSetupPath?: Prisma.StringNullableFilter<"DashboardOnboarding"> | string | null
+  displayedStep?: Prisma.StringNullableFilter<"DashboardOnboarding"> | string | null
+  restartedAt?: Prisma.DateTimeNullableFilter<"DashboardOnboarding"> | Date | string | null
+  dismissedAt?: Prisma.DateTimeNullableFilter<"DashboardOnboarding"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"DashboardOnboarding"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"DashboardOnboarding"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"DashboardOnboarding"> | Date | string
@@ -198,6 +238,11 @@ export type DashboardOnboardingOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   environmentId?: Prisma.SortOrder
+  startedAt?: Prisma.SortOrder
+  selectedSetupPath?: Prisma.SortOrderInput | Prisma.SortOrder
+  displayedStep?: Prisma.SortOrderInput | Prisma.SortOrder
+  restartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  dismissedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -213,6 +258,11 @@ export type DashboardOnboardingWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.DashboardOnboardingWhereInput | Prisma.DashboardOnboardingWhereInput[]
   userId?: Prisma.UuidFilter<"DashboardOnboarding"> | string
   environmentId?: Prisma.UuidFilter<"DashboardOnboarding"> | string
+  startedAt?: Prisma.DateTimeFilter<"DashboardOnboarding"> | Date | string
+  selectedSetupPath?: Prisma.StringNullableFilter<"DashboardOnboarding"> | string | null
+  displayedStep?: Prisma.StringNullableFilter<"DashboardOnboarding"> | string | null
+  restartedAt?: Prisma.DateTimeNullableFilter<"DashboardOnboarding"> | Date | string | null
+  dismissedAt?: Prisma.DateTimeNullableFilter<"DashboardOnboarding"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"DashboardOnboarding"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"DashboardOnboarding"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"DashboardOnboarding"> | Date | string
@@ -224,6 +274,11 @@ export type DashboardOnboardingOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   environmentId?: Prisma.SortOrder
+  startedAt?: Prisma.SortOrder
+  selectedSetupPath?: Prisma.SortOrderInput | Prisma.SortOrder
+  displayedStep?: Prisma.SortOrderInput | Prisma.SortOrder
+  restartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  dismissedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -239,6 +294,11 @@ export type DashboardOnboardingScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"DashboardOnboarding"> | string
   userId?: Prisma.UuidWithAggregatesFilter<"DashboardOnboarding"> | string
   environmentId?: Prisma.UuidWithAggregatesFilter<"DashboardOnboarding"> | string
+  startedAt?: Prisma.DateTimeWithAggregatesFilter<"DashboardOnboarding"> | Date | string
+  selectedSetupPath?: Prisma.StringNullableWithAggregatesFilter<"DashboardOnboarding"> | string | null
+  displayedStep?: Prisma.StringNullableWithAggregatesFilter<"DashboardOnboarding"> | string | null
+  restartedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DashboardOnboarding"> | Date | string | null
+  dismissedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DashboardOnboarding"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DashboardOnboarding"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"DashboardOnboarding"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"DashboardOnboarding"> | Date | string
@@ -246,6 +306,11 @@ export type DashboardOnboardingScalarWhereWithAggregatesInput = {
 
 export type DashboardOnboardingCreateInput = {
   id?: string
+  startedAt?: Date | string
+  selectedSetupPath?: string | null
+  displayedStep?: string | null
+  restartedAt?: Date | string | null
+  dismissedAt?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -257,6 +322,11 @@ export type DashboardOnboardingUncheckedCreateInput = {
   id?: string
   userId: string
   environmentId: string
+  startedAt?: Date | string
+  selectedSetupPath?: string | null
+  displayedStep?: string | null
+  restartedAt?: Date | string | null
+  dismissedAt?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -264,6 +334,11 @@ export type DashboardOnboardingUncheckedCreateInput = {
 
 export type DashboardOnboardingUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  selectedSetupPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayedStep?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dismissedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -275,6 +350,11 @@ export type DashboardOnboardingUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   environmentId?: Prisma.StringFieldUpdateOperationsInput | string
+  startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  selectedSetupPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayedStep?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dismissedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -284,6 +364,11 @@ export type DashboardOnboardingCreateManyInput = {
   id?: string
   userId: string
   environmentId: string
+  startedAt?: Date | string
+  selectedSetupPath?: string | null
+  displayedStep?: string | null
+  restartedAt?: Date | string | null
+  dismissedAt?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -291,6 +376,11 @@ export type DashboardOnboardingCreateManyInput = {
 
 export type DashboardOnboardingUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  selectedSetupPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayedStep?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dismissedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -300,6 +390,11 @@ export type DashboardOnboardingUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   environmentId?: Prisma.StringFieldUpdateOperationsInput | string
+  startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  selectedSetupPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayedStep?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dismissedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -324,6 +419,11 @@ export type DashboardOnboardingCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   environmentId?: Prisma.SortOrder
+  startedAt?: Prisma.SortOrder
+  selectedSetupPath?: Prisma.SortOrder
+  displayedStep?: Prisma.SortOrder
+  restartedAt?: Prisma.SortOrder
+  dismissedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -333,6 +433,11 @@ export type DashboardOnboardingMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   environmentId?: Prisma.SortOrder
+  startedAt?: Prisma.SortOrder
+  selectedSetupPath?: Prisma.SortOrder
+  displayedStep?: Prisma.SortOrder
+  restartedAt?: Prisma.SortOrder
+  dismissedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -342,6 +447,11 @@ export type DashboardOnboardingMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   environmentId?: Prisma.SortOrder
+  startedAt?: Prisma.SortOrder
+  selectedSetupPath?: Prisma.SortOrder
+  displayedStep?: Prisma.SortOrder
+  restartedAt?: Prisma.SortOrder
+  dismissedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -437,6 +547,11 @@ export type DashboardOnboardingUncheckedUpdateManyWithoutEnvironmentNestedInput 
 
 export type DashboardOnboardingCreateWithoutUserInput = {
   id?: string
+  startedAt?: Date | string
+  selectedSetupPath?: string | null
+  displayedStep?: string | null
+  restartedAt?: Date | string | null
+  dismissedAt?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -446,6 +561,11 @@ export type DashboardOnboardingCreateWithoutUserInput = {
 export type DashboardOnboardingUncheckedCreateWithoutUserInput = {
   id?: string
   environmentId: string
+  startedAt?: Date | string
+  selectedSetupPath?: string | null
+  displayedStep?: string | null
+  restartedAt?: Date | string | null
+  dismissedAt?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -484,6 +604,11 @@ export type DashboardOnboardingScalarWhereInput = {
   id?: Prisma.UuidFilter<"DashboardOnboarding"> | string
   userId?: Prisma.UuidFilter<"DashboardOnboarding"> | string
   environmentId?: Prisma.UuidFilter<"DashboardOnboarding"> | string
+  startedAt?: Prisma.DateTimeFilter<"DashboardOnboarding"> | Date | string
+  selectedSetupPath?: Prisma.StringNullableFilter<"DashboardOnboarding"> | string | null
+  displayedStep?: Prisma.StringNullableFilter<"DashboardOnboarding"> | string | null
+  restartedAt?: Prisma.DateTimeNullableFilter<"DashboardOnboarding"> | Date | string | null
+  dismissedAt?: Prisma.DateTimeNullableFilter<"DashboardOnboarding"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"DashboardOnboarding"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"DashboardOnboarding"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"DashboardOnboarding"> | Date | string
@@ -491,6 +616,11 @@ export type DashboardOnboardingScalarWhereInput = {
 
 export type DashboardOnboardingCreateWithoutEnvironmentInput = {
   id?: string
+  startedAt?: Date | string
+  selectedSetupPath?: string | null
+  displayedStep?: string | null
+  restartedAt?: Date | string | null
+  dismissedAt?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -500,6 +630,11 @@ export type DashboardOnboardingCreateWithoutEnvironmentInput = {
 export type DashboardOnboardingUncheckedCreateWithoutEnvironmentInput = {
   id?: string
   userId: string
+  startedAt?: Date | string
+  selectedSetupPath?: string | null
+  displayedStep?: string | null
+  restartedAt?: Date | string | null
+  dismissedAt?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -534,6 +669,11 @@ export type DashboardOnboardingUpdateManyWithWhereWithoutEnvironmentInput = {
 export type DashboardOnboardingCreateManyUserInput = {
   id?: string
   environmentId: string
+  startedAt?: Date | string
+  selectedSetupPath?: string | null
+  displayedStep?: string | null
+  restartedAt?: Date | string | null
+  dismissedAt?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -541,6 +681,11 @@ export type DashboardOnboardingCreateManyUserInput = {
 
 export type DashboardOnboardingUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  selectedSetupPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayedStep?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dismissedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -550,6 +695,11 @@ export type DashboardOnboardingUpdateWithoutUserInput = {
 export type DashboardOnboardingUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   environmentId?: Prisma.StringFieldUpdateOperationsInput | string
+  startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  selectedSetupPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayedStep?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dismissedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -558,6 +708,11 @@ export type DashboardOnboardingUncheckedUpdateWithoutUserInput = {
 export type DashboardOnboardingUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   environmentId?: Prisma.StringFieldUpdateOperationsInput | string
+  startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  selectedSetupPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayedStep?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dismissedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -566,6 +721,11 @@ export type DashboardOnboardingUncheckedUpdateManyWithoutUserInput = {
 export type DashboardOnboardingCreateManyEnvironmentInput = {
   id?: string
   userId: string
+  startedAt?: Date | string
+  selectedSetupPath?: string | null
+  displayedStep?: string | null
+  restartedAt?: Date | string | null
+  dismissedAt?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -573,6 +733,11 @@ export type DashboardOnboardingCreateManyEnvironmentInput = {
 
 export type DashboardOnboardingUpdateWithoutEnvironmentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  selectedSetupPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayedStep?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dismissedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -582,6 +747,11 @@ export type DashboardOnboardingUpdateWithoutEnvironmentInput = {
 export type DashboardOnboardingUncheckedUpdateWithoutEnvironmentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  selectedSetupPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayedStep?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dismissedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -590,6 +760,11 @@ export type DashboardOnboardingUncheckedUpdateWithoutEnvironmentInput = {
 export type DashboardOnboardingUncheckedUpdateManyWithoutEnvironmentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  selectedSetupPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayedStep?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  restartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dismissedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -601,6 +776,11 @@ export type DashboardOnboardingSelect<ExtArgs extends runtime.Types.Extensions.I
   id?: boolean
   userId?: boolean
   environmentId?: boolean
+  startedAt?: boolean
+  selectedSetupPath?: boolean
+  displayedStep?: boolean
+  restartedAt?: boolean
+  dismissedAt?: boolean
   completedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -612,6 +792,11 @@ export type DashboardOnboardingSelectCreateManyAndReturn<ExtArgs extends runtime
   id?: boolean
   userId?: boolean
   environmentId?: boolean
+  startedAt?: boolean
+  selectedSetupPath?: boolean
+  displayedStep?: boolean
+  restartedAt?: boolean
+  dismissedAt?: boolean
   completedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -623,6 +808,11 @@ export type DashboardOnboardingSelectUpdateManyAndReturn<ExtArgs extends runtime
   id?: boolean
   userId?: boolean
   environmentId?: boolean
+  startedAt?: boolean
+  selectedSetupPath?: boolean
+  displayedStep?: boolean
+  restartedAt?: boolean
+  dismissedAt?: boolean
   completedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -634,12 +824,17 @@ export type DashboardOnboardingSelectScalar = {
   id?: boolean
   userId?: boolean
   environmentId?: boolean
+  startedAt?: boolean
+  selectedSetupPath?: boolean
+  displayedStep?: boolean
+  restartedAt?: boolean
+  dismissedAt?: boolean
   completedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type DashboardOnboardingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "environmentId" | "completedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["dashboardOnboarding"]>
+export type DashboardOnboardingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "environmentId" | "startedAt" | "selectedSetupPath" | "displayedStep" | "restartedAt" | "dismissedAt" | "completedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["dashboardOnboarding"]>
 export type DashboardOnboardingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
@@ -663,6 +858,11 @@ export type $DashboardOnboardingPayload<ExtArgs extends runtime.Types.Extensions
     id: string
     userId: string
     environmentId: string
+    startedAt: Date
+    selectedSetupPath: string | null
+    displayedStep: string | null
+    restartedAt: Date | null
+    dismissedAt: Date | null
     completedAt: Date | null
     createdAt: Date
     updatedAt: Date
@@ -1094,6 +1294,11 @@ export interface DashboardOnboardingFieldRefs {
   readonly id: Prisma.FieldRef<"DashboardOnboarding", 'String'>
   readonly userId: Prisma.FieldRef<"DashboardOnboarding", 'String'>
   readonly environmentId: Prisma.FieldRef<"DashboardOnboarding", 'String'>
+  readonly startedAt: Prisma.FieldRef<"DashboardOnboarding", 'DateTime'>
+  readonly selectedSetupPath: Prisma.FieldRef<"DashboardOnboarding", 'String'>
+  readonly displayedStep: Prisma.FieldRef<"DashboardOnboarding", 'String'>
+  readonly restartedAt: Prisma.FieldRef<"DashboardOnboarding", 'DateTime'>
+  readonly dismissedAt: Prisma.FieldRef<"DashboardOnboarding", 'DateTime'>
   readonly completedAt: Prisma.FieldRef<"DashboardOnboarding", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"DashboardOnboarding", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"DashboardOnboarding", 'DateTime'>
