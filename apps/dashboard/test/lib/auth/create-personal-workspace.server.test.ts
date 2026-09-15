@@ -40,6 +40,7 @@ describe("createPersonalWorkspace", () => {
     transaction.organization.findUniqueOrThrow.mockResolvedValue({ id: organizationId });
     transaction.project.upsert.mockResolvedValue({ id: projectId });
     transaction.environment.upsert.mockResolvedValue({ id: environmentId });
+    transaction.dashboardOnboarding.upsert.mockResolvedValue({});
   });
 
   it("creates the user's first project and development environment atomically", async () => {
@@ -138,5 +139,44 @@ describe("createPersonalWorkspace", () => {
     ).rejects.toBe(failure);
 
     expect(prisma.$transaction).toHaveBeenCalledOnce();
+  });
+
+  it("retries the transaction once after a concurrent unique conflict", async () => {
+    const uniqueConflict = Object.assign(new Error("concurrent workspace submission"), {
+      code: "P2002",
+    });
+    prisma.$transaction
+      .mockRejectedValueOnce(uniqueConflict)
+      .mockImplementationOnce((callback) => callback(transaction));
+
+    await expect(
+      createPersonalWorkspace({
+        userId,
+        projectName: "Cascade",
+      }),
+    ).resolves.toEqual({
+      organizationId,
+      projectId,
+      environmentId,
+    });
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry a second failed transaction", async () => {
+    const uniqueConflict = Object.assign(new Error("concurrent workspace submission"), {
+      code: "P2002",
+    });
+    const retryFailure = new Error("retry failed");
+    prisma.$transaction.mockRejectedValueOnce(uniqueConflict).mockRejectedValueOnce(retryFailure);
+
+    await expect(
+      createPersonalWorkspace({
+        userId,
+        projectName: "Cascade",
+      }),
+    ).rejects.toBe(retryFailure);
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
   });
 });

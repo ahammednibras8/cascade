@@ -324,3 +324,25 @@ it("creates a workspace from the login activation form", async () => {
     "cascade-active-environment=environment-1",
   );
 });
+
+it.each(["", "   "])("rejects an invalid workspace project name", async (projectName) => {
+  getDashboardSession.mockResolvedValue({ userId: "user-1" });
+
+  const response = await action({
+    request: new Request("http://dashboard.test/login", {
+      method: "POST",
+      body: new URLSearchParams({
+        intent: "create_workspace",
+        projectName,
+      }),
+    }),
+  } as never);
+
+  expect(response).toBeInstanceOf(Response);
+  expect((response as Response).status).toBe(400);
+  await expect((response as Response).json()).resolves.toEqual({
+    error: "project_name_required",
+    ok: false,
+  });
+  expect(createPersonalWorkspace).not.toHaveBeenCalled();
+});
