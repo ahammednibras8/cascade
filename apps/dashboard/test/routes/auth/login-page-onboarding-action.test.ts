@@ -134,6 +134,65 @@ it.each(["authentication", "workspace", "activation"] as const)(
   },
 );
 
+it("requires authentication before dismissing onboarding", async () => {
+  const response = await submitDismissal("/runs");
+
+  expect(response.status).toBe(401);
+  await expect(response.json()).resolves.toEqual({
+    error: "authentication_required",
+    ok: false,
+  });
+  expect(getDashboardWorkspaceContext).not.toHaveBeenCalled();
+  expect(dashboardOnboardingUpsert).not.toHaveBeenCalled();
+});
+
+it("requires an active workspace before dismissing onboarding", async () => {
+  getDashboardSession.mockResolvedValue({ userId: "user-1" });
+  getDashboardWorkspaceContext.mockResolvedValue({ activeEnvironment: null });
+
+  const response = await submitDismissal("/runs");
+
+  expect(response.status).toBe(409);
+  await expect(response.json()).resolves.toEqual({
+    error: "workspace_required",
+    ok: false,
+  });
+  expect(dashboardOnboardingUpsert).not.toHaveBeenCalled();
+});
+
+it.each([
+  { returnTo: "/runs", redirectTo: "/runs" },
+  { returnTo: "https://attacker.example.test", redirectTo: "/dashboard" },
+])("dismisses onboarding and returns $redirectTo", async ({ returnTo, redirectTo }) => {
+  getDashboardSession.mockResolvedValue({ userId: "user-1" });
+
+  const response = await submitDismissal(returnTo);
+
+  expect(response.status).toBe(200);
+  await expect(response.json()).resolves.toEqual({
+    ok: true,
+    redirectTo,
+  });
+  expect(dashboardOnboardingUpsert).toHaveBeenCalledWith({
+    where: {
+      userId_environmentId: {
+        userId: "user-1",
+        environmentId: "environment-1",
+      },
+    },
+    update: {
+      dismissedAt: expect.any(Date),
+    },
+    create: {
+      userId: "user-1",
+      environmentId: "environment-1",
+      selectedSetupPath: "sdk",
+      displayedStep: "activation",
+      dismissedAt: expect.any(Date),
+    },
+  });
+});
+
 async function submitDisplayedStep(displayedStep: string) {
   const response = await action({
     request: new Request("http://dashboard.test/login", {
@@ -141,6 +200,22 @@ async function submitDisplayedStep(displayedStep: string) {
       body: new URLSearchParams({
         intent: "update_displayed_step",
         displayedStep,
+      }),
+    }),
+  } as never);
+
+  expect(response).toBeInstanceOf(Response);
+
+  return response as Response;
+}
+
+async function submitDismissal(returnTo: string) {
+  const response = await action({
+    request: new Request("http://dashboard.test/login", {
+      method: "POST",
+      body: new URLSearchParams({
+        intent: "dismiss_onboarding",
+        returnTo,
       }),
     }),
   } as never);
