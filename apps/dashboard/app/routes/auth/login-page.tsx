@@ -39,6 +39,22 @@ function getPersistedOnboardingStep(
   return null;
 }
 
+async function getDisplayedOnboardingStep(userId: string, environmentId: string) {
+  const onboarding = await prisma.dashboardOnboarding.findUnique({
+    where: {
+      userId_environmentId: {
+        userId,
+        environmentId,
+      },
+    },
+    select: {
+      displayedStep: true,
+    },
+  });
+
+  return getPersistedOnboardingStep(onboarding?.displayedStep ?? null) ?? "activation";
+}
+
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const returnTo = getSafeDashboardReturnTo(url.searchParams.get("returnTo"));
@@ -77,13 +93,22 @@ export async function loader({ request }: Route.LoaderArgs) {
     };
   }
 
+  if (!session) {
+    throw new Error("Pending activation state requires a dashboard session");
+  }
+
+  const displayedStep = await getDisplayedOnboardingStep(
+    session.userId,
+    activationState.environmentId,
+  );
+
   return {
     activationState,
     authenticated: true,
     devAuthEnabled: isDevDashboardAuthEnabled(),
     error: null,
     returnTo,
-    stage: "activation" as const,
+    stage: displayedStep,
     identity,
   };
 }

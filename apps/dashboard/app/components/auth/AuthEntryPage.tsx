@@ -53,6 +53,27 @@ function isActivationRefreshPending(state: string, formData: FormData | undefine
   return state !== "idle" && formData?.get("intent") === "refresh_activation";
 }
 
+function useOnboardingViewPersistence(enabled: boolean) {
+  const fetcher = useFetcher();
+
+  return (displayedStep: AuthStage) => {
+    if (!enabled) {
+      return;
+    }
+
+    void fetcher.submit(
+      {
+        intent: "update_displayed_step",
+        displayedStep,
+      },
+      {
+        action: "/login",
+        method: "post",
+      },
+    );
+  };
+}
+
 export default function AuthEntryPage({
   activationState,
   authenticated,
@@ -66,7 +87,6 @@ export default function AuthEntryPage({
 }: AuthEntryPageProps) {
   const shouldReduceMotion = useReducedMotion();
   const fetcher = useFetcher<AuthActionData>();
-  const onboardingMetadataFetcher = useFetcher();
   const [viewStage, setViewStage] = useState<AuthStage>(stage);
 
   useActivationRedirect(fetcher.data);
@@ -75,6 +95,7 @@ export default function AuthEntryPage({
     fetcher.data?.activationState,
     activationState,
   );
+  const persistOnboardingView = useOnboardingViewPersistence(currentActivationState !== null);
   const currentIdentity = fetcher.data?.identity ?? identity;
   const activationStage = viewStage === "activation" ? currentActivationState : null;
 
@@ -93,21 +114,7 @@ export default function AuthEntryPage({
 
   function changeViewStage(nextStage: AuthStage) {
     setViewStage(nextStage);
-
-    if (!currentActivationState) {
-      return;
-    }
-
-    void onboardingMetadataFetcher.submit(
-      {
-        intent: "update_displayed_step",
-        displayedStep: nextStage,
-      },
-      {
-        action: "/login",
-        method: "post",
-      },
-    );
+    persistOnboardingView(nextStage);
   }
 
   useEffect(() => {
