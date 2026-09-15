@@ -4,12 +4,27 @@ import { prisma } from "@cascade/database";
 import { generateApiKey, getApiKeyPrefix, hashApiKey } from "../auth/api-key.js";
 
 async function main() {
-  const project = await prisma.project.upsert({
+  const organization = await prisma.organization.upsert({
     where: {
-      slug: "local",
+      slug: "local-development",
     },
     update: {},
     create: {
+      slug: "local-development",
+      name: "Local Development",
+    },
+  });
+
+  const project = await prisma.project.upsert({
+    where: {
+      organizationId_slug: {
+        organizationId: organization.id,
+        slug: "local",
+      },
+    },
+    update: {},
+    create: {
+      organizationId: organization.id,
       slug: "local",
       name: "Local Project",
     },
@@ -43,6 +58,7 @@ async function main() {
   });
 
   console.log("Created API key");
+  console.log(`Organization: ${organization.slug}`);
   console.log(`Project: ${project.slug}`);
   console.log(`Environment: ${environment.slug}`);
   console.log(`API key ID: ${storedApiKey.id}`);
