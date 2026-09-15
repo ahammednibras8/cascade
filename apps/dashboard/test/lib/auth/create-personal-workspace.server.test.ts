@@ -112,6 +112,8 @@ describe("createPersonalWorkspace", () => {
       create: {
         userId,
         environmentId,
+        selectedSetupPath: "sdk",
+        displayedStep: "activation",
       },
     });
   });

@@ -62,6 +62,8 @@ export async function resolveWorkspaceActivationState(
       create: {
         userId,
         environmentId: environment.id,
+        selectedSetupPath: "sdk",
+        displayedStep: "activation",
       },
       select: {
         completedAt: true,
