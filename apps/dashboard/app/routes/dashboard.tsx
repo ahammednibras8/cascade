@@ -4,13 +4,34 @@ import { ArrowRight } from "~/components/icons";
 import { requireDashboardUser } from "~/lib/auth/dashboard-auth.server";
 import { getDashboardWorkspaceContext } from "~/lib/workspace/dashboard-workspace.server";
 import { hasDashboardCapability } from "~/lib/auth/dashboard-permissions";
+import { resolveWorkspaceActivationState } from "~/lib/activation/activation-state.server";
+import { getDashboardOnboardingPresentation } from "~/lib/activation/onboarding-metadata.server";
 
 type HomeData = Route.ComponentProps["loaderData"];
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await requireDashboardUser(request);
+  const workspace = await getDashboardWorkspaceContext(request, session.userId);
+  const environment = workspace.activeEnvironment;
 
-  return getDashboardWorkspaceContext(request, session.userId);
+  if (!environment) {
+    return {
+      ...workspace,
+      canRestartOnboarding: false,
+    };
+  }
+
+  const activationState = await resolveWorkspaceActivationState(environment.id, session.userId);
+  const onboardingPresentation = await getDashboardOnboardingPresentation(
+    session.userId,
+    environment.id,
+  );
+
+  return {
+    ...workspace,
+    canRestartOnboarding:
+      activationState.state !== "ACTIVATED" && onboardingPresentation.dismissedAt !== null,
+  };
 }
 
 export function meta() {
@@ -172,6 +193,8 @@ function HomeActions({ data }: { data: HomeData }) {
         <HomeLink to="/api-keys" label="Manage API keys" />
       ) : null}
       <SignOutForm />
+
+      {data.canRestartOnboarding ? <RestartOnboardingForm /> : null}
     </div>
   );
 }
@@ -194,6 +217,21 @@ function HomeLink({
       {label}
       <ArrowRight size={15} />
     </Link>
+  );
+}
+
+function RestartOnboardingForm() {
+  return (
+    <Form method="post" action="/login">
+      <input type="hidden" name="intent" value="restart_onboarding" />
+
+      <button
+        type="submit"
+        className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900"
+      >
+        Restart setup
+      </button>
+    </Form>
   );
 }
 

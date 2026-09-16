@@ -193,6 +193,63 @@ it.each([
   });
 });
 
+it("requires authentication before restarting onboarding", async () => {
+  const response = await submitRestart();
+
+  expect(response.status).toBe(401);
+  await expect(response.json()).resolves.toEqual({
+    error: "authentication_required",
+    ok: false,
+  });
+  expect(getDashboardWorkspaceContext).not.toHaveBeenCalled();
+  expect(dashboardOnboardingUpsert).not.toHaveBeenCalled();
+});
+
+it("requires an active workspace before restarting onboarding", async () => {
+  getDashboardSession.mockResolvedValue({ userId: "user-1" });
+  getDashboardWorkspaceContext.mockResolvedValue({ activeEnvironment: null });
+
+  const response = await submitRestart();
+
+  expect(response.status).toBe(409);
+  await expect(response.json()).resolves.toEqual({
+    error: "workspace_required",
+    ok: false,
+  });
+  expect(dashboardOnboardingUpsert).not.toHaveBeenCalled();
+});
+
+it("restarts presentation metadata without changing technical completion", async () => {
+  getDashboardSession.mockResolvedValue({ userId: "user-1" });
+
+  const response = await submitRestart();
+
+  expect(response.status).toBe(302);
+  expect(response.headers.get("Location")).toBe("/login");
+  expect(dashboardOnboardingUpsert).toHaveBeenCalledWith({
+    where: {
+      userId_environmentId: {
+        userId: "user-1",
+        environmentId: "environment-1",
+      },
+    },
+    update: {
+      startedAt: expect.any(Date),
+      restartedAt: expect.any(Date),
+      dismissedAt: null,
+      displayedStep: "activation",
+    },
+    create: {
+      userId: "user-1",
+      environmentId: "environment-1",
+      startedAt: expect.any(Date),
+      restartedAt: expect.any(Date),
+      selectedSetupPath: "sdk",
+      displayedStep: "activation",
+    },
+  });
+});
+
 async function submitDisplayedStep(displayedStep: string) {
   const response = await action({
     request: new Request("http://dashboard.test/login", {
@@ -216,6 +273,21 @@ async function submitDismissal(returnTo: string) {
       body: new URLSearchParams({
         intent: "dismiss_onboarding",
         returnTo,
+      }),
+    }),
+  } as never);
+
+  expect(response).toBeInstanceOf(Response);
+
+  return response as Response;
+}
+
+async function submitRestart() {
+  const response = await action({
+    request: new Request("http://dashboard.test/login", {
+      method: "POST",
+      body: new URLSearchParams({
+        intent: "restart_onboarding",
       }),
     }),
   } as never);
