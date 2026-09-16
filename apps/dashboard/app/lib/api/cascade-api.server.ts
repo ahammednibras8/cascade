@@ -79,6 +79,16 @@ function getApiUrl(): string {
   return apiUrl;
 }
 
+export function getCascadePublicApiUrl() {
+  const apiUrl = process.env["CASCADE_PUBLIC_API_URL"];
+
+  if (!apiUrl) {
+    throw new Error("CASCADE_PUBLIC_API_URL is required");
+  }
+
+  return apiUrl.endsWith("/") ? apiUrl.slice(0, -1) : apiUrl;
+}
+
 export async function cascadeDashboardApiRequest<T>(
   request: Request,
   path: string,
