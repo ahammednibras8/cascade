@@ -2,6 +2,7 @@ import { prisma } from "@cascade/database";
 import { getDashboardSession } from "../auth/dashboard-session.server";
 import { getSafeDashboardReturnTo } from "../auth/return-to.server";
 import { getDashboardWorkspaceContext } from "../workspace/dashboard-workspace.server";
+import { redirect } from "react-router";
 
 type PersistedOnboardingStep = "authentication" | "workspace" | "activation";
 
@@ -102,6 +103,37 @@ export async function dismissDashboardOnboarding(request: Request, formData: For
     ok: true,
     redirectTo: getSafeDashboardReturnTo(formData.get("returnTo")),
   });
+}
+
+export async function restartDashboardOnboarding(request: Request) {
+  const target = await getOnboardingTarget(request);
+
+  if (target instanceof Response) {
+    return target;
+  }
+
+  const restartedAt = new Date();
+
+  await prisma.dashboardOnboarding.upsert({
+    where: {
+      userId_environmentId: target,
+    },
+    update: {
+      startedAt: restartedAt,
+      restartedAt,
+      dismissedAt: null,
+      displayedStep: "activation",
+    },
+    create: {
+      ...target,
+      startedAt: restartedAt,
+      restartedAt,
+      selectedSetupPath: "sdk",
+      displayedStep: "activation",
+    },
+  });
+
+  return redirect("/login");
 }
 
 async function getOnboardingTarget(request: Request) {

@@ -26,6 +26,7 @@ import {
   dismissDashboardOnboarding,
   getDashboardOnboardingPresentation,
   updateDisplayedOnboardingStep,
+  restartDashboardOnboarding,
 } from "~/lib/activation/onboarding-metadata.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -198,6 +199,10 @@ export async function action({ request }: Route.ActionArgs) {
 
   if (intent === "dismiss_onboarding") {
     return dismissDashboardOnboarding(request, formData);
+  }
+
+  if (intent === "restart_onboarding") {
+    return restartDashboardOnboarding(request);
   }
 
   if (intent === "refresh_activation") {
