@@ -281,13 +281,7 @@ test("activates a new workspace without reloading between setup steps", async ({
     await page.reload();
 
     await expect(page).toHaveURL(/\/login\?returnTo=\/runs$/);
-    await expect(page.getByRole("heading", { name: "Starting your deployment" })).toBeVisible();
-    await expect(page.getByText("PENDING", { exact: true })).toBeVisible();
-
-    await expect(async () => {
-      await identityStep.click();
-      await expect(verifiedIdentityHeading).toBeVisible({ timeout: 500 });
-    }).toPass();
+    await expect(verifiedIdentityHeading).toBeVisible();
 
     await page.getByRole("button", { name: "Return to setup" }).click();
 

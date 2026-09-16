@@ -52,6 +52,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       returnTo,
       stage: "authentication" as const,
       identity,
+      progressStage: "authentication" as const,
     };
   }
 
@@ -64,6 +65,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       returnTo,
       stage: "workspace" as const,
       identity,
+      progressStage: "workspace" as const,
     };
   }
 
@@ -88,6 +90,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     returnTo,
     stage: onboardingPresentation.displayedStep,
     identity,
+    progressStage: "activation" as const,
   };
 }
 
@@ -275,6 +278,7 @@ export default function LoginPage({ loaderData }: Route.ComponentProps) {
       selectAccountHref={selectAccountHref}
       stage={loaderData.stage}
       startHref={startHref}
+      progressStage={loaderData.progressStage}
     />
   );
 }

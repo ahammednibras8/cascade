@@ -29,6 +29,7 @@ type AuthEntryPageProps = {
   returnTo: string;
   identity: DashboardUserIdentitySummary | null;
   selectAccountHref: string;
+  progressStage: AuthStage;
 };
 
 function getCurrentActivationState(
@@ -84,6 +85,7 @@ export default function AuthEntryPage({
   selectAccountHref,
   stage,
   startHref,
+  progressStage: loaderProgressStage,
 }: AuthEntryPageProps) {
   const shouldReduceMotion = useReducedMotion();
   const fetcher = useFetcher<AuthActionData>();
@@ -102,7 +104,7 @@ export default function AuthEntryPage({
   const isAuthenticated = [authenticated, fetcher.data?.ok === true].includes(true);
   const progressStage = getDurableProgressStage({
     hasPersistedSession: isAuthenticated,
-    loaderStage: stage,
+    loaderStage: fetcher.data?.stage ?? loaderProgressStage,
   });
   const workspaceStage = viewStage === "workspace";
   const activationRefreshPending = isActivationRefreshPending(fetcher.state, fetcher.formData);
