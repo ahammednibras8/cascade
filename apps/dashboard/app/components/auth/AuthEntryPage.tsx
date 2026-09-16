@@ -173,6 +173,7 @@ export default function AuthEntryPage({
                 <ActivationState
                   activationState={activationStage}
                   checking={activationRefreshPending}
+                  returnTo={returnTo}
                   onCheck={() => {
                     void fetcher.submit(
                       {

@@ -1,4 +1,6 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Clock3 } from "lucide-react";
+import { useEffect } from "react";
+import { useFetcher, useNavigate } from "react-router";
 import GlassButton from "~/components/landing/GlassButton";
 import type { PendingDashboardActivationState } from "~/lib/activation/activation-state";
 import ActivationCredentialState from "./ActivationCredentialState";
@@ -7,13 +9,20 @@ export default function ActivationState({
   activationState,
   checking,
   onCheck,
+  returnTo,
 }: {
   activationState: PendingDashboardActivationState;
   checking: boolean;
   onCheck: () => void;
+  returnTo: string;
 }) {
   if (activationState.state === "CREDENTIAL_REQUIRED") {
-    return <ActivationCredentialState checking={checking} onCheck={onCheck} />;
+    return (
+      <>
+        <ActivationCredentialState checking={checking} onCheck={onCheck} />
+        <ActivationDismissControl returnTo={returnTo} />
+      </>
+    );
   }
 
   if (activationState.state === "STARTER_REQUIRED") {
@@ -57,6 +66,8 @@ export default function ActivationState({
             fullWidth
           />
         </div>
+
+        <ActivationDismissControl returnTo={returnTo} />
       </>
     );
   }
@@ -82,11 +93,17 @@ export default function ActivationState({
             fullWidth
           />
         </div>
+        <ActivationDismissControl returnTo={returnTo} />
       </>
     );
   }
 
-  return <FirstRunActivationState checking={checking} onCheck={onCheck} />;
+  return (
+    <>
+      <FirstRunActivationState checking={checking} onCheck={onCheck} />;
+      <ActivationDismissControl returnTo={returnTo} />
+    </>
+  );
 }
 
 function FirstRunActivationState({
@@ -132,5 +149,35 @@ function FirstRunActivationState({
         />
       </div>
     </>
+  );
+}
+
+function ActivationDismissControl({ returnTo }: { returnTo: string }) {
+  const fetcher = useFetcher<{ ok: boolean; redirectTo?: string }>();
+  const navigate = useNavigate();
+  const dismissing =
+    fetcher.state !== "idle" && fetcher.formData?.get("intent") === "dismiss_onboarding";
+
+  useEffect(() => {
+    if (fetcher.data?.redirectTo) {
+      void navigate(fetcher.data.redirectTo, { replace: true });
+    }
+  }, [fetcher.data?.redirectTo, navigate]);
+
+  return (
+    <fetcher.Form method="post" action="/login" className="mt-3">
+      <input type="hidden" name="intent" value="dismiss_onboarding" />
+      <input type="hidden" name="returnTo" value={returnTo} />
+
+      <GlassButton
+        label={dismissing ? "Opening dashboard…" : "Set up later"}
+        icon={Clock3}
+        type="submit"
+        disabled={dismissing}
+        tone="white"
+        size="large"
+        fullWidth
+      />
+    </fetcher.Form>
   );
 }

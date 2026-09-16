@@ -284,7 +284,32 @@ it.each([
       },
     },
     select: {
+      dismissedAt: true,
       displayedStep: true,
     },
   });
+});
+
+it.each([
+  { returnTo: "/runs", redirectTo: "/runs" },
+  { returnTo: "https://attacker.example.test", redirectTo: "/dashboard" },
+])("keeps dismissed onboarding out of the login shell", async ({ returnTo, redirectTo }) => {
+  getDashboardSession.mockResolvedValue({ userId: "user-1" });
+  resolveDashboardActivationState.mockResolvedValue({
+    state: "CREDENTIAL_REQUIRED",
+    environmentId: "environment-1",
+  });
+  dashboardOnboardingFindUnique.mockResolvedValue({
+    dismissedAt: new Date("2026-09-16T00:00:00.000Z"),
+    displayedStep: "activation",
+  });
+
+  const response = await loader({
+    request: new Request(`http://dashboard.test/login?returnTo=${encodeURIComponent(returnTo)}`),
+  } as never).catch((error: unknown) => error);
+
+  expect(response).toBeInstanceOf(Response);
+  expect((response as Response).status).toBe(302);
+  expect((response as Response).headers.get("Location")).toBe(redirectTo);
+  expect(resolveDashboardActivationState).toHaveBeenCalledOnce();
 });
