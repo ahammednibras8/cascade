@@ -132,6 +132,7 @@ it("preserves an internal return path for the authentication state", async () =>
     devAuthEnabled: false,
     error: null,
     identity: null,
+    progressStage: "authentication",
     returnTo: "/runs",
     stage: "authentication",
   });
@@ -148,6 +149,7 @@ it("rejects an external return path", async () => {
     devAuthEnabled: false,
     error: null,
     identity: null,
+    progressStage: "authentication",
     returnTo: "/dashboard",
     stage: "authentication",
   });
@@ -195,6 +197,7 @@ it("renders workspace state for an authenticated user without a workspace", asyn
       email: "nibras@example.test",
       provider: "https://identity.example.test",
     },
+    progressStage: "workspace",
     returnTo: "/dashboard",
     stage: "workspace",
   });
@@ -248,6 +251,7 @@ it.each([
       email: "nibras@example.test",
       provider: "https://identity.example.test",
     },
+    progressStage: "activation",
     returnTo: "/runs",
     stage: "activation",
   });
@@ -274,6 +278,7 @@ it.each([
   } as never);
 
   expect(result).toMatchObject({
+    progressStage: "activation",
     stage: expectedStep,
   });
   expect(dashboardOnboardingFindUnique).toHaveBeenCalledWith({

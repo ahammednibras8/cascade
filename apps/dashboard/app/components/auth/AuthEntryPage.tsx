@@ -39,6 +39,10 @@ function getCurrentActivationState(
   return actionState ?? loaderState;
 }
 
+function getCurrentProgressStage(actionStage: AuthStage | undefined, loaderStage: AuthStage) {
+  return actionStage ?? loaderStage;
+}
+
 function useActivationRedirect(actionData: AuthActionData | undefined) {
   const navigate = useNavigate();
   const redirectTo = actionData?.redirectTo;
@@ -104,7 +108,7 @@ export default function AuthEntryPage({
   const isAuthenticated = [authenticated, fetcher.data?.ok === true].includes(true);
   const progressStage = getDurableProgressStage({
     hasPersistedSession: isAuthenticated,
-    loaderStage: fetcher.data?.stage ?? loaderProgressStage,
+    loaderStage: getCurrentProgressStage(fetcher.data?.stage, loaderProgressStage),
   });
   const workspaceStage = viewStage === "workspace";
   const activationRefreshPending = isActivationRefreshPending(fetcher.state, fetcher.formData);
