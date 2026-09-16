@@ -100,7 +100,7 @@ export default function ActivationState({
 
   return (
     <>
-      <FirstRunActivationState checking={checking} onCheck={onCheck} />;
+      <FirstRunActivationState checking={checking} onCheck={onCheck} />
       <ActivationDismissControl returnTo={returnTo} />
     </>
   );
