@@ -83,10 +83,12 @@ vi.mock("@cascade/database", () => ({
 
 const { action } = await import("../../../app/routes/auth/login-page.js");
 const originalAuthMode = process.env["DASHBOARD_AUTH_MODE"];
+const originalPublicApiUrl = process.env["CASCADE_PUBLIC_API_URL"];
 
 beforeEach(() => {
   vi.clearAllMocks();
   delete process.env["DASHBOARD_AUTH_MODE"];
+  process.env["CASCADE_PUBLIC_API_URL"] = "https://api.cascade.test/";
   getDashboardSession.mockResolvedValue(null);
   resolveDashboardActivationState.mockResolvedValue({ state: "AUTH_REQUIRED" });
   resolveWorkspaceActivationState.mockResolvedValue({
@@ -105,6 +107,12 @@ afterEach(() => {
     delete process.env["DASHBOARD_AUTH_MODE"];
   } else {
     process.env["DASHBOARD_AUTH_MODE"] = originalAuthMode;
+  }
+
+  if (originalPublicApiUrl === undefined) {
+    delete process.env["CASCADE_PUBLIC_API_URL"];
+  } else {
+    process.env["CASCADE_PUBLIC_API_URL"] = originalPublicApiUrl;
   }
 });
 
@@ -135,10 +143,21 @@ it("returns the latest pending activation state without redirecting", async () =
 });
 
 it("creates the activation API key through the existing API-key action", async () => {
+  const apiKey = {
+    id: "api-key-1",
+    name: "Local development",
+    keyPrefix: "csc_test",
+    scopes: ["DEPLOYMENTS_WRITE", "TASKS_TRIGGER", "RUNS_READ"],
+    lastUsedAt: null,
+    revokedAt: null,
+    createdAt: "2026-09-19T00:00:00.000Z",
+    rotatedFromId: null,
+  };
   const expectedResponse = Response.json(
     {
       ok: true,
       intent: "create",
+      apiKey,
       token: "csc_test_activation_token",
     },
     {
@@ -158,7 +177,15 @@ it("creates the activation API key through the existing API-key action", async (
 
   const response = await action({ request } as never);
 
-  expect(response).toBe(expectedResponse);
+  expect(response).toBeInstanceOf(Response);
+  expect((response as Response).headers.get("Cache-Control")).toBe("no-store");
+  await expect((response as Response).json()).resolves.toEqual({
+    ok: true,
+    intent: "create",
+    apiKey,
+    token: "csc_test_activation_token",
+    apiUrl: "https://api.cascade.test",
+  });
   expect(requireDashboardCapability).toHaveBeenCalledWith(request, "API_KEYS_MANAGE");
   expect(handleApiKeyAction).toHaveBeenCalledOnce();
 

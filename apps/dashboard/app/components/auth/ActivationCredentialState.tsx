@@ -3,6 +3,12 @@ import { useFetcher } from "react-router";
 import GlassButton from "~/components/landing/GlassButton";
 import type { ApiKeyActionData } from "~/features/api-keys/types";
 
+type ActivationCredentialActionData =
+  | (Extract<ApiKeyActionData, { ok: true; intent: "create" }> & {
+      apiUrl: string;
+    })
+  | Extract<ApiKeyActionData, { ok: false }>;
+
 export default function ActivationCredentialState({
   checking,
   onCheck,
@@ -10,7 +16,7 @@ export default function ActivationCredentialState({
   checking: boolean;
   onCheck: () => void;
 }) {
-  const fetcher = useFetcher<ApiKeyActionData>();
+  const fetcher = useFetcher<ActivationCredentialActionData>();
   const isCreating =
     fetcher.state !== "idle" && fetcher.formData?.get("intent") === "create_activation_key";
 
@@ -19,6 +25,11 @@ export default function ActivationCredentialState({
   const actionError = fetcher.data && !fetcher.data.ok ? fetcher.data.error.message : null;
 
   if (createdApiKey) {
+    const environmentVariables = [
+      `CASCADE_API_URL=${createdApiKey.apiUrl}`,
+      `CASCADE_API_KEY=${createdApiKey.token}`,
+    ].join("\n");
+
     return (
       <>
         <h1 className="mt-14 text-4xl leading-tight font-medium tracking-[-0.035em] text-[#05050c]">
@@ -26,29 +37,33 @@ export default function ActivationCredentialState({
         </h1>
 
         <p className="mt-3 text-sm leading-6 text-black/50">
-          Cascade will show this secret only once. Store it in your worker&apos;s secret manager
-          before continuing.
+          Cascade will show these values only once. Add them to your local environment or secret
+          manager before continuing.
         </p>
 
         <section
-          aria-labelledby="activation-api-key-heading"
+          aria-labelledby="activation-environment-heading"
           className="mt-6 rounded-2xl border border-black/10 bg-white/70 p-4"
         >
-          <h2 id="activation-api-key-heading" className="text-sm font-semibold text-[#05050c]">
-            Integration key
+          <h2 id="activation-environment-heading" className="text-sm font-semibold text-[#05050c]">
+            Environment variables
           </h2>
 
-          <code className="mt-3 block break-all rounded-xl bg-[#10140f] p-3 font-mono text-xs leading-5 text-white/85">
-            {createdApiKey.token}
-          </code>
+          <p className="mt-1 text-xs leading-5 text-black/45">
+            Copy these exact values into your application environment.
+          </p>
+
+          <pre className="mt-3 overflow-x-auto rounded-xl bg-[#10140f] p-3 font-mono text-xs leading-5 text-white/85">
+            <code>{environmentVariables}</code>
+          </pre>
         </section>
 
         <div className="mt-6 space-y-3">
           <GlassButton
-            label="Copy API key"
+            label="Copy environment variables"
             icon={Copy}
             onClick={() => {
-              void navigator.clipboard.writeText(createdApiKey.token);
+              void navigator.clipboard.writeText(environmentVariables);
             }}
             tone="black"
             size="large"
