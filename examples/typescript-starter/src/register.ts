@@ -28,4 +28,4 @@ const deployment = await cascade.registerDeployment({
   ],
 });
 
-console.log(`Registered deployment ${deployment.version} (${deployment.id})`);
+process.stdout.write(`Registered deployment ${deployment.version} (${deployment.id})\n`);
