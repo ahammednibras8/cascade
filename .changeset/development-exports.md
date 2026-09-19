@@ -1,6 +1,5 @@
 ---
-"@cascade/core": patch
-"@cascade/sdk": patch
+"@ahammednibras8/cascade": minor
 ---
 
-Expose source entrypoints under the development condition so workspace typechecking can resolve packages before build output exists.
+Publish the first public Cascade TypeScript SDK with typed task definitions, task triggering, deployment registration, idempotency keys, delayed runs and OpenTelemetry trace propagation.

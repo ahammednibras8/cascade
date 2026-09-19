@@ -1,4 +1,4 @@
-import { prisma } from "@cascade/database";
+import { Prisma, prisma } from "@cascade/database";
 import type { OidcProfile } from "./oidc.server";
 
 export class OidcIdentityLinkRequiredError extends Error {
@@ -14,8 +14,45 @@ type DashboardUser = {
   displayName: string | null;
 };
 
-async function ensurePersonalOrganization(user: DashboardUser) {
-  const organization = await prisma.organization.upsert({
+type DashboardUserTransaction = Prisma.TransactionClient;
+
+export type DashboardUserIdentitySummary = {
+  displayName: string | null;
+  email: string;
+  provider: string | null;
+};
+
+export async function getDashboardUserIdentitySummary(
+  userId: string,
+): Promise<DashboardUserIdentitySummary> {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: {
+      id: userId,
+    },
+    select: {
+      displayName: true,
+      email: true,
+      identities: {
+        select: {
+          provider: true,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+        take: 1,
+      },
+    },
+  });
+
+  return {
+    displayName: user.displayName,
+    email: user.email,
+    provider: user.identities[0]?.provider ?? null,
+  };
+}
+
+async function ensurePersonalOrganization(tx: DashboardUserTransaction, user: DashboardUser) {
+  const organization = await tx.organization.upsert({
     where: {
       slug: `personal-${user.id}`,
     },
@@ -29,14 +66,16 @@ async function ensurePersonalOrganization(user: DashboardUser) {
     },
   });
 
-  await prisma.organizationMember.upsert({
+  await tx.organizationMember.upsert({
     where: {
       organizationId_userId: {
         organizationId: organization.id,
         userId: user.id,
       },
     },
-    update: {},
+    update: {
+      role: "OWNER",
+    },
     create: {
       organizationId: organization.id,
       userId: user.id,
@@ -47,8 +86,11 @@ async function ensurePersonalOrganization(user: DashboardUser) {
   return user;
 }
 
-export async function findOrCreateOidcUser(profile: OidcProfile) {
-  const identity = await prisma.userIdentity.findUnique({
+async function findOrCreateOidcUserInTransaction(
+  tx: DashboardUserTransaction,
+  profile: OidcProfile,
+) {
+  const identity = await tx.userIdentity.findUnique({
     where: {
       provider_subject: {
         provider: profile.provider,
@@ -61,7 +103,7 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
   });
 
   if (identity) {
-    const emailOwner = await prisma.user.findUnique({
+    const emailOwner = await tx.user.findUnique({
       where: {
         email: profile.email,
       },
@@ -74,7 +116,7 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
       throw new OidcIdentityLinkRequiredError();
     }
 
-    const user = await prisma.user.update({
+    const user = await tx.user.update({
       where: {
         id: identity.userId,
       },
@@ -89,10 +131,10 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
       },
     });
 
-    return ensurePersonalOrganization(user);
+    return ensurePersonalOrganization(tx, user);
   }
 
-  const existingUser = await prisma.user.findUnique({
+  const existingUser = await tx.user.findUnique({
     where: {
       email: profile.email,
     },
@@ -105,7 +147,7 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
     throw new OidcIdentityLinkRequiredError();
   }
 
-  const user = await prisma.user.create({
+  const user = await tx.user.create({
     data: {
       email: profile.email,
       displayName: profile.displayName,
@@ -123,35 +165,61 @@ export async function findOrCreateOidcUser(profile: OidcProfile) {
     },
   });
 
-  return ensurePersonalOrganization(user);
+  return ensurePersonalOrganization(tx, user);
+}
+
+function isUniqueConstraintViolation(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
+}
+
+function provisionOidcUser(profile: OidcProfile) {
+  return prisma.$transaction((tx) => findOrCreateOidcUserInTransaction(tx, profile));
+}
+
+export async function findOrCreateOidcUser(profile: OidcProfile) {
+  try {
+    return await provisionOidcUser(profile);
+  } catch (error) {
+    if (!isUniqueConstraintViolation(error)) {
+      throw error;
+    }
+  }
+
+  try {
+    return await provisionOidcUser(profile);
+  } catch (error) {
+    if (error instanceof OidcIdentityLinkRequiredError || !isUniqueConstraintViolation(error)) {
+      throw error;
+    }
+
+    throw new OidcIdentityLinkRequiredError();
+  }
 }
 
 export async function findOrCreateDevDashboardUser() {
-  if (process.env["NODE_ENV"] === "production") {
-    throw new Error("DASHBOARD_AUTH_MODE=dev cannot be used in production");
-  }
-
   const email = process.env["DASHBOARD_DEV_AUTH_EMAIL"]?.trim() || "local-dashboard@example.test";
   const displayName =
     process.env["DASHBOARD_DEV_AUTH_DISPLAY_NAME"]?.trim() || "Local Dashboard User";
 
-  const user = await prisma.user.upsert({
-    where: {
-      email,
-    },
-    update: {
-      displayName,
-    },
-    create: {
-      email,
-      displayName,
-    },
-    select: {
-      id: true,
-      email: true,
-      displayName: true,
-    },
-  });
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.upsert({
+      where: {
+        email,
+      },
+      update: {
+        displayName,
+      },
+      create: {
+        email,
+        displayName,
+      },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+      },
+    });
 
-  return ensurePersonalOrganization(user);
+    return ensurePersonalOrganization(tx, user);
+  });
 }

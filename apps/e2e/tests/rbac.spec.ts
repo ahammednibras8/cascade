@@ -128,11 +128,14 @@ async function createViewerFixture() {
 }
 
 async function createViewerContext(browser: Browser, baseURL: string, userId: string) {
-  const { commitDashboardSession, createDashboardSession } =
+  const { commitDashboardSession, rotateDashboardSession } =
     await import("../../dashboard/app/lib/auth/dashboard-session.server.js");
 
-  const session = await createDashboardSession(userId);
-  const cookie = getCookieValue(await commitDashboardSession(session.token));
+  const session = await rotateDashboardSession(
+    new Request(new URL("/login", baseURL).toString()),
+    userId,
+  );
+  const cookie = getCookieValue(await commitDashboardSession(session));
 
   const context = await browser.newContext({
     baseURL,

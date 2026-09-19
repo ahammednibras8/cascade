@@ -6,6 +6,7 @@ apiSecret:
 
 dashboardSecret:
   existingSecret: ""
+  oidcClientSecretKey: OIDC_CLIENT_SECRET
 
 telemetry:
   enabled: false
@@ -31,6 +32,11 @@ api:
 dashboard:
   enabled: true
   replicaCount: 1
+  publicApiUrl: ""
+  oidc:
+    issuerUrl: ""
+    clientId: ""
+    redirectUri: ""
   image:
     repository: ghcr.io/ahammednibras8/cascade-dashboard
     tag: ""

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createCascadeClient, defineTask } from "@cascade/sdk";
+import { createCascadeClient, defineTask } from "@ahammednibras8/cascade";
 import { randomUUID } from "node:crypto";
 import { getDashboardTestOrganization } from "./support/dashboard-environment.js";
 import { createExecutionConfig } from "./support/execution-config.js";

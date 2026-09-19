@@ -5,14 +5,7 @@ import {
   getDashboardWorkspaceContext,
 } from "~/lib/workspace/dashboard-workspace.server";
 import { redirect } from "react-router";
-
-function normalizeReturnTo(value: FormDataEntryValue | null) {
-  if (typeof value === "string" && value.startsWith("/") && !value.startsWith("//")) {
-    return value;
-  }
-
-  return "/dashboard";
-}
+import { getSafeDashboardReturnTo } from "~/lib/auth/return-to.server";
 
 export async function action({ request }: Route.ActionArgs) {
   const session = await requireDashboardUser(request);
@@ -37,7 +30,7 @@ export async function action({ request }: Route.ActionArgs) {
     });
   }
 
-  return redirect(normalizeReturnTo(formData.get("returnTo")), {
+  return redirect(getSafeDashboardReturnTo(formData.get("returnTo")), {
     headers: {
       "Set-Cookie": await commitActiveDashboardEnvironment(environment.id),
     },

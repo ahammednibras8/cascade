@@ -1,44 +1,53 @@
-import { startOidcLogin } from "~/lib/auth/oidc.server";
+import { clearOidcLoginTransaction, startOidcLogin } from "~/lib/auth/oidc.server";
 import type { Route } from "./+types/login";
 import { redirect } from "react-router";
 import { findOrCreateDevDashboardUser } from "~/lib/auth/dashboard-user.server";
 import {
   commitDashboardSession,
-  createDashboardSession,
+  rotateDashboardSession,
 } from "~/lib/auth/dashboard-session.server";
-
-function isDevAuthEnabled() {
-  return process.env["DASHBOARD_AUTH_MODE"]?.trim() === "dev";
-}
-
-function normalizeReturnTo(value: string | null) {
-  if (value?.startsWith("/") && !value.startsWith("//")) {
-    return value;
-  }
-
-  return "/dashboard";
-}
+import { resolvePostAuthenticationRedirect } from "~/lib/auth/post-authentication.server";
+import { isDevDashboardAuthEnabled } from "~/lib/auth/dashboard-auth-mode.server";
+import { getDashboardLoginErrorCode } from "~/lib/auth/login-error.server";
+import { getSafeDashboardReturnTo } from "~/lib/auth/return-to.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
-  const returnTo = url.searchParams.get("returnTo");
+  const returnTo = getSafeDashboardReturnTo(url.searchParams.get("returnTo"));
+  const selectAccount = url.searchParams.get("selectAccount") === "true";
 
-  if (isDevAuthEnabled()) {
+  if (isDevDashboardAuthEnabled()) {
     const user = await findOrCreateDevDashboardUser();
-    const session = await createDashboardSession(user.id);
+    const session = await rotateDashboardSession(request, user.id);
+    const destination = await resolvePostAuthenticationRedirect(user.id, returnTo);
 
-    return redirect(normalizeReturnTo(returnTo), {
+    return redirect(destination, {
       headers: {
-        "Set-Cookie": await commitDashboardSession(session.token),
+        "Set-Cookie": await commitDashboardSession(session),
       },
     });
   }
 
-  const login = await startOidcLogin(returnTo);
+  try {
+    const login = await startOidcLogin(returnTo, {
+      selectAccount,
+    });
 
-  return redirect(login.authorizationUrl, {
-    headers: {
-      "Set-Cookie": login.setCookie,
-    },
-  });
+    return redirect(login.authorizationUrl, {
+      headers: {
+        "Set-Cookie": login.setCookie,
+      },
+    });
+  } catch (error) {
+    const searchParams = new URLSearchParams({
+      error: getDashboardLoginErrorCode(error),
+      returnTo,
+    });
+
+    return redirect(`/login?${searchParams.toString()}`, {
+      headers: {
+        "Set-Cookie": await clearOidcLoginTransaction(),
+      },
+    });
+  }
 }

@@ -1,0 +1,151 @@
+import { ArrowRight, Copy } from "lucide-react";
+import { useFetcher } from "react-router";
+import GlassButton from "~/components/landing/GlassButton";
+import type { ApiKeyActionData } from "~/features/api-keys/types";
+
+type ActivationCredentialActionData =
+  | (Extract<ApiKeyActionData, { ok: true; intent: "create" }> & {
+      apiUrl: string;
+    })
+  | Extract<ApiKeyActionData, { ok: false }>;
+
+export default function ActivationCredentialState({
+  checking,
+  onCheck,
+}: {
+  checking: boolean;
+  onCheck: () => void;
+}) {
+  const fetcher = useFetcher<ActivationCredentialActionData>();
+  const isCreating =
+    fetcher.state !== "idle" && fetcher.formData?.get("intent") === "create_activation_key";
+
+  const createdApiKey = fetcher.data?.ok && fetcher.data.intent === "create" ? fetcher.data : null;
+
+  const actionError = fetcher.data && !fetcher.data.ok ? fetcher.data.error.message : null;
+
+  if (createdApiKey) {
+    const environmentVariables = [
+      `CASCADE_API_URL=${createdApiKey.apiUrl}`,
+      `CASCADE_API_KEY=${createdApiKey.token}`,
+    ].join("\n");
+
+    return (
+      <>
+        <h1 className="mt-14 text-4xl leading-tight font-medium tracking-[-0.035em] text-[#05050c]">
+          Save your integration key
+        </h1>
+
+        <p className="mt-3 text-sm leading-6 text-black/50">
+          Cascade will show these values only once. Add them to your local environment or secret
+          manager before continuing.
+        </p>
+
+        <section
+          aria-labelledby="activation-environment-heading"
+          className="mt-6 rounded-2xl border border-black/10 bg-white/70 p-4"
+        >
+          <h2 id="activation-environment-heading" className="text-sm font-semibold text-[#05050c]">
+            Environment variables
+          </h2>
+
+          <p className="mt-1 text-xs leading-5 text-black/45">
+            Copy these exact values into your application environment.
+          </p>
+
+          <pre className="mt-3 overflow-x-auto rounded-xl bg-[#10140f] p-3 font-mono text-xs leading-5 text-white/85">
+            <code>{environmentVariables}</code>
+          </pre>
+        </section>
+
+        <div className="mt-6 space-y-3">
+          <GlassButton
+            label="Copy environment variables"
+            icon={Copy}
+            onClick={() => {
+              void navigator.clipboard.writeText(environmentVariables);
+            }}
+            tone="black"
+            size="large"
+            fullWidth
+          />
+
+          <GlassButton
+            label={checking ? "Checking..." : "I saved the key"}
+            icon={ArrowRight}
+            onClick={onCheck}
+            disabled={checking}
+            tone="white"
+            size="large"
+            fullWidth
+          />
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <h1 className="mt-14 text-4xl leading-tight font-medium tracking-[-0.035em] text-[#05050c]">
+        Create an integration key
+      </h1>
+
+      <p className="mt-3 text-sm leading-6 text-black/50">
+        Create a least-privilege key for registering deployments, triggering tasks, and reading run
+        status.
+      </p>
+
+      <fetcher.Form method="post" action="/login" className="mt-8">
+        <input type="hidden" name="intent" value="create_activation_key" />
+
+        <label htmlFor="activation-key-name" className="text-sm font-medium text-black/65">
+          Key name
+        </label>
+
+        <input
+          id="activation-key-name"
+          name="name"
+          type="text"
+          defaultValue="Cascade onboarding"
+          required
+          maxLength={120}
+          autoComplete="off"
+          className="mt-2 h-12 w-full rounded-2xl border border-black/10 bg-white/70 px-4 text-sm text-[#05050c] outline-none transition focus:border-black/30 focus:bg-white"
+        />
+
+        <div className="mt-5 rounded-2xl border border-black/10 bg-white/45 p-4">
+          <p className="text-xs font-semibold tracking-wide text-black/45 uppercase">
+            Included permissions
+          </p>
+
+          <ul className="mt-3 space-y-2 text-sm text-black/60">
+            <li>Register deployments</li>
+            <li>Trigger tasks</li>
+            <li>Read run status</li>
+          </ul>
+        </div>
+
+        {actionError ? (
+          <p
+            role="alert"
+            className="mt-5 rounded-2xl border border-red-900/10 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            {actionError}
+          </p>
+        ) : null}
+
+        <div className="mt-6">
+          <GlassButton
+            label={isCreating ? "Creating API key…" : "Create API key"}
+            icon={ArrowRight}
+            type="submit"
+            disabled={isCreating}
+            tone="black"
+            size="large"
+            fullWidth
+          />
+        </div>
+      </fetcher.Form>
+    </>
+  );
+}

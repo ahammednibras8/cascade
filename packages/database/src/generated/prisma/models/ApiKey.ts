@@ -529,10 +529,6 @@ export type ApiKeyUncheckedCreateNestedOneWithoutRotatedFromInput = {
   connect?: Prisma.ApiKeyWhereUniqueInput
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type ApiKeyUpdatescopesInput = {
   set?: $Enums.ApiKeyScope[]
   push?: $Enums.ApiKeyScope | $Enums.ApiKeyScope[]

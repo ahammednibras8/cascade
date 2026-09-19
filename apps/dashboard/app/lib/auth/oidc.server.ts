@@ -1,5 +1,12 @@
 import * as oidc from "openid-client";
 import { createCookie } from "react-router";
+import { getOidcConfiguration, type OidcConfiguration } from "./oidc-config.server";
+import { getSafeDashboardReturnTo } from "./return-to.server";
+import type { DashboardLoginErrorCode } from "./login-error";
+
+const MAX_SUBJECT_LENGTH = 255;
+const MAX_EMAIL_LENGTH = 254;
+const MAX_DISPLAY_NAME_LENGTH = 200;
 
 type OidcTransaction = {
   state: string;
@@ -20,17 +27,119 @@ type OidcStartResult = {
   setCookie: string;
 };
 
+type OidcLoginOptions = {
+  selectAccount?: boolean;
+};
+
 type OidcCompletionResult = {
   profile: OidcProfile;
   returnTo: string;
   clearCookie: string;
 };
 
+export type OidcAuthenticationErrorCode = Exclude<
+  DashboardLoginErrorCode,
+  "identity_link_required" | "authentication_failed"
+>;
+
 export class OidcAuthenticationError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(
+    readonly code: OidcAuthenticationErrorCode,
+    message: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
     this.name = "OidcAuthenticationError";
   }
+}
+
+const RESTARTABLE_AUTHORIZATION_ERRORS = new Set([
+  "login_required",
+  "interaction_required",
+  "consent_required",
+  "account_selection_required",
+]);
+
+const TEMPORARY_PROVIDER_ERRORS = new Set(["server_error", "temporarily_unavailable"]);
+
+function throwMappedProviderError(error: unknown): never {
+  if (error instanceof OidcAuthenticationError) {
+    throw error;
+  }
+
+  if (error instanceof oidc.AuthorizationResponseError) {
+    if (error.error === "access_denied") {
+      throw new OidcAuthenticationError(
+        "sign_in_cancelled",
+        "The identity provider denied the authorization request",
+        { cause: error },
+      );
+    }
+
+    if (RESTARTABLE_AUTHORIZATION_ERRORS.has(error.error)) {
+      throw new OidcAuthenticationError(
+        "sign_in_expired",
+        "The identity provider requires a new sign-in attempt",
+        { cause: error },
+      );
+    }
+
+    if (TEMPORARY_PROVIDER_ERRORS.has(error.error)) {
+      throw new OidcAuthenticationError(
+        "provider_unavailable",
+        "This identity provider is temporarily unavailable",
+        { cause: error },
+      );
+    }
+
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "The identity provider returned an invalid authorization response",
+      { cause: error },
+    );
+  }
+
+  if (error instanceof oidc.ResponseBodyError) {
+    if (error.error === "invalid_grant") {
+      throw new OidcAuthenticationError(
+        "sign_in_expired",
+        "The authorization code is invalid, expired, or already used",
+        { cause: error },
+      );
+    }
+
+    if (TEMPORARY_PROVIDER_ERRORS.has(error.error)) {
+      throw new OidcAuthenticationError(
+        "provider_unavailable",
+        "The identity provider is temporarily unavailable",
+        { cause: error },
+      );
+    }
+
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "The identity provider rejected the token request",
+      { cause: error },
+    );
+  }
+
+  if (error instanceof oidc.ClientError) {
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "The identity provider response failed protocol validation",
+      { cause: error },
+    );
+  }
+
+  if (error instanceof TypeError) {
+    throw new OidcAuthenticationError(
+      "provider_unavailable",
+      "The identity provider could not be reached",
+      { cause: error },
+    );
+  }
+
+  throw error;
 }
 
 function getRequiredEnvironmentVariable(name: string) {
@@ -53,15 +162,6 @@ function getDashboardSessionSecret() {
   return secret;
 }
 
-function getOidcConfiguration() {
-  return {
-    issueUrl: getRequiredEnvironmentVariable("OIDC_ISSUER_URL"),
-    clientId: getRequiredEnvironmentVariable("OIDC_CLIENT_ID"),
-    clientSecret: getRequiredEnvironmentVariable("OIDC_CLIENT_SECRET"),
-    redirectUri: getRequiredEnvironmentVariable("OIDC_REDIRECT_URI"),
-  };
-}
-
 function getOidcTransactionCookie() {
   const production = process.env["NODE_ENV"] === "production";
 
@@ -81,35 +181,103 @@ export async function clearOidcLoginTransaction() {
   });
 }
 
-function normalizeReturnTo(value: string | null | undefined) {
-  if (value?.startsWith("/") && !value.startsWith("//")) {
-    return value;
+async function discoverOidcProvider(config: OidcConfiguration) {
+  try {
+    return await oidc.discovery(new URL(config.issuerUrl), config.clientId, config.clientSecret);
+  } catch (error) {
+    throw new OidcAuthenticationError(
+      "provider_unavailable",
+      "The identity provider configuration could not be loaded",
+      { cause: error },
+    );
   }
-
-  return "/dashboard";
 }
 
-async function discoverOidcProvider() {
-  const config = getOidcConfiguration();
-
-  return oidc.discovery(new URL(config.issueUrl), config.clientId, config.clientSecret);
+async function exchangeAuthorizationCode(
+  provider: oidc.Configuration,
+  callbackUrl: URL,
+  transaction: OidcTransaction,
+) {
+  try {
+    return await oidc.authorizationCodeGrant(provider, callbackUrl, {
+      pkceCodeVerifier: transaction.codeVerifier,
+      expectedState: transaction.state,
+      expectedNonce: transaction.nonce,
+      idTokenExpected: true,
+    });
+  } catch (error) {
+    throwMappedProviderError(error);
+  }
 }
 
-function getRequiredClaim(claims: Record<string, unknown>, name: string) {
+function getRequiredStringClaim(
+  claims: Record<string, unknown>,
+  name: string,
+  maximumLength: number,
+) {
   const value = claims[name];
 
-  if (typeof value !== "string" || !value) {
-    throw new OidcAuthenticationError(`OIDC ID token is missing required ${name} claim`);
+  if (typeof value !== "string" || value.trim().length === 0 || value.length > maximumLength) {
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      `OIDC ID token contains an invalid ${name} claim`,
+    );
   }
 
   return value;
 }
 
+function getVerifiedEmailClaim(claims: Record<string, unknown>) {
+  const email = getRequiredStringClaim(claims, "email", MAX_EMAIL_LENGTH).trim().toLowerCase();
+
+  const emailParts = email.split("@");
+
+  if (emailParts.length !== 2 || !emailParts[0] || !emailParts[1] || /\s/u.test(email)) {
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "OIDC ID token contains an invalid email claim",
+    );
+  }
+
+  if (claims["email_verified"] !== true) {
+    throw new OidcAuthenticationError("email_not_verified", "OIDC identity email is not verified");
+  }
+
+  return email;
+}
+
+function getDisplayNameClaim(claims: Record<string, unknown>) {
+  const value = claims["name"];
+
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "OIDC ID token contains an invalid name claim",
+    );
+  }
+
+  const displayName = value.trim();
+
+  if (displayName.length === 0 || displayName.length > MAX_DISPLAY_NAME_LENGTH) {
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "OIDC ID token contains an invalid name claim",
+    );
+  }
+
+  return displayName;
+}
+
 export async function startOidcLogin(
   returnTo: string | null | undefined,
+  options: OidcLoginOptions = {},
 ): Promise<OidcStartResult> {
-  const provider = await discoverOidcProvider();
-  const { redirectUri } = getOidcConfiguration();
+  const config = getOidcConfiguration();
+  const provider = await discoverOidcProvider(config);
 
   const state = oidc.randomState();
   const nonce = oidc.randomNonce();
@@ -117,20 +285,21 @@ export async function startOidcLogin(
   const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier);
 
   const authorizationUrl = oidc.buildAuthorizationUrl(provider, {
-    redirect_uri: redirectUri,
+    redirect_uri: config.redirectUri,
     response_type: "code",
     scope: "openid profile email",
     state,
     nonce,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
+    ...(options.selectAccount ? { prompt: "select_account" } : {}),
   });
 
   const transaction: OidcTransaction = {
     state,
     nonce,
     codeVerifier,
-    returnTo: normalizeReturnTo(returnTo),
+    returnTo: getSafeDashboardReturnTo(returnTo),
   };
 
   return {
@@ -143,35 +312,37 @@ export async function completeOidcLogin(request: Request): Promise<OidcCompletio
   const transaction = await getOidcTransactionCookie().parse(request.headers.get("Cookie"));
 
   if (!isOidcTransaction(transaction)) {
-    throw new OidcAuthenticationError("OIDC login transaction is missing or invalid");
+    throw new OidcAuthenticationError(
+      "sign_in_expired",
+      "OIDC login transaction is missing or invalid",
+    );
   }
 
-  const provider = await discoverOidcProvider();
+  const config = getOidcConfiguration();
+  const provider = await discoverOidcProvider(config);
 
-  const tokens = await oidc.authorizationCodeGrant(provider, new URL(request.url), {
-    pkceCodeVerifier: transaction.codeVerifier,
-    expectedState: transaction.state,
-    expectedNonce: transaction.nonce,
-    idTokenExpected: true,
-  });
+  const tokens = await exchangeAuthorizationCode(provider, new URL(request.url), transaction);
 
   const claims = tokens.claims();
 
   if (!claims) {
-    throw new OidcAuthenticationError("OIDC provider did not return ID token claims");
+    throw new OidcAuthenticationError(
+      "invalid_identity",
+      "OIDC provider did not return ID token claims",
+    );
   }
 
   const record = claims as Record<string, unknown>;
-  const subject = getRequiredClaim(record, "sub");
-  const email = getRequiredClaim(record, "email");
-  const name = record["name"];
+  const subject = getRequiredStringClaim(record, "sub", MAX_SUBJECT_LENGTH);
+  const email = getVerifiedEmailClaim(record);
+  const displayName = getDisplayNameClaim(record);
 
   return {
     profile: {
-      provider: getOidcConfiguration().issueUrl,
+      provider: config.issuerUrl,
       subject,
       email,
-      displayName: typeof name === "string" && name ? name : null,
+      displayName,
     },
     returnTo: transaction.returnTo,
     clearCookie: await clearOidcLoginTransaction(),

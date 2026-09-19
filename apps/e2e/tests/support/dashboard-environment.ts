@@ -21,11 +21,12 @@ export async function getDashboardTestEnvironment() {
 
   const project = await prisma.project.upsert({
     where: {
-      slug: "e2e-dashboard",
+      organizationId_slug: {
+        organizationId: organization.id,
+        slug: "e2e-dashboard",
+      },
     },
-    update: {
-      organizationId: organization.id,
-    },
+    update: {},
     create: {
       organizationId: organization.id,
       slug: "e2e-dashboard",

@@ -240,3 +240,114 @@ it("throws CascadeApiError for API errors", async () => {
     }),
   ).rejects.toBeInstanceOf(CascadeApiError);
 });
+
+it("registers a deployment from SDK task definitions", async () => {
+  const fetchMock = vi.fn<typeof fetch>(
+    async () =>
+      new Response(
+        JSON.stringify({
+          deployment: {
+            id: "deployment-1",
+            environmentId: "environment-1",
+            version: "hello-v1",
+            image: "ghcr.io/acme/cascade-worker:hello-v1",
+            status: "ACTIVE",
+            tasks: [
+              {
+                id: "task-1",
+                slug: "hello",
+                name: "Hello",
+              },
+            ],
+            createdAt: "2026-01-01T00:00:00.000Z",
+          },
+        }),
+        {
+          status: 201,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      ),
+  );
+
+  const client = createCascadeClient({
+    baseUrl: "http://localhost:3001",
+    apiKey: "csc_test_key",
+    fetch: fetchMock,
+  });
+
+  const hello = defineTask({
+    id: "hello",
+    timeoutMs: 30_000,
+    retry: {
+      maxAttempts: 3,
+      delayMs: 1_000,
+      exponentialBackoff: true,
+    },
+    queue: {
+      name: "hello",
+      concurrencyLimit: 2,
+    },
+    run() {
+      return {
+        ok: true,
+      };
+    },
+  });
+
+  await expect(
+    client.registerDeployment({
+      version: "hello-v1",
+      image: "ghcr.io/acme/cascade-worker:hello-v1",
+      tasks: [
+        {
+          task: hello,
+          name: "Hello",
+          description: "Returns a greeting",
+        },
+      ],
+    }),
+  ).resolves.toMatchObject({
+    id: "deployment-1",
+    version: "hello-v1",
+  });
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    "http://localhost:3001/api/deployments",
+    expect.objectContaining({
+      method: "POST",
+      headers: expect.objectContaining({
+        Authorization: "Bearer csc_test_key",
+        "Content-Type": "application/json",
+      }),
+    }),
+  );
+
+  const requestInit = fetchMock.mock.calls[0]?.[1];
+
+  expect(JSON.parse(requestInit?.body as string)).toEqual({
+    version: "hello-v1",
+    image: "ghcr.io/acme/cascade-worker:hello-v1",
+    tasks: [
+      {
+        slug: "hello",
+        name: "Hello",
+        description: "Returns a greeting",
+        executionConfig: {
+          schemaVersion: 1,
+          timeoutMs: 30_000,
+          retry: {
+            maxAttempts: 3,
+            delayMs: 1_000,
+            exponentialBackoff: true,
+          },
+          queue: {
+            name: "hello",
+            concurrencyLimit: 2,
+          },
+        },
+      },
+    ],
+  });
+});

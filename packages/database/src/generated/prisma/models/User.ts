@@ -185,6 +185,7 @@ export type UserWhereInput = {
   identities?: Prisma.UserIdentityListRelationFilter
   memberships?: Prisma.OrganizationMemberListRelationFilter
   sessions?: Prisma.DashboardSessionListRelationFilter
+  onboardingRecords?: Prisma.DashboardOnboardingListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -196,6 +197,7 @@ export type UserOrderByWithRelationInput = {
   identities?: Prisma.UserIdentityOrderByRelationAggregateInput
   memberships?: Prisma.OrganizationMemberOrderByRelationAggregateInput
   sessions?: Prisma.DashboardSessionOrderByRelationAggregateInput
+  onboardingRecords?: Prisma.DashboardOnboardingOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -210,6 +212,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   identities?: Prisma.UserIdentityListRelationFilter
   memberships?: Prisma.OrganizationMemberListRelationFilter
   sessions?: Prisma.DashboardSessionListRelationFilter
+  onboardingRecords?: Prisma.DashboardOnboardingListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -243,6 +246,7 @@ export type UserCreateInput = {
   identities?: Prisma.UserIdentityCreateNestedManyWithoutUserInput
   memberships?: Prisma.OrganizationMemberCreateNestedManyWithoutUserInput
   sessions?: Prisma.DashboardSessionCreateNestedManyWithoutUserInput
+  onboardingRecords?: Prisma.DashboardOnboardingCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -254,6 +258,7 @@ export type UserUncheckedCreateInput = {
   identities?: Prisma.UserIdentityUncheckedCreateNestedManyWithoutUserInput
   memberships?: Prisma.OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.DashboardSessionUncheckedCreateNestedManyWithoutUserInput
+  onboardingRecords?: Prisma.DashboardOnboardingUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -265,6 +270,7 @@ export type UserUpdateInput = {
   identities?: Prisma.UserIdentityUpdateManyWithoutUserNestedInput
   memberships?: Prisma.OrganizationMemberUpdateManyWithoutUserNestedInput
   sessions?: Prisma.DashboardSessionUpdateManyWithoutUserNestedInput
+  onboardingRecords?: Prisma.DashboardOnboardingUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -276,6 +282,7 @@ export type UserUncheckedUpdateInput = {
   identities?: Prisma.UserIdentityUncheckedUpdateManyWithoutUserNestedInput
   memberships?: Prisma.OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.DashboardSessionUncheckedUpdateManyWithoutUserNestedInput
+  onboardingRecords?: Prisma.DashboardOnboardingUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -371,6 +378,20 @@ export type UserUpdateOneRequiredWithoutSessionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSessionsInput, Prisma.UserUpdateWithoutSessionsInput>, Prisma.UserUncheckedUpdateWithoutSessionsInput>
 }
 
+export type UserCreateNestedOneWithoutOnboardingRecordsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutOnboardingRecordsInput, Prisma.UserUncheckedCreateWithoutOnboardingRecordsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutOnboardingRecordsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutOnboardingRecordsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutOnboardingRecordsInput, Prisma.UserUncheckedCreateWithoutOnboardingRecordsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutOnboardingRecordsInput
+  upsert?: Prisma.UserUpsertWithoutOnboardingRecordsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutOnboardingRecordsInput, Prisma.UserUpdateWithoutOnboardingRecordsInput>, Prisma.UserUncheckedUpdateWithoutOnboardingRecordsInput>
+}
+
 export type UserCreateNestedOneWithoutMembershipsInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutMembershipsInput, Prisma.UserUncheckedCreateWithoutMembershipsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutMembershipsInput
@@ -393,6 +414,7 @@ export type UserCreateWithoutIdentitiesInput = {
   updatedAt?: Date | string
   memberships?: Prisma.OrganizationMemberCreateNestedManyWithoutUserInput
   sessions?: Prisma.DashboardSessionCreateNestedManyWithoutUserInput
+  onboardingRecords?: Prisma.DashboardOnboardingCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutIdentitiesInput = {
@@ -403,6 +425,7 @@ export type UserUncheckedCreateWithoutIdentitiesInput = {
   updatedAt?: Date | string
   memberships?: Prisma.OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.DashboardSessionUncheckedCreateNestedManyWithoutUserInput
+  onboardingRecords?: Prisma.DashboardOnboardingUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutIdentitiesInput = {
@@ -429,6 +452,7 @@ export type UserUpdateWithoutIdentitiesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.OrganizationMemberUpdateManyWithoutUserNestedInput
   sessions?: Prisma.DashboardSessionUpdateManyWithoutUserNestedInput
+  onboardingRecords?: Prisma.DashboardOnboardingUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutIdentitiesInput = {
@@ -439,6 +463,7 @@ export type UserUncheckedUpdateWithoutIdentitiesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.DashboardSessionUncheckedUpdateManyWithoutUserNestedInput
+  onboardingRecords?: Prisma.DashboardOnboardingUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSessionsInput = {
@@ -449,6 +474,7 @@ export type UserCreateWithoutSessionsInput = {
   updatedAt?: Date | string
   identities?: Prisma.UserIdentityCreateNestedManyWithoutUserInput
   memberships?: Prisma.OrganizationMemberCreateNestedManyWithoutUserInput
+  onboardingRecords?: Prisma.DashboardOnboardingCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSessionsInput = {
@@ -459,6 +485,7 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   updatedAt?: Date | string
   identities?: Prisma.UserIdentityUncheckedCreateNestedManyWithoutUserInput
   memberships?: Prisma.OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
+  onboardingRecords?: Prisma.DashboardOnboardingUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSessionsInput = {
@@ -485,6 +512,7 @@ export type UserUpdateWithoutSessionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.UserIdentityUpdateManyWithoutUserNestedInput
   memberships?: Prisma.OrganizationMemberUpdateManyWithoutUserNestedInput
+  onboardingRecords?: Prisma.DashboardOnboardingUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -495,6 +523,67 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.UserIdentityUncheckedUpdateManyWithoutUserNestedInput
   memberships?: Prisma.OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
+  onboardingRecords?: Prisma.DashboardOnboardingUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutOnboardingRecordsInput = {
+  id?: string
+  email: string
+  displayName?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.UserIdentityCreateNestedManyWithoutUserInput
+  memberships?: Prisma.OrganizationMemberCreateNestedManyWithoutUserInput
+  sessions?: Prisma.DashboardSessionCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutOnboardingRecordsInput = {
+  id?: string
+  email: string
+  displayName?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.UserIdentityUncheckedCreateNestedManyWithoutUserInput
+  memberships?: Prisma.OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.DashboardSessionUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutOnboardingRecordsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutOnboardingRecordsInput, Prisma.UserUncheckedCreateWithoutOnboardingRecordsInput>
+}
+
+export type UserUpsertWithoutOnboardingRecordsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutOnboardingRecordsInput, Prisma.UserUncheckedUpdateWithoutOnboardingRecordsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutOnboardingRecordsInput, Prisma.UserUncheckedCreateWithoutOnboardingRecordsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutOnboardingRecordsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutOnboardingRecordsInput, Prisma.UserUncheckedUpdateWithoutOnboardingRecordsInput>
+}
+
+export type UserUpdateWithoutOnboardingRecordsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.UserIdentityUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.OrganizationMemberUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.DashboardSessionUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutOnboardingRecordsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.UserIdentityUncheckedUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.DashboardSessionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutMembershipsInput = {
@@ -505,6 +594,7 @@ export type UserCreateWithoutMembershipsInput = {
   updatedAt?: Date | string
   identities?: Prisma.UserIdentityCreateNestedManyWithoutUserInput
   sessions?: Prisma.DashboardSessionCreateNestedManyWithoutUserInput
+  onboardingRecords?: Prisma.DashboardOnboardingCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutMembershipsInput = {
@@ -515,6 +605,7 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   updatedAt?: Date | string
   identities?: Prisma.UserIdentityUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.DashboardSessionUncheckedCreateNestedManyWithoutUserInput
+  onboardingRecords?: Prisma.DashboardOnboardingUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutMembershipsInput = {
@@ -541,6 +632,7 @@ export type UserUpdateWithoutMembershipsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.UserIdentityUpdateManyWithoutUserNestedInput
   sessions?: Prisma.DashboardSessionUpdateManyWithoutUserNestedInput
+  onboardingRecords?: Prisma.DashboardOnboardingUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutMembershipsInput = {
@@ -551,6 +643,7 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.UserIdentityUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.DashboardSessionUncheckedUpdateManyWithoutUserNestedInput
+  onboardingRecords?: Prisma.DashboardOnboardingUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -562,12 +655,14 @@ export type UserCountOutputType = {
   identities: number
   memberships: number
   sessions: number
+  onboardingRecords: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   identities?: boolean | UserCountOutputTypeCountIdentitiesArgs
   memberships?: boolean | UserCountOutputTypeCountMembershipsArgs
   sessions?: boolean | UserCountOutputTypeCountSessionsArgs
+  onboardingRecords?: boolean | UserCountOutputTypeCountOnboardingRecordsArgs
 }
 
 /**
@@ -601,6 +696,13 @@ export type UserCountOutputTypeCountSessionsArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.DashboardSessionWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountOnboardingRecordsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DashboardOnboardingWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -611,6 +713,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   identities?: boolean | Prisma.User$identitiesArgs<ExtArgs>
   memberships?: boolean | Prisma.User$membershipsArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
+  onboardingRecords?: boolean | Prisma.User$onboardingRecordsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -643,6 +746,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   identities?: boolean | Prisma.User$identitiesArgs<ExtArgs>
   memberships?: boolean | Prisma.User$membershipsArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
+  onboardingRecords?: boolean | Prisma.User$onboardingRecordsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -654,6 +758,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     identities: Prisma.$UserIdentityPayload<ExtArgs>[]
     memberships: Prisma.$OrganizationMemberPayload<ExtArgs>[]
     sessions: Prisma.$DashboardSessionPayload<ExtArgs>[]
+    onboardingRecords: Prisma.$DashboardOnboardingPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1058,6 +1163,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   identities<T extends Prisma.User$identitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$identitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserIdentityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   memberships<T extends Prisma.User$membershipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$membershipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrganizationMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sessions<T extends Prisma.User$sessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DashboardSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  onboardingRecords<T extends Prisma.User$onboardingRecordsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$onboardingRecordsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DashboardOnboardingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1554,6 +1660,30 @@ export type User$sessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.DashboardSessionScalarFieldEnum | Prisma.DashboardSessionScalarFieldEnum[]
+}
+
+/**
+ * User.onboardingRecords
+ */
+export type User$onboardingRecordsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DashboardOnboarding
+   */
+  select?: Prisma.DashboardOnboardingSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DashboardOnboarding
+   */
+  omit?: Prisma.DashboardOnboardingOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DashboardOnboardingInclude<ExtArgs> | null
+  where?: Prisma.DashboardOnboardingWhereInput
+  orderBy?: Prisma.DashboardOnboardingOrderByWithRelationInput | Prisma.DashboardOnboardingOrderByWithRelationInput[]
+  cursor?: Prisma.DashboardOnboardingWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DashboardOnboardingScalarFieldEnum | Prisma.DashboardOnboardingScalarFieldEnum[]
 }
 
 /**

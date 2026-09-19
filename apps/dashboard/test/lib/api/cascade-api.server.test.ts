@@ -8,10 +8,11 @@ vi.mock("../../../app/lib/auth/dashboard-api-authorization.server.js", () => ({
   createDashboardApiAuthorizationForRequest,
 }));
 
-const { cascadeDashboardApiRequest, cascadeDashboardApiStreamRequest } =
+const { cascadeDashboardApiRequest, cascadeDashboardApiStreamRequest, getCascadePublicApiUrl } =
   await import("../../../app/lib/api/cascade-api.server.js");
 
 const originalApiUrl = process.env["CASCADE_API_URL"];
+const originalPublicApiUrl = process.env["CASCADE_PUBLIC_API_URL"];
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -123,5 +124,28 @@ describe("cascadeDashboardApiStreamRequest", () => {
       },
     });
     expect(fetchMock.mock.calls[0]?.[1]?.headers).not.toHaveProperty("Authorization");
+  });
+});
+
+describe("getCascadePublicApiUrl", () => {
+  afterEach(() => {
+    if (originalPublicApiUrl === undefined) {
+      delete process.env["CASCADE_PUBLIC_API_URL"];
+      return;
+    }
+
+    process.env["CASCADE_PUBLIC_API_URL"] = originalPublicApiUrl;
+  });
+
+  it("requires the public API URL", () => {
+    delete process.env["CASCADE_PUBLIC_API_URL"];
+
+    expect(() => getCascadePublicApiUrl()).toThrow("CASCADE_PUBLIC_API_URL is required");
+  });
+
+  it("removes a trailing slash from the public API URL", () => {
+    process.env["CASCADE_PUBLIC_API_URL"] = "https://api.cascade.test/";
+
+    expect(getCascadePublicApiUrl()).toBe("https://api.cascade.test");
   });
 });

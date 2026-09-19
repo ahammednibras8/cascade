@@ -12,9 +12,9 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
+    "@ahammednibras8/cascade": "workspace:*",
     "@cascade/dashboard": "workspace:*",
     "@cascade/database": "workspace:*",
-    "@cascade/sdk": "workspace:*",
     "@playwright/test": "1.61.1"
   }
 }

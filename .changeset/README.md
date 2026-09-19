@@ -4,8 +4,7 @@ This repo uses Changesets only for publishable packages.
 
 Currently versioned packages:
 
-- `@cascade/core`
-- `@cascade/sdk`
+- `@ahammednibras8/cascade`
 
 Private apps, docs, test packages, and infrastructure packages are ignored in
 `.changeset/config.json`. Changes to those packages do not need a changeset.

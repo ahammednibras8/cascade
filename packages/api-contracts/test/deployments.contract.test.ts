@@ -5,6 +5,7 @@ import {
   ListDeploymentsResponseSchema,
   RollbackDeploymentResponseSchema,
   apiContracts,
+  CreateDeploymentResponseSchema,
 } from "../src/index.js";
 
 describe("deployment API contracts", () => {
@@ -34,6 +35,12 @@ describe("deployment API contracts", () => {
       kind: "mutation",
       retrySafety: "unsafe",
     });
+    expect(apiContracts.createDeployment).toMatchObject({
+      method: "POST",
+      path: "/api/deployments",
+      kind: "mutation",
+      retrySafety: "unsafe",
+    });
   });
 
   it("parses deployment list, detail, deactivate, and rollback responses", () => {
@@ -48,6 +55,9 @@ describe("deployment API contracts", () => {
     ).not.toThrow();
     expect(() =>
       RollbackDeploymentResponseSchema.parse(createRollbackDeploymentResponse()),
+    ).not.toThrow();
+    expect(() =>
+      CreateDeploymentResponseSchema.parse(createCreateDeploymentResponse()),
     ).not.toThrow();
   });
 });
@@ -133,6 +143,26 @@ function createExecutionConfig() {
     queue: {
       name: "default",
       concurrencyLimit: 2,
+    },
+  };
+}
+
+function createCreateDeploymentResponse() {
+  return {
+    deployment: {
+      id: "deployment-1",
+      environmentId: "environment-1",
+      version: "v1",
+      image: "ghcr.io/cascade/worker:v1",
+      status: "ACTIVE",
+      tasks: [
+        {
+          id: "task-1",
+          slug: "hello",
+          name: "Hello",
+        },
+      ],
+      createdAt: "2026-01-01T00:00:00.000Z",
     },
   };
 }

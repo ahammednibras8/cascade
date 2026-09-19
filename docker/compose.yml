@@ -126,6 +126,7 @@ services:
       HOST: 0.0.0.0
       PORT: 3000
       CASCADE_API_URL: http://api:3001
+      CASCADE_PUBLIC_API_URL: ${CASCADE_PUBLIC_API_URL:?Set CASCADE_PUBLIC_API_URL in docker/.env or the deployment environment}
       DATABASE_URL: postgresql://${POSTGRES_USER:-cascade}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env or the deployment environment}@postgres:5432/${POSTGRES_DB:-cascade}
       DASHBOARD_SESSION_SECRET: ${DASHBOARD_SESSION_SECRET:?Set DASHBOARD_SESSION_SECRET in docker/.env or the deployment environment}
       DASHBOARD_API_AUTH_SECRET: ${DASHBOARD_API_AUTH_SECRET:?Set DASHBOARD_API_AUTH_SECRET in docker/.env or the deployment environment}

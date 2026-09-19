@@ -37,16 +37,39 @@ export function hashDashboardSessionToken(token: string) {
   return createHmac("sha256", getDashboardSessionSecret()).update(token).digest("hex");
 }
 
-export async function createDashboardSession(userId: string) {
+export async function rotateDashboardSession(request: Request, userId: string) {
+  const previousToken = await getSessionCookie().parse(request.headers.get("Cookie"));
+  const issuedAt = new Date();
   const token = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + SESSION_LIFETIME_SECONDS * 1000);
+  const expiresAt = new Date(issuedAt.getTime() + SESSION_LIFETIME_SECONDS * 1000);
 
-  await prisma.dashboardSession.create({
-    data: {
-      userId,
-      tokenHash: hashDashboardSessionToken(token),
-      expiresAt,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.dashboardSession.deleteMany({
+      where: {
+        OR: [
+          {
+            expiresAt: {
+              lte: issuedAt,
+            },
+          },
+          ...(typeof previousToken === "string"
+            ? [
+                {
+                  tokenHash: hashDashboardSessionToken(previousToken),
+                },
+              ]
+            : []),
+        ],
+      },
+    });
+
+    await tx.dashboardSession.create({
+      data: {
+        userId,
+        tokenHash: hashDashboardSessionToken(token),
+        expiresAt,
+      },
+    });
   });
 
   return {
@@ -55,8 +78,16 @@ export async function createDashboardSession(userId: string) {
   };
 }
 
-export async function commitDashboardSession(token: string) {
-  return getSessionCookie().serialize(token);
+export async function commitDashboardSession(session: { token: string; expiresAt: Date }) {
+  const remainingLifetimeSeconds = Math.max(
+    0,
+    Math.floor((session.expiresAt.getTime() - Date.now()) / 1000),
+  );
+
+  return getSessionCookie().serialize(session.token, {
+    expires: session.expiresAt,
+    maxAge: remainingLifetimeSeconds,
+  });
 }
 
 export async function getDashboardSession(
