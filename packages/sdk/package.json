@@ -17,7 +17,7 @@
   "author": "Ahammed Nibras",
   "repository": {
     "type": "git",
-    "url": "git+http://github.com/ahammednibras8/cascade.git",
+    "url": "git+https://github.com/ahammednibras8/cascade.git",
     "directory": "packages/sdk"
   },
   "files": [
