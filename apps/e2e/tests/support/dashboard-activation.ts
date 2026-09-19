@@ -1,5 +1,5 @@
 import { expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
-import { createCascadeClient, defineTask } from "@cascade/sdk";
+import { createCascadeClient, defineTask } from "@ahammednibras8/cascade";
 import type { PrismaClient } from "@cascade/database";
 import { randomUUID } from "node:crypto";
 

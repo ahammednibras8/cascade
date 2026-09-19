@@ -39,7 +39,7 @@ export CASCADE_API_KEY="csc_..."
 Task code runs inside a worker. A task has an id and a `run` function.
 
 ```ts
-import { defineTask } from "@cascade/sdk";
+import { defineTask } from "@ahammednibras8/cascade";
 
 export const hello = defineTask({
   id: "hello",
@@ -63,7 +63,7 @@ export const hello = defineTask({
 The SDK creates the deployment request from your task definition. Its timeout, retry, and queue configuration become the defaults snapshotted onto future runs.
 
 ```ts
-import { createCascadeClient } from "@cascade/sdk";
+import { createCascadeClient } from "@ahammednibras8/cascade";
 import { hello } from "./tasks/hello.js";
 
 const cascade = createCascadeClient({
@@ -93,7 +93,7 @@ console.log(deployment.id);
 Use the same SDK client and task definition to trigger work.
 
 ```ts
-import { createCascadeClient } from "@cascade/sdk";
+import { createCascadeClient } from "@ahammednibras8/cascade";
 import { hello } from "./tasks/hello.js";
 
 const cascade = createCascadeClient({
