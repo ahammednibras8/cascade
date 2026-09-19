@@ -33,6 +33,11 @@
     "packages/sdk": {
       "project": ["src/**/*.ts"]
     },
+    "examples/typescript-starter": {
+      "entry": ["src/register.ts", "src/tasks.ts", "tsup.config.ts"],
+      "project": ["src/**/*.ts", "*.ts"],
+      "ignoreBinaries": ["tsup"]
+    },
     "packages/storage": {
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
