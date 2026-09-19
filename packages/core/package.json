@@ -8,6 +8,7 @@
   "type": "module",
   "sideEffects": false,
   "module": "./dist/esm/index.js",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
       "development": "./src/index.ts",
