@@ -13,6 +13,6 @@ export default defineConfig({
   external: ["@opentelemetry/api"],
   noExternal: ["@cascade/api-contracts", "@cascade/core"],
   dts: {
-    resolve: ["@cascade/api-contracts", "@cascade/core"],
+    resolve: true,
   },
 });
