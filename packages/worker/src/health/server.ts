@@ -4,6 +4,11 @@ import { WORKER_HEALTH_HOST, WORKER_HEALTH_PORT } from "../config.js";
 import { checkWorkerReadiness, stopWorkerReadinessChecks } from "./readiness.js";
 import type { WorkerHealthState } from "./state.js";
 
+const WORKER_BUILD = {
+  version: process.env["CASCADE_WORKER_VERSION"]?.trim() || "development",
+  revision: process.env["CASCADE_WORKER_REVISION"]?.trim() || "unknown",
+} as const;
+
 function writeJson(response: ServerResponse, status: number, body: unknown) {
   response.writeHead(status, {
     "Cache-Control": "no-store",
@@ -36,6 +41,7 @@ async function handleHealthRequest(
     writeJson(response, ok ? 200 : 503, {
       ok,
       service: packageName,
+      build: WORKER_BUILD,
     });
     return;
   }
@@ -46,6 +52,7 @@ async function handleHealthRequest(
     writeJson(response, readiness.ok ? 200 : 503, {
       ok: readiness.ok,
       service: packageName,
+      build: WORKER_BUILD,
       worker: readiness.worker,
       dependencies: readiness.dependencies,
     });
