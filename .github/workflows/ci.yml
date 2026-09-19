@@ -266,7 +266,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run shared package tests
-        run: pnpm --filter @cascade/sdk --filter @cascade/storage test
+        run: pnpm --filter @ahammednibras8/cascade --filter @cascade/storage test
 
   helm-check:
     name: Helm chart
