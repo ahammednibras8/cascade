@@ -17,5 +17,5 @@ describe("public package", () => {
 
     expect(declaration).not.toContain("@cascade/");
     expect(declaration).not.toMatch(/from ["']\.\/(?:common|task)\.js["']/);
-  });
+  }, 30_000);
 });

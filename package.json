@@ -79,12 +79,12 @@
   "devDependencies": {
     "@changesets/cli": "2.31.1",
     "@types/node": "24.13.3",
-    "@vitest/coverage-v8": "4.1.10",
-    "knip": "6.32.2",
+    "@vitest/coverage-v8": "4.1.11",
+    "knip": "6.35.1",
     "lefthook": "2.1.14",
-    "oxfmt": "0.64.0",
-    "oxlint": "1.79.0",
-    "turbo": "2.10.11",
+    "oxfmt": "0.67.0",
+    "oxlint": "1.82.0",
+    "turbo": "2.10.12",
     "typescript": "6.0.3",
     "vitest": "4.1.11"
   },
