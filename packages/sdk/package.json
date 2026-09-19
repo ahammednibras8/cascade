@@ -1,7 +1,29 @@
 {
-  "name": "@cascade/sdk",
+  "name": "@ahammednibras8/cascade",
   "version": "0.0.0",
   "private": false,
+  "description": "TypeScript SDK for defining, deploying, and triggering durable Cascade tasks.",
+  "keywords": [
+    "background-jobs",
+    "cascade",
+    "durable-execution",
+    "task-runner",
+    "typescript"
+  ],
+  "homepage": "https://github.com/ahammednibras8/cascade#readme",
+  "bugs": {
+    "url": "https://github.com/ahammednibras8/cascade/issues"
+  },
+  "author": "Ahammed Nibras",
+  "repository": {
+    "type": "git",
+    "url": "git+http://github.com/ahammednibras8/cascade.git",
+    "directory": "packages/sdk"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
   "sideEffects": false,
   "module": "./dist/esm/index.js",
@@ -15,7 +37,8 @@
     "./package.json": "./package.json"
   },
   "publishConfig": {
-    "access": "restricted"
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build": "tshy",
@@ -45,5 +68,8 @@
       "./package.json": "./package.json"
     },
     "project": "./tsconfig.build.json"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
