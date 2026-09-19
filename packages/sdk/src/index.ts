@@ -1,19 +1,10 @@
-import {
-  createRootTraceContext,
-  task,
-  toTraceparent,
-  type JsonValue,
-  type TaskDefinition,
-  type TaskDefinitionInput,
-} from "@cascade/core";
+import { createRootTraceContext, task, toTraceparent } from "@cascade/core";
 import {
   ApiErrorResponseSchema,
   TriggerTaskRunResponseSchema,
   parseApiResponse,
   type ApiResponseSchema,
-  type TriggerTaskRunResponse as TriggerTaskRunResponseBody,
   CreateDeploymentResponseSchema,
-  type CreateDeploymentResponse,
 } from "@cascade/api-contracts";
 import {
   context,
@@ -22,47 +13,45 @@ import {
   TraceFlags,
   type SpanContext,
 } from "@opentelemetry/api";
+import type {
+  CascadeClientOptions,
+  JsonValue,
+  RegisterDeploymentOptions,
+  RegisteredDeployment,
+  TaskDefinition,
+  TaskDefinitionInput,
+  TaskRunOutput,
+  TriggerTaskOptions,
+  TriggerTaskRunResponse,
+} from "./types.js";
+
+export type {
+  CascadeClientOptions,
+  DeploymentStatus,
+  DeploymentTaskInput,
+  JsonValue,
+  RegisterDeploymentOptions,
+  RegisteredDeployment,
+  TaskDefinition,
+  TaskDefinitionInput,
+  TaskLogger,
+  TaskLogLevel,
+  TaskQueueConfig,
+  TaskRetryConfig,
+  TaskRunContext,
+  TaskRunOutput,
+  TaskRunStatus,
+  TraceContext,
+  TriggerTaskOptions,
+  TriggerTaskRunResponse,
+} from "./types.js";
 
 export function defineTask<
   TPayload extends JsonValue = JsonValue,
-  TOutput extends JsonValue | void = JsonValue | void,
->(definition: TaskDefinitionInput<TPayload, TOutput>) {
+  TOutput extends TaskRunOutput = TaskRunOutput,
+>(definition: TaskDefinitionInput<TPayload, TOutput>): TaskDefinition<TPayload, TOutput> {
   return task(definition);
 }
-
-export type CascadeClientOptions = {
-  baseUrl: string;
-  apiKey: string;
-  fetch?: typeof fetch;
-};
-
-export type TriggerTaskOptions<TPayload extends JsonValue = JsonValue> = {
-  payload?: TPayload;
-  idempotencyKey?: string;
-  delayUntil?: Date | string;
-  traceparent?: string;
-};
-
-export type TriggerTaskRunResponse<TPayload extends JsonValue = JsonValue> = Omit<
-  TriggerTaskRunResponseBody["taskRun"],
-  "payload"
-> & {
-  payload: TPayload | null;
-};
-
-export type DeploymentTaskInput = {
-  task: Pick<TaskDefinition, "id" | "queue" | "retry" | "timeoutMs">;
-  name?: string;
-  description?: string | null;
-};
-
-export type RegisterDeploymentOptions = {
-  version: string;
-  image: string;
-  tasks: readonly DeploymentTaskInput[];
-};
-
-export type RegisteredDeployment = CreateDeploymentResponse["deployment"];
 
 export class CascadeApiError extends Error {
   readonly status: number;
@@ -235,10 +224,10 @@ export function createCascadeClient(options: CascadeClientOptions) {
   }
 
   return {
-    async triggerTask<TPayload extends JsonValue, TOutput extends JsonValue | void>(
+    async triggerTask<TPayload extends JsonValue, TOutput extends TaskRunOutput>(
       taskDefinition: TaskDefinition<TPayload, TOutput>,
       triggerOptions: TriggerTaskOptions<TPayload> = {},
-    ) {
+    ): Promise<TriggerTaskRunResponse<TPayload>> {
       const traceparent =
         triggerOptions.traceparent ??
         getActiveTraceparent() ??
