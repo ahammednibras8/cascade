@@ -23,8 +23,6 @@ import {
   type SpanContext,
 } from "@opentelemetry/api";
 
-export { createPackageInfo, packageName } from "@cascade/core";
-
 export function defineTask<
   TPayload extends JsonValue = JsonValue,
   TOutput extends JsonValue | void = JsonValue | void,
