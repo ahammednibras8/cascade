@@ -55,7 +55,6 @@
     "@cascade/api-contracts": "workspace:*",
     "@cascade/core": "workspace:*",
     "@types/node": "24.13.3",
-    "tshy": "4.1.3",
     "tsup": "8.5.1",
     "typescript": "6.0.3",
     "vitest": "4.1.11"
