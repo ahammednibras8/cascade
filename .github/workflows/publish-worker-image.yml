@@ -70,6 +70,9 @@ jobs:
         with:
           context: .
           file: packages/worker/Dockerfile
+          build-args: |
+            CASCADE_WORKER_VERSION=${{ steps.version.outputs.version }}
+            CASCADE_WORKER_REVISION=${{ github.sha }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
