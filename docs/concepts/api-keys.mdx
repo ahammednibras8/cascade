@@ -32,13 +32,14 @@ Give each key only the scopes it needs.
 
 ## Common key types
 
-| Key                     | Suggested scopes                        |
-| ----------------------- | --------------------------------------- |
-| Application trigger key | `TASKS_TRIGGER`, optionally `RUNS_READ` |
-| CI/CD deployment key    | `DEPLOYMENTS_WRITE`                     |
-| Dashboard/operator key  | All dashboard-required scopes           |
-| Schedule manager key    | `SCHEDULES_WRITE`, `TASKS_READ`         |
-| Read-only observer key  | `TASKS_READ`, `RUNS_READ`               |
+| Key                     | Suggested scopes                                  |
+| ----------------------- | ------------------------------------------------- |
+| Application trigger key | `TASKS_TRIGGER`, optionally `RUNS_READ`           |
+| Onboarding key          | `DEPLOYMENTS_WRITE`, `TASKS_TRIGGER`, `RUNS_READ` |
+| CI/CD deployment key    | `DEPLOYMENTS_WRITE`                               |
+| Dashboard/operator key  | All dashboard-required scopes                     |
+| Schedule manager key    | `SCHEDULES_WRITE`, `TASKS_READ`                   |
+| Read-only observer key  | `TASKS_READ`, `RUNS_READ`                         |
 
 ## Rotation
 

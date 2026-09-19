@@ -29,6 +29,7 @@ Optional:
 | `DATABASE_URL`              | Postgres connection string used by API and workers.                                             |
 | `QUEUE_REDIS_URL`           | Redis connection string used by API and workers.                                                |
 | `CASCADE_API_URL`           | URL the dashboard uses to call the API.                                                         |
+| `CASCADE_PUBLIC_API_URL`    | Public API URL shown in the one-time onboarding environment block.                              |
 | `API_KEY_PEPPER`            | Secret pepper used when hashing API keys. Keep stable; rotating it invalidates existing tokens. |
 | `DASHBOARD_SESSION_SECRET`  | Secret used to sign dashboard session and workspace cookies.                                    |
 | `DASHBOARD_API_AUTH_SECRET` | Shared dashboard/API secret used to sign short-lived human authorization assertions.            |
@@ -141,3 +142,5 @@ Configure the Cognito app client as a confidential client using the authorizatio
 Cascade protects the authorization-code round trip with PKCE S256, state, nonce, and a signed ten-minute transaction cookie. The OIDC client validates the provider response and ID token; Cascade additionally requires a non-empty subject, a valid normalized email, and the boolean claim `email_verified: true`. Post-login redirects are limited to internal dashboard paths. Provider descriptions and unexpected exceptions are never returned to the browser; the login page displays only allowlisted Cascade error messages.
 
 Keep local development client credentials in the ignored root `.env`. Store production `OIDC_CLIENT_SECRET`, `DASHBOARD_SESSION_SECRET`, and `DASHBOARD_API_AUTH_SECRET` values in the deployment secret manager; never commit them or place them in public Helm values. The dashboard `/readyz` endpoint validates the OIDC configuration when `DASHBOARD_AUTH_MODE=oidc`.
+
+Set `CASCADE_API_URL` to the private API address reachable by the dashboard server. Set `CASCADE_PUBLIC_API_URL` to the HTTPS address reachable by users and their applications. The onboarding flow includes the public address with the newly generated API key; it must not contain a Docker service name or Kubernetes cluster-local hostname.
