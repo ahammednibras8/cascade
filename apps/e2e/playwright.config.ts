@@ -92,6 +92,7 @@ const serverEnv = {
   WORKER_HEALTH_PORT: process.env["PLAYWRIGHT_WORKER_HEALTH_PORT"] ?? "3003",
   API_KEY_PEPPER: apiKeyPepper,
   CASCADE_API_URL: apiURL,
+  CASCADE_PUBLIC_API_URL: apiURL,
   DASHBOARD_API_AUTH_SECRET: dashboardApiAuthSecret,
 };
 

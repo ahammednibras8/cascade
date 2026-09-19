@@ -140,7 +140,24 @@ export async function createActivationApiKey(page: Page, suffix: string) {
     )
     .toBe("preserved");
 
-  return page.locator("section[aria-labelledby='activation-api-key-heading'] code").innerText();
+  const environmentVariables = page.locator(
+    "section[aria-labelledby='activation-environment-heading'] code",
+  );
+
+  await expect(environmentVariables).toContainText(`CASCADE_API_URL=${apiURL}`);
+  await expect(environmentVariables).toContainText("CASCADE_API_KEY=csc_");
+
+  const environmentText = await environmentVariables.innerText();
+  const apiKey = environmentText
+    .split("\n")
+    .find((line) => line.startsWith("CASCADE_API_KEY="))
+    ?.slice("CASCADE_API_KEY=".length);
+
+  if (!apiKey) {
+    throw new Error("Activation environment variables did not contain CASCADE_API_KEY");
+  }
+
+  return apiKey;
 }
 
 export async function getActivationProject(fixture: DashboardActivationFixture) {
