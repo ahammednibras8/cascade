@@ -41,9 +41,20 @@ RUN pnpm --filter @cascade/worker run build
 
 FROM node:24-slim AS runner
 
+ARG CASCADE_WORKER_VERSION=development
+ARG CASCADE_WORKER_REVISION=unknown
+
 ENV NODE_ENV=production
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+ENV CASCADE_WORKER_VERSION="${CASCADE_WORKER_VERSION}"
+ENV CASCADE_WORKER_REVISION="${CASCADE_WORKER_REVISION}"
+
+LABEL org.opencontainers.image.title="Cascade Worker" \
+  org.opencontainers.image.description="Durable task execution worker for Cascade" \
+  org.opencontainers.image.source="https://github.com/ahammednibras8/cascade" \
+  org.opencontainers.image.version="${CASCADE_WORKER_VERSION}" \
+  org.opencontainers.image.revision="${CASCADE_WORKER_REVISION}"
 
 WORKDIR /app
 
