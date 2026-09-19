@@ -28,6 +28,8 @@ import {
   updateDisplayedOnboardingStep,
   restartDashboardOnboarding,
 } from "~/lib/activation/onboarding-metadata.server";
+import type { ApiKeyActionData } from "~/features/api-keys/types";
+import { getCascadePublicApiUrl } from "~/lib/api/cascade-api.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
@@ -147,7 +149,29 @@ async function createActivationApiKey(request: Request, formData: FormData) {
   apiKeyFormData.append("scope", "TASKS_TRIGGER");
   apiKeyFormData.append("scope", "RUNS_READ");
 
-  return handleApiKeyAction(request, apiKeyFormData);
+  const response = await handleApiKeyAction(request, apiKeyFormData);
+
+  if (!response.ok) {
+    return response;
+  }
+
+  const result = (await response.json()) as ApiKeyActionData;
+
+  if (!result.ok || result.intent !== "create") {
+    throw new Error("Expected an API key creation response");
+  }
+
+  return Response.json(
+    {
+      ...result,
+      apiUrl: getCascadePublicApiUrl(),
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    },
+  );
 }
 
 async function createDashboardWorkspace(request: Request, formData: FormData) {
