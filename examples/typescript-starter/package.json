@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsup",
     "check-types": "tsc --noEmit",
-    "register": "tsx src/register.ts"
+    "register": "node --env-file=.env --import tsx src/register.ts"
   },
   "dependencies": {
     "@ahammednibras8/cascade": "^0.1.0"
