@@ -42,6 +42,11 @@ const dashboardSessionSecret =
 const dashboardApiAuthSecret =
   process.env["DASHBOARD_API_AUTH_SECRET"] ??
   "e2e-dashboard-api-auth-secret-change-me-at-least-32-characters";
+const oidcIssuerURL = process.env["OIDC_ISSUER_URL"] ?? "https://identity.example.test";
+const oidcClientId = process.env["OIDC_CLIENT_ID"] ?? "e2e-dashboard-client";
+const oidcClientSecret = process.env["OIDC_CLIENT_SECRET"] ?? "e2e-dashboard-client-secret";
+const oidcRedirectURI =
+  process.env["OIDC_REDIRECT_URI"] ?? new URL("/auth/callback", baseURL).toString();
 const e2eTaskApiKey = process.env["E2E_TASK_API_KEY"] ?? "csc_e2e_task_test_key";
 
 function ensureNodeOption(value: string | undefined, option: string) {
@@ -88,12 +93,17 @@ const serverEnv = {
   DATABASE_URL: databaseURL,
   QUEUE_REDIS_URL: queueRedisURL,
   DASHBOARD_SESSION_SECRET: dashboardSessionSecret,
+  DASHBOARD_AUTH_MODE: "oidc",
   API_PORT: apiPort,
   WORKER_HEALTH_PORT: process.env["PLAYWRIGHT_WORKER_HEALTH_PORT"] ?? "3003",
   API_KEY_PEPPER: apiKeyPepper,
   CASCADE_API_URL: apiURL,
   CASCADE_PUBLIC_API_URL: apiURL,
   DASHBOARD_API_AUTH_SECRET: dashboardApiAuthSecret,
+  OIDC_ISSUER_URL: oidcIssuerURL,
+  OIDC_CLIENT_ID: oidcClientId,
+  OIDC_CLIENT_SECRET: oidcClientSecret,
+  OIDC_REDIRECT_URI: oidcRedirectURI,
 };
 
 const controlWorkerEnv = {

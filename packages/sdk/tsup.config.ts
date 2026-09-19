@@ -12,6 +12,9 @@ export default defineConfig({
   outDir: "dist/esm",
   external: ["@opentelemetry/api"],
   noExternal: ["@cascade/api-contracts", "@cascade/core"],
+  esbuildOptions(options) {
+    options.conditions = ["development"];
+  },
   dts: {
     resolve: true,
   },
