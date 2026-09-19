@@ -12,6 +12,7 @@ api:
     tag: lint
 
 dashboard:
+  publicApiUrl: https://api.example.test
   oidc:
     issuerUrl: https://identity.example.test
     clientId: cascade-dashboard

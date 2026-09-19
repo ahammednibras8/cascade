@@ -32,6 +32,7 @@ api:
 dashboard:
   enabled: true
   replicaCount: 1
+  publicApiUrl: ""
   oidc:
     issuerUrl: ""
     clientId: ""

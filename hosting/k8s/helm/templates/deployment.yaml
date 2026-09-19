@@ -51,6 +51,8 @@ spec:
               value: "3000"
             - name: CASCADE_API_URL
               value: {{ printf "http://%s-api:3001" (include "cascade.fullname" .) | quote }}
+            - name: CASCADE_PUBLIC_API_URL
+              value: {{ required "dashboard.publicApiUrl is required" .Values.dashboard.publicApiUrl | quote}}
           readinessProbe:
             httpGet:
               path: /readyz
