@@ -120,10 +120,7 @@ async function refreshDashboardActivation(request: Request) {
   }
 
   if (activationState.state === "ACTIVATED") {
-    return Response.json({
-      ok: true,
-      redirectTo: `/runs/${encodeURIComponent(activationState.runId)}`,
-    });
+    return redirect(`/runs/${encodeURIComponent(activationState.runId)}`);
   }
 
   return Response.json({

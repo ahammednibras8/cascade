@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useFetcher, useNavigate } from "react-router";
+import { useFetcher } from "react-router";
 import GlassButton from "~/components/landing/GlassButton";
 import type { PendingDashboardActivationState } from "~/lib/activation/activation-state";
 import ActivationState from "./ActivationState";
@@ -15,7 +15,6 @@ export type AuthActionData = {
   error?: string;
   ok: boolean;
   stage?: AuthStage;
-  redirectTo?: string;
   identity?: DashboardUserIdentitySummary;
 };
 
@@ -41,17 +40,6 @@ function getCurrentActivationState(
 
 function getCurrentProgressStage(actionStage: AuthStage | undefined, loaderStage: AuthStage) {
   return actionStage ?? loaderStage;
-}
-
-function useActivationRedirect(actionData: AuthActionData | undefined) {
-  const navigate = useNavigate();
-  const redirectTo = actionData?.redirectTo;
-
-  useEffect(() => {
-    if (redirectTo) {
-      void navigate(redirectTo, { replace: true });
-    }
-  }, [navigate, redirectTo]);
 }
 
 function isActivationRefreshPending(state: string, formData: FormData | undefined) {
@@ -94,8 +82,6 @@ export default function AuthEntryPage({
   const shouldReduceMotion = useReducedMotion();
   const fetcher = useFetcher<AuthActionData>();
   const [viewStage, setViewStage] = useState<AuthStage>(stage);
-
-  useActivationRedirect(fetcher.data);
 
   const currentActivationState = getCurrentActivationState(
     fetcher.data?.activationState,

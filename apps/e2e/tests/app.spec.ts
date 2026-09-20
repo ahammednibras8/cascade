@@ -1,14 +1,22 @@
-import { expect, request as playwrightRequest, test, type TestInfo } from "@playwright/test";
 import {
-  createCompletedActivationRun,
+  expect,
+  request as playwrightRequest,
+  test,
+  type Page,
+  type TestInfo,
+} from "@playwright/test";
+import {
   createActivationApiKey,
   createActivationWorkspace,
   createDashboardActivationFixture,
   disposeDashboardActivationFixture,
   getActivationProject,
+  markActivationDeploymentFailed,
   markActivationDeploymentRunning,
   registerActivationDeployment,
+  triggerActivationTask,
 } from "./support/dashboard-activation.js";
+import { startActivationDeploymentWorker } from "./support/deployment-worker.js";
 
 process.env["DATABASE_URL"] ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -20,6 +28,23 @@ function getBaseURL(testInfo: TestInfo) {
   }
 
   return baseURL;
+}
+
+async function configureStarterImage(page: Page, suffix: string) {
+  const deploymentImage = `ghcr.io/cascade/e2e-activation-${suffix}:0.1.0`;
+  const imageInput = page.getByRole("textbox", { name: "Container image" });
+  const setupCommands = page.locator("pre code");
+
+  await expect(page.getByRole("button", { name: "Copy setup commands" })).toBeDisabled();
+  await imageInput.fill(deploymentImage);
+  await expect(page.getByRole("button", { name: "Copy setup commands" })).toBeEnabled();
+  await expect(setupCommands).toContainText(
+    "git clone --depth 1 https://github.com/ahammednibras8/cascade.git",
+  );
+  await expect(setupCommands).toContainText(`export CASCADE_DEPLOYMENT_IMAGE="${deploymentImage}"`);
+  await expect(setupCommands).toContainText("docker build");
+  await expect(setupCommands).toContainText("docker push");
+  await expect(setupCommands).toContainText("pnpm run register");
 }
 
 test("authenticated dashboard loads", async ({ page }) => {
@@ -191,6 +216,7 @@ test("activates a new workspace without reloading between setup steps", async ({
 }, testInfo) => {
   const baseURL = getBaseURL(testInfo);
   const fixture = await createDashboardActivationFixture(browser, baseURL);
+  let stopDeploymentWorker: (() => Promise<void>) | undefined;
 
   try {
     const page = await fixture.context.newPage();
@@ -202,19 +228,13 @@ test("activates a new workspace without reloading between setup steps", async ({
     await page.getByRole("button", { name: "I saved the key" }).click();
 
     await expect(page).toHaveURL(/\/login\?returnTo=\/runs$/);
-    await expect(
-      page.getByRole("heading", { name: "Register your first deployment" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Deploy your first task" })).toBeVisible();
     await expect
       .poll(() =>
         page.evaluate(() => Reflect.get(globalThis, "__cascadeCredentialDocument") as unknown),
       )
       .toBe("preserved");
-    const registrationCode = page.locator("pre code");
-
-    await expect(registrationCode).toContainText("createCascadeClient");
-    await expect(registrationCode).toContainText('process.env["CASCADE_API_KEY"]');
-    await expect(registrationCode).toContainText("cascade.registerDeployment");
+    await configureStarterImage(page, fixture.suffix);
 
     await expect(page.getByRole("button", { name: "Check deployment" })).toBeVisible();
 
@@ -299,34 +319,40 @@ test("activates a new workspace without reloading between setup steps", async ({
 
     await expect(page.getByRole("button", { name: "Check again" })).toBeVisible();
 
-    await markActivationDeploymentRunning(fixture, deployment.id);
+    await markActivationDeploymentFailed(fixture, deployment.id);
 
+    const deploymentDetailsLink = page.getByRole("link", { name: "Open deployment details" });
+
+    await expect(deploymentDetailsLink).toBeVisible({ timeout: 10_000 });
+    await expect(deploymentDetailsLink).toHaveAttribute("href", `/deployments/${deployment.id}`);
+
+    await markActivationDeploymentRunning(fixture, deployment.id);
     await page.getByRole("button", { name: "Check again" }).click();
 
-    await expect(page.getByRole("heading", { name: "Trigger your first run" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Trigger your first run" })).toBeVisible({
+      timeout: 10_000,
+    });
     await expect(page).toHaveURL(/\/login\?returnTo=\/runs$/);
+    await expect(page.locator("pre code")).toHaveText("pnpm run trigger");
 
-    const task = deployment.tasks[0];
+    const deploymentWorker = await startActivationDeploymentWorker(deployment.id);
+    stopDeploymentWorker = deploymentWorker.stop;
+    const completedRun = await triggerActivationTask(apiKey);
 
-    if (!task) {
-      throw new Error("Activation deployment did not register a task");
-    }
-
-    await createCompletedActivationRun({
-      deploymentId: deployment.id,
-      environmentId,
-      fixture,
-      taskId: task.id,
+    expect(completedRun).toMatchObject({
+      status: "PENDING",
+      taskSlug: "hello",
     });
 
     await page.evaluate(() => {
       Reflect.set(globalThis, "__cascadeCompletionDocument", "preserved");
     });
 
-    await page.getByRole("button", { name: "Check activation" }).click();
-
-    await expect(page).toHaveURL(/\/runs$/);
-    await expect(page.getByRole("heading", { name: "Task runs" })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/runs/${completedRun.id}$`), { timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: "Run detail" })).toBeVisible();
+    await expect(page.locator("body")).toContainText("COMPLETED");
+    await expect(page.locator("body")).toContainText("Hello, Cascade!");
+    await expect(page.locator("body")).toContainText("Creating greeting");
     await expect
       .poll(() =>
         page.evaluate(() => Reflect.get(globalThis, "__cascadeCompletionDocument") as unknown),
@@ -353,6 +379,7 @@ test("activates a new workspace without reloading between setup steps", async ({
       expect.arrayContaining(["cascade-active-organization", "cascade-active-environment"]),
     );
   } finally {
+    await stopDeploymentWorker?.();
     await disposeDashboardActivationFixture(fixture);
   }
 });

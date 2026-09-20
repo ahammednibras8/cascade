@@ -1,7 +1,8 @@
 import { expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
-import { createCascadeClient, defineTask } from "@ahammednibras8/cascade";
+import { createCascadeClient } from "@ahammednibras8/cascade";
 import type { PrismaClient } from "@cascade/database";
 import { randomUUID } from "node:crypto";
+import { hello } from "../../../../examples/typescript-starter/src/tasks.js";
 
 const apiURL = process.env["CASCADE_API_URL"] ?? "http://localhost:3001";
 
@@ -92,8 +93,12 @@ export async function createActivationWorkspace(page: Page) {
   await expect(workspaceStep).toHaveAttribute("aria-pressed", "true");
   await expect(activationStep).toBeDisabled();
 
-  await identityStep.click();
-  await expect(page.getByRole("heading", { name: "Identity verified" })).toBeVisible();
+  await expect(async () => {
+    await identityStep.click();
+    await expect(page.getByRole("heading", { name: "Identity verified" })).toBeVisible({
+      timeout: 500,
+    });
+  }).toPass();
   await expect(page.getByText("E2E Workspace Activation", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Use another account" })).toHaveAttribute(
     "href",
@@ -192,17 +197,11 @@ export async function registerActivationDeployment({
   environmentId: string;
   suffix: string;
 }) {
-  const task = defineTask({
-    id: `e2e-activation-task-${suffix}`,
-    run() {
-      return { ok: true };
-    },
-  });
   const cascade = createCascadeClient({ baseUrl: apiURL, apiKey });
   const deployment = await cascade.registerDeployment({
     version: `e2e-activation-${suffix}`,
     image: "ghcr.io/cascade/e2e-activation:v1",
-    tasks: [{ task, name: "E2E activation task" }],
+    tasks: [{ task: hello, name: "E2E activation task" }],
   });
 
   expect(deployment).toMatchObject({
@@ -210,7 +209,7 @@ export async function registerActivationDeployment({
     status: "ACTIVE",
     version: `e2e-activation-${suffix}`,
     image: "ghcr.io/cascade/e2e-activation:v1",
-    tasks: [{ slug: `e2e-activation-task-${suffix}`, name: "E2E activation task" }],
+    tasks: [{ slug: "hello", name: "E2E activation task" }],
   });
 
   return deployment;
@@ -229,30 +228,27 @@ export async function markActivationDeploymentRunning(
   });
 }
 
-export async function createCompletedActivationRun({
-  deploymentId,
-  environmentId,
-  fixture,
-  taskId,
-}: {
-  deploymentId: string;
-  environmentId: string;
-  fixture: DashboardActivationFixture;
-  taskId: string;
-}) {
-  const completedAt = new Date();
-
-  await fixture.prisma.taskRun.create({
+export async function markActivationDeploymentFailed(
+  fixture: DashboardActivationFixture,
+  deploymentId: string,
+) {
+  await fixture.prisma.deployment.update({
+    where: { id: deploymentId },
     data: {
-      taskId,
-      environmentId,
-      deploymentId,
-      status: "COMPLETED",
-      payload: { message: "Activate workspace" },
-      output: { activated: true },
-      startedAt: completedAt,
-      completedAt,
+      runtimeStatus: "FAILED",
+      runtimeError: "E2E deployment worker failed to start",
     },
+  });
+}
+
+export async function triggerActivationTask(apiKey: string) {
+  const cascade = createCascadeClient({ baseUrl: apiURL, apiKey });
+
+  return cascade.triggerTask(hello, {
+    payload: {
+      name: "Cascade",
+    },
+    idempotencyKey: `e2e-activation-${randomUUID()}`,
   });
 }
 
