@@ -49,8 +49,9 @@ export async function resolveWorkspaceActivationState(
     };
   }
 
-  if (environment.onboardingRecords.length === 0) {
-    await prisma.dashboardOnboarding.upsert({
+  const onboarding =
+    environment.onboardingRecords[0] ??
+    (await prisma.dashboardOnboarding.upsert({
       where: {
         userId_environmentId: {
           userId,
@@ -66,9 +67,9 @@ export async function resolveWorkspaceActivationState(
       },
       select: {
         id: true,
+        startedAt: true,
       },
-    });
-  }
+    }));
 
   if (environment.apiKeys.length === 0) {
     return {
@@ -79,7 +80,7 @@ export async function resolveWorkspaceActivationState(
 
   const deployment = environment.deployments[0];
 
-  if (!deployment || deployment.tasks.length === 0) {
+  if (!deployment || deployment.createdAt < onboarding.startedAt || deployment.tasks.length === 0) {
     return {
       state: "STARTER_REQUIRED",
       environmentId: environment.id,
@@ -95,9 +96,13 @@ export async function resolveWorkspaceActivationState(
     };
   }
 
-  const hasCompletedRun = await hasCompletedDeploymentRun(deployment.id, environment.id);
+  const completedRun = await findCompletedDeploymentRun(
+    deployment.id,
+    environment.id,
+    onboarding.startedAt,
+  );
 
-  if (!hasCompletedRun) {
+  if (!completedRun) {
     return {
       state: "FIRST_RUN_PENDING",
       deploymentId: deployment.id,
@@ -119,6 +124,7 @@ export async function resolveWorkspaceActivationState(
   return {
     state: "ACTIVATED",
     environmentId: environment.id,
+    runId: completedRun.id,
   };
 }
 
@@ -144,6 +150,7 @@ function findActivationEnvironment(environmentId: string, userId: string) {
         },
         select: {
           id: true,
+          startedAt: true,
         },
         take: 1,
       },
@@ -168,6 +175,7 @@ function findActivationEnvironment(environmentId: string, userId: string) {
         },
         select: {
           id: true,
+          createdAt: true,
           runtimeStatus: true,
           tasks: {
             select: {
@@ -182,17 +190,23 @@ function findActivationEnvironment(environmentId: string, userId: string) {
   });
 }
 
-async function hasCompletedDeploymentRun(deploymentId: string, environmentId: string) {
-  const completedRun = await prisma.taskRun.findFirst({
+function findCompletedDeploymentRun(
+  deploymentId: string,
+  environmentId: string,
+  onboardingStartedAt: Date,
+) {
+  return prisma.taskRun.findFirst({
     where: {
       deploymentId,
       environmentId,
       status: "COMPLETED",
+      createdAt: {
+        gte: onboardingStartedAt,
+      },
     },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: {
       id: true,
     },
   });
-
-  return completedRun !== null;
 }

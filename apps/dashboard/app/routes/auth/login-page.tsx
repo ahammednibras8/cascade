@@ -96,7 +96,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   };
 }
 
-async function refreshDashboardActivation(request: Request, formData: FormData) {
+async function refreshDashboardActivation(request: Request) {
   const activationState = await resolveDashboardActivationState(request);
 
   if (activationState.state === "AUTH_REQUIRED") {
@@ -122,7 +122,7 @@ async function refreshDashboardActivation(request: Request, formData: FormData) 
   if (activationState.state === "ACTIVATED") {
     return Response.json({
       ok: true,
-      redirectTo: getSafeDashboardReturnTo(formData.get("returnTo")),
+      redirectTo: `/runs/${encodeURIComponent(activationState.runId)}`,
     });
   }
 
@@ -233,7 +233,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   if (intent === "refresh_activation") {
-    return refreshDashboardActivation(request, formData);
+    return refreshDashboardActivation(request);
   }
 
   if (intent === "create_activation_key") {
