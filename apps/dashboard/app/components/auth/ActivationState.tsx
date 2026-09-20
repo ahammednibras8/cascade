@@ -1,5 +1,5 @@
-import { ArrowRight, Clock3 } from "lucide-react";
-import { useEffect } from "react";
+import { ArrowRight, Clock3, Copy } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useFetcher, useNavigate } from "react-router";
 import GlassButton from "~/components/landing/GlassButton";
 import type { PendingDashboardActivationState } from "~/lib/activation/activation-state";
@@ -28,45 +28,7 @@ export default function ActivationState({
   if (activationState.state === "STARTER_REQUIRED") {
     return (
       <>
-        <h1 className="mt-14 text-4xl leading-tight font-medium tracking-[-0.035em] text-[#05050c]">
-          Register your first deployment
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-black/50">
-          Run the deployment registration code from your worker project using the API key you just
-          created.
-        </p>
-        <pre className="mt-6 overflow-x-auto rounded-2xl bg-[#10140f] p-4 text-xs leading-6 text-white/85">
-          <code>{`import { createCascadeClient } from "@cascade/sdk";
-          import { hello } from "./tasks/hello.js";
-
-          const cascade = createCascadeClient({
-            baseUrl: process.env["CASCADE_API_URL"]!,
-            apiKey: process.env["CASCADE_API_KEY"]!,
-          });
-
-          await cascade.registerDeployment({
-            version: "v1",
-            image: "ghcr.io/your-org/your-worker:v1",
-            tasks: [
-              {
-                task: hello,
-                name: "Hello",
-              },
-            ],
-          });`}</code>
-        </pre>
-        <div className="mt-6">
-          <GlassButton
-            label={checking ? "Checking..." : "Check deployment"}
-            icon={ArrowRight}
-            onClick={onCheck}
-            disabled={checking}
-            tone="black"
-            size="large"
-            fullWidth
-          />
-        </div>
-
+        <StarterActivationState checking={checking} onCheck={onCheck} />
         <ActivationDismissControl returnTo={returnTo} />
       </>
     );
@@ -102,6 +64,86 @@ export default function ActivationState({
     <>
       <FirstRunActivationState checking={checking} onCheck={onCheck} />
       <ActivationDismissControl returnTo={returnTo} />
+    </>
+  );
+}
+
+function StarterActivationState({ checking, onCheck }: { checking: boolean; onCheck: () => void }) {
+  const [deploymentImage, setDeploymentImage] = useState("");
+  const image = deploymentImage.trim();
+
+  const commands = [
+    "git clone --depth 1 https://github.com/ahammednibras8/cascade.git",
+    "cd cascade/examples/typescript-starter",
+    "cp .env.example .env",
+    "pnpm install --frozen-lockfile",
+    "",
+    `export CASCADE_DEPLOYMENT_IMAGE="${image}"`,
+    'docker build --tag "$CASCADE_DEPLOYMENT_IMAGE" .',
+    'docker push "$CASCADE_DEPLOYMENT_IMAGE"',
+    "pnpm run register",
+  ].join("\n");
+
+  return (
+    <>
+      <h1 className="mt-14 text-4xl leading-tight font-medium tracking-[-0.035em] text-[#05050c]">
+        Deploy your first task
+      </h1>
+
+      <p className="mt-3 text-sm leading-6 text-black/50">
+        Clone the TypeScript starter, add your saved API values to its <code>.env</code> file, then
+        build and register the worker image.
+      </p>
+
+      <label
+        htmlFor="starter-deployment-image"
+        className="mt-6 block text-sm font-medium text-black/65"
+      >
+        Container image
+      </label>
+
+      <input
+        id="starter-deployment-image"
+        type="text"
+        value={deploymentImage}
+        onChange={(event) => setDeploymentImage(event.target.value)}
+        placeholder="ghcr.io/your-user/cascade-hello:0.1.0"
+        spellCheck={false}
+        autoComplete="off"
+        className="mt-2 h-12 w-full rounded-2xl border border-black/10 bg-white/70 px-4 font-mono text-xs text-[#05050c] outline-none transition focus:border-black/30 focus:bg-white"
+      />
+
+      <p className="mt-2 text-xs leading-5 text-black/45">
+        Use a registry path that your Cascade deployment runtime can pull.
+      </p>
+
+      <pre className="mt-5 max-h-64 overflow-auto rounded-2xl bg-[#10140f] p-4 font-mono text-xs leading-6 text-white/85">
+        <code>{commands}</code>
+      </pre>
+
+      <div className="mt-6 space-y-3">
+        <GlassButton
+          label="Copy setup commands"
+          icon={Copy}
+          onClick={() => {
+            void navigator.clipboard.writeText(commands);
+          }}
+          disabled={!image}
+          tone="black"
+          size="large"
+          fullWidth
+        />
+
+        <GlassButton
+          label={checking ? "Checking deployment…" : "Check deployment"}
+          icon={ArrowRight}
+          onClick={onCheck}
+          disabled={checking}
+          tone="white"
+          size="large"
+          fullWidth
+        />
+      </div>
     </>
   );
 }
