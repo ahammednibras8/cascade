@@ -201,31 +201,32 @@ it("creates the activation API key through the existing API-key action", async (
   ]);
 });
 
-it.each([
-  { returnTo: "/runs", redirectTo: "/runs" },
-  { returnTo: "https://attacker.example.test", redirectTo: "/dashboard" },
-])("returns the safe destination after activation", async ({ returnTo, redirectTo }) => {
-  resolveDashboardActivationState.mockResolvedValue({
-    state: "ACTIVATED",
-    environmentId: "environment-1",
-  });
+it.each(["/runs", "https://attacker.example.test"])(
+  "returns the completed run after activation",
+  async (returnTo) => {
+    resolveDashboardActivationState.mockResolvedValue({
+      state: "ACTIVATED",
+      environmentId: "environment-1",
+      runId: "task-run-1",
+    });
 
-  const response = await action({
-    request: new Request("http://dashboard.test/login", {
-      method: "POST",
-      body: new URLSearchParams({
-        intent: "refresh_activation",
-        returnTo,
+    const response = await action({
+      request: new Request("http://dashboard.test/login", {
+        method: "POST",
+        body: new URLSearchParams({
+          intent: "refresh_activation",
+          returnTo,
+        }),
       }),
-    }),
-  } as never);
+    } as never);
 
-  expect(response).toBeInstanceOf(Response);
-  await expect((response as Response).json()).resolves.toEqual({
-    ok: true,
-    redirectTo,
-  });
-});
+    expect(response).toBeInstanceOf(Response);
+    await expect((response as Response).json()).resolves.toEqual({
+      ok: true,
+      redirectTo: "/runs/task-run-1",
+    });
+  },
+);
 
 it.each([
   { state: "AUTH_REQUIRED", error: "authentication_required", status: 401 },
