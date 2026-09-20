@@ -221,10 +221,8 @@ it.each(["/runs", "https://attacker.example.test"])(
     } as never);
 
     expect(response).toBeInstanceOf(Response);
-    await expect((response as Response).json()).resolves.toEqual({
-      ok: true,
-      redirectTo: "/runs/task-run-1",
-    });
+    expect((response as Response).status).toBe(302);
+    expect((response as Response).headers.get("Location")).toBe("/runs/task-run-1");
   },
 );
 

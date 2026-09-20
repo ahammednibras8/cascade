@@ -1,4 +1,10 @@
-import { expect, request as playwrightRequest, test, type TestInfo } from "@playwright/test";
+import {
+  expect,
+  request as playwrightRequest,
+  test,
+  type Page,
+  type TestInfo,
+} from "@playwright/test";
 import {
   createCompletedActivationRun,
   createActivationApiKey,
@@ -20,6 +26,23 @@ function getBaseURL(testInfo: TestInfo) {
   }
 
   return baseURL;
+}
+
+async function configureStarterImage(page: Page, suffix: string) {
+  const deploymentImage = `ghcr.io/cascade/e2e-activation-${suffix}:0.1.0`;
+  const imageInput = page.getByRole("textbox", { name: "Container image" });
+  const setupCommands = page.locator("pre code");
+
+  await expect(page.getByRole("button", { name: "Copy setup commands" })).toBeDisabled();
+  await imageInput.fill(deploymentImage);
+  await expect(page.getByRole("button", { name: "Copy setup commands" })).toBeEnabled();
+  await expect(setupCommands).toContainText(
+    "git clone --depth 1 https://github.com/ahammednibras8/cascade.git",
+  );
+  await expect(setupCommands).toContainText(`export CASCADE_DEPLOYMENT_IMAGE="${deploymentImage}"`);
+  await expect(setupCommands).toContainText("docker build");
+  await expect(setupCommands).toContainText("docker push");
+  await expect(setupCommands).toContainText("pnpm run register");
 }
 
 test("authenticated dashboard loads", async ({ page }) => {
@@ -202,19 +225,13 @@ test("activates a new workspace without reloading between setup steps", async ({
     await page.getByRole("button", { name: "I saved the key" }).click();
 
     await expect(page).toHaveURL(/\/login\?returnTo=\/runs$/);
-    await expect(
-      page.getByRole("heading", { name: "Register your first deployment" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Deploy your first task" })).toBeVisible();
     await expect
       .poll(() =>
         page.evaluate(() => Reflect.get(globalThis, "__cascadeCredentialDocument") as unknown),
       )
       .toBe("preserved");
-    const registrationCode = page.locator("pre code");
-
-    await expect(registrationCode).toContainText("createCascadeClient");
-    await expect(registrationCode).toContainText('process.env["CASCADE_API_KEY"]');
-    await expect(registrationCode).toContainText("cascade.registerDeployment");
+    await configureStarterImage(page, fixture.suffix);
 
     await expect(page.getByRole("button", { name: "Check deployment" })).toBeVisible();
 
@@ -301,10 +318,11 @@ test("activates a new workspace without reloading between setup steps", async ({
 
     await markActivationDeploymentRunning(fixture, deployment.id);
 
-    await page.getByRole("button", { name: "Check again" }).click();
-
-    await expect(page.getByRole("heading", { name: "Trigger your first run" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Trigger your first run" })).toBeVisible({
+      timeout: 10_000,
+    });
     await expect(page).toHaveURL(/\/login\?returnTo=\/runs$/);
+    await expect(page.locator("pre code")).toHaveText("pnpm run trigger");
 
     const task = deployment.tasks[0];
 
@@ -312,7 +330,7 @@ test("activates a new workspace without reloading between setup steps", async ({
       throw new Error("Activation deployment did not register a task");
     }
 
-    await createCompletedActivationRun({
+    const completedRun = await createCompletedActivationRun({
       deploymentId: deployment.id,
       environmentId,
       fixture,
@@ -323,10 +341,8 @@ test("activates a new workspace without reloading between setup steps", async ({
       Reflect.set(globalThis, "__cascadeCompletionDocument", "preserved");
     });
 
-    await page.getByRole("button", { name: "Check activation" }).click();
-
-    await expect(page).toHaveURL(/\/runs$/);
-    await expect(page.getByRole("heading", { name: "Task runs" })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/runs/${completedRun.id}$`), { timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: "Run detail" })).toBeVisible();
     await expect
       .poll(() =>
         page.evaluate(() => Reflect.get(globalThis, "__cascadeCompletionDocument") as unknown),

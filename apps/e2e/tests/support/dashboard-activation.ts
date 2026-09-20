@@ -92,8 +92,12 @@ export async function createActivationWorkspace(page: Page) {
   await expect(workspaceStep).toHaveAttribute("aria-pressed", "true");
   await expect(activationStep).toBeDisabled();
 
-  await identityStep.click();
-  await expect(page.getByRole("heading", { name: "Identity verified" })).toBeVisible();
+  await expect(async () => {
+    await identityStep.click();
+    await expect(page.getByRole("heading", { name: "Identity verified" })).toBeVisible({
+      timeout: 500,
+    });
+  }).toPass();
   await expect(page.getByText("E2E Workspace Activation", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Use another account" })).toHaveAttribute(
     "href",
@@ -242,7 +246,7 @@ export async function createCompletedActivationRun({
 }) {
   const completedAt = new Date();
 
-  await fixture.prisma.taskRun.create({
+  return fixture.prisma.taskRun.create({
     data: {
       taskId,
       environmentId,
