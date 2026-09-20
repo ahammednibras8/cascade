@@ -6,7 +6,6 @@ import {
   type TestInfo,
 } from "@playwright/test";
 import {
-  createCompletedActivationRun,
   createActivationApiKey,
   createActivationWorkspace,
   createDashboardActivationFixture,
@@ -15,7 +14,9 @@ import {
   markActivationDeploymentFailed,
   markActivationDeploymentRunning,
   registerActivationDeployment,
+  triggerActivationTask,
 } from "./support/dashboard-activation.js";
+import { startActivationDeploymentWorker } from "./support/deployment-worker.js";
 
 process.env["DATABASE_URL"] ??= "postgresql://cascade:cascade@localhost:15432/cascade";
 
@@ -215,6 +216,7 @@ test("activates a new workspace without reloading between setup steps", async ({
 }, testInfo) => {
   const baseURL = getBaseURL(testInfo);
   const fixture = await createDashboardActivationFixture(browser, baseURL);
+  let stopDeploymentWorker: (() => Promise<void>) | undefined;
 
   try {
     const page = await fixture.context.newPage();
@@ -333,17 +335,13 @@ test("activates a new workspace without reloading between setup steps", async ({
     await expect(page).toHaveURL(/\/login\?returnTo=\/runs$/);
     await expect(page.locator("pre code")).toHaveText("pnpm run trigger");
 
-    const task = deployment.tasks[0];
+    const deploymentWorker = await startActivationDeploymentWorker(deployment.id);
+    stopDeploymentWorker = deploymentWorker.stop;
+    const completedRun = await triggerActivationTask(apiKey);
 
-    if (!task) {
-      throw new Error("Activation deployment did not register a task");
-    }
-
-    const completedRun = await createCompletedActivationRun({
-      deploymentId: deployment.id,
-      environmentId,
-      fixture,
-      taskId: task.id,
+    expect(completedRun).toMatchObject({
+      status: "PENDING",
+      taskSlug: "hello",
     });
 
     await page.evaluate(() => {
@@ -352,6 +350,9 @@ test("activates a new workspace without reloading between setup steps", async ({
 
     await expect(page).toHaveURL(new RegExp(`/runs/${completedRun.id}$`), { timeout: 10_000 });
     await expect(page.getByRole("heading", { name: "Run detail" })).toBeVisible();
+    await expect(page.locator("body")).toContainText("COMPLETED");
+    await expect(page.locator("body")).toContainText("Hello, Cascade!");
+    await expect(page.locator("body")).toContainText("Creating greeting");
     await expect
       .poll(() =>
         page.evaluate(() => Reflect.get(globalThis, "__cascadeCompletionDocument") as unknown),
@@ -378,6 +379,7 @@ test("activates a new workspace without reloading between setup steps", async ({
       expect.arrayContaining(["cascade-active-organization", "cascade-active-environment"]),
     );
   } finally {
+    await stopDeploymentWorker?.();
     await disposeDashboardActivationFixture(fixture);
   }
 });
