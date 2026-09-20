@@ -81,7 +81,7 @@ vi.mock("@cascade/database", () => ({
   },
 }));
 
-const { action } = await import("../../../app/routes/auth/login-page.js");
+const { action, shouldRevalidate } = await import("../../../app/routes/auth/login-page.js");
 const originalAuthMode = process.env["DASHBOARD_AUTH_MODE"];
 const originalPublicApiUrl = process.env["CASCADE_PUBLIC_API_URL"];
 
@@ -201,30 +201,53 @@ it("creates the activation API key through the existing API-key action", async (
   ]);
 });
 
-it.each([
-  { returnTo: "/runs", redirectTo: "/runs" },
-  { returnTo: "https://attacker.example.test", redirectTo: "/dashboard" },
-])("returns the safe destination after activation", async ({ returnTo, redirectTo }) => {
-  resolveDashboardActivationState.mockResolvedValue({
-    state: "ACTIVATED",
-    environmentId: "environment-1",
-  });
+it.each(["/runs", "https://attacker.example.test"])(
+  "returns the completed run after activation",
+  async (returnTo) => {
+    resolveDashboardActivationState.mockResolvedValue({
+      state: "ACTIVATED",
+      environmentId: "environment-1",
+      runId: "task-run-1",
+    });
 
-  const response = await action({
-    request: new Request("http://dashboard.test/login", {
-      method: "POST",
-      body: new URLSearchParams({
-        intent: "refresh_activation",
-        returnTo,
+    const response = await action({
+      request: new Request("http://dashboard.test/login", {
+        method: "POST",
+        body: new URLSearchParams({
+          intent: "refresh_activation",
+          returnTo,
+        }),
       }),
-    }),
-  } as never);
+    } as never);
 
-  expect(response).toBeInstanceOf(Response);
-  await expect((response as Response).json()).resolves.toEqual({
-    ok: true,
-    redirectTo,
-  });
+    expect(response).toBeInstanceOf(Response);
+    expect((response as Response).status).toBe(302);
+    expect((response as Response).headers.get("Location")).toBe("/runs/task-run-1");
+  },
+);
+
+it("does not let loader revalidation override the completed-run redirect", () => {
+  const formData = new FormData();
+  formData.set("intent", "refresh_activation");
+
+  expect(
+    shouldRevalidate({
+      defaultShouldRevalidate: true,
+      formData,
+    } as never),
+  ).toBe(false);
+});
+
+it("keeps normal loader revalidation for other actions", () => {
+  const formData = new FormData();
+  formData.set("intent", "create_workspace");
+
+  expect(
+    shouldRevalidate({
+      defaultShouldRevalidate: true,
+      formData,
+    } as never),
+  ).toBe(true);
 });
 
 it.each([

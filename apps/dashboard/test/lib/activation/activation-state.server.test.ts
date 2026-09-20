@@ -42,6 +42,8 @@ const { resolveDashboardActivationState } =
 const request = new Request("http://dashboard.test/login");
 const environmentId = "environment-1";
 const deploymentId = "deployment-1";
+const onboardingStartedAt = new Date("2026-09-14T00:00:00.000Z");
+const deploymentCreatedAt = new Date("2026-09-14T01:00:00.000Z");
 
 function setWorkspace(environment: { id: string } | null) {
   getDashboardWorkspaceContext.mockResolvedValue({
@@ -51,8 +53,9 @@ function setWorkspace(environment: { id: string } | null) {
 
 function setEnvironment(input: {
   activeApiKey?: boolean;
-  onboarding?: Date | "missing" | null;
+  onboarding?: Date | "missing";
   deployment?: {
+    createdAt?: Date;
     id: string;
     runtimeStatus: "PENDING" | "STARTING" | "RUNNING" | "DRAINING" | "STOPPED" | "FAILED";
     taskCount: number;
@@ -65,13 +68,14 @@ function setEnvironment(input: {
         ? []
         : [
             {
-              completedAt: input.onboarding ?? null,
+              startedAt: input.onboarding ?? onboardingStartedAt,
             },
           ],
     apiKeys: input.activeApiKey ? [{ id: "api-key-1" }] : [],
     deployments: input.deployment
       ? [
           {
+            createdAt: input.deployment.createdAt ?? deploymentCreatedAt,
             id: input.deployment.id,
             runtimeStatus: input.deployment.runtimeStatus,
             tasks: Array.from({ length: input.deployment.taskCount }, (_, index) => ({
@@ -93,7 +97,10 @@ beforeEach(() => {
     id: environmentId,
   });
   prisma.taskRun.findFirst.mockResolvedValue(null);
-  prisma.dashboardOnboarding.upsert.mockResolvedValue({ completedAt: null });
+  prisma.dashboardOnboarding.upsert.mockResolvedValue({
+    id: "onboarding-1",
+    startedAt: onboardingStartedAt,
+  });
   prisma.dashboardOnboarding.updateMany.mockResolvedValue({ count: 1 });
 });
 
@@ -171,6 +178,7 @@ describe("session, workspace, and onboarding activation states", () => {
       },
       select: {
         id: true,
+        startedAt: true,
       },
     });
   });
@@ -232,6 +240,25 @@ describe("credential, deployment, task, and run activation states", () => {
     });
   });
 
+  it("rejects a deployment created before onboarding started", async () => {
+    setEnvironment({
+      activeApiKey: true,
+      deployment: {
+        createdAt: new Date("2026-09-13T23:59:59.000Z"),
+        id: deploymentId,
+        runtimeStatus: "RUNNING",
+        taskCount: 1,
+      },
+    });
+
+    await expect(resolveDashboardActivationState(request)).resolves.toEqual({
+      state: "STARTER_REQUIRED",
+      environmentId,
+    });
+
+    expect(prisma.taskRun.findFirst).not.toHaveBeenCalled();
+  });
+
   it("returns DEPLOYMENT_PENDING until the deployment worker is running", async () => {
     setEnvironment({
       activeApiKey: true,
@@ -268,6 +295,21 @@ describe("credential, deployment, task, and run activation states", () => {
       deploymentId,
       environmentId,
     });
+
+    expect(prisma.taskRun.findFirst).toHaveBeenCalledWith({
+      where: {
+        deploymentId,
+        environmentId,
+        status: "COMPLETED",
+        createdAt: {
+          gte: onboardingStartedAt,
+        },
+      },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+      },
+    });
   });
 
   it("returns ACTIVATED after a deployment task completes", async () => {
@@ -286,6 +328,7 @@ describe("credential, deployment, task, and run activation states", () => {
     await expect(resolveDashboardActivationState(request)).resolves.toEqual({
       state: "ACTIVATED",
       environmentId,
+      runId: "task-run-1",
     });
 
     expect(prisma.dashboardOnboarding.updateMany).toHaveBeenCalledWith({

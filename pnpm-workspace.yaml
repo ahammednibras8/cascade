@@ -2,6 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
   - "docs"
+  - "examples/typescript-starter"
 
 minimumReleaseAgeExclude:
   - knip@6.27.0
@@ -15,6 +16,7 @@ minimumReleaseAgeExclude:
   - "@mintlify/scraping@4.0.879"
   - "@mintlify/validation@0.1.786"
   - mint@4.2.700
+  - "@ahammednibras8/cascade@0.1.0"
 
 allowBuilds:
   "@prisma/engines": true
