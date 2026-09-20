@@ -1,6 +1,6 @@
 import { ArrowRight, Clock3, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useFetcher, useNavigate } from "react-router";
+import { Link, useFetcher, useNavigate } from "react-router";
 import GlassButton from "~/components/landing/GlassButton";
 import type { PendingDashboardActivationState } from "~/lib/activation/activation-state";
 import ActivationCredentialState from "./ActivationCredentialState";
@@ -65,13 +65,22 @@ export default function ActivationState({
           <strong>{activationState.runtimeStatus}</strong>.
         </p>
         {activationState.runtimeStatus === "FAILED" ? (
-          <p
+          <div
             role="alert"
             className="mt-4 rounded-2xl border border-red-900/10 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700"
           >
-            The deployment worker failed to start. Open the deployment details to inspect its
-            runtime error.
-          </p>
+            <p>
+              The deployment worker failed to start. Inspect the runtime error before trying again.
+            </p>
+
+            <Link
+              to={`/deployments/${encodeURIComponent(activationState.deploymentId)}`}
+              className="mt-3 inline-flex items-center gap-1.5 font-medium text-red-800 underline decoration-red-800/30 underline-offset-4 transition hover:decoration-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-800"
+            >
+              Open deployment details
+              <ArrowRight aria-hidden="true" className="h-4 w-4" />
+            </Link>
+          </div>
         ) : (
           <p className="mt-3 text-xs leading-5 text-black/45">
             Cascade checks the deployment automatically every three seconds.

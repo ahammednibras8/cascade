@@ -233,6 +233,19 @@ export async function markActivationDeploymentRunning(
   });
 }
 
+export async function markActivationDeploymentFailed(
+  fixture: DashboardActivationFixture,
+  deploymentId: string,
+) {
+  await fixture.prisma.deployment.update({
+    where: { id: deploymentId },
+    data: {
+      runtimeStatus: "FAILED",
+      runtimeError: "E2E deployment worker failed to start",
+    },
+  });
+}
+
 export async function createCompletedActivationRun({
   deploymentId,
   environmentId,

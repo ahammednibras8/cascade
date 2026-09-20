@@ -12,6 +12,7 @@ import {
   createDashboardActivationFixture,
   disposeDashboardActivationFixture,
   getActivationProject,
+  markActivationDeploymentFailed,
   markActivationDeploymentRunning,
   registerActivationDeployment,
 } from "./support/dashboard-activation.js";
@@ -316,7 +317,15 @@ test("activates a new workspace without reloading between setup steps", async ({
 
     await expect(page.getByRole("button", { name: "Check again" })).toBeVisible();
 
+    await markActivationDeploymentFailed(fixture, deployment.id);
+
+    const deploymentDetailsLink = page.getByRole("link", { name: "Open deployment details" });
+
+    await expect(deploymentDetailsLink).toBeVisible({ timeout: 10_000 });
+    await expect(deploymentDetailsLink).toHaveAttribute("href", `/deployments/${deployment.id}`);
+
     await markActivationDeploymentRunning(fixture, deployment.id);
+    await page.getByRole("button", { name: "Check again" }).click();
 
     await expect(page.getByRole("heading", { name: "Trigger your first run" })).toBeVisible({
       timeout: 10_000,
