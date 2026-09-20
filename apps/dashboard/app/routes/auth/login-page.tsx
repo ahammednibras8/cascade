@@ -13,7 +13,7 @@ import {
   resolveWorkspaceActivationState,
 } from "~/lib/activation/activation-state.server";
 import type { Route } from "./+types/login-page";
-import { redirect } from "react-router";
+import { redirect, type ShouldRevalidateFunctionArgs } from "react-router";
 import { createPersonalWorkspace } from "~/lib/auth/create-personal-workspace.server";
 import { commitActiveDashboardOrganization } from "~/lib/workspace/dashboard-organization.server";
 import { commitActiveDashboardEnvironment } from "~/lib/workspace/dashboard-workspace.server";
@@ -94,6 +94,17 @@ export async function loader({ request }: Route.LoaderArgs) {
     identity,
     progressStage: "activation" as const,
   };
+}
+
+export function shouldRevalidate({
+  defaultShouldRevalidate,
+  formData,
+}: ShouldRevalidateFunctionArgs) {
+  if (formData?.get("intent") === "refresh_activation") {
+    return false;
+  }
+
+  return defaultShouldRevalidate;
 }
 
 async function refreshDashboardActivation(request: Request) {

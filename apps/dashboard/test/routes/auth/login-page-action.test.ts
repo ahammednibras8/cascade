@@ -81,7 +81,7 @@ vi.mock("@cascade/database", () => ({
   },
 }));
 
-const { action } = await import("../../../app/routes/auth/login-page.js");
+const { action, shouldRevalidate } = await import("../../../app/routes/auth/login-page.js");
 const originalAuthMode = process.env["DASHBOARD_AUTH_MODE"];
 const originalPublicApiUrl = process.env["CASCADE_PUBLIC_API_URL"];
 
@@ -225,6 +225,30 @@ it.each(["/runs", "https://attacker.example.test"])(
     expect((response as Response).headers.get("Location")).toBe("/runs/task-run-1");
   },
 );
+
+it("does not let loader revalidation override the completed-run redirect", () => {
+  const formData = new FormData();
+  formData.set("intent", "refresh_activation");
+
+  expect(
+    shouldRevalidate({
+      defaultShouldRevalidate: true,
+      formData,
+    } as never),
+  ).toBe(false);
+});
+
+it("keeps normal loader revalidation for other actions", () => {
+  const formData = new FormData();
+  formData.set("intent", "create_workspace");
+
+  expect(
+    shouldRevalidate({
+      defaultShouldRevalidate: true,
+      formData,
+    } as never),
+  ).toBe(true);
+});
 
 it.each([
   { state: "AUTH_REQUIRED", error: "authentication_required", status: 401 },
