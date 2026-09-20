@@ -5,6 +5,8 @@ import GlassButton from "~/components/landing/GlassButton";
 import type { PendingDashboardActivationState } from "~/lib/activation/activation-state";
 import ActivationCredentialState from "./ActivationCredentialState";
 
+const ACTIVATION_POLL_INTERVAL_MS = 3_000;
+
 export default function ActivationState({
   activationState,
   checking,
@@ -16,6 +18,24 @@ export default function ActivationState({
   onCheck: () => void;
   returnTo: string;
 }) {
+  const shouldPoll =
+    activationState.state === "FIRST_RUN_PENDING" ||
+    (activationState.state === "DEPLOYMENT_PENDING" && activationState.runtimeStatus !== "FAILED");
+
+  useEffect(() => {
+    if (!shouldPoll || checking) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      onCheck();
+    }, ACTIVATION_POLL_INTERVAL_MS);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [checking, onCheck, shouldPoll]);
+
   if (activationState.state === "CREDENTIAL_REQUIRED") {
     return (
       <>
@@ -44,6 +64,19 @@ export default function ActivationState({
           Cascade registered your deployment. Its current runtime state is{" "}
           <strong>{activationState.runtimeStatus}</strong>.
         </p>
+        {activationState.runtimeStatus === "FAILED" ? (
+          <p
+            role="alert"
+            className="mt-4 rounded-2xl border border-red-900/10 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700"
+          >
+            The deployment worker failed to start. Open the deployment details to inspect its
+            runtime error.
+          </p>
+        ) : (
+          <p className="mt-3 text-xs leading-5 text-black/45">
+            Cascade checks the deployment automatically every three seconds.
+          </p>
+        )}
         <div className="mt-8">
           <GlassButton
             label={checking ? "Checking..." : "Check again"}
@@ -166,6 +199,10 @@ function FirstRunActivationState({
       <p className="mt-3 text-sm leading-6 text-black/50">
         From the same TypeScript starter directory, trigger the registered <code>hello</code> task.
         Cascade activates this workspace only after the worker completes the run.
+      </p>
+
+      <p className="mt-3 text-xs leading-5 text-black/45">
+        This page checks automatically and opens the completed run when it is ready.
       </p>
 
       <pre className="mt-6 overflow-x-auto rounded-2xl bg-[#10140f] p-4 font-mono text-xs leading-6 text-white/85">
