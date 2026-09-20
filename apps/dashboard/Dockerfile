@@ -15,8 +15,12 @@ RUN corepack enable \
 FROM pnpm-base AS deps
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .configs .configs
 
 COPY apps/dashboard/package.json apps/dashboard/package.json
+COPY packages/api-contracts/package.json packages/api-contracts/package.json
+COPY packages/core/package.json packages/core/package.json
+COPY packages/database/package.json packages/database/package.json
 
 RUN --mount=type=cache,id=cascade-pnpm-store,target=/pnpm/store,sharing=locked \
 pnpm install --frozen-lockfile --ignore-scripts --filter @cascade/dashboard... --network-concurrency=4 --child-concurrency=2
@@ -27,10 +31,18 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY .configs .configs
 
 COPY apps/dashboard apps/dashboard
+COPY packages/api-contracts packages/api-contracts
+COPY packages/core packages/core
+COPY packages/database packages/database
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/dashboard/node_modules ./apps/dashboard/node_modules
+COPY --from=deps /app/packages/api-contracts/node_modules ./packages/api-contracts/node_modules
+COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
+COPY --from=deps /app/packages/database/node_modules ./packages/database/node_modules
 
+RUN DATABASE_URL="postgresql://cascade:cascade@localhost:5432/cascade" pnpm --filter @cascade/database run build
+RUN pnpm --filter @cascade/core run build
 RUN pnpm --filter @cascade/dashboard run build
 
 RUN --mount=type=cache,id=cascade-pnpm-store,target=/pnpm/store \
