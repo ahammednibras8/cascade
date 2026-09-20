@@ -155,33 +155,37 @@ function FirstRunActivationState({
   checking: boolean;
   onCheck: () => void;
 }) {
+  const triggerCommand = "pnpm run trigger";
+
   return (
     <>
       <h1 className="mt-14 text-4xl leading-tight font-medium tracking-[-0.035em] text-[#05050c]">
         Trigger your first run
       </h1>
+
       <p className="mt-3 text-sm leading-6 text-black/50">
-        Trigger one task through the SDK. A completed run activates this workspace.
+        From the same TypeScript starter directory, trigger the registered <code>hello</code> task.
+        Cascade activates this workspace only after the worker completes the run.
       </p>
-      <pre className="mt-6 overflow-x-auto rounded-2xl bg-[#10140f] p-4 text-xs leading-6 text-white/85">
-        <code>{`import { createCascadeClient } from "@cascade/sdk";
-        import { hello } from "./tasks/hello.js";
-        
-        const cascade = createCascadeClient({
-          baseUrl: process.env["CASCADE_API_URL"]!,
-          apiKey: process.env["CASCADE_API_KEY"]!,
-        });
-        
-        const run = await cascade.triggerTask(hello, {
-          payload: { message: "Hello, Cascade" },
-          idempotencyKey: crypto.randomUUID(),
-        });
-        
-        console.log(run.id);`}</code>
+
+      <pre className="mt-6 overflow-x-auto rounded-2xl bg-[#10140f] p-4 font-mono text-xs leading-6 text-white/85">
+        <code>{triggerCommand}</code>
       </pre>
-      <div className="mt-6">
+
+      <div className="mt-6 space-y-3">
         <GlassButton
-          label={checking ? "Checking..." : "Check activation"}
+          label="Copy trigger command"
+          icon={Copy}
+          onClick={() => {
+            void navigator.clipboard.writeText(triggerCommand);
+          }}
+          tone="black"
+          size="large"
+          fullWidth
+        />
+
+        <GlassButton
+          label={checking ? "Checking run…" : "Check activation"}
           icon={ArrowRight}
           onClick={onCheck}
           disabled={checking}
