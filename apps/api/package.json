@@ -16,7 +16,7 @@
     "@cascade/database": "workspace:*",
     "@cascade/storage": "workspace:*",
     "@cascade/telemetry": "workspace:*",
-    "@opentelemetry/instrumentation": "^0.221.0",
+    "@opentelemetry/instrumentation": "^0.222.0",
     "express": "5.2.1",
     "helmet": "^8.3.0",
     "ioredis": "5.11.1"
